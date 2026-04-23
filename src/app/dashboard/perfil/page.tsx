@@ -20,6 +20,7 @@ interface UserProfile {
   pais: string | null;
   fechaNacimiento: string | null;
   suscripcion?: string;
+  esPrueba?: boolean;
 }
 
 const getMaxPhotos = (plan: string = 'Básica') => {
@@ -892,7 +893,7 @@ export default function PerfilPage() {
             <span style={{ fontSize: '1.2rem' }}>
               {profile?.suscripcion === 'Premium' ? '🌳' : profile?.suscripcion === 'Normal' ? '🌿' : '🌱'}
             </span>
-            <span>Plan {profile?.suscripcion || 'Básica'}</span>
+            <span>Plan {profile?.suscripcion || 'Básica'} {profile?.suscripcion === 'Premium' && profile?.esPrueba && <small style={{ fontWeight: 'normal', opacity: 0.8 }}>(Prueba)</small>}</span>
           </div>
 
           <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
