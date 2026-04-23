@@ -15,6 +15,7 @@ export interface UserProfile {
   fechaNacimiento: string | null;
   suscripcion: string;
   esPrueba: boolean;
+  fechaCaducidadSuscripcion: string | null;
 }
 
 /**
@@ -50,7 +51,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
 
     // Obtener la suscripción activa
     const [subRows] = await pool.query(`
-        SELECT s.suscripcionesnombre, us.idusuariossuscripciones
+        SELECT s.suscripcionesnombre, us.idusuariossuscripciones, us.usuariossuscripcionesfechacaduca
         FROM usuariossuscripciones us
         JOIN suscripciones s ON s.idsuscripciones = us.xusuariossuscripcionesidsuscripciones
         WHERE us.xusuariossuscripcionesidusuarios = ?
@@ -61,10 +62,13 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     
     let suscripcion = 'Básica';
     let esPrueba = false;
+    let fechaCaduca = null;
 
     if ((subRows as any[]).length > 0) {
-      suscripcion = (subRows as any[])[0].suscripcionesnombre;
-      const subId = (subRows as any[])[0].idusuariossuscripciones;
+      const subRow = (subRows as any[])[0];
+      suscripcion = subRow.suscripcionesnombre;
+      fechaCaduca = subRow.usuariossuscripcionesfechacaduca;
+      const subId = subRow.idusuariossuscripciones;
 
       if (suscripcion === 'Premium') {
         const [pagoRows] = await pool.query(`
@@ -91,6 +95,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       fechaNacimiento: user.usuariosfechadenacimiento || null,
       suscripcion: suscripcion,
       esPrueba: esPrueba,
+      fechaCaducidadSuscripcion: fechaCaduca,
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);

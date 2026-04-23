@@ -21,6 +21,7 @@ interface UserProfile {
   fechaNacimiento: string | null;
   suscripcion?: string;
   esPrueba?: boolean;
+  fechaCaducidadSuscripcion?: string | null;
 }
 
 const getMaxPhotos = (plan: string = 'Básica') => {
@@ -912,6 +913,15 @@ export default function PerfilPage() {
               📊 Comparar planes
             </button>
           </div>
+
+          {profile?.fechaCaducidadSuscripcion && (
+            <small className="help-text" style={{ marginTop: '14px', display: 'block', color: 'var(--text-secondary)' }}>
+              Vigencia hasta: <strong>{new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES')}</strong> 
+              {profile.suscripcion !== 'Básica' && (
+                <span> (hasta próxima renovación o degradación)</span>
+              )}
+            </small>
+          )}
         </div>
       </details>
 
