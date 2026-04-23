@@ -962,13 +962,23 @@ export default function PerfilPage() {
                 </div>
                 
                 <div className="editor-control">
-                  <label>Luminosidad — {editorBrightness}%</label>
+                  <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Luminosidad — {editorBrightness}%</span>
+                    {editorBrightness !== 100 && (
+                      <button type="button" onClick={() => setEditorBrightness(100)} className="text-xs text-blue-500 hover:underline">Reset</button>
+                    )}
+                  </label>
                   <input type="range" min="50" max="150" value={editorBrightness}
                     onChange={e => setEditorBrightness(Number(e.target.value))} />
                 </div>
                 
                 <div className="editor-control">
-                  <label>Contraste — {editorContrast}%</label>
+                  <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Contraste — {editorContrast}%</span>
+                    {editorContrast !== 100 && (
+                      <button type="button" onClick={() => setEditorContrast(100)} className="text-xs text-blue-500 hover:underline">Reset</button>
+                    )}
+                  </label>
                   <input type="range" min="50" max="150" value={editorContrast}
                     onChange={e => setEditorContrast(Number(e.target.value))} />
                 </div>
