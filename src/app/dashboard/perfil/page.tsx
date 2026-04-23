@@ -71,6 +71,8 @@ export default function PerfilPage() {
   const [editorBrightness, setEditorBrightness] = useState(100);
   const [editorContrast, setEditorContrast] = useState(100);
   const [editorStyle, setEditorStyle] = useState('');
+  const [editorInitialState, setEditorInitialState] = useState('');
+  const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
 
   // Privacy & Danger Zone
   const [privacidadAceptada, setPrivacidadAceptada] = useState(true);
@@ -362,15 +364,25 @@ export default function PerfilPage() {
   const openPhotoEditor = (photo: any) => {
     try {
       const meta = JSON.parse(photo.resumen || '{}');
-      setEditorX(meta.profile_object_x ?? 50);
-      setEditorY(meta.profile_object_y ?? 38);
-      setEditorZoom(meta.profile_object_zoom ?? 100);
-      setEditorBrightness(meta.profile_brightness ?? 100);
-      setEditorContrast(meta.profile_contrast ?? 100);
-      setEditorStyle(meta.profile_style ?? '');
+      const initial = {
+        x: meta.profile_object_x ?? 50,
+        y: meta.profile_object_y ?? 38,
+        zoom: meta.profile_object_zoom ?? 100,
+        brightness: meta.profile_brightness ?? 100,
+        contrast: meta.profile_contrast ?? 100,
+        style: meta.profile_style ?? ''
+      };
+      setEditorX(initial.x);
+      setEditorY(initial.y);
+      setEditorZoom(initial.zoom);
+      setEditorBrightness(initial.brightness);
+      setEditorContrast(initial.contrast);
+      setEditorStyle(initial.style);
+      setEditorInitialState(JSON.stringify(initial));
     } catch {
       setEditorX(50); setEditorY(38); setEditorZoom(100); 
       setEditorBrightness(100); setEditorContrast(100); setEditorStyle('');
+      setEditorInitialState(JSON.stringify({x: 50, y: 38, zoom: 100, brightness: 100, contrast: 100, style: ''}));
     }
     setEditingPhoto(photo);
   };
@@ -378,6 +390,22 @@ export default function PerfilPage() {
   // ── Guardar edición de foto ──
   const savePhotoEdits = async () => {
     if (!editingPhoto || !profile) return;
+    
+    const current = {
+      x: editorX, y: editorY, zoom: editorZoom, 
+      brightness: editorBrightness, contrast: editorContrast, style: editorStyle
+    };
+    
+    if (JSON.stringify(current) === editorInitialState) {
+      setPhotoEditorSaveStatus('no-changes');
+      setTimeout(() => {
+        setEditingPhoto(null);
+        setPhotoEditorSaveStatus('idle');
+      }, 1500);
+      return;
+    }
+
+    setPhotoEditorSaveStatus('saving');
     const resumen = JSON.stringify({
       profile_object_x: editorX,
       profile_object_y: editorY,
@@ -395,7 +423,11 @@ export default function PerfilPage() {
       showToast('✅ Ajustes de foto guardados');
       setEditingPhoto(null);
       loadPhotos(profile.id);
-    } catch { showToast('❌ Error guardando ajustes'); }
+    } catch { 
+      showToast('❌ Error guardando ajustes'); 
+    } finally {
+      setPhotoEditorSaveStatus('idle');
+    }
   };
 
   // ── Auto-centrar cara desde el editor ──
@@ -913,7 +945,12 @@ export default function PerfilPage() {
               <h3>✏️ Editor de Fotografía</h3>
               <div className="photo-editor-header-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setEditingPhoto(null)}>Cancelar</button>
-                <button type="button" className="btn btn-primary" onClick={savePhotoEdits}>💾 Guardar Cambios</button>
+                <button type="button" className={`btn ${photoEditorSaveStatus === 'no-changes' ? 'btn-ghost' : 'btn-primary'}`} 
+                  onClick={savePhotoEdits} disabled={photoEditorSaveStatus !== 'idle'}>
+                  {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : 
+                   photoEditorSaveStatus === 'no-changes' ? '✓ No se han producido cambios' : 
+                   '💾 Guardar Cambios'}
+                </button>
               </div>
             </div>
             <div className="photo-editor-body">
