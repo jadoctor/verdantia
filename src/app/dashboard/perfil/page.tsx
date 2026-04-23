@@ -603,7 +603,7 @@ export default function PerfilPage() {
                     objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
-                    filter: `${STYLE_FILTERS[meta.profile_style] || ''} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim()
+                    filter: `${STYLE_FILTERS[meta.profile_style] === 'none' ? '' : (STYLE_FILTERS[meta.profile_style] || '')} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim()
                   }}
                 />
 
@@ -933,7 +933,7 @@ export default function PerfilPage() {
                     objectPosition: `${editorX}% ${editorY}%`,
                     transformOrigin: `${editorX}% ${editorY}%`,
                     transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
-                    filter: `${STYLE_FILTERS[editorStyle] || ''} brightness(${editorBrightness}%) contrast(${editorContrast}%)`.trim(),
+                    filter: `${STYLE_FILTERS[editorStyle] === 'none' ? '' : (STYLE_FILTERS[editorStyle] || '')} brightness(${editorBrightness}%) contrast(${editorContrast}%)`.trim(),
                     pointerEvents: 'none'
                   }}
                 />
