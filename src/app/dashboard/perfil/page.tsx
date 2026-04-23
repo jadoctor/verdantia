@@ -938,7 +938,6 @@ export default function PerfilPage() {
                   <div className="grid-line vertical"></div>
                   <div className="grid-line vertical right"></div>
                 </div>
-                </div>
                 {/* Barra de herramientas */}
                 <div className="photo-editor-toolbar">
                   <button type="button" className="editor-tool-btn" onClick={autoCenterFromEditor}
