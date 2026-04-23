@@ -51,7 +51,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
 
     // Obtener la suscripción activa
     const [subRows] = await pool.query(`
-        SELECT s.suscripcionesnombre, us.idusuariossuscripciones, us.usuariossuscripcionesfechacaduca
+        SELECT s.suscripcionesnombre, us.idusuariossuscripciones, us.usuariossuscripcionesfechafin
         FROM usuariossuscripciones us
         JOIN suscripciones s ON s.idsuscripciones = us.xusuariossuscripcionesidsuscripciones
         WHERE us.xusuariossuscripcionesidusuarios = ?
@@ -67,7 +67,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     if ((subRows as any[]).length > 0) {
       const subRow = (subRows as any[])[0];
       suscripcion = subRow.suscripcionesnombre;
-      fechaCaduca = subRow.usuariossuscripcionesfechacaduca;
+      fechaCaduca = subRow.usuariossuscripcionesfechafin;
       const subId = subRow.idusuariossuscripciones;
 
       if (suscripcion === 'Premium') {
