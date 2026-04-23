@@ -72,17 +72,19 @@ export async function POST(request: Request) {
     const esPrimera = total === 0 ? 1 : 0;
 
     // Insertar en la base de datos (con centrado IA)
+    const fileSize = bytes.byteLength;
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
         datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidusuarios,
-        datosadjuntosresumen
-      ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?)`,
+        datosadjuntosresumen, datosadjuntospesobytes
+      ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
         file.type || 'image/jpeg', file.name, relativePath, esPrimera,
         total + 1, userId,
-        JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: 100, profile_style: '' })
+        JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: 100, profile_style: '' }),
+        fileSize
       ]
     );
 

@@ -91,6 +91,12 @@
   font-size: 0.75rem;
 }
 
+.btn-photo-primary {
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+}
+
 .photo-action-btn:hover {
   transform: scale(1.12);
 }
@@ -107,8 +113,11 @@
 }
 
 .btn-photo-primary.is-active {
-  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.35), 0 6px 14px rgba(15, 23, 42, 0.35);
-  color: #facc15;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.45), 0 6px 14px rgba(217, 119, 6, 0.4);
+  border-color: #fcd34d;
+  font-size: 1.2rem;
 }
 
 .btn-photo-delete {
@@ -158,6 +167,213 @@
   font-size: 0.8rem;
   color: var(--storm-primary);
   font-weight: 600;
+}
+
+/* Botón editar: abajo-derecha */
+.btn-photo-edit {
+  background: rgba(0, 86, 179, 0.85);
+  color: white;
+  bottom: -10px;
+  right: -10px;
+  top: auto !important;
+}
+
+.btn-photo-edit:hover {
+  background: rgba(0, 86, 179, 0.95);
+}
+
+/* ══════════════════════════════════════════════ */
+/* MODAL EDITOR DE FOTOGRAFÍA                     */
+/* ══════════════════════════════════════════════ */
+.photo-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.photo-editor-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90vw;
+  max-width: 900px;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-editor-header {
+  background: var(--storm-primary);
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.photo-editor-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.photo-editor-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.photo-editor-header-actions .btn-ghost {
+  color: rgba(255,255,255,0.8);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.photo-editor-header-actions .btn-ghost:hover {
+  color: white;
+  background: rgba(255,255,255,0.1);
+}
+
+.photo-editor-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  max-height: 70vh;
+}
+
+/* Preview */
+.photo-editor-preview {
+  flex: 1;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-editor-preview > img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: all 0.25s ease;
+}
+
+/* Miniatura encuadre */
+.photo-editor-mini-frame {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  width: 100px;
+  aspect-ratio: 3/4;
+  border: 2px solid rgba(250, 204, 21, 0.95);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b1220;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  z-index: 4;
+}
+
+.photo-editor-mini-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.25s ease;
+}
+
+/* Toolbar flotante */
+.photo-editor-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  padding: 8px 20px;
+  border-radius: 30px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.editor-tool-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.15s ease;
+}
+
+.editor-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Panel lateral */
+.photo-editor-panel {
+  width: 260px;
+  background: white;
+  padding: 24px;
+  border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.editor-control label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.editor-control input[type="range"] {
+  width: 100%;
+  accent-color: var(--storm-primary);
+  cursor: pointer;
+}
+
+.premium-badge {
+  font-size: 0.65rem;
+  color: #a16207;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .photo-editor-body {
+    flex-direction: column;
+  }
+  .photo-editor-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    max-height: 40vh;
+  }
 }
 
 /* ── Labels ── */

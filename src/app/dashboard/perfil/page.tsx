@@ -63,6 +63,13 @@ export default function PerfilPage() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  // Photo Editor Modal
+  const [editingPhoto, setEditingPhoto] = useState<any>(null);
+  const [editorX, setEditorX] = useState(50);
+  const [editorY, setEditorY] = useState(38);
+  const [editorZoom, setEditorZoom] = useState(100);
+  const [editorStyle, setEditorStyle] = useState('');
+
   // Privacy & Danger Zone
   const [privacidadAceptada, setPrivacidadAceptada] = useState(true);
   const [motivoBaja, setMotivoBaja] = useState('');
@@ -321,6 +328,72 @@ export default function PerfilPage() {
     if (file) uploadPhoto(file);
   };
 
+  // ── Filtros de estilo (portados del legacy) ──
+  const STYLE_FILTERS: Record<string, string> = {
+    '': 'none',
+    comic: 'contrast(1.45) saturate(1.55) brightness(1.08)',
+    manga: 'grayscale(1) contrast(1.85) brightness(1.1)',
+    watercolor: 'saturate(1.35) contrast(0.88) brightness(1.14)',
+    sketch: 'grayscale(1) contrast(2.2) brightness(1.18)',
+    pop: 'saturate(1.95) contrast(1.3) brightness(1.06)',
+    vintage: 'sepia(0.65) contrast(1.08) saturate(0.78) brightness(1.03)',
+    cinematic: 'contrast(1.22) saturate(0.72) hue-rotate(338deg) brightness(0.98)',
+    hdr: 'contrast(1.35) saturate(1.3) brightness(1.07)'
+  };
+
+  // ── Abrir editor de foto ──
+  const openPhotoEditor = (photo: any) => {
+    try {
+      const meta = JSON.parse(photo.resumen || '{}');
+      setEditorX(meta.profile_object_x ?? 50);
+      setEditorY(meta.profile_object_y ?? 38);
+      setEditorZoom(meta.profile_object_zoom ?? 100);
+      setEditorStyle(meta.profile_style ?? '');
+    } catch {
+      setEditorX(50); setEditorY(38); setEditorZoom(100); setEditorStyle('');
+    }
+    setEditingPhoto(photo);
+  };
+
+  // ── Guardar edición de foto ──
+  const savePhotoEdits = async () => {
+    if (!editingPhoto || !profile) return;
+    const resumen = JSON.stringify({
+      profile_object_x: editorX,
+      profile_object_y: editorY,
+      profile_object_zoom: editorZoom,
+      profile_style: editorStyle
+    });
+    try {
+      await fetch('/api/perfil/photos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoId: editingPhoto.id, userId: profile.id, action: 'updateMeta', resumen })
+      });
+      showToast('✅ Ajustes de foto guardados');
+      setEditingPhoto(null);
+      loadPhotos(profile.id);
+    } catch { showToast('❌ Error guardando ajustes'); }
+  };
+
+  // ── Auto-centrar cara desde el editor ──
+  const autoCenterFromEditor = async () => {
+    if (!editingPhoto) return;
+    showToast('🎯 Detectando cara...');
+    try {
+      const resp = await fetch(`/${editingPhoto.ruta}`);
+      const blob = await resp.blob();
+      const face = await detectFaceCenter(blob);
+      if (face) {
+        setEditorX(Math.round(face.x));
+        setEditorY(Math.round(face.y));
+        showToast(`✅ Cara centrada en (${Math.round(face.x)}%, ${Math.round(face.y)}%)`);
+      } else {
+        showToast('⚠️ No se detectó cara en esta imagen');
+      }
+    } catch { showToast('❌ Error en detección facial'); }
+  };
+
   // ── Auto-save: Icono (al hacer clic, se guarda solo) ──
   const autoSaveIcon = async (newIcon: string) => {
     if (!profile) return;
@@ -450,7 +523,10 @@ export default function PerfilPage() {
           {/* ── Galería de Fotos ── */}
           <label className="section-label">Fotos de Perfil</label>
           <div className={`photo-gallery-grid ${dragOver ? 'drag-over' : ''}`}>
-            {photos.map((photo) => (
+            {photos.map((photo) => {
+              let meta = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
+              try { meta = { ...meta, ...JSON.parse(photo.resumen || '{}') }; } catch {}
+              return (
               <div
                 key={photo.id}
                 className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''}`}
@@ -458,13 +534,12 @@ export default function PerfilPage() {
                 <img
                   src={`/${photo.ruta}`}
                   alt="Foto de perfil"
+                  onClick={() => openPhotoEditor(photo)}
                   style={{
-                    objectPosition: (() => {
-                      try {
-                        const meta = JSON.parse(photo.resumen || '{}');
-                        return `${meta.profile_object_x || 50}% ${meta.profile_object_y || 38}%`;
-                      } catch { return '50% 38%'; }
-                    })()
+                    cursor: 'pointer',
+                    objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
+                    transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
+                    filter: STYLE_FILTERS[meta.profile_style] || 'none'
                   }}
                 />
 
@@ -473,8 +548,14 @@ export default function PerfilPage() {
                     type="button"
                     className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
                     onClick={() => setPhotoPrimary(photo.id)}
-                    title="Marcar como foto preferida"
-                  >⭐</button>
+                    title={photo.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
+                  >{photo.esPrincipal ? '★' : '☆'}</button>
+                  <button
+                    type="button"
+                    className="photo-action-btn btn-photo-edit"
+                    onClick={() => openPhotoEditor(photo)}
+                    title="Editar foto"
+                  >✏️</button>
                   <button
                     type="button"
                     className="photo-action-btn btn-photo-delete"
@@ -483,7 +564,8 @@ export default function PerfilPage() {
                   >✕</button>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {/* Zona de Drop / Subir */}
             <div
@@ -756,6 +838,106 @@ export default function PerfilPage() {
           {saving ? '⏳ Guardando...' : '💾 Guardar Cambios del Perfil'}
         </button>
       </div>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* MODAL EDITOR DE FOTOGRAFÍA                   */}
+      {/* ═══════════════════════════════════════════ */}
+      {editingPhoto && (
+        <div className="photo-editor-overlay" onClick={() => setEditingPhoto(null)}>
+          <div className="photo-editor-modal" onClick={e => e.stopPropagation()}>
+            <div className="photo-editor-header">
+              <h3>✏️ Editor de Fotografía</h3>
+              <div className="photo-editor-header-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setEditingPhoto(null)}>Cancelar</button>
+                <button type="button" className="btn btn-primary" onClick={savePhotoEdits}>💾 Guardar Cambios</button>
+              </div>
+            </div>
+            <div className="photo-editor-body">
+              {/* Preview */}
+              <div className="photo-editor-preview">
+                <img
+                  src={`/${editingPhoto.ruta}`}
+                  alt="Preview"
+                  style={{
+                    objectPosition: `${editorX}% ${editorY}%`,
+                    transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
+                    filter: STYLE_FILTERS[editorStyle] || 'none'
+                  }}
+                />
+                {/* Miniatura de encuadre */}
+                <div className="photo-editor-mini-frame">
+                  <img
+                    src={`/${editingPhoto.ruta}`}
+                    alt="Encuadre"
+                    style={{
+                      objectPosition: `${editorX}% ${editorY}%`,
+                      transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
+                      filter: STYLE_FILTERS[editorStyle] || 'none'
+                    }}
+                  />
+                </div>
+                {/* Barra de herramientas */}
+                <div className="photo-editor-toolbar">
+                  <button type="button" className="editor-tool-btn" onClick={autoCenterFromEditor}
+                    title="Auto-centrar cara (IA)">🎯</button>
+                  <button type="button" className="editor-tool-btn" onClick={() => { setEditorX(50); setEditorY(38); setEditorZoom(100); }}
+                    title="Recentrar">↺</button>
+                </div>
+              </div>
+
+              {/* Panel lateral */}
+              <div className="photo-editor-panel">
+                <div className="editor-control">
+                  <label>Horizontal — {editorX}%</label>
+                  <input type="range" min="0" max="100" value={editorX}
+                    onChange={e => setEditorX(Number(e.target.value))} />
+                </div>
+                <div className="editor-control">
+                  <label>Vertical — {editorY}%</label>
+                  <input type="range" min="0" max="100" value={editorY}
+                    onChange={e => setEditorY(Number(e.target.value))} />
+                </div>
+                <div className="editor-control">
+                  <label>Zoom — {editorZoom}%</label>
+                  <input type="range" min="100" max="300" value={editorZoom}
+                    onChange={e => setEditorZoom(Number(e.target.value))} />
+                </div>
+
+                <div className="editor-control">
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Transformación IA</span>
+                    <small className="premium-badge">Premium</small>
+                  </label>
+                  <select value={editorStyle} onChange={e => setEditorStyle(e.target.value)} className="form-input">
+                    <option value="">Sin filtro</option>
+                    <option value="comic">Comic Suave</option>
+                    <option value="manga">Manga B/N</option>
+                    <option value="watercolor">Acuarela</option>
+                    <option value="sketch">Boceto Lápiz</option>
+                    <option value="pop">Pop Color</option>
+                    <option value="vintage">Vintage Película</option>
+                    <option value="cinematic">Cinemático Frío</option>
+                    <option value="hdr">HDR Natural</option>
+                  </select>
+                </div>
+
+                <button type="button" className="btn btn-primary" onClick={autoCenterFromEditor}
+                  style={{ width: '100%', marginTop: '12px' }}>
+                  🎯 Auto-centrar cara (IA)
+                </button>
+
+                <div style={{ marginTop: 'auto' }}>
+                  <button type="button" className="btn-danger" style={{ width: '100%' }}
+                    onClick={() => { deletePhoto(editingPhoto.id); setEditingPhoto(null); }}>
+                    🗑️ Eliminar Fotografía
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
