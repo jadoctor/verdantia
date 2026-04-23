@@ -25,8 +25,10 @@ export default function LoginPage() {
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential') {
         setError('El correo o la contraseña no son correctos.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Error de seguridad: Debes añadir el dominio de esta web en la consola de Firebase.');
       } else {
-        setError('Ha ocurrido un error al conectar con el servidor.');
+        setError(`Error técnico: ${err.message}`);
       }
     } finally {
       setIsLoading(false);
@@ -42,7 +44,7 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message" style={{ whiteSpace: 'pre-wrap' }}>{error}</div>}
 
           <div className="input-group">
             <label htmlFor="email">Correo Electrónico</label>
