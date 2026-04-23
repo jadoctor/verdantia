@@ -594,6 +594,7 @@ export default function PerfilPage() {
                   style={{
                     cursor: 'pointer',
                     objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
+                    transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
                     filter: STYLE_FILTERS[meta.profile_style] || 'none'
                   }}
@@ -929,17 +930,14 @@ export default function PerfilPage() {
                     pointerEvents: 'none'
                   }}
                 />
-                {/* Miniatura de encuadre */}
-                <div className="photo-editor-mini-frame">
-                  <img
-                    src={`/${editingPhoto.ruta}`}
-                    alt="Encuadre"
-                    style={{
-                      objectPosition: `${editorX}% ${editorY}%`,
-                      transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
-                      filter: STYLE_FILTERS[editorStyle] || 'none'
-                    }}
-                  />
+                
+                {/* Rejilla de Foto Carnet (3:4) superpuesta */}
+                <div className="photo-editor-grid-overlay">
+                  <div className="grid-line horizontal"></div>
+                  <div className="grid-line horizontal bottom"></div>
+                  <div className="grid-line vertical"></div>
+                  <div className="grid-line vertical right"></div>
+                </div>
                 </div>
                 {/* Barra de herramientas */}
                 <div className="photo-editor-toolbar">
