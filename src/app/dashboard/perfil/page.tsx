@@ -945,8 +945,13 @@ export default function PerfilPage() {
               <h3>✏️ Editor de Fotografía</h3>
               <div className="photo-editor-header-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setEditingPhoto(null)}>Cancelar</button>
-                <button type="button" className={`btn ${photoEditorSaveStatus === 'no-changes' ? 'btn-ghost' : 'btn-primary'}`} 
-                  onClick={savePhotoEdits} disabled={photoEditorSaveStatus !== 'idle'}>
+                <button 
+                  type="button" 
+                  className={`btn ${photoEditorSaveStatus === 'no-changes' ? '' : 'btn-primary'}`} 
+                  style={photoEditorSaveStatus === 'no-changes' ? { backgroundColor: '#64748b', borderColor: '#64748b', color: 'white' } : {}}
+                  onClick={savePhotoEdits} 
+                  disabled={photoEditorSaveStatus !== 'idle'}
+                >
                   {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : 
                    photoEditorSaveStatus === 'no-changes' ? '✓ No se han producido cambios' : 
                    '💾 Guardar Cambios'}
