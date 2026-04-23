@@ -903,6 +903,23 @@ export default function PerfilPage() {
             <span>Plan {profile?.suscripcion || 'Básica'} {profile?.suscripcion === 'Premium' && profile?.esPrueba && <small style={{ fontWeight: 'normal', opacity: 0.8 }}>(Prueba)</small>}</span>
           </div>
 
+          {profile?.suscripcion !== 'Básica' && (
+            <small className="help-text" style={{ marginTop: '10px', display: 'block', color: 'var(--text-secondary)' }}>
+              {profile.esPrueba ? (
+                <>
+                  ⏳ Tu periodo de prueba gratuito finaliza el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'final del periodo promocional'}</strong>
+                  {diasRestantes !== null && diasRestantes >= 0 && <span> (te quedan <strong>{diasRestantes} días</strong>)</span>}. 
+                  A partir de esa fecha, tu cuenta comenzará a degradarse al plan Básico.
+                </>
+              ) : (
+                <>
+                  💳 Próximo cobro y renovación automática programado para el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'próximo ciclo de facturación'}</strong>
+                  {diasRestantes !== null && diasRestantes >= 0 && <span> (en <strong>{diasRestantes} días</strong>)</span>}.
+                </>
+              )}
+            </small>
+          )}
+
           <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
             <button 
               type="button" 
@@ -919,23 +936,6 @@ export default function PerfilPage() {
               📊 Comparar planes
             </button>
           </div>
-
-          {profile?.suscripcion !== 'Básica' && (
-            <small className="help-text" style={{ marginTop: '14px', display: 'block', color: 'var(--text-secondary)' }}>
-              {profile.esPrueba ? (
-                <>
-                  ⏳ Tu periodo de prueba gratuito finaliza el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'final del periodo promocional'}</strong>
-                  {diasRestantes !== null && diasRestantes >= 0 && <span> (te quedan <strong>{diasRestantes} días</strong>)</span>}. 
-                  A partir de esa fecha, tu cuenta comenzará a degradarse al plan Básico.
-                </>
-              ) : (
-                <>
-                  💳 Próximo cobro y renovación automática programado para el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'próximo ciclo de facturación'}</strong>
-                  {diasRestantes !== null && diasRestantes >= 0 && <span> (en <strong>{diasRestantes} días</strong>)</span>}.
-                </>
-              )}
-            </small>
-          )}
         </div>
       </details>
 
