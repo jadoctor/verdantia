@@ -637,40 +637,63 @@ export default function PerfilPage() {
             </small>
           </label>
           <div className={`photo-gallery-grid ${dragOver ? 'drag-over' : ''}`}>
-            {photos.map((photo) => {
+            {[...photos]
+              .sort((a, b) => (a.esPrincipal === b.esPrincipal ? 0 : a.esPrincipal ? -1 : 1))
+              .map((photo, i) => {
               let meta = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
               try { meta = { ...meta, ...JSON.parse(photo.resumen || '{}') }; } catch {}
+              
+              const isLocked = i >= getMaxPhotos(profile?.suscripcion);
+              
               return (
               <div
                 key={photo.id}
-                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''}`}
+                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''} ${isLocked ? 'is-locked' : ''}`}
+                style={{ position: 'relative' }}
               >
                 <img
                   src={`/${photo.ruta}`}
                   alt="Foto de perfil"
-                  onClick={() => openPhotoEditor(photo)}
+                  onClick={() => !isLocked && openPhotoEditor(photo)}
                   style={{
-                    cursor: 'pointer',
+                    cursor: isLocked ? 'not-allowed' : 'pointer',
                     objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
-                    filter: `${STYLE_FILTERS[meta.profile_style] === 'none' ? '' : (STYLE_FILTERS[meta.profile_style] || '')} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim()
+                    filter: isLocked 
+                      ? 'grayscale(100%) blur(2px) brightness(0.7)' 
+                      : `${STYLE_FILTERS[meta.profile_style] === 'none' ? '' : (STYLE_FILTERS[meta.profile_style] || '')} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim()
                   }}
                 />
 
-                <div className="photo-actions">
-                  <button
-                    type="button"
-                    className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
-                    onClick={() => setPhotoPrimary(photo.id)}
-                    title={photo.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
-                  >{photo.esPrincipal ? '★' : '☆'}</button>
-                  <button
-                    type="button"
-                    className="photo-action-btn btn-photo-edit"
-                    onClick={() => openPhotoEditor(photo)}
-                    title="Editar foto"
-                  >✏️</button>
+                {isLocked && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)', pointerEvents: 'none', zIndex: 10
+                  }}>
+                    <span style={{ fontSize: '2rem', marginBottom: '8px' }}>🔒</span>
+                    <small style={{ fontWeight: 'bold', textAlign: 'center', padding: '0 10px' }}>Límite de plan superado</small>
+                  </div>
+                )}
+
+                <div className="photo-actions" style={{ zIndex: 20 }}>
+                  {!isLocked && (
+                    <>
+                      <button
+                        type="button"
+                        className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
+                        onClick={() => setPhotoPrimary(photo.id)}
+                        title={photo.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
+                      >{photo.esPrincipal ? '★' : '☆'}</button>
+                      <button
+                        type="button"
+                        className="photo-action-btn btn-photo-edit"
+                        onClick={() => openPhotoEditor(photo)}
+                        title="Editar foto"
+                      >✏️</button>
+                    </>
+                  )}
                   <button
                     type="button"
                     className="photo-action-btn btn-photo-delete"
