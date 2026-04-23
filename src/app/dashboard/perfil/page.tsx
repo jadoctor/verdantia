@@ -68,6 +68,8 @@ export default function PerfilPage() {
   const [editorX, setEditorX] = useState(50);
   const [editorY, setEditorY] = useState(38);
   const [editorZoom, setEditorZoom] = useState(100);
+  const [editorBrightness, setEditorBrightness] = useState(100);
+  const [editorContrast, setEditorContrast] = useState(100);
   const [editorStyle, setEditorStyle] = useState('');
 
   // Privacy & Danger Zone
@@ -363,9 +365,12 @@ export default function PerfilPage() {
       setEditorX(meta.profile_object_x ?? 50);
       setEditorY(meta.profile_object_y ?? 38);
       setEditorZoom(meta.profile_object_zoom ?? 100);
+      setEditorBrightness(meta.profile_brightness ?? 100);
+      setEditorContrast(meta.profile_contrast ?? 100);
       setEditorStyle(meta.profile_style ?? '');
     } catch {
-      setEditorX(50); setEditorY(38); setEditorZoom(100); setEditorStyle('');
+      setEditorX(50); setEditorY(38); setEditorZoom(100); 
+      setEditorBrightness(100); setEditorContrast(100); setEditorStyle('');
     }
     setEditingPhoto(photo);
   };
@@ -377,6 +382,8 @@ export default function PerfilPage() {
       profile_object_x: editorX,
       profile_object_y: editorY,
       profile_object_zoom: editorZoom,
+      profile_brightness: editorBrightness,
+      profile_contrast: editorContrast,
       profile_style: editorStyle
     });
     try {
@@ -596,7 +603,7 @@ export default function PerfilPage() {
                     objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
-                    filter: STYLE_FILTERS[meta.profile_style] || 'none'
+                    filter: `${STYLE_FILTERS[meta.profile_style] || ''} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim()
                   }}
                 />
 
@@ -926,7 +933,7 @@ export default function PerfilPage() {
                     objectPosition: `${editorX}% ${editorY}%`,
                     transformOrigin: `${editorX}% ${editorY}%`,
                     transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
-                    filter: STYLE_FILTERS[editorStyle] || 'none',
+                    filter: `${STYLE_FILTERS[editorStyle] || ''} brightness(${editorBrightness}%) contrast(${editorContrast}%)`.trim(),
                     pointerEvents: 'none'
                   }}
                 />
@@ -938,13 +945,7 @@ export default function PerfilPage() {
                   <div className="grid-line vertical"></div>
                   <div className="grid-line vertical right"></div>
                 </div>
-                {/* Barra de herramientas */}
-                <div className="photo-editor-toolbar">
-                  <button type="button" className="editor-tool-btn" onClick={autoCenterFromEditor}
-                    title="Auto-centrar cara (IA)">🎯</button>
-                  <button type="button" className="editor-tool-btn" onClick={() => { setEditorX(50); setEditorY(38); setEditorZoom(100); }}
-                    title="Recentrar">↺</button>
-                </div>
+
               </div>
 
               {/* Panel lateral */}
@@ -958,6 +959,18 @@ export default function PerfilPage() {
                   <label>Zoom — {editorZoom}%</label>
                   <input type="range" min="100" max="300" value={editorZoom}
                     onChange={e => setEditorZoom(Number(e.target.value))} />
+                </div>
+                
+                <div className="editor-control">
+                  <label>Luminosidad — {editorBrightness}%</label>
+                  <input type="range" min="50" max="150" value={editorBrightness}
+                    onChange={e => setEditorBrightness(Number(e.target.value))} />
+                </div>
+                
+                <div className="editor-control">
+                  <label>Contraste — {editorContrast}%</label>
+                  <input type="range" min="50" max="150" value={editorContrast}
+                    onChange={e => setEditorContrast(Number(e.target.value))} />
                 </div>
 
                 <div className="editor-control">
@@ -978,10 +991,7 @@ export default function PerfilPage() {
                   </select>
                 </div>
 
-                <button type="button" className="btn btn-primary" onClick={autoCenterFromEditor}
-                  style={{ width: '100%', marginTop: '12px' }}>
-                  🎯 Auto-centrar cara (IA)
-                </button>
+
 
                 <div style={{ marginTop: 'auto' }}>
                   <button type="button" className="btn-danger" style={{ width: '100%' }}
