@@ -183,14 +183,15 @@ export default function DashboardLayout({
 
         {/* Pie del Sidebar: perfil + logout */}
         <div className="sidebar-footer">
-          <div className="sidebar-profile">
+          <a href="/dashboard/perfil" className="sidebar-profile">
             <span className="profile-icon">{userIcon}</span>
             <div className="profile-info">
               <span className="profile-name">{displayName}</span>
               {isSuperAdmin && <span className="role-badge superadmin">SUPERADMIN</span>}
               {!isSuperAdmin && isAdmin && <span className="role-badge admin">ADMIN</span>}
+              <span className="profile-edit-hint">✏️ Editar perfil</span>
             </div>
-          </div>
+          </a>
           <button onClick={handleLogout} className="logout-btn">Cerrar Sesión</button>
         </div>
       </aside>
@@ -206,7 +207,7 @@ export default function DashboardLayout({
           </div>
           <div className="header-profile">
             <span className="header-greeting">Hola, <strong>{displayName}</strong></span>
-            <div className="profile-avatar">{userIcon}</div>
+            <a href="/dashboard/perfil" className="profile-avatar" title="Ir a mi perfil">{userIcon}</a>
           </div>
         </header>
 

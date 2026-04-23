@@ -11,6 +11,8 @@ export interface UserProfile {
   poblacion: string | null;
   estadoCuenta: string;
   nombreUsuario: string | null;
+  pais: string | null;
+  fechaNacimiento: string | null;
 }
 
 /**
@@ -30,7 +32,9 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         usuarioscodigopostal, 
         usuariospoblacion, 
         usuariosestadocuenta,
-        usuariosnombreusuario
+        usuariosnombreusuario,
+        usuariospais,
+        usuariosfechadenacimiento
        FROM usuarios 
        WHERE usuariosemail = ? 
        LIMIT 1`,
@@ -52,6 +56,8 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       poblacion: user.usuariospoblacion || null,
       estadoCuenta: user.usuariosestadocuenta || 'activa',
       nombreUsuario: user.usuariosnombreusuario || null,
+      pais: user.usuariospais || null,
+      fechaNacimiento: user.usuariosfechadenacimiento || null,
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);
