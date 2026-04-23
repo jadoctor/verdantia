@@ -895,9 +895,22 @@ export default function PerfilPage() {
             <span>Plan {profile?.suscripcion || 'Básica'}</span>
           </div>
 
-          <small className="help-text" style={{ marginTop: '14px', display: 'block' }}>
-            Cualquier alta, baja o cambio en membresías o suscripciones debe cursarse desde la administración.
-          </small>
+          <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+            <button 
+              type="button" 
+              className="btn btn-primary"
+              onClick={() => router.push('/dashboard/suscripcion')}
+            >
+              ⚙️ Gestionar mi plan
+            </button>
+            <button 
+              type="button" 
+              className="btn btn-ghost"
+              onClick={() => router.push('/dashboard/suscripcion/comparativa')}
+            >
+              📊 Comparar planes
+            </button>
+          </div>
         </div>
       </details>
 
