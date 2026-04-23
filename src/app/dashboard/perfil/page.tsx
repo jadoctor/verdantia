@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -46,6 +46,7 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [nombre, setNombre] = useState('');
@@ -56,6 +57,11 @@ export default function PerfilPage() {
   const [codigoPostal, setCodigoPostal] = useState('');
   const [poblacion, setPoblacion] = useState('');
   const [icono, setIcono] = useState('');
+
+  // Photos
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   // Privacy & Danger Zone
   const [privacidadAceptada, setPrivacidadAceptada] = useState(true);
@@ -68,6 +74,19 @@ export default function PerfilPage() {
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3500);
+  }, []);
+
+  // ── Cargar fotos del usuario ──
+  const loadPhotos = useCallback(async (userId: number) => {
+    try {
+      const res = await fetch(`/api/perfil/photos?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPhotos(data.photos || []);
+      }
+    } catch (err) {
+      console.error('Error cargando fotos:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -88,6 +107,7 @@ export default function PerfilPage() {
           setCodigoPostal(p.codigoPostal || '');
           setPoblacion(p.poblacion || '');
           setIcono(p.icono || '');
+          loadPhotos(p.id);
         }
       } catch (err) {
         console.error('Error cargando perfil:', err);
@@ -96,7 +116,71 @@ export default function PerfilPage() {
       }
     });
     return () => unsubscribe();
-  }, [router]);
+  }, [router, loadPhotos]);
+
+  // ── Subir foto ──
+  const uploadPhoto = async (file: File) => {
+    if (!profile) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('⚠️ Solo se permiten imágenes.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', String(profile.id));
+
+      const res = await fetch('/api/perfil/photos', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Foto subida correctamente');
+        loadPhotos(profile.id);
+      } else {
+        showToast('❌ Error: ' + data.error);
+      }
+    } catch (err: any) {
+      showToast('❌ Error subiendo foto: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ── Marcar foto como preferida ──
+  const setPhotoPrimary = async (photoId: number) => {
+    if (!profile) return;
+    try {
+      await fetch('/api/perfil/photos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoId, userId: profile.id, action: 'setPrincipal' })
+      });
+      showToast('⭐ Foto preferida actualizada');
+      loadPhotos(profile.id);
+    } catch { /* silencioso */ }
+  };
+
+  // ── Eliminar foto ──
+  const deletePhoto = async (photoId: number) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta foto?')) return;
+    try {
+      await fetch(`/api/perfil/photos?photoId=${photoId}`, { method: 'DELETE' });
+      showToast('🗑️ Foto eliminada');
+      if (profile) loadPhotos(profile.id);
+    } catch { /* silencioso */ }
+  };
+
+  // ── Drag & Drop handlers ──
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation(); setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadPhoto(file);
+  };
 
   // ── Auto-save: Icono (al hacer clic, se guarda solo) ──
   const autoSaveIcon = async (newIcon: string) => {
@@ -224,7 +308,88 @@ export default function PerfilPage() {
       <details open>
         <summary>📸 Fotografía e Iconos</summary>
         <div className="accordion-body">
-          <label className="section-label">Icono de Perfil Alternativo</label>
+          {/* ── Galería de Fotos ── */}
+          <label className="section-label">Fotos de Perfil</label>
+          <div className={`photo-gallery-grid ${dragOver ? 'drag-over' : ''}`}>
+            {photos.map((photo) => (
+              <div
+                key={photo.id}
+                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''}`}
+              >
+                <img
+                  src={`/${photo.ruta}`}
+                  alt="Foto de perfil"
+                  style={{
+                    objectPosition: (() => {
+                      try {
+                        const meta = JSON.parse(photo.resumen || '{}');
+                        return `${meta.profile_object_x || 50}% ${meta.profile_object_y || 38}%`;
+                      } catch { return '50% 38%'; }
+                    })()
+                  }}
+                />
+                {photo.esPrincipal === 1 && (
+                  <span className="preferred-badge">⭐ Preferida</span>
+                )}
+                <div className="photo-actions">
+                  <button
+                    type="button"
+                    className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
+                    onClick={() => setPhotoPrimary(photo.id)}
+                    title="Marcar como foto preferida"
+                  >⭐</button>
+                  <button
+                    type="button"
+                    className="photo-action-btn btn-photo-delete"
+                    onClick={() => deletePhoto(photo.id)}
+                    title="Eliminar"
+                  >✕</button>
+                </div>
+              </div>
+            ))}
+
+            {/* Zona de Drop / Subir */}
+            <div
+              className="photo-add-card"
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {uploading ? (
+                <div className="upload-progress">
+                  <div className="loading-spinner" style={{ width: '24px', height: '24px' }}></div>
+                  <span>Subiendo...</span>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >📁 Subir archivo</button>
+                  <small className="drop-hint">
+                    {dragOver ? '¡Suelta aquí!' : 'También puedes soltar una imagen'}
+                  </small>
+                </>
+              )}
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) uploadPhoto(file);
+              e.target.value = '';
+            }}
+          />
+
+          {/* ── Icono de Perfil ── */}
+          <label className="section-label" style={{ marginTop: '24px' }}>Icono de Perfil Alternativo</label>
           <div className="icon-grid">
             {AVATAR_ICONS.map((icon) => (
               <button
