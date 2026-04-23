@@ -876,8 +876,27 @@ export default function PerfilPage() {
               <span key={rol} className="role-tag">✅ {rol}</span>
             ))}
           </div>
-          <small className="help-text" style={{ marginTop: '10px' }}>
-            Cualquier alta o baja en membresías debe cursarse desde la administración.
+
+          <label className="section-label" style={{ marginTop: '20px' }}>Nivel de Suscripción Actual</label>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: profile?.suscripcion === 'Premium' ? 'rgba(245, 158, 11, 0.1)' : profile?.suscripcion === 'Normal' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(148, 163, 184, 0.1)',
+            border: `1px solid ${profile?.suscripcion === 'Premium' ? 'rgba(245, 158, 11, 0.3)' : profile?.suscripcion === 'Normal' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(148, 163, 184, 0.3)'}`,
+            padding: '10px 16px',
+            borderRadius: '12px',
+            fontWeight: '600',
+            color: profile?.suscripcion === 'Premium' ? '#d97706' : profile?.suscripcion === 'Normal' ? '#2563eb' : '#64748b'
+          }}>
+            <span style={{ fontSize: '1.2rem' }}>
+              {profile?.suscripcion === 'Premium' ? '🌳' : profile?.suscripcion === 'Normal' ? '🌿' : '🌱'}
+            </span>
+            <span>Plan {profile?.suscripcion || 'Básica'}</span>
+          </div>
+
+          <small className="help-text" style={{ marginTop: '14px', display: 'block' }}>
+            Cualquier alta, baja o cambio en membresías o suscripciones debe cursarse desde la administración.
           </small>
         </div>
       </details>
