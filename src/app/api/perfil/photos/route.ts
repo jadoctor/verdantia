@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const userId = formData.get('userId') as string;
+    const faceX = Number(formData.get('faceX')) || 50;
+    const faceY = Number(formData.get('faceY')) || 38;
 
     if (!file || !userId) {
       return NextResponse.json({ error: 'Archivo y userId requeridos' }, { status: 400 });
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
     // Si es la primera foto, marcarla como principal
     const esPrimera = total === 0 ? 1 : 0;
 
-    // Insertar en la base de datos
+    // Insertar en la base de datos (con centrado IA)
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
@@ -78,9 +80,9 @@ export async function POST(request: Request) {
         datosadjuntosresumen
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?)`,
       [
-        file.type, file.name, relativePath, esPrimera,
+        file.type || 'image/jpeg', file.name, relativePath, esPrimera,
         total + 1, userId,
-        JSON.stringify({ profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' })
+        JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: 100, profile_style: '' })
       ]
     );
 

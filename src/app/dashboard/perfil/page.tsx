@@ -126,10 +126,58 @@ export default function PerfilPage() {
       return;
     }
     setUploading(true);
+    showToast('🤖 IA procesando: quitando fondo y centrando cara...');
+
     try {
+      // ── Paso 1: Eliminar fondo y poner blanco ──
+      let processedBlob: Blob = file;
+      try {
+        const { removeBackground } = await import('@imgly/background-removal');
+        const resultBlob = await removeBackground(file, {
+          output: { format: 'image/png' }
+        });
+        // Poner fondo blanco en lugar de transparente
+        const img = new Image();
+        const blobUrl = URL.createObjectURL(resultBlob);
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error('Error cargando imagen procesada'));
+          img.src = blobUrl;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(blobUrl);
+        processedBlob = await new Promise<Blob>((resolve) =>
+          canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
+        );
+        showToast('✅ Fondo eliminado correctamente');
+      } catch (bgErr) {
+        console.warn('[BG Removal] No disponible, subiendo original:', bgErr);
+        showToast('⚠️ No se pudo quitar el fondo, subiendo la original...');
+      }
+
+      // ── Paso 2: Detectar cara para centrado automático ──
+      let faceX = 50, faceY = 38;
+      try {
+        const faceResult = await detectFaceCenter(processedBlob);
+        if (faceResult) {
+          faceX = faceResult.x;
+          faceY = faceResult.y;
+          showToast(`🎯 Cara detectada y centrada (${Math.round(faceX)}%, ${Math.round(faceY)}%)`);
+        }
+      } catch { /* usar defaults */ }
+
+      // ── Paso 3: Subir la imagen procesada ──
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', processedBlob, file.name.replace(/\.\w+$/, '.jpg'));
       formData.append('userId', String(profile.id));
+      formData.append('faceX', String(Math.round(faceX)));
+      formData.append('faceY', String(Math.round(faceY)));
 
       const res = await fetch('/api/perfil/photos', {
         method: 'POST',
@@ -137,7 +185,7 @@ export default function PerfilPage() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('✅ Foto subida correctamente');
+        showToast('✅ Foto subida y procesada por IA');
         loadPhotos(profile.id);
       } else {
         showToast('❌ Error: ' + data.error);
@@ -147,6 +195,97 @@ export default function PerfilPage() {
     } finally {
       setUploading(false);
     }
+  };
+
+  /**
+   * Detección de cara: FaceDetector API (Chrome/Edge) + fallback skin-tone canvas
+   * Portado fielmente del legacy perfil.php
+   */
+  const detectFaceCenter = async (imageSource: Blob | File): Promise<{x: number, y: number} | null> => {
+    return new Promise(async (resolve) => {
+      try {
+        const img = new Image();
+        const url = URL.createObjectURL(imageSource);
+        img.src = url;
+        await new Promise<void>((r, rej) => { img.onload = () => r(); img.onerror = () => rej(); });
+        URL.revokeObjectURL(url);
+
+        if (!img.naturalWidth || !img.naturalHeight) { resolve(null); return; }
+
+        // 1) FaceDetector API nativa (Chrome/Edge)
+        if (typeof (window as any).FaceDetector !== 'undefined') {
+          try {
+            const detector = new (window as any).FaceDetector({ maxDetectedFaces: 5, fastMode: true });
+            const faces = await detector.detect(img);
+            if (faces && faces.length > 0) {
+              let best = faces[0];
+              for (const f of faces) {
+                if (f.boundingBox.width * f.boundingBox.height > best.boundingBox.width * best.boundingBox.height) best = f;
+              }
+              const bb = best.boundingBox;
+              const cx = ((bb.x + bb.width / 2) / img.naturalWidth) * 100;
+              const cy = ((bb.y + bb.height / 2) / img.naturalHeight) * 100;
+              console.log(`[FaceDetect] API nativa: cara en (${cx.toFixed(1)}%, ${cy.toFixed(1)}%)`);
+              resolve({ x: Math.max(0, Math.min(100, cx)), y: Math.max(0, Math.min(100, cy)) });
+              return;
+            }
+          } catch { console.log('[FaceDetect] FaceDetector API falló, usando fallback.'); }
+        }
+
+        // 2) Fallback: detección por tonos de piel con canvas
+        const canvas = document.createElement('canvas');
+        const maxDim = 400;
+        const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        const w = canvas.width, h = canvas.height;
+        const step = Math.max(2, Math.floor(Math.min(w, h) / 100));
+
+        let sumX = 0, sumY = 0, countSkin = 0;
+        const skinPoints: [number, number, number][] = [];
+
+        for (let y = 0; y < h; y += step) {
+          for (let x = 0; x < w; x += step) {
+            const idx = (y * w + x) * 4;
+            const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+            const isSkin = (r > 95 && g > 40 && b > 20 &&
+              (Math.max(r, g, b) - Math.min(r, g, b)) > 15 &&
+              Math.abs(r - g) > 15 && r > g && r > b);
+            if (isSkin) {
+              const topBias = 1.0 - (y / Math.max(1, h));
+              const weight = Math.max(0.15, topBias * topBias);
+              sumX += x * weight; sumY += y * weight; countSkin += weight;
+              skinPoints.push([x, y, weight]);
+            }
+          }
+        }
+
+        if (countSkin < 10) { resolve(null); return; }
+
+        let faceX = sumX / countSkin, faceY = sumY / countSkin;
+        skinPoints.sort((a, b) => a[1] - b[1]);
+        const takeTop = Math.max(8, Math.floor(skinPoints.length * 0.28));
+        const topSlice = skinPoints.slice(0, takeTop);
+        let stX = 0, stY = 0, stW = 0;
+        for (const p of topSlice) { const pw = p[2] * 1.25; stX += p[0] * pw; stY += p[1] * pw; stW += pw; }
+        const topFaceX = stW > 0 ? stX / stW : faceX;
+        const topFaceY = stW > 0 ? stY / stW : faceY;
+
+        const finalX = ((faceX * 0.35 + topFaceX * 0.65) / w) * 100;
+        const finalY = ((faceY * 0.25 + topFaceY * 0.75) / h) * 100;
+
+        console.log(`[FaceDetect] Canvas skin-tone: cara en (${finalX.toFixed(1)}%, ${finalY.toFixed(1)}%)`);
+        resolve({ x: Math.max(0, Math.min(100, finalX)), y: Math.max(0, Math.min(100, finalY)) });
+      } catch (err) {
+        console.warn('[FaceDetect] Error:', err);
+        resolve(null);
+      }
+    });
   };
 
   // ── Marcar foto como preferida ──
@@ -328,9 +467,7 @@ export default function PerfilPage() {
                     })()
                   }}
                 />
-                {photo.esPrincipal === 1 && (
-                  <span className="preferred-badge">⭐ Preferida</span>
-                )}
+
                 <div className="photo-actions">
                   <button
                     type="button"
