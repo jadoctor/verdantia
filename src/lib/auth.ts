@@ -13,6 +13,7 @@ export interface UserProfile {
   nombreUsuario: string | null;
   pais: string | null;
   fechaNacimiento: string | null;
+  suscripcion: string;
 }
 
 /**
@@ -45,6 +46,20 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     if (results.length === 0) return null;
 
     const user = results[0];
+
+    // Obtener la suscripción activa
+    const [subRows] = await pool.query(`
+        SELECT s.suscripcionesnombre
+        FROM usuariossuscripciones us
+        JOIN suscripciones s ON s.idsuscripciones = us.xusuariossuscripcionesidsuscripciones
+        WHERE us.xusuariossuscripcionesidusuarios = ?
+          AND us.usuariossuscripcionesestado IN ('activa','degradacion_fase1','degradacion_fase2','degradacion_fase3')
+        ORDER BY us.idusuariossuscripciones DESC
+        LIMIT 1
+    `, [user.idusuarios]);
+    
+    const suscripcion = (subRows as any[]).length > 0 ? (subRows as any[])[0].suscripcionesnombre : 'Básica';
+
     return {
       id: user.idusuarios,
       nombre: user.usuariosnombre || '',
@@ -58,6 +73,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       nombreUsuario: user.usuariosnombreusuario || null,
       pais: user.usuariospais || null,
       fechaNacimiento: user.usuariosfechadenacimiento || null,
+      suscripcion: suscripcion,
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);

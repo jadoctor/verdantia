@@ -19,7 +19,14 @@ interface UserProfile {
   nombreUsuario: string | null;
   pais: string | null;
   fechaNacimiento: string | null;
+  suscripcion?: string;
 }
+
+const getMaxPhotos = (plan: string = 'Básica') => {
+  if (plan === 'Premium') return 5;
+  if (plan === 'Normal') return 3;
+  return 1;
+};
 
 const AVATAR_ICONS = [
   '🌱','🌿','🍀','🍃','🌾','🌻','🌷','🌹','🌵','🌴','🍄','🪴',
@@ -132,6 +139,13 @@ export default function PerfilPage() {
   // ── Subir foto ──
   const uploadPhoto = async (file: File) => {
     if (!profile) return;
+    
+    const maxPhotos = getMaxPhotos(profile.suscripcion);
+    if (photos.length >= maxPhotos) {
+      showToast(`⚠️ Límite alcanzado: Tu plan ${profile.suscripcion || 'Básica'} permite un máximo de ${maxPhotos} foto(s).`);
+      return;
+    }
+
     if (!file.type.startsWith('image/')) {
       showToast('⚠️ Solo se permiten imágenes.');
       return;
@@ -616,7 +630,12 @@ export default function PerfilPage() {
         <summary>📸 Fotografía e Iconos</summary>
         <div className="accordion-body">
           {/* ── Galería de Fotos ── */}
-          <label className="section-label">Fotos de Perfil</label>
+          <label className="section-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Fotos de Perfil</span>
+            <small style={{ color: photos.length >= getMaxPhotos(profile?.suscripcion) ? '#ef4444' : '#64748b' }}>
+              {photos.length} / {getMaxPhotos(profile?.suscripcion)} permitidas ({profile?.suscripcion || 'Básica'})
+            </small>
+          </label>
           <div className={`photo-gallery-grid ${dragOver ? 'drag-over' : ''}`}>
             {photos.map((photo) => {
               let meta = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
@@ -948,12 +967,18 @@ export default function PerfilPage() {
                 <button 
                   type="button" 
                   className={`btn ${photoEditorSaveStatus === 'no-changes' ? '' : 'btn-primary'}`} 
-                  style={photoEditorSaveStatus === 'no-changes' ? { backgroundColor: '#64748b', borderColor: '#64748b', color: 'white' } : {}}
+                  style={{
+                    backgroundColor: photoEditorSaveStatus === 'no-changes' ? '#10b981' : undefined,
+                    borderColor: photoEditorSaveStatus === 'no-changes' ? '#10b981' : undefined,
+                    color: photoEditorSaveStatus === 'no-changes' ? 'white' : undefined,
+                    transition: 'all 0.3s ease',
+                    minWidth: '175px'
+                  }}
                   onClick={savePhotoEdits} 
                   disabled={photoEditorSaveStatus !== 'idle'}
                 >
                   {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : 
-                   photoEditorSaveStatus === 'no-changes' ? '✓ No se han producido cambios' : 
+                   photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : 
                    '💾 Guardar Cambios'}
                 </button>
               </div>
