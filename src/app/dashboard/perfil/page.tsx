@@ -621,6 +621,12 @@ export default function PerfilPage() {
   const roles = profile.roles.split(',').map(r => r.trim());
   const isFirebaseVerified = auth.currentUser?.emailVerified ?? false;
 
+  let diasRestantes: number | null = null;
+  if (profile.fechaCaducidadSuscripcion) {
+    const diff = new Date(profile.fechaCaducidadSuscripcion).getTime() - new Date().getTime();
+    diasRestantes = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }
+
   return (
     <div className="perfil-page">
       {toast && <div className="perfil-toast">{toast}</div>}
@@ -917,9 +923,16 @@ export default function PerfilPage() {
           {profile?.suscripcion !== 'Básica' && (
             <small className="help-text" style={{ marginTop: '14px', display: 'block', color: 'var(--text-secondary)' }}>
               {profile.esPrueba ? (
-                <>⏳ Tu periodo de prueba gratuito finaliza el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'final del periodo promocional'}</strong>. A partir de esa fecha, tu cuenta comenzará a degradarse al plan Básico.</>
+                <>
+                  ⏳ Tu periodo de prueba gratuito finaliza el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'final del periodo promocional'}</strong>
+                  {diasRestantes !== null && diasRestantes >= 0 && <span> (te quedan <strong>{diasRestantes} días</strong>)</span>}. 
+                  A partir de esa fecha, tu cuenta comenzará a degradarse al plan Básico.
+                </>
               ) : (
-                <>💳 Próximo cobro y renovación automática de tu suscripción programado para el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'próximo ciclo de facturación'}</strong>.</>
+                <>
+                  💳 Próximo cobro y renovación automática programado para el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'próximo ciclo de facturación'}</strong>
+                  {diasRestantes !== null && diasRestantes >= 0 && <span> (en <strong>{diasRestantes} días</strong>)</span>}.
+                </>
               )}
             </small>
           )}
