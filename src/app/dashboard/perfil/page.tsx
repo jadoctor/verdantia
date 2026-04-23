@@ -914,11 +914,12 @@ export default function PerfilPage() {
             </button>
           </div>
 
-          {profile?.fechaCaducidadSuscripcion && (
+          {profile?.suscripcion !== 'Básica' && profile?.fechaCaducidadSuscripcion && (
             <small className="help-text" style={{ marginTop: '14px', display: 'block', color: 'var(--text-secondary)' }}>
-              Vigencia hasta: <strong>{new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES')}</strong> 
-              {profile.suscripcion !== 'Básica' && (
-                <span> (hasta próxima renovación o degradación)</span>
+              {profile.esPrueba ? (
+                <>⏳ Tu periodo de prueba gratuito finaliza el <strong>{new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES')}</strong>. A partir de esa fecha, tu cuenta comenzará a degradarse al plan Básico.</>
+              ) : (
+                <>💳 Próximo cobro y renovación automática de tu suscripción programado para el <strong>{new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES')}</strong>.</>
               )}
             </small>
           )}
