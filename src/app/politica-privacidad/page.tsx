@@ -124,6 +124,10 @@ export default function PoliticaPrivacidadPage() {
               </tbody>
             </table>
           </div>
+          <div className="highlight-box highlight-blue" style={{ marginTop: '16px' }}>
+            <span style={{ fontSize: '1.3rem' }}>ℹ️</span>
+            <span><strong>Degradación de plan y límite de fotos:</strong> Si bajas a un plan inferior (por ejemplo, al caducar el periodo de prueba Premium) y excedes el límite de fotos de perfil de tu nuevo plan, <strong>no perderás tus fotos</strong>. Simplemente quedarán bloqueadas (no podrás editarlas ni marcarlas como principales) y no podrás subir fotos nuevas hasta que elimines las sobrantes para ajustarte al nuevo límite establecido.</span>
+          </div>
         </div>
 
         {/* 5. Datos de pago */}
@@ -204,11 +208,12 @@ export default function PoliticaPrivacidadPage() {
             <li>Fecha de nacimiento, dirección IP y datos de localización.</li>
             <li>Identificadores de pasarelas de pago (Stripe / PayPal customer ID).</li>
             <li>Número de teléfono (si existiera).</li>
+            <li><strong>Todas tus fotografías de perfil personales.</strong></li>
           </ul>
 
           <h3 style={{ color: 'var(--accent-green)', fontSize: '0.95rem', margin: '18px 0 8px' }}>👁️‍🗨️ Se anonimiza y se conserva:</h3>
           <ul>
-            <li>Fotografías de plantas, huertos y cultivos.</li>
+            <li><strong>Fotografías de plantas, huertos y cultivos.</strong></li>
             <li>Registros de cultivo, observaciones y datos agronómicos.</li>
             <li>Mensajes en grupos públicos e intercambios de semillas completados.</li>
           </ul>
