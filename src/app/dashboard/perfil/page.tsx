@@ -952,14 +952,9 @@ export default function PerfilPage() {
               {/* Panel lateral */}
               <div className="photo-editor-panel">
                 <div className="editor-control">
-                  <label>Horizontal — {editorX}%</label>
-                  <input type="range" min="0" max="100" value={editorX}
-                    onChange={e => setEditorX(Number(e.target.value))} />
-                </div>
-                <div className="editor-control">
-                  <label>Vertical — {editorY}%</label>
-                  <input type="range" min="0" max="100" value={editorY}
-                    onChange={e => setEditorY(Number(e.target.value))} />
+                  <p className="text-sm text-gray-500 mb-4" style={{ fontStyle: 'italic' }}>
+                    <small>💡 Arrastra la foto con el ratón para moverla.</small>
+                  </p>
                 </div>
                 <div className="editor-control">
                   <label>Zoom — {editorZoom}%</label>
