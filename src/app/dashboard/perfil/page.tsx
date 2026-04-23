@@ -923,6 +923,7 @@ export default function PerfilPage() {
                   draggable={false}
                   style={{
                     objectPosition: `${editorX}% ${editorY}%`,
+                    transformOrigin: `${editorX}% ${editorY}%`,
                     transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
                     filter: STYLE_FILTERS[editorStyle] || 'none',
                     pointerEvents: 'none'
