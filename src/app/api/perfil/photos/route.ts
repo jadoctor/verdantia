@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     const userId = formData.get('userId') as string;
     const faceX = Number(formData.get('faceX')) || 50;
     const faceY = Number(formData.get('faceY')) || 38;
+    const faceZoom = Number(formData.get('faceZoom')) || 100;
 
     if (!file || !userId) {
       return NextResponse.json({ error: 'Archivo y userId requeridos' }, { status: 400 });
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
       [
         file.type || 'image/jpeg', file.name, relativePath, esPrimera,
         total + 1, userId,
-        JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: 100, profile_style: '' }),
+        JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: faceZoom, profile_style: '' }),
         fileSize
       ]
     );

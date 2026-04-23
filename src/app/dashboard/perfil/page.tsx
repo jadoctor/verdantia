@@ -168,14 +168,28 @@ export default function PerfilPage() {
         showToast('⚠️ No se pudo quitar el fondo, subiendo la original...');
       }
 
-      // ── Paso 2: Detectar cara para centrado automático ──
-      let faceX = 50, faceY = 38;
+      // ── Paso 2: Detectar cara para centrado automático + zoom ──
+      let faceX = 50, faceY = 38, autoZoom = 100;
       try {
         const faceResult = await detectFaceCenter(processedBlob);
         if (faceResult) {
           faceX = faceResult.x;
           faceY = faceResult.y;
-          showToast(`🎯 Cara detectada y centrada (${Math.round(faceX)}%, ${Math.round(faceY)}%)`);
+
+          // Calcular zoom automático según la orientación de la imagen
+          // Fotos apaisadas necesitan más zoom para que la cara se vea bien en retrato 3:4
+          const tmpImg = new Image();
+          const tmpUrl = URL.createObjectURL(processedBlob);
+          await new Promise<void>((r) => { tmpImg.onload = () => r(); tmpImg.src = tmpUrl; });
+          URL.revokeObjectURL(tmpUrl);
+          const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
+          if (ratio > 1.3) {
+            // Foto apaisada: zoom para que la cara no quede diminuta
+            autoZoom = Math.min(200, Math.round(ratio * 110));
+          } else if (ratio > 1.05) {
+            autoZoom = Math.round(ratio * 105);
+          }
+          showToast(`🎯 Cara detectada (${Math.round(faceX)}%, ${Math.round(faceY)}%) zoom: ${autoZoom}%`);
         }
       } catch { /* usar defaults */ }
 
@@ -185,6 +199,7 @@ export default function PerfilPage() {
       formData.append('userId', String(profile.id));
       formData.append('faceX', String(Math.round(faceX)));
       formData.append('faceY', String(Math.round(faceY)));
+      formData.append('faceZoom', String(autoZoom));
 
       const res = await fetch('/api/perfil/photos', {
         method: 'POST',
