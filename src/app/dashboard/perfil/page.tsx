@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -407,6 +407,47 @@ export default function PerfilPage() {
         showToast('⚠️ No se detectó cara en esta imagen');
       }
     } catch { showToast('❌ Error en detección facial'); }
+  };
+
+  // ── Drag-to-Pan en el editor de fotos ──
+  const editorDragRef = React.useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
+    dragging: false, startX: 0, startY: 0, startPosX: 50, startPosY: 38
+  });
+
+  const onEditorMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editorDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, startPosX: editorX, startPosY: editorY };
+    const onMove = (ev: MouseEvent) => {
+      if (!editorDragRef.current.dragging) return;
+      const dx = ev.clientX - editorDragRef.current.startX;
+      const dy = ev.clientY - editorDragRef.current.startY;
+      // Sensibilidad proporcional al zoom
+      const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+      setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+      setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
+    };
+    const onUp = () => {
+      editorDragRef.current.dragging = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const onEditorTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    editorDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, startPosX: editorX, startPosY: editorY };
+  };
+
+  const onEditorTouchMove = (e: React.TouchEvent) => {
+    if (!editorDragRef.current.dragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - editorDragRef.current.startX;
+    const dy = t.clientY - editorDragRef.current.startY;
+    const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+    setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+    setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
   };
 
   // ── Auto-save: Icono (al hacer clic, se guarda solo) ──
@@ -869,14 +910,22 @@ export default function PerfilPage() {
             </div>
             <div className="photo-editor-body">
               {/* Preview */}
-              <div className="photo-editor-preview">
+              <div 
+                className="photo-editor-preview"
+                onMouseDown={onEditorMouseDown}
+                onTouchStart={onEditorTouchStart}
+                onTouchMove={onEditorTouchMove}
+                style={{ cursor: editorZoom > 100 ? 'grab' : 'default' }}
+              >
                 <img
                   src={`/${editingPhoto.ruta}`}
                   alt="Preview"
+                  draggable={false}
                   style={{
                     objectPosition: `${editorX}% ${editorY}%`,
                     transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
-                    filter: STYLE_FILTERS[editorStyle] || 'none'
+                    filter: STYLE_FILTERS[editorStyle] || 'none',
+                    pointerEvents: 'none'
                   }}
                 />
                 {/* Miniatura de encuadre */}
