@@ -24,8 +24,14 @@ export default async function Home() {
           Tu huerto inteligente, ahora en la nube.
         </p>
         
-        <div style={{ padding: '1rem', borderRadius: '8px', backgroundColor: isDbConnected ? 'var(--primary-light)' : 'var(--danger)', color: isDbConnected ? 'var(--primary-hover)' : 'white', fontWeight: 600, display: 'inline-block' }}>
+        <div style={{ padding: '1rem', borderRadius: '8px', backgroundColor: isDbConnected ? 'var(--primary-light)' : 'var(--danger)', color: isDbConnected ? 'var(--primary-hover)' : 'white', fontWeight: 600, display: 'inline-block', marginBottom: '2rem' }}>
           {isDbConnected ? '✅ Conectado a Google Cloud SQL' : '❌ Error de conexión a Base de Datos'}
+        </div>
+
+        <div style={{ marginTop: '1rem' }}>
+          <a href="/login" style={{ display: 'inline-block', padding: '1rem 2.5rem', backgroundColor: 'var(--primary)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.1rem', transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+            Acceder a mi Huerto
+          </a>
         </div>
       </div>
     </main>
