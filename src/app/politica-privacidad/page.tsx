@@ -62,7 +62,7 @@ export default function PoliticaPrivacidadPage() {
               <li><strong>Teléfono:</strong> 654529381</li>
             </ul>
             <p style={{ marginTop: '15px', fontSize: '0.9rem' }}>
-              <strong>Alojamiento Web (Hosting):</strong> Los servidores de Verdantia se encuentran alojados en proveedores de infraestructura en la nube líderes del sector, ubicados físicamente dentro del territorio de la Unión Europea, garantizando así el pleno cumplimiento de los estándares europeos de protección de datos.
+              <strong>Alojamiento Web y Datos (Hosting):</strong> La infraestructura principal de Verdantia (base de datos y autenticación de usuarios) se encuentra alojada en los servidores de <strong>Google Cloud Platform</strong> y <strong>Firebase</strong>. Todos los datos se almacenan físicamente en centros de datos ubicados dentro del territorio de la Unión Europea (región europe-west), garantizando así el pleno cumplimiento de los estrictos estándares europeos de protección de datos (RGPD).
             </p>
           </div>
           <p>Este responsable se compromete a cumplir con el <strong>Reglamento General de Protección de Datos (RGPD) — Reglamento (UE) 2016/679</strong> y la <strong>Ley Orgánica 3/2018 de Protección de Datos Personales y Garantía de los Derechos Digitales (LOPDGDD)</strong>.</p>
