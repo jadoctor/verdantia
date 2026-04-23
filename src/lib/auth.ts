@@ -51,7 +51,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
 
     // Obtener la suscripción activa
     const [subRows] = await pool.query(`
-        SELECT s.suscripcionesnombre, us.idusuariossuscripciones, us.usuariossuscripcionesfechafin
+        SELECT s.suscripcionesnombre, us.idusuariossuscripciones, us.usuariossuscripcionesfechafin, us.usuariossuscripcionesfechainicio
         FROM usuariossuscripciones us
         JOIN suscripciones s ON s.idsuscripciones = us.xusuariossuscripcionesidsuscripciones
         WHERE us.xusuariossuscripcionesidusuarios = ?
@@ -76,6 +76,12 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         `, [subId]);
         if ((pagoRows as any[])[0].count === 0) {
           esPrueba = true;
+          // El periodo de prueba dura 60 días desde el inicio si no hay fecha fin especificada
+          if (!fechaCaduca && subRow.usuariossuscripcionesfechainicio) {
+            const inicio = new Date(subRow.usuariossuscripcionesfechainicio);
+            inicio.setDate(inicio.getDate() + 60);
+            fechaCaduca = inicio.toISOString();
+          }
         }
       }
     }
