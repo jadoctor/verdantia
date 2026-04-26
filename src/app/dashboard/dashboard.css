@@ -491,3 +491,97 @@
   margin-top: 0.5rem;
   font-size: 0.75rem;
 }
+
+/* ═══════════════════════════════════════════ */
+/* MOBILE RESPONSIVE                           */
+/* ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+    box-shadow: none;
+  }
+
+  .dashboard-content {
+    padding: 16px;
+  }
+
+  .dashboard-header {
+    padding: 0 8px;
+    height: auto;
+    min-height: 52px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    gap: 6px;
+  }
+
+  /* Hide medal text on mobile, keep only emoji */
+  .current-medal span:last-child {
+    display: none;
+  }
+
+  .current-medal {
+    padding: 4px 6px !important;
+  }
+
+  .header-greeting {
+    display: none;
+  }
+
+  /* Compact weather widget on mobile */
+  .dashboard-header > div:last-child {
+    gap: 8px;
+  }
+
+  .weather-widget {
+    padding: 4px 8px !important;
+    gap: 6px !important;
+  }
+
+  .weather-city {
+    display: none !important;
+  }
+
+  .weather-details {
+    display: none !important;
+  }
+
+  .welcome-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .stat-card .card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .stat-card .card-info h3 {
+    font-size: 0.7rem;
+  }
+
+  .stat-card .card-info .value {
+    font-size: 1.2rem;
+  }
+}

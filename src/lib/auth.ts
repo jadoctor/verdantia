@@ -16,6 +16,14 @@ export interface UserProfile {
   suscripcion: string;
   esPrueba: boolean;
   fechaCaducidadSuscripcion: string | null;
+  fotoPreferida: string | null;
+  fotoPreferidaMeta?: string | null;
+  iconoLogro: string | null;
+  sexo: string | null;
+  domicilio: string | null;
+  telefono: string | null;
+  zonaClimatica: string | null;
+  tipoCalendario: string;
 }
 
 /**
@@ -37,8 +45,13 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         usuariosestadocuenta,
         usuariosnombreusuario,
         usuariospais,
-        usuariosfechadenacimiento
-       FROM usuarios 
+        usuariosfechadenacimiento,
+        usuariossexo,
+        usuariosdomicilio,
+        usuariostelefono,
+        usuarioszonaclimatica,
+        usuariostipocalendario
+       FROM usuarios  
        WHERE usuariosemail = ? 
        LIMIT 1`,
       [email]
@@ -86,6 +99,29 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       }
     }
 
+    // Obtener foto preferida
+    const [fotoRows] = await pool.query(
+      `SELECT datosadjuntosruta, datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 AND datosadjuntosesprincipal = 1 LIMIT 1`,
+      [user.idusuarios]
+    );
+    const fotoPreferida = (fotoRows as any[]).length > 0 ? (fotoRows as any[])[0].datosadjuntosruta : null;
+    const fotoPreferidaMeta = (fotoRows as any[]).length > 0 ? (fotoRows as any[])[0].datosadjuntosresumen : null;
+
+    // Obtener el icono del último logro
+    const [logroRows] = await pool.query(
+      `SELECT nombre_logro 
+       FROM usuarios_logros 
+       WHERE idusuarios = ? 
+       ORDER BY fecha_desbloqueo DESC LIMIT 1`,
+      [user.idusuarios]
+    );
+    let iconoLogro = null;
+    if ((logroRows as any[]).length > 0) {
+      const nombreLogro = (logroRows as any[])[0].nombre_logro;
+      // Extraemos el emoji si lo tiene en el nombre, si no ponemos 🏆
+      iconoLogro = nombreLogro ? nombreLogro.match(/[\p{Emoji}]/u)?.[0] || '🏆' : null;
+    }
+
     return {
       id: user.idusuarios,
       nombre: user.usuariosnombre || '',
@@ -99,9 +135,17 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       nombreUsuario: user.usuariosnombreusuario || null,
       pais: user.usuariospais || null,
       fechaNacimiento: user.usuariosfechadenacimiento || null,
+      sexo: user.usuariossexo || null,
+      domicilio: user.usuariosdomicilio || null,
+      telefono: user.usuariostelefono || null,
       suscripcion: suscripcion,
       esPrueba: esPrueba,
       fechaCaducidadSuscripcion: fechaCaduca,
+      fotoPreferida: fotoPreferida,
+      fotoPreferidaMeta: fotoPreferidaMeta,
+      iconoLogro: iconoLogro,
+      zonaClimatica: user.usuarioszonaclimatica || null,
+      tipoCalendario: user.usuariostipocalendario || 'Normal',
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);

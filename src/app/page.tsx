@@ -1,31 +1,21 @@
 import Image from "next/image";
-import pool from "@/lib/db";
 
-async function checkDatabase() {
-  try {
-    const [rows] = await pool.query('SELECT 1 + 1 AS result');
-    return true;
-  } catch (error) {
-    console.error("Database connection failed:", error);
-    return false;
-  }
-}
-
-export default async function Home() {
-  const isDbConnected = await checkDatabase();
-
+export default function Home() {
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
       <div className="glass" style={{ padding: '3rem', borderRadius: 'var(--radius)', maxWidth: '600px', width: '100%' }}>
-        <h1 style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 800, letterSpacing: '-1px' }}>
-          Verdantia
-        </h1>
-        <p style={{ fontSize: '1.2rem', marginBottom: '2rem', color: 'var(--foreground)', opacity: 0.8 }}>
-          Tu huerto inteligente, ahora en la nube.
-        </p>
-        
-        <div style={{ padding: '1rem', borderRadius: '8px', backgroundColor: isDbConnected ? 'var(--primary-light)' : 'var(--danger)', color: isDbConnected ? 'var(--primary-hover)' : 'white', fontWeight: 600, display: 'inline-block', marginBottom: '2rem' }}>
-          {isDbConnected ? '✅ Conectado a Google Cloud SQL' : '❌ Error de conexión a Base de Datos'}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <Image
+            src="/logo-verdantia.jpg"
+            alt="Verdantia — Cultiva & Comparte Semillas"
+            width={220}
+            height={220}
+            priority
+            style={{ borderRadius: '50%', objectFit: 'cover', filter: 'drop-shadow(0 4px 12px rgba(0, 86, 179, 0.15))', marginBottom: '1rem' }}
+          />
+          <p style={{ fontSize: '1.2rem', color: 'var(--foreground)', opacity: 0.8 }}>
+            Tu huerto inteligente, ahora en la nube.
+          </p>
         </div>
 
         <div style={{ marginTop: '1rem' }}>

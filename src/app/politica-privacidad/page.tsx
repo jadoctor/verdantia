@@ -101,8 +101,23 @@ export default function PoliticaPrivacidadPage() {
 
         {/* 4. Suscripciones */}
         <div className="legal-section" id="suscripciones">
-          <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>⭐</span> 4. Modelos de Suscripción</h2>
-          <p>La plataforma ofrece tres niveles de acceso. Al registrarte, disfrutas automáticamente de <strong>2 meses de acceso Premium gratuito</strong>, tras los cuales las funciones se degradan progresivamente durante el tercer mes hasta estabilizarse en el plan Básico.</p>
+          <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>⭐</span> 4. Modelos de Suscripción y Niveles de Acceso</h2>
+          
+          <h3 style={{ color: 'var(--accent-green)', fontSize: '1rem', margin: '20px 0 10px' }}>🌱 Nivel Visitante / Básico (Gratuito)</h3>
+          <p>Al registrarte en Verdantia, comienzas como <strong>Visitante</strong>. Este nivel es completamente gratuito, sin límite de tiempo y sin compromiso. Incluye:</p>
+          <ul>
+            <li>Hasta <strong>10 plantas activas</strong> en tu huerto virtual.</li>
+            <li><strong>1 foto de perfil</strong>.</li>
+            <li><strong>1 oferta de intercambio</strong> de semillas activa.</li>
+            <li>Acceso al chat público de la comunidad.</li>
+          </ul>
+          <p>Para el nivel Visitante/Básico solo recogemos los <strong>datos mínimos</strong> de identificación: nombre, email, fecha de nacimiento, ubicación aproximada (país, código postal) y contraseña cifrada. No se requieren datos de pago.</p>
+
+          <h3 style={{ color: 'var(--accent-amber)', fontSize: '1rem', margin: '20px 0 10px' }}>🌳 Nivel Premium (Prueba gratuita + Pago)</h3>
+          <p>Al completar tu perfil y verificar tu correo, recibes automáticamente <strong>2 meses de acceso Premium gratuito</strong> sin pedirte datos de pago. Al finalizar los 2 meses, las funciones Premium se desactivan progresivamente durante el tercer mes hasta que la cuenta se estabiliza en el plan <strong>Básico gratuito</strong>.</p>
+          <p>Para contratar un plan de pago (Normal o Premium) se requerirán <strong>datos adicionales</strong>: domicilio completo, teléfono de contacto y un identificador de pasarela de pago (Stripe/PayPal). <strong>Nunca almacenamos números de tarjeta bancaria.</strong></p>
+
+          <p style={{ marginTop: '20px' }}>La plataforma ofrece tres niveles de acceso:</p>
 
           <div style={{ overflowX: 'auto' }}>
             <table className="plan-table">
@@ -118,6 +133,7 @@ export default function PoliticaPrivacidadPage() {
                 <tr><td>Plantas activas</td><td>10</td><td className="check">Ilimitadas</td><td className="check">Ilimitadas</td></tr>
                 <tr><td>Fotos de perfil máximas</td><td>1</td><td>3</td><td className="check">5</td></tr>
                 <tr><td>Ofertas intercambio</td><td>1</td><td className="check">Ilimitadas</td><td className="check">Ilimitadas</td></tr>
+                <tr><td>Calendario Agrícola</td><td>Normal</td><td className="check">Lunar</td><td className="check">Biodinámico</td></tr>
                 <tr><td>Crear grupos de chat</td><td className="cross">✗</td><td className="check">✓</td><td className="check">✓</td></tr>
                 <tr><td>Rastreador IA</td><td className="cross">✗</td><td className="cross">✗</td><td className="check">✓</td></tr>
                 <tr><td>Sello Semillero Verificado</td><td className="cross">✗</td><td className="cross">✗</td><td className="check">✓</td></tr>
@@ -250,8 +266,27 @@ export default function PoliticaPrivacidadPage() {
 
         {/* 11. Gamificación */}
         <div className="legal-section" id="gamificacion">
-          <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>🏆</span> 11. Sistemas de Gamificación y Rangos</h2>
-          <p>Para mejorar la experiencia comunitaria, Verdantia utiliza sistemas de progresión basados en tu actividad real. Al participar en las funciones sociales y de registro, consientes que el sistema trate estos datos para calcular tu estatus público dentro de la plataforma.</p>
+          <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>🏆</span> 11. Sistemas de Gamificación y Logros</h2>
+          <p>Para fomentar un entorno didáctico y motivador, Verdantia cuenta con un sistema de Logros y Reputación. Al respecto, debes saber que:</p>
+          <ul>
+            <li><strong>Desbloqueo de Nivel Básico:</strong> Todos los usuarios de nueva creación comienzan con el rango de "Visitante". Para desbloquear las funcionalidades de la plataforma (como registrar siembras) y ascender al rango de "Campesino Aprendiz", es requisito imprescindible proporcionar un Nombre y una Fecha de Nacimiento válidos en el perfil. Si el usuario elimina posteriormente estos datos, el sistema lo degradará automáticamente a "Visitante".</li>
+            <li><strong>Perfilado de uso:</strong> Utilizamos métricas básicas de tu actividad en la plataforma (como el número de siembras registradas, semillas guardadas o mensajes enviados en los foros) exclusivamente para gestionar el desbloqueo de insignias superiores y niveles de usuario.</li>
+            <li><strong>Visibilidad Pública:</strong> Al participar en espacios comunitarios (como el Chat de la Comunidad), los logros obtenidos (por ejemplo, "Sabio de la Comunidad") y tu rango asociado se mostrarán públicamente junto a tu nombre para informar a otros usuarios sobre tu nivel de experiencia o participación.</li>
+          </ul>
+          <div className="highlight-box highlight-amber" style={{ marginTop: '16px' }}>
+            <span style={{ fontSize: '1.3rem' }}>ℹ️</span>
+            <span>Este tratamiento tiene como única finalidad mejorar tu experiencia de usuario (gamificación). Tus estadísticas no se utilizan para crear perfiles publicitarios ni se comparten con terceros.</span>
+          </div>
+        </div>
+
+        {/* 11b. Alertas Agrícolas */}
+        <div className="legal-section" id="alertas-agricolas">
+          <h2><span className="section-icon" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)' }}>🌾</span> 11b. Personalización de Alertas Agrícolas</h2>
+          <p>Ofrecemos tres tipos de calendarios (Normal, Lunar y Biodinámico) para personalizar tus notificaciones de siembra y cosecha. Debes saber que:</p>
+          <ul>
+            <li><strong>Uso de la Ubicación:</strong> El sistema cruza tu elección de calendario con tu Zona Climática, Latitud y Longitud (obtenidos de tu código postal) para ofrecer fechas precisas y localizadas.</li>
+            <li><strong>Suscripciones Premium:</strong> Las opciones avanzadas (Lunar y Biodinámico) requieren planes de pago. La elección de estos calendarios no supone una toma de decisiones automatizada que produzca efectos jurídicos, es puramente informativa para mejorar tu cultivo.</li>
+          </ul>
         </div>
 
         {/* 12. Normas de Comunidad */}
@@ -274,9 +309,19 @@ export default function PoliticaPrivacidadPage() {
           <p>La administración aplicará medidas desde amonestación verbal hasta expulsión definitiva, sin derecho a devolución del dinero pagado. Dispones de 15 días naturales para apelar cualquier decisión.</p>
         </div>
 
-        {/* 13. Cookies */}
+        {/* 13. Restricciones de Edad */}
+        <div className="legal-section" id="edad">
+          <h2><span className="section-icon" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)' }}>🔞</span> 13. Restricciones de Edad</h2>
+          <p>Para garantizar el cumplimiento normativo en materia de protección de datos y contratación electrónica, Verdantia establece las siguientes limitaciones:</p>
+          <ul>
+            <li><strong>Edad Mínima de Uso (16 años):</strong> Es estrictamente necesario tener al menos 16 años cumplidos para registrarse, completar el perfil y participar en la comunidad de Verdantia. Si se detecta que un usuario es menor de esta edad, la cuenta y sus datos serán eliminados de inmediato.</li>
+            <li><strong>Contratación de Suscripciones (18 años):</strong> Para adquirir cualquiera de los planes de pago (Normal o Premium), el usuario debe ser mayor de edad (18 años) y disponer de plena capacidad jurídica y de obrar. Al procesar un pago, el usuario declara bajo su responsabilidad que cumple con este requisito.</li>
+          </ul>
+        </div>
+
+        {/* 14. Cookies */}
         <div className="legal-section" id="cookies">
-          <h2><span className="section-icon" style={{ background: 'rgba(59,130,246,0.15)', color: 'var(--accent-blue)' }}>🍪</span> 13. Cookies y Almacenamiento Local</h2>
+          <h2><span className="section-icon" style={{ background: 'rgba(59,130,246,0.15)', color: 'var(--accent-blue)' }}>🍪</span> 14. Cookies y Almacenamiento Local</h2>
           <p>Utilizamos exclusivamente:</p>
           <ul>
             <li><strong>Cookies de sesión:</strong> necesarias para mantener tu autenticación activa. Se eliminan al cerrar el navegador.</li>
@@ -285,9 +330,9 @@ export default function PoliticaPrivacidadPage() {
           <p><strong>No utilizamos</strong> cookies de terceros, cookies publicitarias, ni herramientas de rastreo o analítica de comportamiento.</p>
         </div>
 
-        {/* 14. Contacto */}
+        {/* 15. Contacto */}
         <div className="legal-section" id="contacto">
-          <h2><span className="section-icon" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)' }}>📧</span> 14. Contacto</h2>
+          <h2><span className="section-icon" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)' }}>📧</span> 15. Contacto</h2>
           <p>Para ejercer cualquiera de tus derechos o realizar consultas sobre esta política, puedes escribirnos a:</p>
           <div className="highlight-box highlight-green">
             <span style={{ fontSize: '1.3rem' }}>✉️</span>
