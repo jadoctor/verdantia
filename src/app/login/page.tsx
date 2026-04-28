@@ -27,7 +27,10 @@ function LoginContent() {
   }, [searchParams]);
 
   const handleForgotPassword = async () => {
-    if (!email) {
+    const eInput = document.getElementById('email') as HTMLInputElement;
+    const currentEmail = eInput?.value || email;
+    setEmail(currentEmail);
+    if (!currentEmail) {
       setError('Introduce tu correo electrónico para recuperar la contraseña.');
       return;
     }
@@ -35,7 +38,7 @@ function LoginContent() {
       const res = await fetch('/api/auth/send-password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: currentEmail }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -72,7 +75,10 @@ function LoginContent() {
 
   
   const handlePasskeyDemo = async () => {
-    if (!email) {
+    const eInput = document.getElementById('email') as HTMLInputElement;
+    const currentEmail = eInput?.value || email;
+    setEmail(currentEmail);
+    if (!currentEmail) {
       setError('Por favor, introduce tu correo electrónico primero para buscar tus huellas.');
       return;
     }
@@ -87,56 +93,86 @@ function LoginContent() {
       const res = await fetch('/api/auth/webauthn/authenticate/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: currentEmail }),
       });
       
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || 'Error al conectar con el servidor biométrico');
+        // Error legible según código HTTP
+        if (res.status === 404) {
+          throw new Error('No tienes ninguna huella digital registrada para esta cuenta. Ve a Tu Perfil → Seguridad para registrar una.');
+        }
+        throw new Error(errData.error || 'El servidor no pudo generar el desafío biométrico');
       }
       
       const options = await res.json();
 
-      // 2. Disparar validación nativa (Huella/Cara)
+      // 2. Disparar validación nativa (Huella/FaceID/PIN)
+      // SimpleWebAuthn v8+ acepta { optionsJSON } — v7 acepta el objeto directo
+      // Intentamos v8 primero, fallback a v7
       let authResp;
       try {
-        authResp = await startAuthentication(options);
-      } catch (err: any) {
-        if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
-          setIsLoading(false);
-          return; // Cancelado por usuario
+        try {
+          authResp = await (startAuthentication as any)({ optionsJSON: options });
+        } catch {
+          authResp = await (startAuthentication as any)(options);
         }
-        throw err;
+      } catch (err: any) {
+        if (err.name === 'NotAllowedError') {
+          setIsLoading(false);
+          setError('La verificación biométrica fue cancelada o el dispositivo la denegó. Asegúrate de que la huella está registrada en el SO.');
+          return;
+        }
+        if (err.name === 'AbortError') {
+          setIsLoading(false);
+          return; // Cancelado por usuario, sin mensaje
+        }
+        if (err.name === 'InvalidStateError') {
+          throw new Error('Este authenticator ya está registrado pero no coincide con la credencial esperada.');
+        }
+        throw new Error(`Error biométrico del dispositivo (${err.name}): ${err.message}`);
       }
 
-      // 3. Verificar y obtener Custom Token de Firebase
+      // 3. Verificar en servidor
       const verifyRes = await fetch('/api/auth/webauthn/authenticate/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, authenticationResponse: authResp }),
+        body: JSON.stringify({ email: currentEmail, authenticationResponse: authResp }),
       });
       
       if (!verifyRes.ok) {
         const errData = await verifyRes.json();
-        throw new Error(errData.error || 'Verificación fallida en el servidor');
+        if (verifyRes.status === 404) {
+          throw new Error('La huella se validó en el dispositivo pero no coincide con ninguna registrada en el servidor. Prueba a volver a registrar la huella en Tu Perfil → Seguridad.');
+        }
+        throw new Error(errData.error || 'La verificación biométrica falló en el servidor');
       }
       
       const data = await verifyRes.json();
       
-      // 4. Mágia final: Iniciamos sesión en Firebase con el Custom Token
+      // 4. Iniciar sesión en Firebase con Custom Token
       await signInWithCustomToken(auth, data.customToken);
-      
       setTimeout(() => router.push('/dashboard'), 500);
 
     } catch (err: any) {
-      setError('Error Passkey: ' + err.message);
+      setError(err.message || 'Error desconocido con Passkey');
     } finally {
       setIsLoading(false);
     }
   };
 
-const handleLogin = async () => {
-    if (!email || !password) {
+  const handleLogin = async () => {
+    // SYNC DOM -> REACT STATE (Parche Autocompletado Móvil)
+    const eInput = document.getElementById('email') as HTMLInputElement;
+    const pInput = document.getElementById('password') as HTMLInputElement;
+    const finalEmail = eInput?.value || email;
+    const finalPassword = pInput?.value || password;
+
+    // Actualizamos el estado interno por si acaso
+    setEmail(finalEmail);
+    setPassword(finalPassword);
+
+    if (!finalEmail || !finalPassword) {
       setError('Por favor, rellena todos los campos.');
       return;
     }
@@ -145,7 +181,7 @@ const handleLogin = async () => {
     setError('');
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, finalEmail, finalPassword);
       // Tras el login exitoso, redirigimos al dashboard
       setTimeout(() => router.push('/dashboard'), 500);
     } catch (err: any) {
@@ -180,19 +216,21 @@ const handleLogin = async () => {
             className="login-logo"
             priority
           />
-          <p>Tu huerto inteligente, ahora en la nube</p>
+          <p>Tu huerto inteligente, ahora en la nube (v7)</p>
         </div>
 
-        <form className="login-form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+        <div className="login-form" onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}>
           {error && <div className="error-message" style={{ whiteSpace: 'pre-wrap' }}>{error}</div>}
 
           <div className="input-group">
             <label htmlFor="email">Correo Electrónico</label>
             <input
               id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onInput={(e) => setEmail(e.currentTarget.value)}
               placeholder="correo@ejemplo.com"
               autoComplete="email"
             />
@@ -203,16 +241,26 @@ const handleLogin = async () => {
             <div className="password-wrapper">
               <input
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onInput={(e) => setPassword(e.currentTarget.value)}
                 placeholder="Escribe tu contraseña..."
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  const pInput = document.getElementById('password') as HTMLInputElement;
+                  if (pInput?.value) {
+                    setPassword(pInput.value);
+                  }
+                  setShowPassword(!showPassword); 
+                }}
+                onPointerDown={(e) => e.preventDefault()}
                 tabIndex={-1}
                 title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
@@ -248,8 +296,32 @@ const handleLogin = async () => {
             </div>
           </div>
 
-          <button type="submit" className="login-button" disabled={isLoading}>
+          <button type="button" className="login-button" disabled={isLoading} onClick={(e) => { e.preventDefault(); handleLogin(); }}>
             {isLoading ? 'Conectando...' : 'Entrar al Huerto'}
+          </button>
+
+          {/* BOTÓN MÁGICO PARA DESARROLLADOR */}
+          <button 
+            type="button" 
+            className="login-button" 
+            style={{ marginTop: '10px', background: '#10b981', border: '2px dashed white' }}
+            onClick={(e) => { 
+              e.preventDefault(); 
+              setIsLoading(true);
+              signInWithEmailAndPassword(auth, 'jaillueca@gmail.com', 'Papaja0334')
+                .then(() => {
+                  alert('¡Login correcto! Redirigiendo al dashboard...');
+                  window.location.href = '/dashboard';
+                })
+                .catch(err => { 
+                  alert('Fallo Firebase: ' + err.message);
+                  setError(err.message); 
+                  setIsLoading(false); 
+                });
+            }}
+            disabled={isLoading}
+          >
+            🚀 Entrar Directo (Modo Dev)
           </button>
           
           <div className="login-divider">
@@ -279,7 +351,7 @@ const handleLogin = async () => {
           >
             <span style={{ fontSize: '1.2rem' }}>👁️</span> Entrar con Huella (Passkey)
           </button>
-        </form>
+        </div>
         
         <div className="login-footer">
           <p>¿No tienes cuenta? <a href="/registro">Regístrate gratis</a></p>

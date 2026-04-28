@@ -19,11 +19,26 @@ export default function BlogAdminDashboard() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1 style={{ color: '#10b981', margin: 0, fontSize: '2rem' }}>📝 Gestión del Blog</h1>
-        <Link href="/dashboard/admin/especies" style={{ background: '#f59e0b', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>
-          + Generar desde PDF (Ir a Especies)
-        </Link>
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🏠 Volver al Inicio
+        </button>
+      </div>
+      {/* ── Header Integrado ── */}
+      <div style={{ background: 'linear-gradient(135deg, #10b981, #047857)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>📝 Gestión del Blog</h1>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+              Generación de artículos SEO mediante Inteligencia Artificial
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+            <Link href="/dashboard/admin/especies" style={{ padding: '8px 16px', borderRadius: '8px', background: 'white', color: '#047857', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', display: 'inline-block' }}>
+              ✨ Generar desde PDF
+            </Link>
+          </div>
+        </div>
       </div>
 
       {loading ? (

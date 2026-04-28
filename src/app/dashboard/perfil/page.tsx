@@ -22,12 +22,15 @@ interface UserProfile {
   suscripcion?: string;
   esPrueba?: boolean;
   fechaCaducidadSuscripcion?: string | null;
+  passkeysCount?: number;
 }
 
-const getMaxPhotos = (plan: string = 'Básica') => {
-  if (plan === 'Premium') return 5;
-  if (plan === 'Normal') return 3;
-  return 1;
+const getMaxPhotos = (plan: string = 'Gratuito') => {
+  const p = (plan || '').toLowerCase();
+  if (p === 'premium') return 5;
+  if (p === 'avanzado' || p === 'pro') return 3;
+  if (p === 'esencial' || p === 'plus') return 2;
+  return 1; // Gratuito / Free / visitante / sin plan
 };
 
 const AVATAR_ICONS = [
@@ -91,6 +94,11 @@ function PerfilContent() {
   const cpTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ciudadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ── Modales de Plan ──
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+
+
   const searchLocation = async (query: string, type: 'cp' | 'ciudad', zone: 'mandatory' | 'optional' = 'mandatory') => {
     try {
       const res = await fetch(`/api/location/search?q=${encodeURIComponent(query)}&type=${type}`);
@@ -111,6 +119,7 @@ function PerfilContent() {
   // Photos
   const [photos, setPhotos] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   // Photo Editor Modal
@@ -209,6 +218,21 @@ function PerfilContent() {
           setTipoCalendario(data.profile.tipoCalendario || 'Normal');
           loadPhotos(p.id);
           loadAchievementsHistory(p.id);
+
+          // ── Check degradación de plan (lazy) ──
+          // Se ejecuta en segundo plano; si el plan ha caducado, lo degrada y avisa
+          if (p.id && p.suscripcion && p.suscripcion.toLowerCase() !== 'gratuito') {
+            fetch('/api/auth/check-plan-degradation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: p.id }),
+            }).then(r => r.json()).then(result => {
+              if (result.degraded && result.newPlan) {
+                setProfile(prev => prev ? { ...prev, suscripcion: result.newPlan, esPrueba: result.newPlan !== 'Gratuito' } : null);
+                showToast(`⏳ Tu plan ha cambiado a ${result.newPlan}. ${result.newPlan === 'Gratuito' ? 'El periodo de prueba ha finalizado.' : 'Siguiente mes: ' + result.newPlan + '.'}`);
+              }
+            }).catch(() => { /* No bloquear si falla */ });
+          }
         }
       } catch (err: any) {
         console.error('Error cargando perfil:', err);
@@ -241,7 +265,7 @@ function PerfilContent() {
     
     const maxPhotos = getMaxPhotos(profile.suscripcion);
     if (photos.length >= maxPhotos) {
-      showToast(`⚠️ Límite alcanzado: Tu plan ${profile.suscripcion || 'Básica'} permite un máximo de ${maxPhotos} foto(s).`);
+      showToast(`⚠️ Límite alcanzado: Tu plan ${profile.suscripcion || 'Gratuito'} permite un máximo de ${maxPhotos} foto(s).`);
       return;
     }
 
@@ -250,40 +274,53 @@ function PerfilContent() {
       return;
     }
     setUploading(true);
-    showToast('🤖 IA procesando: quitando fondo y centrando cara...');
+    
+    const isMobile = typeof window !== 'undefined' && (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768);
 
     try {
-      // ── Paso 1: Eliminar fondo y poner blanco ──
+      // ── Paso 1: Eliminar fondo (Solo en PC o si no es móvil) ──
       let processedBlob: Blob = file;
-      try {
-        const { removeBackground } = await import('@imgly/background-removal');
-        const resultBlob = await removeBackground(file, {
-          output: { format: 'image/png' }
-        });
-        // Poner fondo blanco en lugar de transparente
-        const img = new Image();
-        const blobUrl = URL.createObjectURL(resultBlob);
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error('Error cargando imagen procesada'));
-          img.src = blobUrl;
-        });
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d')!;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        URL.revokeObjectURL(blobUrl);
-        processedBlob = await new Promise<Blob>((resolve) =>
-          canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
-        );
-        showToast('✅ Fondo eliminado correctamente');
-      } catch (bgErr: any) {
-        console.warn('[BG Removal] No disponible, subiendo original:', bgErr);
-        showToast('⚠️ No se pudo quitar el fondo. Subiendo foto original...');
-        processedBlob = file;
+      
+      if (isMobile) {
+        showToast('🚀 Subida rápida móvil: saltando limpieza de fondo...');
+      } else {
+        showToast('🤖 IA procesando: quitando fondo...');
+        try {
+          const { removeBackground } = await import('@imgly/background-removal');
+          
+          // Timeout de 15 segundos para la IA
+          const resultBlob = await Promise.race([
+            removeBackground(file, { output: { format: 'image/png' } }),
+            new Promise<null>((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
+          ]);
+
+          if (resultBlob) {
+            // Poner fondo blanco en lugar de transparente
+            const img = new Image();
+            const blobUrl = URL.createObjectURL(resultBlob);
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error('Error cargando imagen procesada'));
+              img.src = blobUrl;
+            });
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d')!;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(blobUrl);
+            processedBlob = await new Promise<Blob>((resolve) =>
+              canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
+            );
+            showToast('✅ Fondo eliminado correctamente');
+          }
+        } catch (bgErr: any) {
+          console.warn('[BG Removal] No disponible o lento, usando original:', bgErr);
+          showToast(bgErr.message === 'timeout' ? '⏰ IA demasiado lenta, usando original...' : '⚠️ IA no disponible, usando original...');
+          processedBlob = file;
+        }
       }
 
       // ── Paso 2: Detectar cara para centrado automático + zoom ──
@@ -435,15 +472,52 @@ function PerfilContent() {
   // ── Marcar foto como preferida ──
   const setPhotoPrimary = async (photoId: number) => {
     if (!profile) return;
+
+    // 1. Reordenar localmente (la elegida al principio)
+    const targetPhoto = photos.find(p => p.id === photoId);
+    const previousPhotos = [...photos]; // Guardamos copia para revertir si falla
+    if (targetPhoto) {
+      const newPhotos = [
+        { ...targetPhoto, esPrincipal: true },
+        ...photos.filter(p => p.id !== photoId).map(p => ({ ...p, esPrincipal: false }))
+      ];
+      setPhotos(newPhotos);
+    }
+
     try {
-      await fetch('/api/perfil/photos', {
+      const res = await fetch('/api/perfil/photos', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ photoId, userId: profile.id, action: 'setPrincipal' })
       });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        console.error('[Photos] Error al cambiar foto principal:', data);
+        showToast('❌ Error al guardar foto preferida: ' + (data.error || 'Error desconocido'));
+        setPhotos(previousPhotos); // Revertir cambio local
+        return;
+      }
+
       showToast('⭐ Foto preferida actualizada');
-      loadPhotos(profile.id);
-    } catch { /* silencioso */ }
+      
+      // Notificar al Layout global para actualización inmediata de la foto
+      if (targetPhoto) {
+        const updateData = { 
+          fotoPreferida: targetPhoto.ruta,
+          fotoPreferidaMeta: targetPhoto.resumen,
+          icono: null 
+        };
+        const channel = new BroadcastChannel('verdantia_profile');
+        channel.postMessage(updateData);
+        channel.close();
+        window.dispatchEvent(new CustomEvent('profile_updated', { detail: updateData }));
+      }
+    } catch (err: any) {
+      console.error('[Photos] Error de red al cambiar foto principal:', err);
+      showToast('❌ Error de conexión al guardar foto preferida');
+      setPhotos(previousPhotos); // Revertir cambio local
+    }
   };
 
   // ── Eliminar foto ──
@@ -463,6 +537,49 @@ function PerfilContent() {
     e.preventDefault(); e.stopPropagation(); setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) uploadPhoto(file);
+  };
+
+  // ── Drag & Drop de fotos (reordenar) ──
+  const handlePhotoDragStart = (e: React.DragEvent, id: number) => {
+    setDraggingId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handlePhotoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handlePhotoDrop = async (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (draggingId === null || draggingId === targetId) return;
+
+    const sourceIdx = photos.findIndex(p => p.id === draggingId);
+    const targetIdx = photos.findIndex(p => p.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    // Crear copia y reordenar
+    const newPhotos = [...photos];
+    const [moved] = newPhotos.splice(sourceIdx, 1);
+    newPhotos.splice(targetIdx, 0, moved);
+
+    // Guardar el valor original ANTES de mutar
+    const wasAlreadyPrimary = moved.esPrincipal;
+
+    // Si la que ha caído en primer lugar es nueva, la hacemos principal localmente
+    if (targetIdx === 0) {
+      newPhotos.forEach(p => p.esPrincipal = (p.id === moved.id));
+    }
+
+    // Actualizar estado local inmediatamente
+    setPhotos(newPhotos);
+    setDraggingId(null);
+
+    // Si la que ha caído en primer lugar no era la principal, avisar al servidor
+    if (targetIdx === 0 && !wasAlreadyPrimary) {
+      showToast('⭐️ Cambiando foto principal...');
+      await setPhotoPrimary(moved.id);
+    }
   };
 
   // ── Filtros de estilo (portados del legacy) ──
@@ -553,7 +670,8 @@ function PerfilContent() {
     if (!editingPhoto) return;
     showToast('🎯 Detectando cara...');
     try {
-      const resp = await fetch(`/${editingPhoto.ruta}`);
+      const photoUrl = editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`);
+      const resp = await fetch(photoUrl);
       const blob = await resp.blob();
       const face = await detectFaceCenter(blob);
       if (face) {
@@ -608,15 +726,14 @@ function PerfilContent() {
   };
 
   // ── Auto-save: Icono (al hacer clic, se guarda solo) ──
-  const autoSaveIcon = async (newIcon: string) => {
+  const autoSaveIcon = async (newIcon: string | null) => {
     if (!profile) return;
-    setIcono(newIcon);
+    setIcono(newIcon || '');
     
-    // Live update de cabecera y sidebar
-    const headerAvatar = document.querySelector('.profile-avatar');
-    const sidebarAvatar = document.querySelector('.profile-icon');
-    if (headerAvatar) headerAvatar.textContent = newIcon || '🌱';
-    if (sidebarAvatar) sidebarAvatar.textContent = newIcon || '🌱';
+    // Notificar al Layout global para que actualice el header/sidebar al instante
+    const channel = new BroadcastChannel('verdantia_profile');
+    channel.postMessage({ icono: newIcon });
+    window.dispatchEvent(new CustomEvent('profile_updated', { detail: { icono: newIcon } }));
 
     try {
       await fetch('/api/perfil', {
@@ -624,7 +741,7 @@ function PerfilContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: profile.email, icono: newIcon })
       });
-      showToast('✅ Icono de perfil actualizado');
+      showToast(newIcon ? '✅ Icono de perfil actualizado' : '✅ Icono eliminado. Ahora se mostrará tu foto.');
     } catch { /* silencioso */ }
   };
 
@@ -654,14 +771,9 @@ function PerfilContent() {
       const data = await res.json();
       if (data.success) {
         showToast('✅ Guardado automáticamente');
-        // Actualizar nombre en la cabecera si cambió nombre/nombreUsuario
-        if (fieldName === 'nombre' || fieldName === 'nombreUsuario') {
-          const displayN = (fieldName === 'nombreUsuario' ? value : nombreUsuario) || (fieldName === 'nombre' ? value : nombre) || 'Agricultor';
-          const headerName = document.querySelector('.header-greeting strong');
-          const sidebarName = document.querySelector('.profile-name');
-          if (headerName) headerName.textContent = displayN;
-          if (sidebarName) sidebarName.textContent = displayN;
-        }
+        const channel = new BroadcastChannel('verdantia_profile');
+        channel.postMessage({ [fieldName]: value });
+        window.dispatchEvent(new CustomEvent('profile_updated', { detail: { [fieldName]: value } }));
       } else if (data.error) {
         showToast('❌ ' + data.error);
       }
@@ -684,21 +796,18 @@ function PerfilContent() {
     }
     setSaving(true);
     try {
+      const updates = { apellidos, nombreUsuario, poblacion, domicilio, telefono };
       const res = await fetch('/api/perfil', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: profile.email, apellidos, nombreUsuario, poblacion, domicilio, telefono
-        })
+        body: JSON.stringify({ email: profile.email, ...updates })
       });
       const data = await res.json();
       if (data.success) {
         showToast('✅ Perfil actualizado correctamente');
-        const headerName = document.querySelector('.header-greeting strong');
-        const sidebarName = document.querySelector('.profile-name');
-        const displayN = nombreUsuario || nombre || 'Agricultor';
-        if (headerName) headerName.textContent = displayN;
-        if (sidebarName) sidebarName.textContent = displayN;
+        const channel = new BroadcastChannel('verdantia_profile');
+        channel.postMessage(updates);
+        window.dispatchEvent(new CustomEvent('profile_updated', { detail: updates }));
       } else {
         showToast('❌ Error: ' + (data.error || 'Algo salió mal'));
       }
@@ -744,7 +853,13 @@ function PerfilContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: auth.currentUser.email, registrationResponse: attResp }),
       });
-      if (verifyRes.ok) alert('✅ ¡Huella o biometría registrada con éxito!');
+      if (verifyRes.ok) {
+        alert('✅ ¡Huella o biometría registrada con éxito!');
+        // Actualizar el estado local para que se refleje inmediatamente
+        if (profile) {
+          setProfile({ ...profile, passkeysCount: (profile.passkeysCount || 0) + 1 });
+        }
+      }
       else throw new Error((await verifyRes.json()).error || 'Fallo en servidor');
     } catch (err: any) {
       alert('Error al vincular Passkey: ' + err.message);
@@ -813,7 +928,7 @@ function PerfilContent() {
 
   // ── Seleccionar icono ──
   const selectIcon = (icon: string) => {
-    const newIcon = icono === icon ? '' : icon;
+    const newIcon = icono === icon ? null : icon;
     autoSaveIcon(newIcon);
   };
 
@@ -850,10 +965,11 @@ function PerfilContent() {
   };
 
   // Actualización en vivo del nombre en la cabecera
-  const updateLiveHeaderName = () => {
-    const displayN = nombreUsuario || nombre || 'Agricultor';
-    const headerName = document.querySelector('.header-greeting strong');
-    if (headerName) headerName.textContent = displayN;
+  const updateLiveHeaderName = (e: React.FormEvent<HTMLInputElement>) => {
+    const channel = new BroadcastChannel('verdantia_profile');
+    const target = e.target as HTMLInputElement;
+    channel.postMessage({ nombreUsuario: target.value });
+    window.dispatchEvent(new CustomEvent('profile_updated', { detail: { nombreUsuario: target.value } }));
   };
 
   const isFirebaseVerified = auth.currentUser?.emailVerified ?? false;
@@ -959,19 +1075,56 @@ function PerfilContent() {
       {/* 1. FOTOGRAFÍA E ICONOS                      */}
       {/* ═══════════════════════════════════════════ */}
       <details open>
-        <summary>📸 Fotografía e Iconos</summary>
+        <summary style={{ display: 'flex', alignItems: 'center', gap: '0px', flexWrap: 'nowrap' }}>
+          📸 Fotografía e Iconos
+          {/* Miniatura de la foto/icono actual */}
+          {icono && AVATAR_ICONS.includes(icono) ? (
+            <span className="summary-thumb" style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icono}</span>
+          ) : photos.length > 0 && photos.find(p => p.esPrincipal) ? (
+            (() => {
+              const mainPhoto = photos.find(p => p.esPrincipal)!;
+              let meta: any = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
+              try { meta = { ...meta, ...JSON.parse(mainPhoto.resumen || '{}') }; } catch {}
+              return (
+                <span className="summary-thumb" style={{
+                  width: '24px', height: '32px', borderRadius: '4px', overflow: 'hidden',
+                  display: 'inline-flex', flexShrink: 0, border: '2px solid #f59e0b',
+                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)', marginLeft: '6px'
+                }}>
+                  <img
+                    src={mainPhoto.ruta.startsWith('http') ? mainPhoto.ruta : (mainPhoto.ruta.startsWith('/') ? mainPhoto.ruta : `/${mainPhoto.ruta}`)}
+                    alt=""
+                    style={{
+                      width: '100%', height: '100%', objectFit: 'cover',
+                      objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
+                      transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
+                      transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined
+                    }}
+                  />
+                </span>
+              );
+            })()
+          ) : null}
+        </summary>
         <div className="accordion-body">
           {/* ── Galería de Fotos ── */}
-          <label className="section-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <label className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
             <span>Fotos de Perfil</span>
-            <small style={{ color: photos.length >= getMaxPhotos(profile?.suscripcion) ? '#ef4444' : '#64748b' }}>
-              {photos.length} / {getMaxPhotos(profile?.suscripcion)} permitidas ({profile?.suscripcion || 'Básica'})
-            </small>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <small style={{ color: photos.length >= getMaxPhotos(profile?.suscripcion) ? '#ef4444' : '#64748b', fontWeight: photos.length >= getMaxPhotos(profile?.suscripcion) ? 'bold' : 'normal' }}>
+                {photos.length} / {getMaxPhotos(profile?.suscripcion)} permitidas ({profile?.suscripcion || 'Básica'})
+              </small>
+              {photos.length >= getMaxPhotos(profile?.suscripcion) && (
+                <span style={{ 
+                  background: '#fee2e2', color: '#ef4444', fontSize: '0.65rem', 
+                  padding: '2px 8px', borderRadius: '10px', border: '1px solid #fecaca',
+                  fontWeight: 'bold', textTransform: 'uppercase'
+                }}>Límite alcanzado</span>
+              )}
+            </span>
           </label>
           <div className={`photo-gallery-grid ${dragOver ? 'drag-over' : ''}`}>
-            {[...photos]
-              .sort((a, b) => (a.esPrincipal === b.esPrincipal ? 0 : a.esPrincipal ? -1 : 1))
-              .map((photo, i) => {
+            {photos.map((photo, i) => {
               let meta: { profile_object_x: number; profile_object_y: number; profile_object_zoom: number; profile_style: string; profile_brightness?: number; profile_contrast?: number } = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
               try { meta = { ...meta, ...JSON.parse(photo.resumen || '{}') }; } catch {}
               
@@ -980,15 +1133,18 @@ function PerfilContent() {
               return (
               <div
                 key={photo.id}
-                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''} ${isLocked ? 'is-locked' : ''}`}
+                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''} ${isLocked ? 'is-locked' : ''} ${draggingId === photo.id ? 'dragging' : ''}`}
                 style={{ position: 'relative' }}
+                draggable={!isLocked}
+                onDragStart={(e) => handlePhotoDragStart(e, photo.id)}
+                onDragOver={handlePhotoDragOver}
+                onDrop={(e) => handlePhotoDrop(e, photo.id)}
               >
                 <img
-                  src={`/${photo.ruta}`}
+                  src={photo.ruta.startsWith('http') ? photo.ruta : (photo.ruta.startsWith('/') ? photo.ruta : `/${photo.ruta}`)}
                   alt="Foto de perfil"
-                  onClick={() => !isLocked && openPhotoEditor(photo)}
                   style={{
-                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                    cursor: isLocked ? 'not-allowed' : 'default',
                     objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
                     transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
@@ -1037,40 +1193,42 @@ function PerfilContent() {
               );
             })}
 
-            {/* Zona de Drop / Subir */}
-            <div
-              className="photo-add-card"
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              {uploading ? (
-                <div className="upload-progress">
-                  <div className="loading-spinner" style={{ width: '24px', height: '24px' }}></div>
-                  <span>Subiendo...</span>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                      onClick={() => fileInputRef.current?.click()}
-                    >📁 Galería</button>
-                    <button
-                      type="button"
-                      style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(14, 165, 233, 0.3)' }}
-                      onClick={() => cameraInputRef.current?.click()}
-                    >📷 Cámara</button>
+            {/* Zona de Drop / Subir (Solo si no hay límite) */}
+            {photos.length < getMaxPhotos(profile?.suscripcion) && (
+              <div
+                className="photo-add-card"
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {uploading ? (
+                  <div className="upload-progress">
+                    <div className="loading-spinner" style={{ width: '24px', height: '24px' }}></div>
+                    <span>Subiendo...</span>
                   </div>
-                  <small className="drop-hint">
-                    {dragOver ? '¡Suelta aquí!' : 'También puedes soltar una imagen'}
-                  </small>
-                </>
-              )}
-            </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >📁 Galería</button>
+                      <button
+                        type="button"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(14, 165, 233, 0.3)' }}
+                        onClick={() => cameraInputRef.current?.click()}
+                      >📷 Cámara</button>
+                    </div>
+                      <small className="drop-hint">
+                        {dragOver ? '¡Suelta aquí!' : 'También puedes soltar una imagen'}
+                      </small>
+                    </>
+                  )}
+              </div>
+            )}
           </div>
           <input
             ref={fileInputRef}
@@ -1512,8 +1670,11 @@ function PerfilContent() {
                   {/* Lunar */}
                   <div 
                     onClick={() => {
-                      if (profile?.suscripcion === 'Básica') {
-                        showToast('❌ El calendario Lunar requiere un plan Normal o Premium');
+                      // Calendario Lunar: requiere plan Esencial o superior
+                      const p = (profile?.suscripcion || '').toLowerCase();
+                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes(p);
+                      if (!hasAccess) {
+                        showToast('❌ El calendario Lunar requiere un plan Esencial o superior');
                         return;
                       }
                       setTipoCalendario('Lunar');
@@ -1524,25 +1685,27 @@ function PerfilContent() {
                       border: tipoCalendario === 'Lunar' ? '2px solid #3b82f6' : '1px solid #cbd5e1',
                       borderRadius: '12px',
                       padding: '16px',
-                      cursor: profile?.suscripcion === 'Básica' ? 'not-allowed' : 'pointer',
-                      background: tipoCalendario === 'Lunar' ? '#eff6ff' : (profile?.suscripcion === 'Básica' ? '#f8fafc' : '#ffffff'),
-                      opacity: profile?.suscripcion === 'Básica' ? 0.6 : 1,
+                      cursor: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'pointer' : 'not-allowed',
+                      background: tipoCalendario === 'Lunar' ? '#eff6ff' : (!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
+                      opacity: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 1 : 0.6,
                       transition: 'all 0.2s ease',
                       position: 'relative'
                     }}
                   >
-                    {profile?.suscripcion === 'Básica' && <div style={{ position: 'absolute', top: 10, right: 10, fontSize: '1.2rem' }}>🔒</div>}
+                    {!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 10, right: 10, fontSize: '1.2rem' }}>🔒</div>}
                     <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌔</div>
                     <h4 style={{ margin: '0 0 5px 0', color: '#1e3a8a' }}>Calendario Lunar</h4>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Añade la influencia gravitacional y fases de la luna para optimizar la savia.</p>
-                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: '#dbeafe', color: '#1d4ed8', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Normal</span>
+                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: '#dbeafe', color: '#1d4ed8', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Esencial</span>
                   </div>
 
                   {/* Biodinámico */}
                   <div 
                     onClick={() => {
-                      if (profile?.suscripcion !== 'Premium') {
-                        showToast('❌ El calendario Biodinámico es exclusivo para cuentas Premium');
+                      // Calendario Biod.: requiere Premium
+                      const p = (profile?.suscripcion || '').toLowerCase();
+                      if (!['avanzado','pro','premium'].includes(p)) {
+                        showToast('❌ El calendario Biod. requiere un plan Avanzado o Premium');
                         return;
                       }
                       setTipoCalendario('Biodinámico');
@@ -1553,18 +1716,18 @@ function PerfilContent() {
                       border: tipoCalendario === 'Biodinámico' ? '2px solid #8b5cf6' : '1px solid #cbd5e1',
                       borderRadius: '12px',
                       padding: '16px',
-                      cursor: profile?.suscripcion !== 'Premium' ? 'not-allowed' : 'pointer',
-                      background: tipoCalendario === 'Biodinámico' ? '#f5f3ff' : (profile?.suscripcion !== 'Premium' ? '#f8fafc' : '#ffffff'),
-                      opacity: profile?.suscripcion !== 'Premium' ? 0.6 : 1,
+                      cursor: !['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'not-allowed' : 'pointer',
+                      background: tipoCalendario === 'Biodinámico' ? '#f5f3ff' : (!['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
+                      opacity: !['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 0.6 : 1,
                       transition: 'all 0.2s ease',
                       position: 'relative'
                     }}
                   >
-                    {profile?.suscripcion !== 'Premium' && <div style={{ position: 'absolute', top: 10, right: 10, fontSize: '1.2rem' }}>🔒</div>}
+                    {!['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 10, right: 10, fontSize: '1.2rem' }}>🔒</div>}
                     <div style={{ fontSize: '2rem', marginBottom: '8px' }}>✨</div>
                     <h4 style={{ margin: '0 0 5px 0', color: '#4c1d95' }}>Calendario Biodinámico</h4>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Cosmos, constelaciones y elementos (raíz, hoja, flor, fruto) según Maria Thun.</p>
-                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: '#ede9fe', color: '#6d28d9', borderRadius: '10px', fontWeight: 'bold' }}>Exclusivo Premium</span>
+                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: '#ede9fe', color: '#6d28d9', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Avanzado o Premium</span>
                   </div>
 
                 </div>
@@ -1795,15 +1958,30 @@ function PerfilContent() {
 
             {/* Passkeys (WebAuthn) */}
             <div className="form-group" style={{ gridColumn: 'span 2', marginTop: '8px' }}>
-              <label>Huella Digital o FaceID (Passkey)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Huella Digital o FaceID (Passkey)
+                {profile?.passkeysCount && profile.passkeysCount > 0 ? (
+                  <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                    ✅ Activada ({profile.passkeysCount})
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                    Inactiva
+                  </span>
+                )}
+              </label>
               <div className="password-reset-box" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                <p>Usa la biometría nativa de tu dispositivo para iniciar sesión sin contraseña, con la máxima seguridad y comodidad.</p>
+                {profile?.passkeysCount && profile.passkeysCount > 0 ? (
+                  <p style={{ color: '#15803d', fontWeight: 500 }}>¡Genial! Tienes la biometría configurada. Puedes iniciar sesión de forma rápida y segura en tus dispositivos registrados.</p>
+                ) : (
+                  <p>Usa la biometría nativa de tu dispositivo para iniciar sesión sin contraseña, con la máxima seguridad y comodidad.</p>
+                )}
                 <button
                   type="button"
                   onClick={handleRegisterPasskey}
                   style={{ marginTop: '8px', padding: '8px 16px', background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                 >
-                  <span style={{ fontSize: '1.2rem' }}>👁️</span> Vincular Nueva Huella / Dispositivo
+                  <span style={{ fontSize: '1.2rem' }}>👁️</span> {profile?.passkeysCount && profile.passkeysCount > 0 ? 'Vincular otro dispositivo' : 'Vincular Nueva Huella / Dispositivo'}
                 </button>
               </div>
             </div>
@@ -1819,7 +1997,7 @@ function PerfilContent() {
         <div className="accordion-body">
           <label className="section-label">Roles Actuales Aprobados</label>
           <div className="roles-display">
-            {roles.map((rol) => (
+{roles.map((rol) => (
               <span key={rol} className="role-tag">✅ {rol}</span>
             ))}
           </div>
@@ -1845,56 +2023,282 @@ function PerfilContent() {
           </div>
 
           <label className="section-label" style={{ marginTop: '20px' }}>Nivel de Suscripción Actual</label>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: profile?.suscripcion === 'Premium' ? 'rgba(245, 158, 11, 0.1)' : profile?.suscripcion === 'Normal' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(148, 163, 184, 0.1)',
-            border: `1px solid ${profile?.suscripcion === 'Premium' ? 'rgba(245, 158, 11, 0.3)' : profile?.suscripcion === 'Normal' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(148, 163, 184, 0.3)'}`,
-            padding: '10px 16px',
-            borderRadius: '12px',
-            fontWeight: '600',
-            color: profile?.suscripcion === 'Premium' ? '#d97706' : profile?.suscripcion === 'Normal' ? '#2563eb' : '#64748b'
-          }}>
-            <span style={{ fontSize: '1.2rem' }}>
-              {profile?.suscripcion === 'Premium' ? '🌳' : profile?.suscripcion === 'Normal' ? '🌿' : '🌱'}
-            </span>
-            <span>Plan {profile?.suscripcion || 'Básica'} {profile?.suscripcion === 'Premium' && profile?.esPrueba && <small style={{ fontWeight: 'normal', opacity: 0.8 }}>(Prueba)</small>}</span>
-          </div>
 
-          {profile?.suscripcion !== 'Básica' && (
-            <small className="help-text" style={{ marginTop: '10px', display: 'block', color: 'var(--text-secondary)' }}>
-              {profile.esPrueba ? (
-                <>
-                  ⏳ Tu periodo de prueba gratuito finaliza el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'final del periodo promocional'}</strong>
-                  {diasRestantes !== null && diasRestantes >= 0 && <span> (te quedan <strong>{diasRestantes} días</strong>)</span>}. 
-                  A partir de esa fecha, tu cuenta comenzará a degradarse al plan Básico.
-                </>
-              ) : (
-                <>
-                  💳 Próximo cobro y renovación automática programado para el <strong>{profile.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES') : 'próximo ciclo de facturación'}</strong>
-                  {diasRestantes !== null && diasRestantes >= 0 && <span> (en <strong>{diasRestantes} días</strong>)</span>}.
-                </>
-              )}
-            </small>
-          )}
+          {/* ── Timeline de Suscripción ── */}
+          {(() => {
+            const plan = (profile?.suscripcion || 'Gratuito').toLowerCase();
+            const isPremium = plan === 'premium';
+            const isAvanzado = plan === 'avanzado' || plan === 'pro';
+            const isEsencial = plan === 'esencial' || plan === 'plus';
+            const isGratuito = !isPremium && !isAvanzado && !isEsencial;
 
-          <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+            const segments = [
+              { key: 'premium',  label: 'Premium',  icon: '🌳', color: '#d97706', bg: '#fffbeb', price: '14,99€' },
+              { key: 'avanzado', label: 'Avanzado', icon: '🌿', color: '#2563eb', bg: '#eff6ff', price: '9,99€' },
+              { key: 'esencial', label: 'Esencial', icon: '🌱', color: '#059669', bg: '#f0fdf4', price: '4,99€' },
+              { key: 'gratuito', label: 'Gratuito', icon: '🌰', color: '#94a3b8', bg: '#f8fafc', price: 'Gratis' },
+            ];
+
+            const currentIdx = isPremium ? 0 : isAvanzado ? 1 : isEsencial ? 2 : 3;
+            const currentSeg = segments[currentIdx];
+
+            const DAYS_PER_SEG = 30;
+            const diasRestantes = profile?.fechaCaducidadSuscripcion ? Math.ceil((new Date(profile.fechaCaducidadSuscripcion).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+            const daysInCurrent = diasRestantes !== null ? Math.min(diasRestantes, DAYS_PER_SEG) : DAYS_PER_SEG;
+            const elapsedInCurrent = DAYS_PER_SEG - daysInCurrent;
+            const totalTrialDays = DAYS_PER_SEG * 3;
+            const globalElapsed = isGratuito ? totalTrialDays : (currentIdx * DAYS_PER_SEG) + elapsedInCurrent;
+            const markerPct = Math.min(100, (globalElapsed / totalTrialDays) * 100);
+            const urgentColor = diasRestantes !== null && diasRestantes <= 7 ? '#ef4444' : currentSeg.color;
+            const showTimeline = !isGratuito;
+
+
+            return (
+              <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: showTimeline ? '18px' : '0', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '2rem' }}>{currentSeg.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: currentSeg.color, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        Plan {currentSeg.label}
+                        {profile?.esPrueba && <span style={{ fontSize: '0.68rem', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>PERIODO DE PRUEBA</span>}
+                      </div>
+                      {!isGratuito && <small style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{currentSeg.price}/mes</small>}
+                    </div>
+                  </div>
+                  {diasRestantes !== null && diasRestantes >= 0 && profile?.fechaCaducidadSuscripcion && (
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{profile.esPrueba ? 'Baja al siguiente el' : 'Expira el'}</div>
+                      <div style={{ fontWeight: 700, color: urgentColor, fontSize: '0.95rem' }}>
+                        {new Date(profile.fechaCaducidadSuscripcion).toLocaleDateString('es-ES')}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: urgentColor, fontWeight: 600 }}>
+                        {diasRestantes === 1 ? '1 día' : `${diasRestantes} días`}
+                        {segments[currentIdx + 1] && <span style={{ fontWeight: 400, color: '#94a3b8' }}>{' '}para bajar a {segments[currentIdx + 1].label}</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {showTimeline && (() => {
+                  const BLOCKS = 30;
+                  const daysLeft = Math.max(0, Math.min(diasRestantes ?? BLOCKS, BLOCKS));
+
+                  // Calcular fechas de transición desde la fecha de caducidad actual
+                  const expiry = profile?.fechaCaducidadSuscripcion ? new Date(profile.fechaCaducidadSuscripcion) : null;
+                  const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86400000);
+                  const fmt = (d: Date | null) => d ? d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '';
+
+                  // Fechas cuando cada plan termina (= empieza el siguiente)
+                  const datePremEnd   = isPremium   ? expiry         : isAvanzado ? (expiry ? addDays(expiry, -30) : null) : isEsencial ? (expiry ? addDays(expiry, -60) : null) : null;
+                  const dateAvzEnd    = isPremium   ? (expiry ? addDays(expiry,  30) : null) : isAvanzado ? expiry : isEsencial ? (expiry ? addDays(expiry, -30) : null) : null;
+                  const dateEsEnd     = isPremium   ? (expiry ? addDays(expiry,  60) : null) : isAvanzado ? (expiry ? addDays(expiry,  30) : null) : isEsencial ? expiry : null;
+
+                  const segDates = [datePremEnd, dateAvzEnd, dateEsEnd];
+
+                  return (
+                    <div style={{ marginTop: '4px' }}>
+                      {/* Grupos de bloques */}
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                        {segments.slice(0, 3).map((seg, segIdx) => {
+                          const isPast    = segIdx < currentIdx;
+                          const isCurrent = segIdx === currentIdx;
+                          const isFuture  = segIdx > currentIdx;
+                          return (
+                            <div key={seg.key} style={{ flex: 1, minWidth: 0 }}>
+                              {/* Icono + label */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '5px' }}>
+                                <span style={{ fontSize: '0.9rem', opacity: isPast ? 0.3 : 1 }}>{seg.icon}</span>
+                                <span style={{ fontSize: '0.62rem', fontWeight: isCurrent ? 800 : 500, color: isCurrent ? seg.color : '#94a3b8', opacity: isPast ? 0.4 : 1 }}>{seg.label}</span>
+                              </div>
+                              {/* 30 bloques */}
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px' }}>
+                                {Array.from({ length: BLOCKS }).map((_, dayIdx) => {
+                                  const globalIdx = segIdx * 30 + dayIdx;
+                                  const lightness = 30 + (globalIdx / 89) * 50;
+                                  const bg = `hsl(142, 76%, ${lightness}%)`;
+                                  let opacity: number;
+                                  if (isPast) {
+                                    opacity = 0.1;
+                                  } else if (isCurrent) {
+                                    const elapsed = BLOCKS - daysLeft;
+                                    opacity = dayIdx < elapsed ? 0.12 : 1;
+                                  } else {
+                                    opacity = 0.25;
+                                  }
+                                  return (
+                                    <div key={dayIdx} style={{
+                                      width: 'calc((100% - 58px) / 30)',
+                                      minWidth: '5px',
+                                      height: '12px',
+                                      borderRadius: '2px',
+                                      background: bg,
+                                      opacity,
+                                      transition: 'opacity 0.3s ease',
+                                      flexShrink: 0,
+                                    }} />
+                                  );
+                                })}
+                              </div>
+                              {/* Fechas inicio (izq) y fin (der) del segmento */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                                {/* Fecha inicio: solo en el primer segmento */}
+                                <div style={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 500, opacity: segIdx === 0 ? 1 : 0 }}>
+                                  {segIdx === 0 ? fmt(expiry ? addDays(expiry, -(currentIdx + 1) * 30) : null) : ''}
+                                </div>
+                                {/* Fecha fin: al final del segmento */}
+                                {segDates[segIdx] ? (
+                                  <div style={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 500, textAlign: 'right' }}>
+                                    {fmt(segDates[segIdx])}
+                                  </div>
+                                ) : <div />}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {/* Gratuito permanente */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', paddingTop: '2px', minWidth: '36px' }}>
+                          <span style={{ fontSize: '1rem', opacity: 0.7 }}>{segments[3].icon}</span>
+                          <span style={{ fontSize: '0.55rem', color: '#94a3b8', fontWeight: 600, textAlign: 'center', lineHeight: 1.2, marginTop: '2px' }}>Gratis<br/>perm.</span>
+                          {dateEsEnd && (
+                            <div style={{ fontSize: '0.55rem', color: '#64748b', marginTop: '4px', textAlign: 'center', fontWeight: 500 }}>
+                              {fmt(dateEsEnd)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Leyenda */}
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '10px' }}>
+                        {profile?.esPrueba
+                          ? '🎁 3 meses gratuitos · Premium → Avanzado → Esencial → Gratuito (permanente)'
+                          : '🔄 Si no renuevas: → Avanzado (1 mes) → Esencial (1 mes) → Gratuito (permanente)'}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
+
+          <div style={{ marginTop: '16px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             <button 
               type="button" 
               className="btn btn-primary"
-              onClick={() => router.push('/dashboard/suscripcion')}
+              onClick={() => setShowPlanModal(true)}
             >
               ⚙️ Gestionar mi plan
             </button>
             <button 
               type="button" 
               className="btn btn-ghost"
-              onClick={() => router.push('/dashboard/suscripcion/comparativa')}
+              onClick={() => setShowCompareModal(true)}
             >
               📊 Comparar planes
             </button>
           </div>
+
+          {/* ═══ MODAL: GESTIONAR PLAN ═══ */}
+          {showPlanModal && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(2,6,23,0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.35)' }}>
+                {/* Header */}
+                <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ color: 'white', margin: 0, fontWeight: 800, fontSize: '1.1rem' }}>⚙️ Gestionar mi Plan</h3>
+                  <button onClick={() => setShowPlanModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: '8px', padding: '4px 10px', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+                </div>
+                {/* Body */}
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Plan actual */}
+                  <div style={{ padding: '14px', background: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 600, marginBottom: '4px' }}>PLAN ACTUAL</div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0c4a6e' }}>{profile?.suscripcion || 'Gratuito'}{profile?.esPrueba ? ' (Prueba)' : ''}</div>
+                    {profile?.fechaCaducidadSuscripcion && diasRestantes !== null && <small style={{ color: '#0369a1' }}>{diasRestantes >= 0 ? `Quedan ${diasRestantes} días` : 'Periodo finalizado'}</small>}
+                  </div>
+                  {/* Opciones de upgrade */}
+                  {[{ plan: 'Esencial / Plus', price: '4,99 €/mes', icon: '🌱', color: '#059669', features: ['2 fotos de perfil', 'Calendario Lunar', '3 ofertas de semillas'] },
+                    { plan: 'Avanzado / Pro', price: '9,99 €/mes', icon: '🌿', color: '#2563eb', features: ['3 fotos de perfil', 'Calendario Biod.', '10 ofertas de semillas'] },
+                    { plan: 'Premium', price: '14,99 €/mes', icon: '🌳', color: '#d97706', features: ['5 fotos de perfil', 'Todos los calendarios', 'Ofertas ilimitadas', 'IA avanzada'] },
+                  ].map(({ plan, price, icon, color, features }) => (
+                    <div key={plan} style={{ padding: '14px', borderRadius: '12px', border: `1.5px solid ${color}30`, background: `${color}08`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{icon}</span> {plan}
+                        </div>
+                        <ul style={{ margin: '4px 0 0', padding: '0 0 0 16px', fontSize: '0.75rem', color: '#64748b' }}>
+                          {features.map(f => <li key={f}>{f}</li>)}
+                        </ul>
+                      </div>
+                      <button
+                        style={{ background: color, color: 'white', border: 'none', borderRadius: '10px', padding: '8px 14px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.82rem' }}
+                        onClick={() => { alert(`👄 Funcionalidad de pago en desarrollo. Plan: ${plan} — ${price}`); }}
+                      >
+                        {price}
+                      </button>
+                    </div>
+                  ))}
+                  {/* Cancelar (solo si es de pago) */}
+                  {profile?.suscripcion && !profile.esPrueba && !['gratuito','free'].includes((profile.suscripcion || '').toLowerCase()) && (
+                    <button style={{ background: 'none', border: '1px solid #fca5a5', color: '#ef4444', borderRadius: '10px', padding: '8px', cursor: 'pointer', fontSize: '0.8rem', marginTop: '4px' }}
+                      onClick={() => { if (confirm('¿Seguro que quieres cancelar tu suscripción de pago?')) { alert('Solicitud enviada. El equipo de soporte procesará la cancelación.'); setShowPlanModal(false); } }}
+                    >
+                      Cancelar suscripción de pago
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ MODAL: COMPARAR PLANES ═══ */}
+          {showCompareModal && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(2,6,23,0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '780px', maxHeight: '85vh', overflow: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.35)' }}>
+                <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0 }}>
+                  <h3 style={{ color: 'white', margin: 0, fontWeight: 800, fontSize: '1.1rem' }}>📊 Comparar Planes Verdantia</h3>
+                  <button onClick={() => setShowCompareModal(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: '8px', padding: '4px 10px', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+                </div>
+                <div style={{ padding: '24px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr>
+                        {[{ label: 'Característica', color: '#f8fafc', textColor: '#64748b' },
+                          { label: '🌰 Gratuito\n0 €', color: '#f8fafc', textColor: '#64748b' },
+                          { label: '🌱 Esencial\n4,99 €/mes', color: '#f0fdf4', textColor: '#059669' },
+                          { label: '🌿 Avanzado\n9,99 €/mes', color: '#eff6ff', textColor: '#2563eb' },
+                          { label: '🌳 Premium\n14,99 €/mes', color: '#fffbeb', textColor: '#d97706' },
+                        ].map(({ label, color, textColor }, i) => (
+                          <th key={i} style={{ background: color, color: textColor, padding: '10px 12px', textAlign: i === 0 ? 'left' : 'center', fontWeight: 700, borderBottom: '2px solid #e2e8f0', whiteSpace: 'pre-line', fontSize: i === 0 ? '0.78rem' : '0.82rem' }}>{label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ['Fotos de perfil', '1', '2', '3', '5'],
+                        ['Plantas activas', '10', '25', '50', 'Ilimitadas'],
+                        ['Ofertas de semillas', '1', '3', '10', 'Ilimitadas'],
+                        ['Calendario Normal', '✅', '✅', '✅', '✅'],
+                        ['Calendario Lunar', '❌', '✅', '✅', '✅'],
+                        ['Calendario Biod.', '❌', '❌', '✅', '✅'],
+                        ['Generador IA imágenes', '❌', '❌', '5/mes', 'Ilimitado'],
+                        ['Chat Comunidad', '✅', '✅', '✅', '✅'],
+                        ['Soporte prioritario', '❌', '❌', '✅', '✅'],
+                        ['Sin publicidad', '❌', '✅', '✅', '✅'],
+                      ].map((row, i) => (
+                        <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : 'white' }}>
+                          {row.map((cell, j) => (
+                            <td key={j} style={{ padding: '9px 12px', textAlign: j === 0 ? 'left' : 'center', borderBottom: '1px solid #f1f5f9', color: j === 0 ? '#1e293b' : (cell === '❌' ? '#94a3b8' : (cell === '✅' ? '#059669' : '#334155')), fontWeight: j === 4 ? 600 : (j === 0 ? 600 : 400) }}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{ marginTop: '20px', padding: '14px', background: '#fffbeb', borderRadius: '10px', border: '1px solid #fde68a', fontSize: '0.82rem', color: '#92400e', lineHeight: 1.7 }}>
+                    🎁 <strong>¡3 meses gratuitos al verificar tu correo!</strong> — Sin tarjeta de crédito.<br />
+                    <span style={{ opacity: 0.85 }}>Mes 1: Premium completo · Mes 2: Avanzado · Mes 3: Esencial · Mes 4 en adelante: Gratuito permanente.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </details>
 
@@ -2020,7 +2424,7 @@ function PerfilContent() {
                 style={{ cursor: editorZoom > 100 ? 'grab' : 'default' }}
               >
                 <img
-                  src={`/${editingPhoto.ruta}`}
+                  src={editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`)}
                   alt="Preview"
                   draggable={false}
                   style={{

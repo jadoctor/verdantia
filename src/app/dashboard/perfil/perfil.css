@@ -582,6 +582,58 @@ select.form-input option[disabled] {
   font-size: 0.9rem;
   color: var(--text-muted);
   margin-left: 10px;
+  transition: opacity 0.2s ease;
+}
+
+/* Ocultar el preview de nombre cuando el acordeón está expandido */
+details[open] > summary .accordion-preview {
+  display: none;
+}
+
+/* ── Summary Thumbnail (foto/icono en el resumen del acordeón) ── */
+.summary-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* Asegurar que la miniatura SIEMPRE se vea, tanto abierto como cerrado */
+details > summary .summary-thumb {
+  display: inline-flex;
+}
+
+details[open] > summary .summary-thumb {
+  display: inline-flex;
+}
+
+/* El summary muestra cursor pointer y alinea bien el contenido */
+details > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  list-style: none;
+  user-select: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: '▶';
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+details[open] > summary::before {
+  transform: rotate(90deg);
 }
 
 /* ── Icon Grid ── */

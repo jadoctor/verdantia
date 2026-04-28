@@ -86,44 +86,59 @@ export default function EspeciesAdminPage() {
 
   return (
     <div className="dashboard-content" style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Cuarentena de Especies</h2>
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <select 
-            value={filterTipo} 
-            onChange={(e) => setFilterTipo(e.target.value)}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-          >
-            <option value="">Todos los tipos</option>
-            <option value="hortaliza">Hortaliza</option>
-            <option value="fruta">Fruta</option>
-            <option value="aromatica">Aromática</option>
-            <option value="leguminosa">Leguminosa</option>
-            <option value="cereal">Cereal</option>
-            <option value="otra">Otra</option>
-          </select>
-          <button 
-            onClick={() => handleEdit(null)}
-            style={{ padding: '8px 16px', borderRadius: '8px', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            + Nueva Especie Global
-          </button>
-          <button 
-            onClick={() => router.push('/dashboard/admin/blog')}
-            style={{ padding: '8px 16px', borderRadius: '8px', background: '#f59e0b', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            📝 Gestor de Blogs IA
-          </button>
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🏠 Volver al Inicio
+        </button>
+      </div>
+      {/* ── Header ── */}
+      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>🌍 Gestión de Especies Globales</h1>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+              Catálogo centralizado para toda la comunidad Verdantia
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+            <select 
+              value={filterTipo} 
+              onChange={(e) => setFilterTipo(e.target.value)}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', color: '#0f172a', fontWeight: 'bold', background: 'white' }}
+            >
+              <option value="">🌱 Todos los tipos</option>
+              <option value="hortaliza">Hortaliza</option>
+              <option value="fruta">Fruta</option>
+              <option value="aromatica">Aromática</option>
+              <option value="leguminosa">Leguminosa</option>
+              <option value="cereal">Cereal</option>
+              <option value="otra">Otra</option>
+            </select>
+
+            <button 
+              onClick={() => router.push('/dashboard/admin/blog')}
+              style={{ padding: '8px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              📝 Gestor de Blogs IA
+            </button>
+            <button 
+              onClick={() => handleEdit(null)}
+              style={{ padding: '8px 16px', borderRadius: '8px', background: 'white', color: '#0f766e', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+            >
+              ➕ Nueva Especie
+            </button>
+          </div>
         </div>
       </div>
 
       {loading ? (
         <p>Cargando especies...</p>
       ) : (
-        <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+        <div style={{ background: 'white', borderRadius: '12px', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
+                <th style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc', width: '80px', minWidth: '80px' }}>📷</th>
                 <th style={{ padding: '12px' }}>Nombre</th>
                 <th style={{ padding: '12px' }}>Científico</th>
                 <th style={{ padding: '12px' }}>Familia</th>
@@ -138,7 +153,7 @@ export default function EspeciesAdminPage() {
             <tbody>
               {especies.map((e, i) => (
                 <tr key={e.idespecies} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
                     {(() => {
                       if (e.primary_photo_ruta) {
                         let meta: any = {};
@@ -147,21 +162,15 @@ export default function EspeciesAdminPage() {
                         if (meta.profile_brightness !== undefined || meta.profile_contrast !== undefined) {
                           baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
                         }
-                        const thumbPath = e.primary_photo_ruta.endsWith('.webp') ? e.primary_photo_ruta.replace('especies/', 'especies/thumb-') : e.primary_photo_ruta;
                         return (
-                          <div style={{ width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
+                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
                             {meta.blurhash && (
                               <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                                 <Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} />
                               </div>
                             )}
                             <img 
-                              src={`/${thumbPath}`} 
-                              onError={(ev) => {
-                                if (ev.currentTarget.src.includes('thumb-')) {
-                                  ev.currentTarget.src = `/${e.primary_photo_ruta}`;
-                                }
-                              }}
+                              src={e.primary_photo_ruta.startsWith('http') ? e.primary_photo_ruta : (e.primary_photo_ruta.startsWith('/') ? e.primary_photo_ruta : `/${e.primary_photo_ruta}`)} 
                               alt={e.especiesnombre} 
                               loading="lazy"
                               style={{ 
@@ -170,6 +179,7 @@ export default function EspeciesAdminPage() {
                                 objectFit: 'cover',
                                 filter: baseFilter,
                                 objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
                                 transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`,
                                 position: 'absolute',
                                 top: 0,
@@ -180,8 +190,10 @@ export default function EspeciesAdminPage() {
                           </div>
                         );
                       }
-                      return e.especiesicono ? <span style={{ fontSize: '2.5rem', width: '64px', textAlign: 'center' }}>{e.especiesicono}</span> : <div style={{ width: '64px' }} />;
+                      return e.especiesicono ? <span style={{ fontSize: '2rem' }}>{e.especiesicono}</span> : <div style={{ width: '56px', height: '56px' }} />;
                     })()}
+                  </td>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#1e293b' }}>
                     <span>{e.especiesnombre}</span>
                   </td>
                   <td style={{ padding: '12px', fontStyle: 'italic', color: '#64748b' }}>{e.especiesnombrecientifico || '-'}</td>
@@ -209,20 +221,22 @@ export default function EspeciesAdminPage() {
                       <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>👤 Privada</span>
                     )}
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'right' }}>
-                    <button 
-                      onClick={() => handleEdit(e.idespecies.toString())} 
-                      style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', marginRight: '10px', fontWeight: 'bold' }}
-                    >
-                      Editor de Especie Global
-                    </button>
-                    <button onClick={() => handleDelete(e.idespecies.toString())} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', verticalAlign: 'middle' }}>🗑️</button>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <button 
+                        onClick={() => handleEdit(e.idespecies.toString())} 
+                        style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold' }}
+                      >
+                        Editor de Especie Global
+                      </button>
+                      <button onClick={() => handleDelete(e.idespecies.toString())} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🗑️</button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {especies.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No hay especies registradas.</td>
+                  <td colSpan={10} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No hay especies registradas.</td>
                 </tr>
               )}
             </tbody>

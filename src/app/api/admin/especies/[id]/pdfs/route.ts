@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { uploadToStorage } from '@/lib/firebase/storage';
 import { getUserByEmail } from '@/lib/auth';
 
 async function authenticateSuperadmin(request: Request) {
@@ -68,15 +67,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Solo se permiten archivos PDF' }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'especies_pdfs');
-    await mkdir(uploadDir, { recursive: true });
-
     const filename = `especie_${idespecies}_${Date.now()}.pdf`;
-    const filePath = path.join(uploadDir, filename);
-    const relativePath = `uploads/especies_pdfs/${filename}`;
+    const storagePath = `uploads/especies_pdfs/${filename}`;
 
     const bytes = await file.arrayBuffer();
-    await writeFile(filePath, Buffer.from(bytes));
+    const publicUrl = await uploadToStorage(
+      Buffer.from(bytes),
+      storagePath,
+      'application/pdf'
+    );
 
     let generatedTitle = '';
     let generatedSummary = '';
@@ -130,14 +129,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespecies,
         datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
       ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, ?, ?, ?, ?)`,
-      [file.name, relativePath, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes]
+      [file.name, publicUrl, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes]
     );
 
     return NextResponse.json({
       success: true,
       pdf: {
         id: (result as any).insertId,
-        ruta: relativePath,
+        ruta: publicUrl,
         nombreOriginal: file.name,
         titulo: generatedTitle,
         resumen: generatedSummary,

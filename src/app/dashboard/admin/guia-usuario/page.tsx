@@ -1,0 +1,344 @@
+'use client';
+
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import '@/app/dashboard/dashboard.css';
+
+export default function GuiaUsuarioPage() {
+  const router = useRouter();
+
+  return (
+    <div className="dashboard-content" style={{ padding: '30px', maxWidth: '900px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🏠 Volver al Inicio
+        </button>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <h1 style={{ margin: 0, color: '#1e293b', fontSize: '2.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span>📖</span> Guía de Usuario (La Biblia)
+        </h1>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+        
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          1. Visión General de Verdantia
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          <strong>Verdantia</strong> es una plataforma SaaS integral (Software as a Service) orientada al sector agrícola, biodinámico y de gestión de huertos. La plataforma permite a los usuarios gestionar sus cultivos, llevar un control meteorológico, y registrar actividades bajo un modelo de suscripción escalonada (Básica, Normal, Premium). Todo el ecosistema está soportado por Inteligencia Artificial (Google Imagen 4.0 y modelos de texto avanzados) para automatizar la creación de contenido y recursos visuales.
+        </p>
+
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: '40px' }}>
+          2. Los 5 Dashboards del Superadministrador
+        </h2>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          El Panel de Administración es el núcleo operativo de Verdantia, segmentado en cinco áreas principales, diseñadas como aplicaciones independientes (Single Page Applications) de pantalla completa:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '12px' }}><strong>🌳 Catálogo de Especies:</strong> La enciclopedia viva de Verdantia. Aquí el administrador gestiona la taxonomía global (plantas, frutas, hortalizas), asocia reglas biodinámicas (días de raíz, hoja, flor, fruto) y gestiona la galería multimedia (con IA).</li>
+          <li style={{ marginBottom: '12px' }}><strong>🚜 Catálogo de Labores:</strong> Gestión del diccionario de tareas agrícolas (riego, poda, cosecha). Cada labor actúa como una plantilla maestra que los usuarios aplicarán a sus propios huertos, incluyendo iconos dinámicos y colorimetría.</li>
+          <li style={{ marginBottom: '12px' }}><strong>✍️ Gestor de Blogs IA:</strong> Un motor de publicación totalmente autónomo. Permite planificar, generar y publicar artículos SEO-optimizados sobre agricultura. La IA redacta el contenido y genera las fotografías fotorrealistas contextuales sin intervención humana.</li>
+          <li style={{ marginBottom: '12px' }}><strong>👥 Usuarios y Suscripciones:</strong> El CRM interno para gestionar la base de clientes. Permite visualizar perfiles, historiales de acceso, y lo más importante: establecer amonestaciones y controlar los ciclos de vida de los pagos y límites de cuota (planes y membresías).</li>
+          <li style={{ marginBottom: '12px' }}><strong>📖 La Biblia (Guía de Usuario):</strong> Este mismo documento, diseñado para documentar los estándares técnicos, el UX y la arquitectura subyacente para los administradores y desarrolladores de Verdantia.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>2.1. Foco Detallado: Catálogo de Especies</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          El <strong>Catálogo de Especies</strong> es una de las piezas arquitectónicas más complejas y completas de la plataforma. Ha sido diseñado para ir más allá de una simple lista de plantas, actuando como un motor de conocimiento botánico y visual:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Ficha a Pantalla Completa:</strong> Cada especie se edita en un entorno aislado y sin distracciones, utilizando el patrón "Smart Save" (Guardado Inteligente) que detecta cambios en tiempo real y evita sobrescrituras accidentales.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Gestión de Variedades:</strong> Permite anidar infinitas variedades bajo una especie maestra (ej. Tomate {'->'} Tomate Cherry, Tomate Kumato), heredando propiedades pero manteniendo autonomía visual.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Sincronización Biodinámica:</strong> Las especies se categorizan por su ciclo lunar óptimo (Días de Raíz, Hoja, Flor o Fruto), permitiendo que la plataforma genere calendarios de siembra automáticos para los usuarios.</li>
+          <li style={{ marginBottom: '8px' }}><strong>IA Integrada (Generador Imagen 4.0):</strong> Si una especie carece de fotografía, el administrador puede usar el generador integrado que formula un *prompt* contextualizado automáticamente para crear una imagen fotorrealista de la planta.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Carrusel Visual (Drag & Drop):</strong> Las fotografías asociadas a la especie se organizan mediante una interfaz táctil/arrastrable donde la primera imagen asume el rol de "Hero Image" (Foto Principal), aplicando filtros de desenfoque y ajuste de encuadre.</li>
+        </ul>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          3. Gestión Multimedia y Fotografías (Engine Gráfico)
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          El módulo de procesamiento de imágenes de Verdantia no es un simple sistema de subida de archivos (upload), sino un <strong>Motor de Procesamiento Multimedia (Pipeline) de grado corporativo</strong>. Está diseñado para minimizar el coste de servidores, maximizar las métricas SEO (Core Web Vitals) y ofrecer una experiencia de usuario (UX) inmersiva y sin interrupciones.
+        </p>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          A continuación se detalla el ciclo de vida completo de una fotografía desde que el usuario la selecciona hasta que se renderiza en la pantalla de un visitante.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>3.1. Fase de Cliente (Navegador Front-End)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>Antes de que la imagen toque la red de internet, el navegador del administrador realiza tareas críticas:</p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Interceptación Anti-iPhone (HEIC):</strong> Si un administrador intenta subir una foto directa desde un dispositivo Apple (formato propietario <code>.HEIC</code>), la plataforma inyecta un WebWorker que utiliza WebAssembly (<code>heic2any</code>) para traducir matemáticamente la foto a formato estándar JPEG de forma invisible. El usuario nunca sufre un error de incompatibilidad.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Compresión Ultrasónica Pre-Subida:</strong> Para proteger el ancho de banda y garantizar subidas instantáneas incluso en 3G, la imagen original se exprime en el navegador usando <code>browser-image-compression</code>. Las fotos de 15MB se reducen a un máximo de 1MB (resolución tope 2048px) usando el propio procesador del usuario (Edge Computing).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pegado Mágico (Clipboard Listener):</strong> Un "escuchador de eventos" global (<code>window.addEventListener('paste')</code>) permite al administrador copiar cualquier imagen de internet y simplemente pulsar <strong>Ctrl+V</strong> en el teclado estando en la página del editor. La imagen inicia automáticamente su flujo de subida.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>3.2. Fase de Servidor (Backend Processing API)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>Una vez el archivo llega al servidor Next.js, entra en la fábrica de procesamiento impulsada por la librería de ultra-bajo nivel C++ <code>sharp</code>:</p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Generación de SEO Dinámico (Gemini AI):</strong> El archivo crudo es convertido a Base64 y enviado a la IA de Gemini Vision, la cual analiza visualmente la foto para redactar un atributo SEO <code>alt</code> descriptivo. Además, se genera un "slug" limpio para el nombre de archivo físico (ej: <code>tomate-rojo-maduro-1234.webp</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Extracción de Metadatos (EXIF):</strong> La librería <code>exifr</code> analiza la cabecera binaria del archivo para rescatar información de la captura (Marca de cámara, Modelo y Fecha de toma original). Estos datos se guardan en la BBDD para enriquecer la ficha técnica pública.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Conversión a Formato de Próxima Generación:</strong> Independientemente del formato de entrada, las imágenes se codifican a formato <strong>WebP</strong> con una calidad de compresión del 80%, ofreciendo calidades superiores al JPG pesando la mitad.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>3.3. Bifurcación Visual (Generación de Múltiples Assets)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>El servidor no guarda una foto, guarda un ecosistema visual por cada subida:</p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Versión HD + Propiedad Intelectual:</strong> La foto principal se redimensiona a un máximo de 1920x1080px y se le inyecta un código SVG dinámico con la palabra "VERDANTIA" semitransparente incrustada en la esquina inferior derecha para proteger los derechos de autor contra scrapers.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Miniatura + Smart Crop AI:</strong> Se clona el flujo en memoria para generar una miniatura súper ligera (<code>thumb-*.webp</code>) de 400x400px usando un algoritmo de atención y entropía matemática (<code>sharp.strategy.attention</code>) que detecta dónde está el "sujeto u objeto" de la foto para recortar de forma perfecta.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Cálculo de Efecto BlurHash:</strong> El servidor decodifica la imagen a sus píxeles puros RGBA, la encoge a 32x32 y la pasa por el algoritmo <code>blurhash</code>, obteniendo una cadena de unos 20 caracteres que representa un "fantasma matemático" de la imagen.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Inteligencia de Color (node-vibrant):</strong> Se escanea la fotografía para extraer su paleta armónica y encontrar su "Color Vibrante" predominante.</li>
+        </ul>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>Todos estos datos se empaquetan en un objeto JSON y se insertan en la columna <code>resumen</code> de la base de datos <code>datosadjuntos</code>.</p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>3.4. Fase de Renderizado (UI/UX)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>Cuando un usuario visita el catálogo, el sistema orquesta la carga para que se sienta instantánea y fluida:</p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Renderizado BlurHash:</strong> Antes de pedir la foto a internet, un <code>Canvas</code> de React intercepta el código de 20 caracteres y dibuja una imagen abstracta difuminada de la foto. No hay saltos visuales ni huecos blancos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Tematización Inmersiva (Dominant Color):</strong> El color "Vibrante" extraído de la foto designada como 'Principal' tiñe sutilmente el fondo y los bordes de la cabecera de toda la pantalla de la especie.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Reordenación Drag & Drop en Vivo:</strong> Los administradores pueden reorganizar la galería arrastrando miniaturas con el ratón, disparando actualizaciones asíncronas instantáneas sin recargar la página.</li>
+        </ul>
+
+        <div style={{ margin: '50px 0', borderTop: '2px dashed #e2e8f0' }}></div>
+
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          4. Estándar UX/UI del Sistema Fotográfico y Generación IA
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          Este documento define la norma general arquitectónica y de interfaz de usuario para la gestión de imágenes en cualquier módulo de Verdantia (Especies, Labores, Usuarios, etc). Todo nuevo módulo que requiera fotos debe adherirse a estas especificaciones.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.1. El Encabezado (Hero Carousel)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Si un formulario o modal gestiona imágenes, la parte superior debe contar con un <strong>Hero Carousel</strong>.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Comportamiento Fijo (Sticky):</strong> El contenedor del carrusel debe mantenerse en la parte superior al hacer scroll para garantizar que la foto principal permanezca visible.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Distribución Visual:</strong>
+            <ul>
+              <li><strong>Izquierda:</strong> La foto principal (Hero Photo) en gran formato.</li>
+              <li><strong>Derecha:</strong> Una tira vertical con las miniaturas de las fotos restantes.</li>
+            </ul>
+          </li>
+          <li><strong>Arrastre y Ordenamiento (Drag & Drop):</strong>
+            <ul>
+              <li>Las miniaturas de la derecha son arrastrables entre sí para reordenarlas en la galería.</li>
+              <li>Si una miniatura se arrastra <strong>sobre la foto grande (Hero)</strong>, se convierte instantáneamente en la nueva foto principal, mandando la anterior a la tira de miniaturas.</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.2. La Galería y Editor (Pestaña "Adjuntos")</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Toda gestión fotográfica pesada se oculta tras una pestaña designada.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Dropzone:</strong> Zona amplia que acepta arrastrar y soltar múltiples archivos (o hacer clic).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Límite Estricto:</strong> Máximo de 4 fotos por entidad (excepto foto de perfil que es 1).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Botones de Acción:</strong> Estrella (marcar principal), Lápiz (abrir editor visual) y Aspa (eliminar).</li>
+          <li><strong>Editor Visual:</strong> Permite alterar de forma no destructiva (guardado en base de datos):
+            <ul>
+              <li>Paneo del enfoque y Zoom.</li>
+              <li>Ajustes de Brillo y Contraste.</li>
+              <li>Filtros CSS predefinidos (Vintage, Comic, Cinematic, etc.).</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.3. Generador Inteligente (IA - Imagen 4.0)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Integración del generador de imágenes impulsado por Google Imagen 4.0 para ilustrar especies y entidades sin depender de bancos de imágenes.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Modal de Generación:</strong> Accesible desde la zona Dropzone con el botón morado "✨ Generar IA".</li>
+          <li style={{ marginBottom: '8px' }}><strong>Sugerencias Rápidas:</strong> Botones pre-establecidos (ej. "En la planta con fruto maduro") que sobrescriben automáticamente el concepto.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Prompt Reforzado (Anti-Alucinaciones):</strong> El endpoint (<code>/api/ai/generate-image</code>) NUNCA envía el prompt crudo. Se envuelve con el Nombre Común, Nombre Científico y Familia de la especie. Se exige a la IA centrarse exclusivamente en la botánica y omitir animales u otros elementos confusos.</li>
+          <li><strong>Flujo Transparente:</strong> La imagen se genera en Base64, y al guardarla se inyecta como un archivo estándar (File Blob), pasando por los procesos habituales (compresión, Blurhash, metadatos SEO).</li>
+        </ul>
+
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          5. Interfaz de Formularios (Smart Save)
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          Con el objetivo de maximizar la claridad visual y evitar que los usuarios guarden datos de forma compulsiva o accidental, Verdantia implementa un patrón de "Guardado Inteligente" (Smart Save) en todos sus formularios y modales de edición.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>5.1. Detector de Cambios (isDirty State)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Todo formulario que permita editar una entidad existente (Especies, Labores, Usuarios, etc.) debe llevar un control estricto del estado original de los datos al momento de cargarlos.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Estado Inicial:</strong> Al cargar los datos de la base de datos o abrir el modal, se guarda una copia exacta en memoria (ej. <code>initialData</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Comparación en Tiempo Real:</strong> Cada vez que el usuario teclea, marca un checkbox o usa un deslizador, el sistema compara el estado actual del formulario (<code>formData</code>) con el estado inicial. Si existe alguna discrepancia, el formulario se considera "Sucio" (<code>isDirty = true</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Visibilidad del Botón de Guardado:</strong> El botón principal de acción (ej. "Guardar Labor") <strong>sólo debe ser visible (o estar habilitado) si <code>isDirty</code> es verdadero</strong>. Si el usuario deshace sus cambios volviendo al estado original, el botón volverá a ocultarse o deshabilitarse automáticamente.</li>
+        </ul>
+        
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>5.2. Estándar de Navegación en Dashboards (Gold Standard)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para garantizar una experiencia de usuario consistente y evitar la duplicidad de componentes, todos los paneles administrativos (Especies, Labores, Usuarios, etc.) siguen un estricto patrón de navegación superior:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Ubicación:</strong> Los botones de "Volver" deben colocarse <strong>por encima del título principal de la página</strong> (fuera del <code>&lt;header&gt;</code> global y por encima de galerías de fotos o formularios), alineados a la izquierda.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Vistas de Listado (Ej: Todas las Especies):</strong> Se incluirá un único botón: <br/><code>🏠 Volver al Inicio</code> (que redirige al Dashboard principal).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Vistas de Detalle/Edición (Ej: Editar una Especie):</strong> Se incluirá una botonera doble para ofrecer un contexto jerárquico claro:<br/>
+            1. <code>🏠 Volver al Inicio</code><br/>
+            2. <code>🌍 Volver a [Nombre de la Sección Global]</code> (ej. Volver a Especies Globales).
+          </li>
+          <li style={{ marginBottom: '8px' }}><strong>Eliminación de Redundancias:</strong> Queda estrictamente prohibido colocar botones de "Volver" al final de los formularios o debajo de los carruseles de fotos. Tampoco se utilizarán breadcrumbs dinámicos en el header superior global para evitar recargar la interfaz.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>5.3. Patrón de Subheader Integrado</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Como evolución del estándar de navegación, todas las vistas principales deben implementar un <strong>Subheader Integrado</strong> con diseño fluido y degradado para centralizar el título y la información clave. Se divide en dos variantes:
+        </p>
+
+        <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>5.3.1. Variantes para Listados (Dashboards Globales)</h4>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Fondo Degradado:</strong> El bloque utiliza un `linear-gradient` distintivo por módulo (Ej. Verde para Especies, Naranja para Labores).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Título y Contexto:</strong> A la izquierda se coloca el título con su icono y una descripción contextual.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Integración de Filtros y Acciones:</strong> A la derecha se integran filtros (selectores) y botones de acción primaria (ej. ➕ Nueva Entidad), ahorrando espacio vertical.</li>
+        </ul>
+
+        <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>5.3.2. Variante para Editores e Individualidades (Formularios)</h4>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Ubicación:</strong> Se coloca <strong>justo debajo de la botonera doble de navegación</strong> (`Inicio` y `Volver a Globales`).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Jerarquía de Título:</strong> Muestra el nombre de la entidad que se está editando en grande (ej. "Editar Especie: Tomate") y debajo el subtítulo o nombre científico.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Indicador de Cambios (isDirty):</strong> A la derecha del título, dentro del propio subheader, aparece la etiqueta dinámica amarilla de <code>"Cambios sin guardar"</code> cuando <code>isDirty === true</code>.</li>
+        </ul>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          6. Protocolo de Despliegue (Deploy) a Producción
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          El paso del entorno de desarrollo local al entorno real de producción es un proceso delicado que debe seguir una estricta secuencia.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.1. Fase 1: La Prueba de Fuego (Build Local)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          <strong>Regla de Oro:</strong> Nunca se sube código sin antes ejecutar el comando <code>npm run build</code> en la terminal local.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}>Este comando realiza una compilación completa y ultra-estricta de todo el código TypeScript y Next.js.</li>
+          <li style={{ marginBottom: '8px' }}>Si existe el más mínimo error de tipos, una variable no utilizada, o un fallo en el diseño estructural, el <strong>Build fallará localmente</strong> alertando al desarrollador.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Fase 2: Salvaguarda del Código (Control de Versiones)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Una vez que el <code>build</code> es exitoso, se guarda un punto de control en la nube.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><code>git add .</code> (Prepara todos los archivos modificados).</li>
+          <li style={{ marginBottom: '8px' }}><code>git commit -m "Descripción clara del cambio"</code> (Empaqueta los cambios con una etiqueta explicativa).</li>
+          <li style={{ marginBottom: '8px' }}><code>git push</code> (Sube el paquete de forma segura a GitHub).</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.3. Fase 3: El Despliegue Final (Google Cloud / Firebase)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para que los cambios se reflejen en la app en vivo, el código debe subirse a la infraestructura de Google Cloud usando Firebase Hosting.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}>Se ejecuta el comando <code>firebase deploy</code> en la terminal.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Aviso importante (Windows):</strong> Si experimentas el error <code>EPERM: operation not permitted, symlink</code> durante el despliegue en Windows, debes ejecutar el comando de despliegue desde una terminal Linux (WSL) o asegurar que tu terminal tiene permisos de administrador.</li>
+          <li style={{ marginBottom: '8px' }}>Una vez terminado, la consola proporcionará el enlace de Firebase (Hosting URL) confirmando que Verdantia ya está operativa en la nube.</li>
+        </ul>
+
+        <div style={{ background: '#f0f9ff', borderLeft: '4px solid #0ea5e9', padding: '16px', marginTop: '24px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>6.4. Rol del Asistente IA (Mandato Estricto)</h4>
+          <p style={{ color: '#0c4a6e', margin: 0, lineHeight: 1.5 }}>
+            El asistente de inteligencia artificial (Antigravity) tiene prohibido subir código a producción por iniciativa propia. <strong>El proceso completo de despliegue a Firebase se realizará SIEMPRE y ÚNICAMENTE a petición expresa del usuario.</strong> 
+            <br/><br/>
+            <strong>REGLA DE HIERRO PARA EL ASISTENTE:</strong> Una vez que el usuario ordene subir a producción, el asistente lanzará los comandos pertinentes (Build, Commit, Deploy) y <strong>ESPERARÁ OBLIGATORIAMENTE</strong> a que los comandos finalicen mediante comprobaciones de estado. <strong>BAJO NINGÚN CONCEPTO</strong> el asistente le preguntará al usuario si desea "esperar al resultado". El asistente actúa como un confidente diligente: procesa la tarea en segundo plano e informa <strong>exclusivamente cuando el despliegue haya concluido exitosamente o fallado</strong>.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          7. Motor de Suscripciones y Degradación Progresiva
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          El sistema de monetización y membresías de Verdantia no utiliza un modelo binario (Premium vs Gratis). Hemos implementado un <strong>Motor de Degradación Progresiva Universal</strong> diseñado para evitar el "abismo" (churn cliff) cuando un usuario deja de pagar o finaliza su periodo de prueba.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>7.1. Estructura de Niveles (4 Tiers)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>La plataforma clasifica a los usuarios en cuatro escalones, cada uno con ventajas, límites y privilegios específicos de monetización y funcionalidades (Chat, Fotos, Calendarios):</p>
+        
+        <div style={{ overflowX: 'auto', marginTop: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                <th style={{ padding: '16px', color: '#0f172a' }}>Plan</th>
+                <th style={{ padding: '16px', color: '#0f172a' }}>Precio Aprox.</th>
+                <th style={{ padding: '16px', color: '#0f172a' }}>Gestión de Semillas/Especies</th>
+                <th style={{ padding: '16px', color: '#0f172a' }}>Galerías y Fotos</th>
+                <th style={{ padding: '16px', color: '#0f172a' }}>Privilegios de IA (Chat y Generación)</th>
+                <th style={{ padding: '16px', color: '#0f172a' }}>Calendarios</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#15803d' }}>🌳 Premium</td>
+                <td style={{ padding: '16px', fontWeight: 'bold' }}>9.99€ / mes</td>
+                <td style={{ padding: '16px' }}><strong>Ilimitadas.</strong> Múltiples huertos y control total.</td>
+                <td style={{ padding: '16px' }}>5 fotos de perfil. <strong>Fotos ilimitadas</strong> por galería/labor.</td>
+                <td style={{ padding: '16px' }}>Acceso ilimitado al Chat IA y generación de posts.</td>
+                <td style={{ padding: '16px' }}>Completos (Agrícola, Biodinámico Avanzado e IA).</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#65a30d' }}>🌿 Avanzado</td>
+                <td style={{ padding: '16px', fontWeight: 'bold' }}>5.99€ / mes</td>
+                <td style={{ padding: '16px' }}>Hasta <strong>50 semillas/especies</strong> activas.</td>
+                <td style={{ padding: '16px' }}>3 fotos de perfil. Hasta 4 fotos por galería.</td>
+                <td style={{ padding: '16px' }}>Chat Básico IA (Consultas limitadas diarias).</td>
+                <td style={{ padding: '16px' }}>Lunar y Biodinámico Básico.</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#0f766e' }}>🌱 Esencial</td>
+                <td style={{ padding: '16px', fontWeight: 'bold' }}>2.99€ / mes</td>
+                <td style={{ padding: '16px' }}>Hasta <strong>20 semillas/especies</strong> activas.</td>
+                <td style={{ padding: '16px' }}>2 fotos de perfil. Hasta 2 fotos por galería.</td>
+                <td style={{ padding: '16px' }}>Sin acceso al Chat IA ni generación.</td>
+                <td style={{ padding: '16px' }}>Calendario Lunar Simple.</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#78350f' }}>🌰 Gratuito</td>
+                <td style={{ padding: '16px', fontWeight: 'bold' }}>0.00€</td>
+                <td style={{ padding: '16px' }}>Hasta <strong>5 semillas/especies</strong> (huerto básico).</td>
+                <td style={{ padding: '16px' }}>1 foto de perfil. 1 foto por galería.</td>
+                <td style={{ padding: '16px' }}>Sin acceso a IA.</td>
+                <td style={{ padding: '16px' }}>Sin calendarios (+ Publicidad en app).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>7.2. La Cascada de Degradación</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          La regla de negocio principal es que <strong>una bajada de plan siempre ocurre escalón a escalón, con periodos de gracia de 30 días</strong>. Esto aplica a dos escenarios principales:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '12px' }}><strong>Periodo de Prueba (Onboarding):</strong> Al verificar el correo, el usuario no recibe "un trial normal". Recibe 1 mes de Premium. Cuando acaba, no pasa a Gratuito, sino a Avanzado (1 mes extra). Cuando acaba, pasa a Esencial (1 mes extra). Al final de los 3 meses (90 días), aterriza en el plan Gratuito. Esto fomenta el enganche con las funcionalidades premium de forma prolongada.</li>
+          <li style={{ marginBottom: '12px' }}><strong>Cancelación de Pago (Churn Mitigation):</strong> Si un usuario lleva meses pagando Premium y cancela su tarjeta, Verdantia le "regala" un mes de Avanzado y luego un mes de Esencial antes de quitarle todos los privilegios. Es un periodo de retención natural donde el usuario sigue recibiendo valor y tiene 60 días de avisos suaves para volver a suscribirse.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>7.3. Implementación Técnica (El Endpoint Orquestador)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          En lugar de correr tareas <em>Cron</em> pesadas a medianoche, Verdantia usa un enfoque <strong>Lazy Evaluation</strong> (Evaluación Perezosa).
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}>Cada vez que un usuario abre la pantalla de su Perfil (<code>/dashboard/perfil</code>), el cliente invoca el endpoint <code>/api/auth/check-plan-degradation</code>.</li>
+          <li style={{ marginBottom: '8px' }}>El endpoint comprueba la fecha de caducidad actual (<code>usuariossuscripcionesfechafin</code>).</li>
+          <li style={{ marginBottom: '8px' }}>Si la fecha ya ha pasado, la base de datos se actualiza instantáneamente en cascada al siguiente nivel inferior, asignando otros +30 días (pero calculados basándose en milisegundos para evitar bugs de cambios de hora DST).</li>
+          <li style={{ marginBottom: '8px' }}>Si el límite de fotos excede el del nuevo plan (ej. pasa de 5 a 3 fotos al bajar de Premium a Avanzado), <strong>ninguna foto se borra</strong>. El sistema bloquea temporalmente la edición visual del perfil hasta que el usuario elimine voluntariamente el exceso para cuadrar con el nuevo plan.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}

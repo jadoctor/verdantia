@@ -22,45 +22,52 @@ export default function DashboardHome() {
   const [setupMessage, setSetupMessage] = useState('');
   const router = useRouter();
 
+  const loadProfile = async (email: string, uid: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/auth/profile?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data.profile);
+        setSetupMessage('');
+      } else if (res.status === 404) {
+        // Usuario en Firebase pero no en MySQL → Auto-Healing
+        try {
+          await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid, email, nombre: '', apellidos: '' }),
+          });
+          const resRetry = await fetch(`/api/auth/profile?email=${encodeURIComponent(email)}`);
+          if (resRetry.ok) {
+            const dataRetry = await resRetry.json();
+            setProfile(dataRetry.profile);
+            setSetupMessage('');
+          } else {
+            setSetupMessage('Estamos configurando tu huerto. Por favor, recarga la página en unos segundos.');
+          }
+        } catch {
+          setSetupMessage('No se pudo sincronizar tu perfil con la base de datos.');
+        }
+      } else {
+        // Error de servidor (500, timeout, etc.) → no auto-heal
+        setSetupMessage('Error de conexión con el servidor. Pulsa "Reintentar" o recarga la página.');
+      }
+    } catch (err) {
+      console.error('Error cargando perfil:', err);
+      setSetupMessage('Error de red. Comprueba tu conexión y pulsa "Reintentar".');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.push('/login');
         return;
       }
-
-      // Buscar perfil en Cloud SQL
-      try {
-        const res = await fetch(`/api/auth/profile?email=${encodeURIComponent(user.email!)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProfile(data.profile);
-        } else {
-          // Usuario existe en Firebase pero no en MySQL (ej: error durante el registro)
-          // Implementamos "Auto-Healing": lo creamos automáticamente ahora mismo.
-          try {
-            await fetch('/api/auth/register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ uid: user.uid, email: user.email, nombre: '', apellidos: '' }),
-            });
-            // Volvemos a intentar cargar el perfil
-            const resRetry = await fetch(`/api/auth/profile?email=${encodeURIComponent(user.email!)}`);
-            if (resRetry.ok) {
-              const dataRetry = await resRetry.json();
-              setProfile(dataRetry.profile);
-            } else {
-              setSetupMessage('Estamos configurando tu huerto. Por favor, recarga la página en unos segundos.');
-            }
-          } catch {
-            setSetupMessage('No se pudo sincronizar tu perfil con la base de datos.');
-          }
-        }
-      } catch (err) {
-        console.error('Error cargando perfil:', err);
-      } finally {
-        setLoading(false);
-      }
+      loadProfile(user.email!, user.uid);
     });
 
     return () => unsubscribe();
@@ -161,6 +168,20 @@ export default function DashboardHome() {
       {setupMessage && !profile && (
         <div className="status-message glass" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)', marginBottom: '2rem' }}>
           <p>{setupMessage}</p>
+          <button 
+            type="button"
+            onClick={() => {
+              const user = auth.currentUser;
+              if (user) loadProfile(user.email!, user.uid);
+            }}
+            style={{ 
+              marginTop: '10px', padding: '8px 20px', borderRadius: '8px', 
+              background: 'var(--primary)', color: 'white', border: 'none', 
+              cursor: 'pointer', fontWeight: 700 
+            }}
+          >
+            🔄 Reintentar
+          </button>
         </div>
       )}
 

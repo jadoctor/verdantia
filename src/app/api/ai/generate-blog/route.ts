@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import fs from 'fs/promises';
-import path from 'path';
+import { uploadToStorage } from '@/lib/firebase/storage';
 
 export async function POST(request: Request) {
   try {
@@ -135,13 +134,12 @@ Devuelve tu respuesta ÚNICAMENTE como un objeto JSON válido con la siguiente e
              const base64Data = data.predictions[0].bytesBase64Encoded;
              const buffer = Buffer.from(base64Data, 'base64');
              const filename = `blog_img_${Date.now()}_${i}.jpg`;
-             const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'blog');
+             const storagePath = `uploads/blog/${filename}`;
              
-             // Crear carpeta si no existe
-             await fs.mkdir(uploadDir, { recursive: true });
-             await fs.writeFile(path.join(uploadDir, filename), buffer);
+             // Subir a Firebase Storage
+             const publicUrl = await uploadToStorage(buffer, storagePath, 'image/jpeg');
              
-             generatedBase64s.push(`/uploads/blog/${filename}`);
+             generatedBase64s.push(publicUrl);
           } else {
              generatedBase64s.push(null);
           }

@@ -6,8 +6,11 @@ const pool = mysql.createPool({
   password: 'Verdantiaja0334&',
   database: 'semillas_db',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 5,
   queueLimit: 0,
+  connectTimeout: 5000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
   ssl: {
     rejectUnauthorized: false
   }

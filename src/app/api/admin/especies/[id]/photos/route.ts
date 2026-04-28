@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { uploadToStorage } from '@/lib/firebase/storage';
 import { getUserByEmail } from '@/lib/auth';
 import sharp from 'sharp';
 import exifr from 'exifr';
 import { Vibrant } from 'node-vibrant/node';
 import { encode } from 'blurhash';
+
+export const dynamic = 'force-dynamic';
 
 async function authenticateSuperadmin(request: Request) {
   const email = request.headers.get('x-user-email');
@@ -58,10 +59,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'especies');
-    await mkdir(uploadDir, { recursive: true });
-
-    const ext = path.extname(file.name) || '.jpg';
+    const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
     const bytes = await file.arrayBuffer();
 
     const [countResult] = await pool.query(
@@ -142,10 +140,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .replace(/(^-|-$)+/g, '');
 
     const filename = `${slug}-${Date.now()}.webp`;
-    const filePath = path.join(uploadDir, filename);
-    const relativePath = `uploads/especies/${filename}`;
+    const storagePath = `uploads/especies/${filename}`;
     const thumbFilename = `thumb-${filename}`;
-    const thumbPath = path.join(uploadDir, thumbFilename);
+    const thumbStoragePath = `uploads/especies/${thumbFilename}`;
 
     const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
       <text x="290" y="50" text-anchor="end"
@@ -203,23 +200,36 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       console.error('Error generando blurhash', e);
     }
 
-    // Original (1920x1080) con marca de agua discreta
-    await sharpInstance
+    // Original (1920x1080) con marca de agua discreta → Buffer → Firebase Storage
+    const metadata = await sharpInstance.metadata();
+    const targetWidth = Math.min(metadata.width || 1920, 1920);
+    const targetHeight = Math.min(metadata.height || 1080, 1080);
+
+    let mainSharp = sharpInstance
       .clone()
-      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
-      .composite([{
+      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true });
+
+    if (targetWidth >= 300 && targetHeight >= 60) {
+      mainSharp = mainSharp.composite([{
         input: watermarkSvg,
         gravity: 'southeast'
-      }])
-      .webp({ quality: 80 })
-      .toFile(filePath);
+      }]);
+    }
 
-    // Miniatura (400x400) optimizada con Smart Crop (Atención IA)
-    await sharpInstance
+    const mainBuffer = await mainSharp
+      .webp({ quality: 80 })
+      .toBuffer();
+
+    const publicUrl = await uploadToStorage(mainBuffer, storagePath, 'image/webp');
+
+    // Miniatura (400x400) optimizada → Buffer → Firebase Storage
+    const thumbBuffer = await sharpInstance
       .clone()
       .resize(400, 400, { fit: 'cover', position: 'centre' })
       .webp({ quality: 65 })
-      .toFile(thumbPath);
+      .toBuffer();
+
+    await uploadToStorage(thumbBuffer, thumbStoragePath, 'image/webp');
 
     const initialResumen = JSON.stringify({
       profile_object_x: 50,
@@ -241,7 +251,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntospesobytes, datosadjuntosresumen
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, relativePath, esPrimera,
+        file.type || 'image/jpeg', file.name, publicUrl, esPrimera,
         total + 1, idespecies, fileSize, initialResumen
       ]
     );
@@ -250,7 +260,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       success: true,
       photo: {
         id: (result as any).insertId,
-        ruta: relativePath,
+        ruta: publicUrl,
         esPrincipal: esPrimera,
         nombreOriginal: file.name,
         resumen: initialResumen

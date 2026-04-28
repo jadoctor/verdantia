@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { writeFile, mkdir, unlink } from 'fs/promises';
-import path from 'path';
+import { uploadToStorage } from '@/lib/firebase/storage';
 
 /**
  * GET /api/perfil/photos?userId=X
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/perfil/photos
- * Sube una nueva foto de perfil.
+ * Sube una nueva foto de perfil a Firebase Storage.
  */
 export async function POST(request: Request) {
   try {
@@ -48,19 +47,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Archivo y userId requeridos' }, { status: 400 });
     }
 
-    // Crear directorio de uploads si no existe
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'usuario');
-    await mkdir(uploadDir, { recursive: true });
-
     // Generar nombre único
-    const ext = path.extname(file.name) || '.jpg';
+    const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
     const filename = `usuario_${userId}_${Date.now()}${ext}`;
-    const filePath = path.join(uploadDir, filename);
-    const relativePath = `uploads/usuario/${filename}`;
+    const storagePath = `uploads/usuario/${filename}`;
 
-    // Guardar archivo
+    // Subir a Firebase Storage
     const bytes = await file.arrayBuffer();
-    await writeFile(filePath, Buffer.from(bytes));
+    const publicUrl = await uploadToStorage(
+      Buffer.from(bytes),
+      storagePath,
+      file.type || 'image/jpeg'
+    );
 
     // Contar fotos existentes para el orden
     const [countResult] = await pool.query(
@@ -82,7 +80,7 @@ export async function POST(request: Request) {
         datosadjuntosresumen, datosadjuntospesobytes
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, relativePath, esPrimera,
+        file.type || 'image/jpeg', file.name, publicUrl, esPrimera,
         total + 1, userId,
         JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: faceZoom, profile_style: '' }),
         fileSize
@@ -93,7 +91,7 @@ export async function POST(request: Request) {
       success: true,
       photo: {
         id: (result as any).insertId,
-        ruta: relativePath,
+        ruta: publicUrl,
         esPrincipal: esPrimera,
         nombreOriginal: file.name
       }
@@ -113,6 +111,7 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { photoId, userId, action, resumen } = body;
+    console.log('[Photos API] PUT recibido:', { photoId, userId, action });
 
     if (!photoId || !userId) {
       return NextResponse.json({ error: 'photoId y userId requeridos' }, { status: 400 });
@@ -120,15 +119,17 @@ export async function PUT(request: Request) {
 
     if (action === 'setPrincipal') {
       // Quitar principal de todas las fotos del usuario
-      await pool.query(
+      const [r1] = await pool.query(
         "UPDATE datosadjuntos SET datosadjuntosesprincipal = 0 WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen'",
         [userId]
       );
+      console.log('[Photos API] Reset principal:', (r1 as any).affectedRows, 'filas afectadas');
       // Marcar la nueva como principal
-      await pool.query(
+      const [r2] = await pool.query(
         'UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE iddatosadjuntos = ?',
         [photoId]
       );
+      console.log('[Photos API] Set principal photoId=', photoId, ':', (r2 as any).affectedRows, 'filas afectadas');
       return NextResponse.json({ success: true, message: 'Foto preferida actualizada' });
     }
 

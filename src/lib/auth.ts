@@ -24,6 +24,7 @@ export interface UserProfile {
   telefono: string | null;
   zonaClimatica: string | null;
   tipoCalendario: string;
+  passkeysCount?: number;
 }
 
 /**
@@ -122,6 +123,13 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       iconoLogro = nombreLogro ? nombreLogro.match(/[\p{Emoji}]/u)?.[0] || '🏆' : null;
     }
 
+    // Obtener cantidad de passkeys (biometría) registrados
+    const [passkeyRows] = await pool.query(
+      `SELECT COUNT(*) as count FROM usuarios_passkeys WHERE userEmail = ?`,
+      [email]
+    );
+    const passkeysCount = (passkeyRows as any[])[0].count;
+
     return {
       id: user.idusuarios,
       nombre: user.usuariosnombre || '',
@@ -146,6 +154,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       iconoLogro: iconoLogro,
       zonaClimatica: user.usuarioszonaclimatica || null,
       tipoCalendario: user.usuariostipocalendario || 'Normal',
+      passkeysCount: passkeysCount,
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);

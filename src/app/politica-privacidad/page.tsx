@@ -103,7 +103,7 @@ export default function PoliticaPrivacidadPage() {
         <div className="legal-section" id="suscripciones">
           <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>⭐</span> 4. Modelos de Suscripción y Niveles de Acceso</h2>
           
-          <h3 style={{ color: 'var(--accent-green)', fontSize: '1rem', margin: '20px 0 10px' }}>🌱 Nivel Visitante / Básico (Gratuito)</h3>
+          <h3 style={{ color: 'var(--accent-green)', fontSize: '1rem', margin: '20px 0 10px' }}>🌰 Nivel Visitante / Gratuito (Free)</h3>
           <p>Al registrarte en Verdantia, comienzas como <strong>Visitante</strong>. Este nivel es completamente gratuito, sin límite de tiempo y sin compromiso. Incluye:</p>
           <ul>
             <li>Hasta <strong>10 plantas activas</strong> en tu huerto virtual.</li>
@@ -111,38 +111,43 @@ export default function PoliticaPrivacidadPage() {
             <li><strong>1 oferta de intercambio</strong> de semillas activa.</li>
             <li>Acceso al chat público de la comunidad.</li>
           </ul>
-          <p>Para el nivel Visitante/Básico solo recogemos los <strong>datos mínimos</strong> de identificación: nombre, email, fecha de nacimiento, ubicación aproximada (país, código postal) y contraseña cifrada. No se requieren datos de pago.</p>
+          <p>Para el nivel Gratuito solo recogemos los <strong>datos mínimos</strong> de identificación: nombre, email, fecha de nacimiento, ubicación aproximada (país, código postal) y contraseña cifrada. No se requieren datos de pago.</p>
 
-          <h3 style={{ color: 'var(--accent-amber)', fontSize: '1rem', margin: '20px 0 10px' }}>🌳 Nivel Premium (Prueba gratuita + Pago)</h3>
-          <p>Al completar tu perfil y verificar tu correo, recibes automáticamente <strong>2 meses de acceso Premium gratuito</strong> sin pedirte datos de pago. Al finalizar los 2 meses, las funciones Premium se desactivan progresivamente durante el tercer mes hasta que la cuenta se estabiliza en el plan <strong>Básico gratuito</strong>.</p>
-          <p>Para contratar un plan de pago (Normal o Premium) se requerirán <strong>datos adicionales</strong>: domicilio completo, teléfono de contacto y un identificador de pasarela de pago (Stripe/PayPal). <strong>Nunca almacenamos números de tarjeta bancaria.</strong></p>
+          <h3 style={{ color: 'var(--accent-amber)', fontSize: '1rem', margin: '20px 0 10px' }}>🌳 Política de Degradación Progresiva Universal</h3>
+          <p>En Verdantia no existen las bajadas abruptas al plan Gratuito. Aplicamos una <strong>degradación progresiva universal</strong> para todos los usuarios:</p>
+          <ul>
+            <li><strong>Periodo de Prueba (3 meses):</strong> Al verificar tu correo, recibes 1 mes de Premium. Al finalizar, pasas a Avanzado (1 mes), luego a Esencial (1 mes), y finalmente al Gratuito.</li>
+            <li><strong>Suscripciones de Pago:</strong> Si cancelas o no renuevas un plan de pago (ej. Premium), tu cuenta no caerá a Gratuito inmediatamente. Descenderás un nivel cada 30 días (Avanzado → Esencial → Gratuito).</li>
+          </ul>
+          <p>En cualquier momento del proceso puedes contratar un plan de pago para mantener o subir de nivel.</p>
 
-          <p style={{ marginTop: '20px' }}>La plataforma ofrece tres niveles de acceso:</p>
+          <p style={{ marginTop: '20px' }}>La plataforma ofrece cuatro niveles de acceso:</p>
 
           <div style={{ overflowX: 'auto' }}>
             <table className="plan-table">
               <thead>
                 <tr>
                   <th>Funcionalidad</th>
-                  <th><span className="plan-free">🌱 Básica</span><br /><small>Gratis</small></th>
-                  <th><span className="plan-normal">🌿 Normal</span><br /><small>4,99 €/mes</small></th>
-                  <th><span className="plan-premium">🌳 Premium</span><br /><small>9,99 €/mes</small></th>
+                  <th><span className="plan-free">🌰 Gratuito</span><br /><small>Gratis</small></th>
+                  <th><span style={{ color: '#059669' }}>🌱 Esencial</span><br /><small>4,99 €/mes</small></th>
+                  <th><span className="plan-normal">🌿 Avanzado</span><br /><small>9,99 €/mes</small></th>
+                  <th><span className="plan-premium">🌳 Premium</span><br /><small>14,99 €/mes</small></th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Plantas activas</td><td>10</td><td className="check">Ilimitadas</td><td className="check">Ilimitadas</td></tr>
-                <tr><td>Fotos de perfil máximas</td><td>1</td><td>3</td><td className="check">5</td></tr>
-                <tr><td>Ofertas intercambio</td><td>1</td><td className="check">Ilimitadas</td><td className="check">Ilimitadas</td></tr>
-                <tr><td>Calendario Agrícola</td><td>Normal</td><td className="check">Lunar</td><td className="check">Biodinámico</td></tr>
-                <tr><td>Crear grupos de chat</td><td className="cross">✗</td><td className="check">✓</td><td className="check">✓</td></tr>
-                <tr><td>Rastreador IA</td><td className="cross">✗</td><td className="cross">✗</td><td className="check">✓</td></tr>
-                <tr><td>Sello Semillero Verificado</td><td className="cross">✗</td><td className="cross">✗</td><td className="check">✓</td></tr>
+                <tr><td>Plantas activas</td><td>10</td><td>25</td><td>50</td><td className="check">Ilimitadas</td></tr>
+                <tr><td>Fotos de perfil máximas</td><td>1</td><td>2</td><td>3</td><td className="check">5</td></tr>
+                <tr><td>Ofertas intercambio</td><td>1</td><td>3</td><td>10</td><td className="check">Ilimitadas</td></tr>
+                <tr><td>Calendario Agrícola</td><td>Normal</td><td className="check">Lunar</td><td className="check">Biodinámico</td><td className="check">Biodinámico</td></tr>
+                <tr><td>Generador IA imágenes</td><td className="cross">✗</td><td className="cross">✗</td><td>5/mes</td><td className="check">Ilimitado</td></tr>
+                <tr><td>Sin publicidad</td><td className="cross">✗</td><td className="check">✓</td><td className="check">✓</td><td className="check">✓</td></tr>
+                <tr><td>Soporte prioritario</td><td className="cross">✗</td><td className="cross">✗</td><td className="check">✓</td><td className="check">✓</td></tr>
               </tbody>
             </table>
           </div>
           <div className="highlight-box highlight-blue" style={{ marginTop: '16px' }}>
             <span style={{ fontSize: '1.3rem' }}>ℹ️</span>
-            <span><strong>Degradación de plan y límite de fotos:</strong> Si bajas a un plan inferior (por ejemplo, al caducar el periodo de prueba Premium) y excedes el límite de fotos de perfil de tu nuevo plan, <strong>no perderás tus fotos</strong>. Simplemente quedarán bloqueadas (no podrás editarlas ni marcarlas como principales) y no podrás subir fotos nuevas hasta que elimines las sobrantes para ajustarte al nuevo límite establecido.</span>
+            <span><strong>Degradación de plan y límite de fotos:</strong> Si tu plan se degrada (automáticamente al final del trial o al cancelar un plan de pago) y excedes el límite de fotos de tu nuevo plan, <strong>no perderás tus fotos</strong>. Quedarán bloqueadas (no podrás editarlas ni marcarlas como principales) hasta que elimines las sobrantes para ajustarte al nuevo límite.</span>
           </div>
         </div>
 
@@ -241,15 +246,31 @@ export default function PoliticaPrivacidadPage() {
           </div>
         </div>
 
-        {/* 9. Periodo de prueba */}
+        {/* 9. Degradacion progresiva */}
         <div className="legal-section" id="periodo-prueba">
-          <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>🎁</span> 9. Periodo de Prueba Premium</h2>
-          <p>Al crear tu cuenta, recibes automáticamente <strong>2 meses completos de acceso Premium</strong> sin coste alguno. No se te pedirán datos de pago durante este periodo.</p>
-          <p>Al finalizar los 2 meses, las funciones exclusivas Premium se van desactivando progresivamente durante el tercer mes hasta que la cuenta se estabiliza en el plan <strong>Básico gratuito</strong>.</p>
-          <p>En cualquier momento puedes contratar un plan de pago (Normal o Premium) para mantener las funcionalidades avanzadas.</p>
-          <div className="highlight-box highlight-amber">
+          <h2><span className="section-icon" style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)' }}>🎁</span> 9. Política de Degradación Progresiva</h2>
+          <p>Ya sea durante tu <strong>periodo de prueba inicial</strong> o tras la <strong>cancelación/no renovación de un plan de pago</strong>, Verdantia disminuye tus privilegios de forma escalonada (un nivel cada 30 días):</p>
+          <div className="timeline">
+            <div className="timeline-item">
+              <div className="timeline-label">Paso 1 — Plan Premium</div>
+              <div className="timeline-text">Punto de partida (mes de prueba inicial o suscripción de pago activa).</div>
+            </div>
+            <div className="timeline-item">
+              <div className="timeline-label">Paso 2 — Plan Avanzado (1 mes de gracia)</div>
+              <div className="timeline-text">Al caducar el Premium, desciendes a Avanzado. Conservas parte de las ventajas.</div>
+            </div>
+            <div className="timeline-item">
+              <div className="timeline-label">Paso 3 — Plan Esencial (1 mes de gracia)</div>
+              <div className="timeline-text">Al caducar el Avanzado, desciendes a Esencial. Última etapa antes de pasar al plan sin coste.</div>
+            </div>
+            <div className="timeline-item danger">
+              <div className="timeline-label">Destino final — Plan Gratuito (permanente)</div>
+              <div className="timeline-text">La cuenta se estabiliza en el plan Gratuito, conservando tus plantas y límite de fotos asociado.</div>
+            </div>
+          </div>
+          <div className="highlight-box highlight-amber" style={{ marginTop: '16px' }}>
             <span style={{ fontSize: '1.3rem' }}>⏳</span>
-            <span><strong>Importante:</strong> el periodo de prueba <strong>no se detiene</strong> si solicitas el borrado de tu cuenta. Si estás disfrutando de la prueba gratuita y pides la cancelación, el reloj de prueba sigue corriendo durante los 30 días de gracia. Si reactivas tu cuenta, conservarás solo los días restantes del periodo de prueba, no se reiniciarán.</span>
+            <span><strong>Importante:</strong> la cuenta atrás de la degradación <strong>no se detiene</strong> si solicitas el borrado de tu cuenta. Si reactivas tu cuenta durante los 30 días de gracia, conservarás solo los días restantes del plan en curso.</span>
           </div>
         </div>
 
@@ -315,7 +336,7 @@ export default function PoliticaPrivacidadPage() {
           <p>Para garantizar el cumplimiento normativo en materia de protección de datos y contratación electrónica, Verdantia establece las siguientes limitaciones:</p>
           <ul>
             <li><strong>Edad Mínima de Uso (16 años):</strong> Es estrictamente necesario tener al menos 16 años cumplidos para registrarse, completar el perfil y participar en la comunidad de Verdantia. Si se detecta que un usuario es menor de esta edad, la cuenta y sus datos serán eliminados de inmediato.</li>
-            <li><strong>Contratación de Suscripciones (18 años):</strong> Para adquirir cualquiera de los planes de pago (Normal o Premium), el usuario debe ser mayor de edad (18 años) y disponer de plena capacidad jurídica y de obrar. Al procesar un pago, el usuario declara bajo su responsabilidad que cumple con este requisito.</li>
+            <li><strong>Contratación de Suscripciones (18 años):</strong> Para adquirir cualquiera de los planes de pago (Esencial, Avanzado o Premium), el usuario debe ser mayor de edad (18 años) y disponer de plena capacidad jurídica y de obrar. Al procesar un pago, el usuario declara bajo su responsabilidad que cumple con este requisito.</li>
           </ul>
         </div>
 

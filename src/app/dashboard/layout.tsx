@@ -88,8 +88,83 @@ export default function DashboardLayout({
     }
     return true;
   });
+  const [superAdminExpanded, setSuperAdminExpanded] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth > 768;
+    }
+    return true;
+  });
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
+
+  // ── Breadcrumb contextual derivado del pathname ──
+  const ROUTE_MAP: Record<string, { label: string; icon: string }> = {
+    '/dashboard': { label: 'Inicio', icon: '🏠' },
+    '/dashboard/perfil': { label: 'Mi Perfil', icon: '👤' },
+    '/dashboard/meteo': { label: 'Mi Meteo Local', icon: '⛅' },
+    '/dashboard/comunidad': { label: 'Chat Comunidad', icon: '💬' },
+    '/dashboard/plantar': { label: '¿Qué Plantar?', icon: '✨' },
+    '/dashboard/calculadora': { label: 'Calculadora', icon: '🧮' },
+    '/dashboard/hortalizas': { label: 'Mis Hortalizas', icon: '🥬' },
+    '/dashboard/variedades': { label: 'Variedades', icon: '🍅' },
+    '/dashboard/semillas': { label: 'Semillas', icon: '🌾' },
+    '/dashboard/siembras': { label: 'Siembras', icon: '🌿' },
+    '/dashboard/tareas': { label: 'Tareas', icon: '🔔' },
+    '/dashboard/admin/especies': { label: 'Cuarentena de Especies', icon: '🌍' },
+    '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '🌱' },
+    '/dashboard/admin/variedades': { label: 'Variedades', icon: '🏷️' },
+    '/dashboard/admin/labores': { label: 'Labores', icon: '🔧' },
+    '/dashboard/admin/labores/nueva': { label: 'Nueva Labor', icon: '🛠️' },
+    '/dashboard/admin/usuarios': { label: 'Usuarios', icon: '👥' },
+    '/dashboard/admin/chat': { label: 'Chat Admin', icon: '💬' },
+    '/dashboard/admin/meteo': { label: 'Meteo Red Global', icon: '🌐' },
+    '/dashboard/admin/guia-usuario': { label: 'Guía de Usuario', icon: '📖' },
+    '/dashboard/admin/blog': { label: 'Gestor Blog IA', icon: '📝' },
+  };
+
+  const getBreadcrumbs = () => {
+    // Ruta exacta
+    if (ROUTE_MAP[pathname]) {
+      if (pathname === '/dashboard') return [];
+      return [ROUTE_MAP[pathname]];
+    }
+    // Rutas dinámicas: /dashboard/admin/especies/[id]
+    const especieMatch = pathname.match(/^\/dashboard\/admin\/especies\/(\d+)$/);
+    if (especieMatch) {
+      return [
+        ROUTE_MAP['/dashboard/admin/especies'],
+        { label: 'Detalle Especie', icon: '🌿' },
+      ];
+    }
+    const laborMatch = pathname.match(/^\/dashboard\/admin\/labores\/(\d+)$/);
+    if (laborMatch) {
+      return [
+        ROUTE_MAP['/dashboard/admin/labores'],
+        { label: 'Detalle Labor', icon: '🔨' },
+      ];
+    }
+    const usuarioMatch = pathname.match(/^\/dashboard\/admin\/usuarios\/(\d+)$/);
+    if (usuarioMatch) {
+      return [
+        ROUTE_MAP['/dashboard/admin/usuarios'],
+        { label: 'Perfil de Usuario', icon: '👤' },
+      ];
+    }
+    return [];
+  };
+
+  const breadcrumbs = getBreadcrumbs();
+  // URL padre (penúltimo nivel) para el botón de retroceso
+  const getParentUrl = () => {
+    const especieMatch = pathname.match(/^\/dashboard\/admin\/especies\/(\d+)$/);
+    if (especieMatch) return '/dashboard/admin/especies';
+    const laborMatch = pathname.match(/^\/dashboard\/admin\/labores\/(\d+)$/);
+    if (laborMatch) return '/dashboard/admin/labores';
+    const usuarioMatch = pathname.match(/^\/dashboard\/admin\/usuarios\/(\d+)$/);
+    if (usuarioMatch) return '/dashboard/admin/usuarios';
+    return '/dashboard';
+  };
+  const parentUrl = getParentUrl();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -116,15 +191,28 @@ export default function DashboardLayout({
     return () => unsubscribe();
   }, [router]);
 
-  // Escuchar eventos de actualización del perfil desde otras páginas (ej: cambio de calendario)
+  // Escuchar eventos de actualización del perfil (BroadcastChannel es más fiable entre contextos)
   useEffect(() => {
-    const handleProfileUpdate = (e: any) => {
-      if (e.detail) {
-        setProfile((prev) => prev ? { ...prev, ...e.detail } : null);
-      }
+    const channel = new BroadcastChannel('verdantia_profile');
+    
+    const handleUpdate = (data: any) => {
+      console.log("📢 Verdantia Sync: Actualizando UI...", data);
+      setProfile((prev) => {
+        if (!prev) return null;
+        return { ...prev, ...data };
+      });
     };
-    window.addEventListener('profile_updated', handleProfileUpdate);
-    return () => window.removeEventListener('profile_updated', handleProfileUpdate);
+
+    channel.onmessage = (event) => handleUpdate(event.data);
+
+    // Mantener compatibilidad con CustomEvent por si acaso
+    const handleCustomEvent = (e: any) => handleUpdate(e.detail);
+    window.addEventListener('profile_updated', handleCustomEvent);
+
+    return () => {
+      channel.close();
+      window.removeEventListener('profile_updated', handleCustomEvent);
+    };
   }, []);
 
   useEffect(() => {
@@ -217,7 +305,7 @@ export default function DashboardLayout({
   const isAdmin = profile?.roles?.includes('administrador') || isSuperAdmin;
   const displayName = profile?.nombreUsuario || profile?.nombre || 'Agricultor';
   
-  let AvatarComponent;
+  let AvatarComponent: React.ReactNode = null;
   // Lista de emojis permitidos (la misma que en la versión PHP)
   const allowedIcons = ['🌱','🌿','🍀','🍃','🌾','🌻','🌷','🌹','🌵','🌴','🍄','🪴','🐝','🦋','🐞','🐛','🐌','🐇','🦉','🐦','🦆','🐓','🐢','🦔','🐸','🐟','🐑','🐐','🐄','🐎','🐕','🐈','🦜','🦚','🦢'];
   
@@ -247,15 +335,20 @@ export default function DashboardLayout({
 
     const filterStyle = `${STYLE_FILTERS[meta.profile_style] === 'none' ? '' : (STYLE_FILTERS[meta.profile_style] || '')} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim();
 
+    const photoPath = profile.fotoPreferida;
+    // Añadimos un timestamp (?t=...) para forzar al navegador a descargar la nueva foto
+    const photoUrl = (photoPath.startsWith('http') 
+      ? photoPath 
+      : (photoPath.startsWith('/') ? photoPath : `/${photoPath}`)) + `?t=${new Date().getTime()}`;
+
     AvatarComponent = (
       <img 
-        src={`/${profile.fotoPreferida}`} 
+        src={photoUrl} 
         alt="Avatar" 
         style={{ 
           width: '100%', 
           height: '100%', 
           objectFit: 'cover', 
-          borderRadius: '50%',
           objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
           transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
           transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined,
@@ -308,35 +401,57 @@ export default function DashboardLayout({
         {/* ═══════════════════════════════════════════ */}
         {isSuperAdmin && (
           <div className="sidebar-section admin-section">
-            <div className="section-header admin-header">
+            {/* Header clickable para colapsar/expandir */}
+            <button
+              onClick={() => setSuperAdminExpanded(p => !p)}
+              className="section-header admin-header"
+              style={{
+                width: '100%', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.6rem 1.25rem',
+                background: 'linear-gradient(135deg, #9f1239, #be123c)',
+                color: 'white',
+              }}
+            >
               <span>🛡️ Superadministrador</span>
-            </div>
-            <nav className="sidebar-nav">
-              <a href="/dashboard/admin/usuarios" className={`nav-item ${isActive('/dashboard/admin/usuarios')}`} onClick={handleNavClick}>
-                <span className="nav-icon">👥</span>
-                <span>Usuarios</span>
-              </a>
-              <a href="/dashboard/admin/chat" className={`nav-item ${isActive('/dashboard/admin/chat')}`} onClick={handleNavClick}>
-                <span className="nav-icon">💬</span>
-                <span>Chat</span>
-              </a>
-              <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} onClick={handleNavClick}>
-                <span className="nav-icon">🌍</span>
-                <span>Especies</span>
-              </a>
-              <a href="/dashboard/admin/variedades" className={`nav-item ${isActive('/dashboard/admin/variedades')}`} onClick={handleNavClick}>
-                <span className="nav-icon">🏷️</span>
-                <span>Variedades</span>
-              </a>
-              <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} onClick={handleNavClick}>
-                <span className="nav-icon">🔧</span>
-                <span>Labores</span>
-              </a>
-              <a href="/dashboard/admin/meteo" className={`nav-item ${isActive('/dashboard/admin/meteo')}`} onClick={handleNavClick}>
-                <span className="nav-icon">🌐</span>
-                <span>Meteo Red Global</span>
-              </a>
-            </nav>
+              <span style={{ fontSize: '0.75rem', opacity: 0.8, transition: 'transform 0.2s', transform: superAdminExpanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+            </button>
+            {superAdminExpanded && (
+              <nav className="sidebar-nav">
+                <a href="/dashboard/admin/usuarios" className={`nav-item ${isActive('/dashboard/admin/usuarios')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">👥</span>
+                  <span>Usuarios</span>
+                </a>
+                <a href="/dashboard/admin/chat" className={`nav-item ${isActive('/dashboard/admin/chat')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">💬</span>
+                  <span>Chat Moderación</span>
+                </a>
+                <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">🌍</span>
+                  <span>Especies Globales</span>
+                </a>
+                <a href="/dashboard/admin/variedades" className={`nav-item ${isActive('/dashboard/admin/variedades')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">🏷️</span>
+                  <span>Variedades</span>
+                </a>
+                <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">🔧</span>
+                  <span>Labores Globales</span>
+                </a>
+                <a href="/dashboard/admin/blog" className={`nav-item ${isActive('/dashboard/admin/blog')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">📝</span>
+                  <span>Gestor Blog IA</span>
+                </a>
+                <a href="/dashboard/admin/meteo" className={`nav-item ${isActive('/dashboard/admin/meteo')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">🌐</span>
+                  <span>Meteo Red Global</span>
+                </a>
+                <a href="/dashboard/admin/guia-usuario" className={`nav-item ${isActive('/dashboard/admin/guia-usuario')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">📖</span>
+                  <span>Guía de Usuario</span>
+                </a>
+              </nav>
+            )}
           </div>
         )}
 
@@ -420,14 +535,19 @@ export default function DashboardLayout({
       {/* Contenido Principal */}
       <main className="dashboard-main">
         <header className="dashboard-header">
-          <div className="header-left" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-            <div className="current-medal" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)', cursor: 'help' }} title="Rango Actual">
+
+            {/* Breadcrumbs eliminados para evitar duplicidad con botones inferiores */}
+
+            <div className="current-medal" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)', cursor: 'help', flexShrink: 0 }} title="Rango Actual">
                <span style={{ fontSize: '1.2rem' }}>{profile?.roles?.includes('visitante') ? '🧳' : '🧑‍🌾'}</span>
                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz'}</span>
             </div>
             {profile && (
-              <div className="current-calendar" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: profile.tipoCalendario === 'Biodinámico' ? 'rgba(139, 92, 246, 0.1)' : profile.tipoCalendario === 'Lunar' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '20px', border: `1px solid ${profile.tipoCalendario === 'Biodinámico' ? 'rgba(139, 92, 246, 0.3)' : profile.tipoCalendario === 'Lunar' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, marginLeft: '10px' }} title="Calendario Agrícola Activo">
+              <div className="current-calendar" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: profile.tipoCalendario === 'Biodinámico' ? 'rgba(139, 92, 246, 0.1)' : profile.tipoCalendario === 'Lunar' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '20px', border: `1px solid ${profile.tipoCalendario === 'Biodinámico' ? 'rgba(139, 92, 246, 0.3)' : profile.tipoCalendario === 'Lunar' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, marginLeft: '10px' }} 
+                title={`Calendario Agrícola Activo: Calendario de siembra ${profile.tipoCalendario || 'Normal'}${profile.tipoCalendario === 'Lunar' ? ` (${moon.name})` : profile.tipoCalendario === 'Biodinámico' ? ` (${bio.name})` : ''}`}
+              >
                 <span style={{ fontSize: '1.1rem' }}>
                   {profile.tipoCalendario === 'Biodinámico' ? bio.icon : profile.tipoCalendario === 'Lunar' ? moon.icon : '🌱'}
                 </span>
@@ -461,9 +581,9 @@ export default function DashboardLayout({
                   </div>
                   
                   <div className="weather-details" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
-                    <span style={{ color: '#3b82f6' }} title="Mínima hoy">Mín {weatherData.min}º</span>
+                    <span style={{ color: '#3b82f6' }} title="Mínima hoy"><span className="weather-label">Mín </span>{weatherData.min}º</span>
                     <span style={{ color: '#94a3b8' }}>/</span>
-                    <span style={{ color: '#ef4444' }} title="Máxima hoy">Máx {weatherData.max}º</span>
+                    <span style={{ color: '#ef4444' }} title="Máxima hoy"><span className="weather-label">Máx </span>{weatherData.max}º</span>
                   </div>
                   
                   {weatherData.rain > 0 && (

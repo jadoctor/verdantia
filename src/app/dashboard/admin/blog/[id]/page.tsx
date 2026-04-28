@@ -51,33 +51,51 @@ export default function BlogEditorDashboard() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <Link href="/dashboard/admin/blog" style={{ color: '#64748b', textDecoration: 'none', fontWeight: 'bold' }}>
-          ← Volver al listado
-        </Link>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <a 
-            href={`/blog/${blog.xblogslug}?preview=true`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'none', color: '#334155', display: 'flex', alignItems: 'center' }}
-          >
-            👁️ Visualizar
-          </a>
-          <button 
-            onClick={() => handleSave('borrador')} 
-            disabled={saving}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            Guardar Borrador
-          </button>
-          <button 
-            onClick={() => handleSave('publicado')} 
-            disabled={saving}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            🚀 Publicar Ahora
-          </button>
+      {/* ── Navegación ── */}
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🏠 Volver al Inicio
+        </button>
+        <button onClick={() => router.push('/dashboard/admin/blog')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          📝 Volver al Blog
+        </button>
+      </div>
+
+      {/* ── Subheader Integrado ── */}
+      <div style={{ background: 'linear-gradient(135deg, #10b981, #047857)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>
+              Editar Artículo: {blog.xblogtitulo || 'Nuevo Artículo'}
+            </h1>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+              Estado actual: {blog.xblogestado === 'publicado' ? '✅ Publicado' : '📝 Borrador'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <a 
+              href={`/blog/${blog.xblogslug}?preview=true`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ padding: '8px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'none', color: 'white', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}
+            >
+              👁️ Visualizar
+            </a>
+            <button 
+              onClick={() => handleSave('borrador')} 
+              disabled={saving}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'white', color: '#047857', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              💾 Guardar Borrador
+            </button>
+            <button 
+              onClick={() => handleSave('publicado')} 
+              disabled={saving}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #10b981', background: '#064e3b', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              🚀 Publicar Ahora
+            </button>
+          </div>
         </div>
       </div>
 

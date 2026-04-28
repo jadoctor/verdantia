@@ -41,7 +41,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [formData, setFormData] = useState<any>(defaultFormData);
   const [initialData, setInitialData] = useState<any>(defaultFormData);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
-
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('taxonomia');
@@ -57,6 +57,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [uploadingPdfs, setUploadingPdfs] = useState(false);
   const [draggedPhotoIndex, setDraggedPhotoIndex] = useState<number | null>(null);
   const [draggedOverPhotoIndex, setDraggedOverPhotoIndex] = useState<number | null>(null);
+
+  // Hero Carousel Drag State
+  const [draggedHeroPhotoId, setDraggedHeroPhotoId] = useState<number | null>(null);
+  const [draggedOverHeroPhotoId, setDraggedOverHeroPhotoId] = useState<number | null>(null);
 
   // -- Photo Editor State --
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
@@ -89,6 +93,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [blogGenPdf, setBlogGenPdf] = useState<any>(null);
   const [blogGenInstructions, setBlogGenInstructions] = useState('Escribe un post de blog para agricultores principiantes, con un tono motivador, consejos prácticos, emojis y una buena estructura de Markdown.');
   const [blogGenLoading, setBlogGenLoading] = useState(false);
+
+  // -- AI Image Generator State --
+  const [showAiImageModal, setShowAiImageModal] = useState(false);
+  const [aiImageConcept, setAiImageConcept] = useState('');
+  const [aiImageLoading, setAiImageLoading] = useState(false);
+  const [aiImageResult, setAiImageResult] = useState<string | null>(null);
 
   const STYLE_FILTERS: Record<string, string> = {
     '': 'none',
@@ -400,11 +410,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         const fd = new FormData();
         fd.append('file', file);
         fd.append('especieNombre', formData.especiesnombre || '');
-        await fetch(`/api/admin/especies/${especieId}/${type}`, { 
+        const res = await fetch(`/api/admin/especies/${especieId}/${type}`, { 
           method: 'POST', 
           headers: { 'x-user-email': userEmail || '' },
           body: fd 
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP Error ${res.status}`);
+        }
       }
       await loadAttachments(especieId);
     } catch (err) {
@@ -413,6 +427,67 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       if (type === 'photos') setUploadingPhotos(false);
       else setUploadingPdfs(false);
       if (e.target && e.target.value) e.target.value = '';
+    }
+  };
+
+  const generateAiImage = async () => {
+    if (!formData.especiesnombre) {
+      alert('Se necesita el nombre de la especie para generar la imagen.');
+      return;
+    }
+    setAiImageLoading(true);
+    setAiImageResult(null);
+    try {
+      const res = await fetch('/api/ai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+        body: JSON.stringify({ 
+          especieNombre: formData.especiesnombre,
+          especieNombreCientifico: formData.especiesnombrecientifico,
+          especieFamilia: formData.especiesfamilia,
+          concept: aiImageConcept 
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.base64) {
+        setAiImageResult(`data:image/jpeg;base64,${data.base64}`);
+      } else {
+        alert(data.error || 'Error al generar la imagen.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión al generar la imagen.');
+    } finally {
+      setAiImageLoading(false);
+    }
+  };
+
+  const uploadAiImage = async () => {
+    if (!aiImageResult || !especieId) return;
+    setUploadingPhotos(true);
+    setShowAiImageModal(false);
+    try {
+      const res = await fetch(aiImageResult);
+      const blob = await res.blob();
+      const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      const formDataPayload = new FormData();
+      formDataPayload.append('file', file);
+      formDataPayload.append('especieNombre', formData.especiesnombre);
+
+      await fetch(`/api/admin/especies/${especieId}/photos`, {
+        method: 'POST',
+        headers: { 'x-user-email': userEmail || '' },
+        body: formDataPayload
+      });
+      await loadAttachments(especieId);
+      setAiImageResult(null);
+      setAiImageConcept('');
+    } catch (error) {
+      console.error('Error uploading AI image:', error);
+      alert('Error al guardar la imagen generada.');
+    } finally {
+      setUploadingPhotos(false);
     }
   };
 
@@ -458,6 +533,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   };
 
   const handleSetPrimaryPhoto = async (photoId: number) => {
+    // Optimistic UI update: mark photo as primary immediately
+    setPhotos(prev => prev.map(p => ({ ...p, esPrincipal: p.id === photoId ? 1 : 0 })));
+    setHeroIndex(0);
     try {
       await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'PUT',
@@ -470,6 +548,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       loadAttachments(especieId!);
     } catch (err) {
       alert('Error estableciendo foto principal');
+      loadAttachments(especieId!); // Revert on error
     }
   };
 
@@ -608,7 +687,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}/${blogGenPdf.ruta}`,
+          pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
           instructions: blogGenInstructions,
           especieId: especieId,
           variedadId: null, // Si fuera en formulario de variedad se pasaría esto
@@ -687,15 +766,35 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   return (
     <>
-      <div style={{ padding: '0 4px 16px' }}>
-        <h1 style={{ margin: 0, fontSize: '1.8rem', color: '#0f172a', fontWeight: 800 }}>
-          {formData.especiesnombre || 'Nueva Especie'}
-        </h1>
-        {formData.especiesnombrecientifico && (
-          <p style={{ margin: '4px 0 0', fontSize: '1rem', color: '#64748b', fontStyle: 'italic' }}>
-            {formData.especiesnombrecientifico}
-          </p>
-        )}
+      {/* ── Navegación ── */}
+      <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🏠 Volver al Inicio
+        </button>
+        <button onClick={() => router.push('/dashboard/admin/especies')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🌍 Volver a Especies Globales
+        </button>
+      </div>
+
+      {/* ── Subheader Integrado ── */}
+      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {formData.especiesnombre || 'Nueva Especie'}
+              {isDirty && <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Cambios sin guardar</span>}
+            </h1>
+            {formData.especiesnombrecientifico ? (
+              <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '1rem', fontStyle: 'italic' }}>
+                {formData.especiesnombrecientifico}
+              </p>
+            ) : (
+              <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+                Editor de Especie
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* HERO GALLERY HEADER */}
@@ -710,17 +809,47 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         {photos.length > 0 ? (
           <div style={{ display: 'flex', gap: 0 }}>
             {/* Hero photo */}
-            <div style={{ position: 'relative', flexShrink: 0, width: '180px', height: '220px', overflow: 'hidden' }}>
+            <div 
+              style={{ 
+                position: 'relative', flexShrink: 0, width: '180px', height: '220px', overflow: 'hidden',
+                border: draggedOverHeroPhotoId === -1 ? '4px dashed #10b981' : 'none',
+                opacity: draggedOverHeroPhotoId === -1 ? 0.8 : 1,
+                transition: 'all 0.2s ease'
+              }}
+              onDragEnter={(e) => { e.preventDefault(); if (draggedHeroPhotoId !== null) setDraggedOverHeroPhotoId(-1); }}
+              onDragOver={(e) => e.preventDefault()}
+              onDragLeave={() => { if(draggedOverHeroPhotoId === -1) setDraggedOverHeroPhotoId(null); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggedHeroPhotoId !== null && draggedOverHeroPhotoId === -1) {
+                  const draggedPhoto = photos.find(p => p.id === draggedHeroPhotoId);
+                  if (draggedPhoto && draggedPhoto.esPrincipal !== 1) {
+                    const newPhotos = [...photos];
+                    newPhotos.forEach(pt => pt.esPrincipal = (pt.id === draggedHeroPhotoId ? 1 : 0));
+                    const dragIdx = newPhotos.findIndex(pt => pt.id === draggedHeroPhotoId);
+                    if (dragIdx !== -1) {
+                      const [draggedItem] = newPhotos.splice(dragIdx, 1);
+                      newPhotos.unshift(draggedItem);
+                      handleReorderPhotos(newPhotos);
+                    }
+                    handleSetPrimaryPhoto(draggedHeroPhotoId);
+                  }
+                }
+                setDraggedHeroPhotoId(null);
+                setDraggedOverHeroPhotoId(null);
+              }}
+            >
               {heroPhoto && (() => {
                 const hFilter = heroMeta.profile_style ? STYLE_FILTERS[heroMeta.profile_style] : 'none';
                 const fullFilter = (heroMeta.profile_brightness !== undefined || heroMeta.profile_contrast !== undefined)
                   ? `brightness(${heroMeta.profile_brightness ?? 100}%) contrast(${heroMeta.profile_contrast ?? 100}%) ${heroMeta.profile_style ? STYLE_FILTERS[heroMeta.profile_style] : ''}`.trim()
                   : hFilter;
                 return (
-                  <img key={heroPhoto.id} src={`/${heroPhoto.ruta}`}
+                  <img key={heroPhoto.id} src={heroPhoto.ruta.startsWith('http') ? heroPhoto.ruta : (heroPhoto.ruta.startsWith('/') ? heroPhoto.ruta : `/${heroPhoto.ruta}`)}
                     alt={heroMeta.seo_alt || formData.especiesnombre}
                     style={{ width: '100%', height: '100%', objectFit: 'cover',
                       objectPosition: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
+                      transformOrigin: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
                       transform: `scale(${(heroMeta.profile_object_zoom ?? 100) / 100})`,
                       filter: fullFilter, transition: 'opacity 0.3s ease' }}
                   />
@@ -738,16 +867,43 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     let tMeta: any = {};
                     try { tMeta = JSON.parse(p.resumen || '{}'); } catch(e){}
                     return (
-                      <div key={p.id} onClick={() => setHeroIndex(i)}
-                        style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
-                          border: '2px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 3px rgba(0,0,0,0.12)', transition: 'all 0.2s ease' }}
-                        onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.1)')}
-                        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                      <div key={p.id} 
+                        draggable
+                        onClick={() => { handleSetPrimaryPhoto(p.id); setHeroIndex(0); }}
+                        onDragStart={() => setDraggedHeroPhotoId(p.id)}
+                        onDragEnter={() => draggedHeroPhotoId !== null && setDraggedOverHeroPhotoId(p.id)}
+                        onDragEnd={() => {
+                          if (draggedHeroPhotoId !== null && draggedOverHeroPhotoId !== null && draggedHeroPhotoId !== draggedOverHeroPhotoId) {
+                            const newPhotos = [...photos];
+                            const dragIdx = newPhotos.findIndex(pt => pt.id === draggedHeroPhotoId);
+                            const dropIdx = newPhotos.findIndex(pt => pt.id === draggedOverHeroPhotoId);
+                            if (dragIdx !== -1 && dropIdx !== -1) {
+                              const [draggedItem] = newPhotos.splice(dragIdx, 1);
+                              newPhotos.splice(dropIdx, 0, draggedItem);
+                              handleReorderPhotos(newPhotos);
+                            }
+                          }
+                          setDraggedHeroPhotoId(null);
+                          setDraggedOverHeroPhotoId(null);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', cursor: 'grab', flexShrink: 0,
+                          border: draggedOverHeroPhotoId === p.id ? '2px dashed #10b981' : '2px solid rgba(0,0,0,0.08)', 
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.12)', 
+                          transition: 'all 0.2s ease',
+                          opacity: draggedHeroPhotoId === p.id ? 0.5 : 1,
+                          transform: draggedOverHeroPhotoId === p.id ? 'scale(1.05)' : 'scale(1)'
+                        }}
+                        onMouseEnter={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1.1)'; }}
+                        onMouseLeave={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1)'; }}
                       >
-                        <img src={`/${p.ruta.replace('especies/', 'especies/thumb-')}`}
-                          onError={ev => { ev.currentTarget.src = `/${p.ruta}`; }} alt=""
+                        <img src={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)}
+                          draggable={false}
+                          alt=""
                           style={{ width: '100%', height: '100%', objectFit: 'cover',
-                            objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%` }} />
+                            objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
+                            transformOrigin: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
+                            transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }} />
                       </div>
                     );
                   })}
@@ -764,11 +920,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         )}
       </div>
       <div className="especie-form-container">
-        <div className="especie-form-header">
-        <button type="button" onClick={() => router.push('/dashboard/admin/especies')} className="btn-back">
-          ← Volver
-        </button>
-      </div>
 
       <form onSubmit={handleSubmit} className="especie-form-body">
         
@@ -902,7 +1053,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           {activeTab === 'calendarios' && (
             <div className="grid-form">
               <div className="form-group full">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                   {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
                     const colorMap: Record<string, string> = {
                       siembradirecta: '#f97316',
@@ -920,11 +1071,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <div key={tipo} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', borderTop: `4px solid ${colorMap[tipo]}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                         <strong style={{ display: 'block', marginBottom: '10px', fontSize: '0.95rem', color: '#334155' }}>{labelMap[tipo]}</strong>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <select name={`especiesfecha${tipo}desde`} value={formData[`especiesfecha${tipo}desde`] || ''} onChange={handleChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          <select 
+                            name={tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`} 
+                            value={formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`] || ''} 
+                            onChange={handleChange} 
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                          >
                             <option value="">Desde (Mes)...</option>
                             {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
                           </select>
-                          <select name={`especiesfecha${tipo}hasta`} value={formData[`especiesfecha${tipo}hasta`] || ''} onChange={handleChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          <select 
+                            name={tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`} 
+                            value={formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`] || ''} 
+                            onChange={handleChange} 
+                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                          >
                             <option value="">Hasta (Mes)...</option>
                             {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
                           </select>
@@ -940,13 +1101,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   📊 Gráfico del Calendario de Cultivo
                 </h3>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
                   {/* Cabecera de meses */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '130px repeat(12, 1fr)', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                    <div style={{ padding: '12px', fontWeight: 'bold', color: '#64748b', fontSize: '0.85rem', borderRight: '1px solid #e2e8f0' }}>FASE</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ padding: '8px 4px', fontWeight: 'bold', color: '#64748b', fontSize: '0.7rem', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>FASE</div>
                     {MESES.map(m => (
-                      <div key={m.val} style={{ padding: '12px 0', textAlign: 'center', fontWeight: 'bold', color: '#475569', fontSize: '0.85rem', borderRight: m.val < 12 ? '1px solid #e2e8f0' : 'none' }}>
-                        {m.label.substring(0,3)}
+                      <div key={m.val} style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', color: '#475569', fontSize: '0.7rem', borderRight: m.val < 12 ? '1px solid #e2e8f0' : 'none' }}>
+                        {m.label.charAt(0)}
                       </div>
                     ))}
                   </div>
@@ -954,35 +1115,35 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   {/* Filas del gráfico */}
                   {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map((tipo, idx) => {
                     const colorMap: Record<string, string> = { siembradirecta: '#f97316', semillero: '#3b82f6', trasplante: '#a855f7', recoleccion: '#22c55e' };
-                    const labelMap: Record<string, string> = { siembradirecta: 'Siembra Dir.', semillero: 'Semillero', trasplante: 'Trasplante', recoleccion: 'Recolección' };
+                    const labelMap: Record<string, string> = { siembradirecta: 'Siembra', semillero: 'Semillero', trasplante: 'Traspl.', recoleccion: 'Recol.' };
                     
-                    const desde = parseInt(formData[`especiesfecha${tipo}desde`]) || 0;
-                    const hasta = parseInt(formData[`especiesfecha${tipo}hasta`]) || 0;
+                    const desde = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`]) || 0;
+                    const hasta = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`]) || 0;
                     
                     const isMonthActive = (m: number) => {
                       if (!desde || !hasta) return false;
                       if (desde <= hasta) return m >= desde && m <= hasta;
-                      return m >= desde || m <= hasta; // cruza el año (ej: Nov a Feb)
+                      return m >= desde || m <= hasta;
                     };
 
                     return (
-                      <div key={tipo} style={{ display: 'grid', gridTemplateColumns: '130px repeat(12, 1fr)', borderBottom: idx < 3 ? '1px solid #e2e8f0' : 'none', background: '#fff' }}>
-                        <div style={{ padding: '12px', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center' }}>
-                          <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: colorMap[tipo], marginRight: '8px' }}></span>
+                      <div key={tipo} style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', borderBottom: idx < 3 ? '1px solid #e2e8f0' : 'none', background: '#fff' }}>
+                        <div style={{ padding: '8px 4px', fontSize: '0.65rem', fontWeight: 'bold', color: '#334155', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colorMap[tipo], flexShrink: 0 }}></span>
                           {labelMap[tipo]}
                         </div>
                         {MESES.map(m => {
                           const active = isMonthActive(m.val);
                           return (
                             <div key={m.val} style={{ 
-                              padding: '12px 0', 
+                              padding: '8px 0', 
                               borderRight: m.val < 12 ? '1px dashed #e2e8f0' : 'none',
                               background: active ? `${colorMap[tipo]}20` : 'transparent',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center'
                             }}>
-                              {active && <div style={{ width: '100%', height: '12px', background: colorMap[tipo], borderRadius: '2px', margin: '0 2px' }}></div>}
+                              {active && <div style={{ width: '100%', height: '10px', background: colorMap[tipo], borderRadius: '2px', margin: '0 1px' }}></div>}
                             </div>
                           );
                         })}
@@ -1086,7 +1247,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </div>
 
               {(formData.especiesmarcoplantas || formData.especiesmarcofilas) && (
-                <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px', padding: '20px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
                   <span style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', fontWeight: 'bold' }}>Esquema de Plantación a Escala</span>
                   
                   {(() => {
@@ -1121,7 +1282,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     const y2 = cy + drawH / 2;
 
                     return (
-                      <svg width="240" height="180" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+                      <svg width="240" height="180" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
                         <circle cx={x1} cy={y1} r="8" fill="#22c55e" />
                         <circle cx={x2} cy={y1} r="8" fill="#22c55e" />
                         <circle cx={x1} cy={y2} r="8" fill="#22c55e" />
@@ -1195,13 +1356,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 const m2Conserva = totalPConserva * areaPlant;
 
                 return (
-                  <div className="form-group full" style={{ marginTop: '20px', padding: '20px', background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px' }}>
+                  <div className="form-group full" style={{ marginTop: '20px', padding: '14px', background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
                     <h3 style={{ marginTop: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
                       🧮 Calculadora de Autosuficiencia
                       <span style={{ fontSize: '0.8rem', fontWeight: 'normal', background: '#dcfce7', padding: '3px 8px', borderRadius: '12px' }}>No se guarda</span>
                     </h3>
                     
-                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
                       <label style={{ fontWeight: 'bold', color: '#15803d' }}>Número de Personas a alimentar:</label>
                       <input 
                         type="number" 
@@ -1212,7 +1373,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
                         <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Solo Consumo en Fresco</h4>
                         <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
@@ -1271,6 +1432,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           filter: baseFilter,
                           objectFit: 'cover',
                           objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                          transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
                           transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
                         };
 
@@ -1300,7 +1462,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 const newPhotos = [...photos];
                                 const [draggedItem] = newPhotos.splice(draggedPhotoIndex, 1);
                                 newPhotos.splice(draggedOverPhotoIndex, 0, draggedItem);
+                                
+                                // Guardar estado original
+                                const wasAlreadyPrimary = draggedItem.esPrincipal === 1;
+                                
+                                // Si se arrastra a la primera posición, marcarla como principal localmente
+                                if (draggedOverPhotoIndex === 0) {
+                                  newPhotos.forEach(p => p.esPrincipal = (p.id === draggedItem.id ? 1 : 0));
+                                }
+                                
                                 handleReorderPhotos(newPhotos);
+                                
+                                // Si cayó en la primera posición y no era la principal, actualizar en servidor
+                                if (draggedOverPhotoIndex === 0 && !wasAlreadyPrimary) {
+                                  handleSetPrimaryPhoto(draggedItem.id);
+                                }
                               }
                               setDraggedPhotoIndex(null);
                               setDraggedOverPhotoIndex(null);
@@ -1313,12 +1489,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               </div>
                             )}
                             <img 
-                              src={`/${thumbPath}`} 
-                              onError={(ev) => {
-                                if (ev.currentTarget.src.includes('thumb-')) {
-                                  ev.currentTarget.src = `/${p.ruta}`;
-                                }
-                              }}
+                              src={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)} 
                               alt={meta.seo_alt || 'foto especie'} 
                               loading="lazy" 
                               style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} 
@@ -1357,14 +1528,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       {photos.length >= 4 ? null : (
                         <div 
                           className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
-                          onDragOver={(e) => { e.preventDefault(); setDragOverPhotos(true); }}
-                          onDragLeave={() => setDragOverPhotos(false)}
+                          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
                           onDrop={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             setDragOverPhotos(false);
                             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                              const fakeEvent = { target: { files: e.dataTransfer.files } } as any;
-                              handleFileUpload(fakeEvent, 'photos');
+                              handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
                             }
                           }}
                         >
@@ -1386,6 +1558,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 <label htmlFor="upload-camera" className="btn-upload secondary mobile-only" style={{ padding: '8px', fontSize: '0.8rem' }}>
                                   <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📷</span> Cámara
                                 </label>
+                                <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
+                                  <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>✨</span> Generar IA
+                                </button>
                               </div>
                               <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br/>aquí</span>
                             </div>
@@ -1405,7 +1580,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       {pdfs.map(p => (
                         <div key={p.id} className="gallery-item pdf" style={{ display: 'flex', flexDirection: 'column', padding: '10px', gap: '8px', position: 'relative' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <a href={p.ruta.startsWith('http') ? p.ruta : `/${p.ruta}`} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', textDecoration: 'none', wordBreak: 'break-word', paddingRight: '40px', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                            <a href={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', textDecoration: 'none', wordBreak: 'break-word', paddingRight: '40px', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
                               📄 {p.titulo || p.nombreOriginal} <span style={{ fontSize: '0.7rem' }}>↗</span>
                             </a>
                             <div className="photo-actions" style={{ position: 'absolute', top: '5px', right: '5px', display: 'flex', opacity: 1, gap: '4px' }}>
@@ -1440,14 +1615,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
                       <div 
                         className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
-                        onDragOver={(e) => { e.preventDefault(); setDragOverPdfs(true); }}
-                        onDragLeave={(e) => setDragOverPdfs(false)}
+                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
+                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(false); }}
                         onDrop={(e) => {
                           e.preventDefault();
+                          e.stopPropagation();
                           setDragOverPdfs(false);
                           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                            const fakeEvent = { target: { files: e.dataTransfer.files } } as any;
-                            handleFileUpload(fakeEvent, 'pdfs');
+                            handleFileUpload({ target: { files: e.dataTransfer.files } }, 'pdfs');
                           }
                         }}
                       >
@@ -1584,12 +1760,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                    onTouchMove={onEditorTouchMove}>
                 <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
                   <img 
-                    src={`/${editingPhoto.ruta}`} 
+                    src={editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`)} 
                     alt="preview"
                     className="photo-editor-image"
                     draggable="false"
                     style={{
                       objectPosition: `${editorX}% ${editorY}%`,
+                      transformOrigin: `${editorX}% ${editorY}%`,
                       transform: `scale(${editorZoom / 100})`,
                       filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
                     }}
@@ -1910,6 +2087,118 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(239,68,68,0.35)' }}>
                 Sí, eliminar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Image Generator Modal */}
+      {showAiImageModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(to right, #f8fafc, #f1f5f9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.5rem' }}>✨</span> Generador de Imágenes IA
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Especie: <strong>{formData.especiesnombre || 'Sin nombre'}</strong></p>
+              </div>
+              <button onClick={() => setShowAiImageModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
+            </div>
+            
+            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {!aiImageResult ? (
+                <>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
+                      Contexto de la foto deseada
+                    </label>
+                    <textarea 
+                      value={aiImageConcept} 
+                      onChange={e => setAiImageConcept(e.target.value)}
+                      placeholder="Ej. Fotografía macro de las hojas con rocío de la mañana..."
+                      rows={3}
+                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem' }}>
+                      Sugerencias Rápidas:
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {[
+                        "En la planta con fruto maduro",
+                        "En la planta y tras el riego",
+                        "En la tabla de cocina preparándolo para crear un plato",
+                        "Como plato precocinado"
+                      ].map(preset => (
+                        <button 
+                          key={preset}
+                          type="button"
+                          onClick={() => setAiImageConcept(preset)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            border: `1px solid ${aiImageConcept === preset ? '#8b5cf6' : '#e2e8f0'}`,
+                            background: aiImageConcept === preset ? '#f3e8ff' : '#f8fafc',
+                            color: aiImageConcept === preset ? '#6d28d9' : '#475569',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    onClick={generateAiImage} 
+                    disabled={aiImageLoading}
+                    style={{ 
+                      padding: '14px', 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+                      color: 'white', 
+                      fontWeight: 'bold', 
+                      fontSize: '1rem', 
+                      cursor: aiImageLoading ? 'not-allowed' : 'pointer',
+                      opacity: aiImageLoading ? 0.7 : 1,
+                      marginTop: '10px'
+                    }}
+                  >
+                    {aiImageLoading ? 'Generando Imagen...' : '✨ Generar Ahora'}
+                  </button>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+                    <img src={aiImageResult} alt="Generated by AI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setAiImageResult(null)} 
+                      style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Descartar y Reintentar
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={uploadAiImage} 
+                      disabled={uploadingPhotos}
+                      style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: uploadingPhotos ? 'not-allowed' : 'pointer', opacity: uploadingPhotos ? 0.7 : 1 }}
+                    >
+                      {uploadingPhotos ? 'Guardando...' : 'Guardar en Galería'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

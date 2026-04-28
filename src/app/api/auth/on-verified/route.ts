@@ -7,7 +7,8 @@ import pool from '@/lib/db';
  * Se llama tras verificar el email. Asigna:
  * - Rol "usuario" (Campesino Aprendiz)
  * - Logro "Campesino Aprendiz"
- * - Suscripción Premium de prueba (60 días)
+ * - Suscripción Premium de prueba (30 días) — nuevo esquema 4 planes
+ *   Degradación progresiva: Mes 1 Premium → Mes 2 Avanzado → Mes 3 Esencial → Free
  */
 export async function POST(request: Request) {
   try {
@@ -63,42 +64,56 @@ export async function POST(request: Request) {
       [userId, 'Campesino Aprendiz']
     );
 
-    // 5. Crear suscripción Premium de prueba (60 días)
-    // Primero obtener el ID de la suscripción Premium
-    const [subRows] = await pool.query(
-      "SELECT idsuscripciones FROM suscripciones WHERE suscripcionesnombre = 'Premium' LIMIT 1"
-    );
-    const premiumPlan = (subRows as any[])[0];
+    // 5. Asignar suscripción Premium de prueba — 30 días (nuevo esquema de 4 planes)
+    //    Degradación automática: Premium (30d) → Avanzado (30d) → Esencial (30d) → Gratuito
+    const fechaInicio = new Date();
+    const fechaFin = new Date();
+    fechaFin.setDate(fechaFin.getDate() + 30); // Mes 1: Premium
 
-    if (premiumPlan) {
-      // Verificar que no tenga ya una suscripción activa
-      const [existingSub] = await pool.query(
-        `SELECT idusuariossuscripciones FROM usuariossuscripciones 
-         WHERE xusuariossuscripcionesidusuarios = ? 
-         AND usuariossuscripcionesestado IN ('activa','degradacion_fase1','degradacion_fase2','degradacion_fase3')
-         LIMIT 1`,
-        [userId]
+    try {
+      // Ruta A: tabla de suscripciones normalizada
+      const [subRows] = await pool.query(
+        "SELECT idsuscripciones FROM suscripciones WHERE suscripcionesnombre IN ('Premium', 'premium') LIMIT 1"
       );
+      const premiumPlan = (subRows as any[])[0];
 
-      if ((existingSub as any[]).length === 0) {
-        const fechaInicio = new Date();
-        const fechaFin = new Date();
-        fechaFin.setDate(fechaFin.getDate() + 60); // 60 días de prueba
-
-        await pool.query(
-          `INSERT INTO usuariossuscripciones (
-            xusuariossuscripcionesidusuarios, 
-            xusuariossuscripcionesidsuscripciones, 
-            usuariossuscripcionesfechainicio, 
-            usuariossuscripcionesfechafin, 
-            usuariossuscripcionesestado
-          ) VALUES (?, ?, ?, ?, 'activa')`,
-          [userId, premiumPlan.idsuscripciones, fechaInicio, fechaFin]
+      if (premiumPlan) {
+        const [existingSub] = await pool.query(
+          `SELECT idusuariossuscripciones FROM usuariossuscripciones 
+           WHERE xusuariossuscripcionesidusuarios = ? 
+           AND usuariossuscripcionesestado IN ('activa','degradacion_fase1','degradacion_fase2','degradacion_fase3')
+           LIMIT 1`,
+          [userId]
         );
+
+        if ((existingSub as any[]).length === 0) {
+          await pool.query(
+            `INSERT INTO usuariossuscripciones (
+              xusuariossuscripcionesidusuarios, 
+              xusuariossuscripcionesidsuscripciones, 
+              usuariossuscripcionesfechainicio, 
+              usuariossuscripcionesfechafin, 
+              usuariossuscripcionesestado
+            ) VALUES (?, ?, ?, ?, 'activa')`,
+            [userId, premiumPlan.idsuscripciones, fechaInicio, fechaFin]
+          );
+        }
       }
+    } catch {
+      // Ruta B: columnas directas en tabla usuarios (fallback)
+      await pool.query(
+        `UPDATE usuarios SET 
+          usuariossuscripcion = 'Premium',
+          usuariosespruebasuscripcion = 1,
+          usuariosfechacaducidadsuscripcion = ?
+         WHERE idusuarios = ?`,
+        [fechaFin, userId]
+      ).catch(() => {
+        // Columnas pueden no existir todavía — no es bloqueante
+      });
     }
 
-    // 6. Comprobar si es menor de edad para devolver la limitación
+    // 6. Comprobar si es menor de edad para la limitación
     let isUnderageLimitation = false;
     const [userDataRows] = await pool.query(
       'SELECT usuariosfechadenacimiento FROM usuarios WHERE idusuarios = ?',
@@ -120,7 +135,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Usuario verificado y actualizado correctamente.',
+      message: '¡Usuario verificado! Disfrutas de 1 mes de Premium gratis.',
       unlockedAchievement: 'Campesino Aprendiz',
       isUnderageLimitation
     });
