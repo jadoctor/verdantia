@@ -38,6 +38,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       finalUrl = `https://web.archive.org/web/2/${url}`;
     }
 
+    const safeTitle = Array.isArray(title) ? title.join(' ') : (title || '');
+    const safeSummary = Array.isArray(summary) ? summary.join(' ') : (summary || '');
+    const safeApuntes = Array.isArray(apuntes) ? apuntes.join('\n') : (apuntes || '');
+
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
@@ -45,7 +49,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespecies,
         datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
       ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, 0, ?, ?, ?)`,
-      ['Documento_Web', finalUrl, total + 1, idespecies, title, summary || '', apuntes || '']
+      ['Documento_Web', finalUrl, total + 1, idespecies, safeTitle, safeSummary, safeApuntes]
     );
 
     return NextResponse.json({

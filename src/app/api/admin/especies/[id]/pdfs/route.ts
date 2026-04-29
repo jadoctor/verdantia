@@ -188,14 +188,32 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       finalPortada = await uploadToStorage(buffer, storagePath, 'image/jpeg');
     }
 
-    let updateQuery = `UPDATE datosadjuntos SET datosadjuntostitulo = ?, datosadjuntosresumen = ?, datosadjuntosapuntes = ?`;
-    let updateParams = [titulo || '', resumen || '', apuntes || ''];
+    let updateQuery = `UPDATE datosadjuntos SET `;
+    let updateParams: any[] = [];
+    let setClauses: string[] = [];
 
+    if (titulo !== undefined) {
+      setClauses.push(`datosadjuntostitulo = ?`);
+      updateParams.push(titulo || '');
+    }
+    if (resumen !== undefined) {
+      setClauses.push(`datosadjuntosresumen = ?`);
+      updateParams.push(resumen || '');
+    }
+    if (apuntes !== undefined) {
+      setClauses.push(`datosadjuntosapuntes = ?`);
+      updateParams.push(apuntes || '');
+    }
     if (finalPortada !== undefined) {
-      updateQuery += `, datosadjuntosportada = ?`;
+      setClauses.push(`datosadjuntosportada = ?`);
       updateParams.push(finalPortada);
     }
 
+    if (setClauses.length === 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    updateQuery += setClauses.join(', ');
     updateQuery += ` WHERE iddatosadjuntos = ? AND xdatosadjuntosidespecies = ? AND datosadjuntostipo = 'documento'`;
     updateParams.push(pdfId, idespecies);
 

@@ -47,18 +47,10 @@ export async function GET(request: NextRequest) {
     const [exists] = await file.exists();
 
     if (!exists) {
-      try {
-        const publicPath = nodePath.join(process.cwd(), 'public', mediaPath);
-        const contents = await readFile(publicPath);
-        return new NextResponse(new Uint8Array(contents), {
-          headers: {
-            'Content-Type': mediaPath.endsWith('.webp') ? 'image/webp' : mediaPath.endsWith('.png') ? 'image/png' : mediaPath.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
-            'Cache-Control': 'public, max-age=3600',
-          },
-        });
-      } catch {
-        return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 });
-      }
+      // En producción (Google Cloud), la carpeta 'public' no se empaqueta dentro de la Cloud Function.
+      // Firebase Hosting sirve los estáticos directamente. Si la imagen no está en Storage (migración antigua),
+      // redirigimos la petición al asset estático servido por Firebase Hosting (o Next.js en local).
+      return NextResponse.redirect(new URL(`/${mediaPath}`, request.url));
     }
 
     const [metadata] = await file.getMetadata();

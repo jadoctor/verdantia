@@ -220,7 +220,12 @@ export default function GuiaUsuarioPage() {
           El paso del entorno de desarrollo local al entorno real de producción es un proceso delicado que debe seguir una estricta secuencia.
         </p>
 
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.1. Fase 1: La Prueba de Fuego (Build Local)</h3>
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.1. Fase 0: Estampado de Versión (Timestamp)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          <strong>Verificación Visual:</strong> Antes de iniciar la compilación, el asistente debe modificar obligatoriamente la pantalla de inicio (<code>src/app/page.tsx</code>) para estampar la fecha y hora exacta del despliegue. Esto permite confirmar a simple vista que la subida a producción ha surtido efecto.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Fase 1: La Prueba de Fuego (Build Local)</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
           <strong>Regla de Oro:</strong> Nunca se sube código sin antes ejecutar el comando <code>npm run build</code> en la terminal local.
         </p>
@@ -229,7 +234,7 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}>Si existe el más mínimo error de tipos, una variable no utilizada, o un fallo en el diseño estructural, el <strong>Build fallará localmente</strong> alertando al desarrollador.</li>
         </ul>
 
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Fase 2: Salvaguarda del Código (Control de Versiones)</h3>
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.3. Fase 2: Salvaguarda del Código (Control de Versiones)</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
           Una vez que el <code>build</code> es exitoso, se guarda un punto de control en la nube.
         </p>
@@ -239,7 +244,7 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><code>git push</code> (Sube el paquete de forma segura a GitHub).</li>
         </ul>
 
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.3. Fase 3: El Despliegue Final (Google Cloud / Firebase)</h3>
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.4. Fase 3: El Despliegue Final (Google Cloud / Firebase)</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
           Para que los cambios se reflejen en la app en vivo, el código debe subirse a la infraestructura de Google Cloud usando Firebase Hosting.
         </p>
@@ -250,7 +255,7 @@ export default function GuiaUsuarioPage() {
         </ul>
 
         <div style={{ background: '#f0f9ff', borderLeft: '4px solid #0ea5e9', padding: '16px', marginTop: '24px', borderRadius: '0 8px 8px 0' }}>
-          <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>6.4. Rol del Asistente IA (Mandato Estricto)</h4>
+          <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>6.5. Rol del Asistente IA (Mandato Estricto)</h4>
           <p style={{ color: '#0c4a6e', margin: 0, lineHeight: 1.5 }}>
             El asistente de inteligencia artificial (Antigravity) tiene prohibido subir código a producción por iniciativa propia. <strong>El proceso completo de despliegue a Firebase se realizará SIEMPRE y ÚNICAMENTE a petición expresa del usuario.</strong> 
             <br/><br/>
@@ -350,22 +355,65 @@ export default function GuiaUsuarioPage() {
           Esta sección actúa como un <strong>disco duro externo para el Asistente de IA</strong>, evitando el "olvido" de fallos críticos debido a las limitaciones de memoria de contexto. Antes de resolver nuevos problemas, la IA debe consultar y vaciar esta lista.
         </p>
 
-        <h3 style={{ color: '#eab308', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🟡 [29/04/2026 - 15:45] PENDIENTE DE VALIDACIÓN - Imágenes no cargan en Producción (Cloud)
+        <h3 style={{ color: '#0369a1', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          8.1. Imágenes no cargan en Producción (Cloud)
         </h3>
-        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Fallo:</strong> Las fotos y portadas se ven en local pero aparecen rotas o en blanco en Google Cloud.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Causa Analizada:</strong> Next.js bloquea por seguridad orígenes externos no declarados.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Solución Aplicada (Falta Comprobar):</strong> Se han añadido `firebasestorage.googleapis.com` y `storage.googleapis.com` en `images.remotePatterns` del archivo `next.config.ts`.</li>
-        </ul>
+        <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
+          <strong>Fallo:</strong> Las fotografías e imágenes (portadas de PDFs, avatares, fotos de especies) que sí se ven en el entorno local devuelven un error en Google Cloud.
+        </p>
+        
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', marginBottom: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 15:45]</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Mi falso análisis:</strong> Pensé que Next.js bloqueaba orígenes por seguridad.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Modifiqué `next.config.ts` para autorizar dominios.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:10]</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> La función Node.js falla al intentar leer el disco duro (`public/uploads`) porque en Cloud esa carpeta no existe.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Modificado `api/media/route.ts` para redirigir al estático en Firebase Hosting.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN.</li>
+          </ul>
+        </div>
+
+        <h3 style={{ color: '#0369a1', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          8.2. Desplegable Superadministrador truncado en Móvil
+        </h3>
+        <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
+          <strong>Fallo:</strong> El menú en móviles corta las entradas y los dashboards laterales no dejan hacer scroll hacia abajo.
+        </p>
+
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', marginBottom: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 15:45]</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Mi falso análisis:</strong> Pensé que faltaba espacio físico abajo.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Añadido un `padding-bottom` extra en CSS.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:10]</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Se estaba usando `100vh`, que en iOS ignora las barras de navegación. Faltaban las reglas nativas de Apple para scroll.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Cambiado a `100dvh` (dinámico) y añadido `-webkit-overflow-scrolling`.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN.</li>
+          </ul>
+        </div>
 
         <h3 style={{ color: '#eab308', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🟡 [29/04/2026 - 15:45] PENDIENTE DE VALIDACIÓN - Desplegable Superadministrador truncado en Móvil
+          🟡 [29/04/2026 - 16:02] PENDIENTE DE VALIDACIÓN - Bug Destructivo en PDFs IA y Error "Column count doesn't match"
         </h3>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Fallo:</strong> El menú en móviles corta las entradas y solo muestra 3 porque no tiene scroll o el navegador lo oculta.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Causa Analizada:</strong> La barra de navegación inferior nativa del navegador móvil (Safari/Chrome) se superpone al final del panel lateral `100vh`.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Solución Aplicada (Falta Comprobar):</strong> Se ha añadido un `padding-bottom: 100px` a `.sidebar` en `dashboard.css` para forzar el área de scroll y liberar las últimas opciones del acordeón.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Fallo 1 (Textos borrados):</strong> Al generar la portada del PDF, se borraban el título y los apuntes de la base de datos, dejando la ficha vacía.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Causa 1:</strong> La petición PUT del frontend (`EspecieForm.tsx`) solo enviaba la foto generada y el servidor sobrescribía "ciegamente" los campos no recibidos con strings vacíos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Fallo 2 (Error SQL):</strong> Al intentar "Añadir" un documento desde el buscador IA, saltaba el error `Column count doesn't match value count`.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Causa 2:</strong> La IA generaba listas (Arrays) de apuntes en lugar de bloques de texto. Al inyectar el Array en `mysql2`, el driver lo expandía creando múltiples parámetros e invalidando la estructura de la tabla.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Solución Aplicada:</strong> Se reescribió `route.ts` del PUT para hacer "actualizaciones parciales dinámicas" (solo altera lo que recibe). En `pdfs/link/route.ts`, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de tocar la base de datos.</li>
         </ul>
       </div>
     </div>
