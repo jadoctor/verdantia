@@ -82,7 +82,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfSummary, setPdfSummary] = useState('');
   const [pdfApuntes, setPdfApuntes] = useState('');
-  const [pdfEditorSaveStatus, setPdfEditorSaveStatus] = useState<'idle' | 'saving'>('idle');
+  const [pdfEditorSaveStatus, setPdfEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
 
   // -- AI PDF Search State --
   const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
