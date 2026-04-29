@@ -107,7 +107,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           if (!data.candidates) console.error('[Gemini PDF Upload] ERROR FROM API:', JSON.stringify(data));
           const textOut = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
           
-          let jsonOut = {};
+          let jsonOut: any = {};
           try {
             const firstBracket = textOut.indexOf('{');
             const lastBracket = textOut.lastIndexOf('}');
