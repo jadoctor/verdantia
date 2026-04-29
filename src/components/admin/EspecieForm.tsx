@@ -681,7 +681,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             base64Cover: `data:image/jpeg;base64,${data.base64}`
           })
         });
-        loadAttachments(especieId);
+        loadAttachments(especieId!);
       } else {
         alert(data.error || 'Error al generar la portada del documento.');
       }
