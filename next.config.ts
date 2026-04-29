@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
     'wicked-results-juggle.loca.lt'
   ],
   serverExternalPackages: ['firebase-admin'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+      }
+    ],
+  },
   /* config options here */
 };
 

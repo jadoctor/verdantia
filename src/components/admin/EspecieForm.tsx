@@ -1975,7 +1975,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setEditingPdf(null)}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '500px', width: '90%', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
             onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1984,44 +1984,59 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
             </div>
             
-            {editingPdf.portada && (
-              <div style={{ width: '100%', height: '180px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
+              {/* Columna Izquierda: Portada */}
+              <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {editingPdf.portada ? (
+                    <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>
+                      <p style={{ margin: 0, fontSize: '0.9rem' }}>Sin portada generada</p>
+                    </div>
+                  )}
+                </div>
+                {!editingPdf.portada && (
+                  <button type="button" onClick={() => { generatePdfCover(editingPdf); setEditingPdf(null); }} style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}>
+                    ✨ Generar Portada IA
+                  </button>
+                )}
               </div>
-            )}
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
-                <input 
-                  type="text" 
-                  value={pdfTitle} 
-                  onChange={e => setPdfTitle(e.target.value)} 
-                  placeholder={editingPdf.nombreOriginal}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
-                <textarea 
-                  value={pdfSummary} 
-                  onChange={e => setPdfSummary(e.target.value)} 
-                  placeholder="Describe brevemente el documento (1-2 líneas)..."
-                  rows={2}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
-                />
-              </div>
-              <div>
-                <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  🎓 Apuntes (Modo Estudiante)
-                </label>
-                <textarea 
-                  value={pdfApuntes} 
-                  onChange={e => setPdfApuntes(e.target.value)} 
-                  placeholder="Apuntes técnicos detallados extraídos del PDF..."
-                  rows={8}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
-                />
+
+              {/* Columna Derecha: Formulario */}
+              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
+                  <input 
+                    type="text" 
+                    value={pdfTitle} 
+                    onChange={e => setPdfTitle(e.target.value)} 
+                    placeholder={editingPdf.nombreOriginal}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
+                  <textarea 
+                    value={pdfSummary} 
+                    onChange={e => setPdfSummary(e.target.value)} 
+                    placeholder="Describe brevemente el documento (1-2 líneas)..."
+                    rows={3}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
+                  />
+                </div>
+                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🎓 Apuntes (Modo Estudiante)
+                  </label>
+                  <textarea 
+                    value={pdfApuntes} 
+                    onChange={e => setPdfApuntes(e.target.value)} 
+                    placeholder="Apuntes técnicos detallados extraídos del PDF..."
+                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', flexGrow: 1, minHeight: '120px' }}
+                  />
+                </div>
               </div>
             </div>
 

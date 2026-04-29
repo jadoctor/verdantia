@@ -255,6 +255,8 @@ export default function GuiaUsuarioPage() {
             El asistente de inteligencia artificial (Antigravity) tiene prohibido subir código a producción por iniciativa propia. <strong>El proceso completo de despliegue a Firebase se realizará SIEMPRE y ÚNICAMENTE a petición expresa del usuario.</strong> 
             <br/><br/>
             <strong>REGLA DE HIERRO PARA EL ASISTENTE:</strong> Una vez que el usuario ordene subir a producción, el asistente lanzará los comandos pertinentes (Build, Commit, Deploy) y <strong>ESPERARÁ OBLIGATORIAMENTE</strong> a que los comandos finalicen mediante comprobaciones de estado. <strong>BAJO NINGÚN CONCEPTO</strong> el asistente le preguntará al usuario si desea "esperar al resultado". El asistente actúa como un confidente diligente: procesa la tarea en segundo plano e informa <strong>exclusivamente cuando el despliegue haya concluido exitosamente o fallado</strong>.
+            <br/><br/>
+            <strong>SINCRONIZACIÓN CON AGENTS.MD:</strong> Para garantizar que el comportamiento automático y sin interrupciones se mantenga a lo largo del tiempo, cualquier cambio, adición o modificación en esta guía de usuario ("La Biblia") deberá ser reflejado y sincronizado de inmediato como una regla obligatoria en el archivo <code>AGENTS.md</code> de la raíz del proyecto, el cual actúa como memoria inquebrantable y permanente del asistente.
           </p>
         </div>
       </div>
@@ -337,6 +339,33 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}>El endpoint comprueba la fecha de caducidad actual (<code>usuariossuscripcionesfechafin</code>).</li>
           <li style={{ marginBottom: '8px' }}>Si la fecha ya ha pasado, la base de datos se actualiza instantáneamente en cascada al siguiente nivel inferior, asignando otros +30 días (pero calculados basándose en milisegundos para evitar bugs de cambios de hora DST).</li>
           <li style={{ marginBottom: '8px' }}>Si el límite de fotos excede el del nuevo plan (ej. pasa de 5 a 3 fotos al bajar de Premium a Avanzado), <strong>ninguna foto se borra</strong>. El sistema bloquea temporalmente la edición visual del perfil hasta que el usuario elimine voluntariamente el exceso para cuadrar con el nuevo plan.</li>
+        </ul>
+      </div>
+      
+      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px', marginBottom: '30px' }}>
+        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
+          8. Registro Persistente de Fallos y Correcciones
+        </h2>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          Esta sección actúa como un <strong>disco duro externo para el Asistente de IA</strong>, evitando el "olvido" de fallos críticos debido a las limitaciones de memoria de contexto. Antes de resolver nuevos problemas, la IA debe consultar y vaciar esta lista.
+        </p>
+
+        <h3 style={{ color: '#eab308', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🟡 [29/04/2026 - 15:45] PENDIENTE DE VALIDACIÓN - Imágenes no cargan en Producción (Cloud)
+        </h3>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Fallo:</strong> Las fotos y portadas se ven en local pero aparecen rotas o en blanco en Google Cloud.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Causa Analizada:</strong> Next.js bloquea por seguridad orígenes externos no declarados.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Solución Aplicada (Falta Comprobar):</strong> Se han añadido `firebasestorage.googleapis.com` y `storage.googleapis.com` en `images.remotePatterns` del archivo `next.config.ts`.</li>
+        </ul>
+
+        <h3 style={{ color: '#eab308', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🟡 [29/04/2026 - 15:45] PENDIENTE DE VALIDACIÓN - Desplegable Superadministrador truncado en Móvil
+        </h3>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Fallo:</strong> El menú en móviles corta las entradas y solo muestra 3 porque no tiene scroll o el navegador lo oculta.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Causa Analizada:</strong> La barra de navegación inferior nativa del navegador móvil (Safari/Chrome) se superpone al final del panel lateral `100vh`.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Solución Aplicada (Falta Comprobar):</strong> Se ha añadido un `padding-bottom: 100px` a `.sidebar` en `dashboard.css` para forzar el área de scroll y liberar las últimas opciones del acordeón.</li>
         </ul>
       </div>
     </div>

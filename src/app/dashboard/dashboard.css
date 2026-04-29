@@ -549,6 +549,7 @@
     height: 100vh;
     z-index: 100;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    padding-bottom: 100px;
   }
 
   .sidebar.collapsed {
