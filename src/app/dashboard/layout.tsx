@@ -90,6 +90,8 @@ export default function DashboardLayout({
     return true;
   });
   const [superAdminExpanded, setSuperAdminExpanded] = useState(true);
+  const [huertoExpanded, setHuertoExpanded] = useState(true);
+  const [utilidadesExpanded, setUtilidadesExpanded] = useState(true);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
 
@@ -451,62 +453,82 @@ export default function DashboardLayout({
         {/* BLOQUE MI HUERTO (Verde)                    */}
         {/* ═══════════════════════════════════════════ */}
         <div className="sidebar-section huerto-section">
-          <div className="section-header huerto-header">
+          <button
+            onClick={() => setHuertoExpanded(p => !p)}
+            className="section-header huerto-header"
+            style={{
+              width: '100%', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}
+          >
             <span>🌱 Mi Huerto & Semillas</span>
-          </div>
-          <nav className="sidebar-nav">
-            <a href="/dashboard" className={`nav-item ${isActive('/dashboard')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🏠</span>
-              <span>Inicio</span>
-            </a>
-            <a href="/dashboard/hortalizas" className={`nav-item ${isActive('/dashboard/hortalizas')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🥬</span>
-              <span>Mis Hortalizas Preferidas</span>
-            </a>
-            <a href="/dashboard/variedades" className={`nav-item ${isActive('/dashboard/variedades')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🍅</span>
-              <span>Variedades</span>
-            </a>
-            <a href="/dashboard/semillas" className={`nav-item ${isActive('/dashboard/semillas')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🌾</span>
-              <span>Semillas (Inventario)</span>
-            </a>
-            <a href="/dashboard/siembras" className={`nav-item ${isActive('/dashboard/siembras')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🌿</span>
-              <span>Siembras</span>
-            </a>
-            <a href="/dashboard/tareas" className={`nav-item ${isActive('/dashboard/tareas')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🔔</span>
-              <span>Tareas Pendientes</span>
-            </a>
-          </nav>
+            <span style={{ fontSize: '0.75rem', opacity: 0.8, transition: 'transform 0.2s', transform: huertoExpanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+          </button>
+          {huertoExpanded && (
+            <nav className="sidebar-nav">
+              <a href="/dashboard" className={`nav-item ${isActive('/dashboard')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🏠</span>
+                <span>Inicio</span>
+              </a>
+              <a href="/dashboard/hortalizas" className={`nav-item ${isActive('/dashboard/hortalizas')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🥬</span>
+                <span>Mis Hortalizas Preferidas</span>
+              </a>
+              <a href="/dashboard/variedades" className={`nav-item ${isActive('/dashboard/variedades')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🍅</span>
+                <span>Variedades</span>
+              </a>
+              <a href="/dashboard/semillas" className={`nav-item ${isActive('/dashboard/semillas')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🌾</span>
+                <span>Semillas (Inventario)</span>
+              </a>
+              <a href="/dashboard/siembras" className={`nav-item ${isActive('/dashboard/siembras')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🌿</span>
+                <span>Siembras</span>
+              </a>
+              <a href="/dashboard/tareas" className={`nav-item ${isActive('/dashboard/tareas')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🔔</span>
+                <span>Tareas Pendientes</span>
+              </a>
+            </nav>
+          )}
         </div>
 
         {/* ═══════════════════════════════════════════ */}
         {/* BLOQUE UTILIDADES (Azul)                    */}
         {/* ═══════════════════════════════════════════ */}
         <div className="sidebar-section utilidades-section">
-          <div className="section-header utilidades-header">
+          <button
+            onClick={() => setUtilidadesExpanded(p => !p)}
+            className="section-header utilidades-header"
+            style={{
+              width: '100%', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}
+          >
             <span>🧰 Utilidades</span>
-          </div>
-          <nav className="sidebar-nav">
-            <a href="/dashboard/plantar" className={`nav-item ${isActive('/dashboard/plantar')}`} onClick={handleNavClick}>
-              <span className="nav-icon">✨</span>
-              <span>¿Qué plantar?</span>
-            </a>
-            <a href="/dashboard/calculadora" className={`nav-item ${isActive('/dashboard/calculadora')}`} onClick={handleNavClick}>
-              <span className="nav-icon">🧮</span>
-              <span>Calculadora</span>
-            </a>
-            <a href="/dashboard/comunidad" className={`nav-item ${isActive('/dashboard/comunidad')}`} onClick={handleNavClick}>
-              <span className="nav-icon">💬</span>
-              <span>Chat Comunidad</span>
-            </a>
-            <a href="/dashboard/meteo" className={`nav-item ${isActive('/dashboard/meteo')}`} onClick={handleNavClick}>
-              <span className="nav-icon">⛅</span>
-              <span>Mi Meteo Local</span>
-            </a>
-          </nav>
+            <span style={{ fontSize: '0.75rem', opacity: 0.8, transition: 'transform 0.2s', transform: utilidadesExpanded ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+          </button>
+          {utilidadesExpanded && (
+            <nav className="sidebar-nav">
+              <a href="/dashboard/plantar" className={`nav-item ${isActive('/dashboard/plantar')}`} onClick={handleNavClick}>
+                <span className="nav-icon">✨</span>
+                <span>¿Qué plantar?</span>
+              </a>
+              <a href="/dashboard/calculadora" className={`nav-item ${isActive('/dashboard/calculadora')}`} onClick={handleNavClick}>
+                <span className="nav-icon">🧮</span>
+                <span>Calculadora</span>
+              </a>
+              <a href="/dashboard/comunidad" className={`nav-item ${isActive('/dashboard/comunidad')}`} onClick={handleNavClick}>
+                <span className="nav-icon">💬</span>
+                <span>Chat Comunidad</span>
+              </a>
+              <a href="/dashboard/meteo" className={`nav-item ${isActive('/dashboard/meteo')}`} onClick={handleNavClick}>
+                <span className="nav-icon">⛅</span>
+                <span>Mi Meteo Local</span>
+              </a>
+            </nav>
+          )}
         </div>
 
         {/* Pie del Sidebar: perfil + logout */}
