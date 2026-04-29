@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Blurhash } from 'react-blurhash';
+import { getMediaUrl } from '@/lib/media-url';
 
 export default function EspeciesAdminPage() {
   const router = useRouter();
@@ -170,7 +171,7 @@ export default function EspeciesAdminPage() {
                               </div>
                             )}
                             <img 
-                              src={e.primary_photo_ruta.startsWith('http') ? e.primary_photo_ruta : (e.primary_photo_ruta.startsWith('/') ? e.primary_photo_ruta : `/${e.primary_photo_ruta}`)} 
+                              src={getMediaUrl(e.primary_photo_ruta)} 
                               alt={e.especiesnombre} 
                               loading="lazy"
                               style={{ 

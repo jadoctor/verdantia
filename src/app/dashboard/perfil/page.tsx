@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getMediaUrl } from '@/lib/media-url';
 import './perfil.css';
 
 interface UserProfile {
@@ -670,7 +671,7 @@ function PerfilContent() {
     if (!editingPhoto) return;
     showToast('🎯 Detectando cara...');
     try {
-      const photoUrl = editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`);
+      const photoUrl = getMediaUrl(editingPhoto.ruta);
       const resp = await fetch(photoUrl);
       const blob = await resp.blob();
       const face = await detectFaceCenter(blob);
@@ -1092,7 +1093,7 @@ function PerfilContent() {
                   boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)', marginLeft: '6px'
                 }}>
                   <img
-                    src={mainPhoto.ruta.startsWith('http') ? mainPhoto.ruta : (mainPhoto.ruta.startsWith('/') ? mainPhoto.ruta : `/${mainPhoto.ruta}`)}
+                    src={getMediaUrl(mainPhoto.ruta)}
                     alt=""
                     style={{
                       width: '100%', height: '100%', objectFit: 'cover',
@@ -1141,7 +1142,7 @@ function PerfilContent() {
                 onDrop={(e) => handlePhotoDrop(e, photo.id)}
               >
                 <img
-                  src={photo.ruta.startsWith('http') ? photo.ruta : (photo.ruta.startsWith('/') ? photo.ruta : `/${photo.ruta}`)}
+                  src={getMediaUrl(photo.ruta)}
                   alt="Foto de perfil"
                   style={{
                     cursor: isLocked ? 'not-allowed' : 'default',
@@ -2424,7 +2425,7 @@ function PerfilContent() {
                 style={{ cursor: editorZoom > 100 ? 'grab' : 'default' }}
               >
                 <img
-                  src={editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`)}
+                  src={getMediaUrl(editingPhoto.ruta)}
                   alt="Preview"
                   draggable={false}
                   style={{

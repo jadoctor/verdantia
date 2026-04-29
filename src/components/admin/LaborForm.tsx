@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
+import { getMediaUrl } from '@/lib/media-url';
 import './EspecieForm.css'; // Reuse the EspecieForm CSS for the common classes
 
 interface LaborFormProps {
@@ -485,7 +486,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                             ? `brightness(${heroMeta.profile_brightness ?? 100}%) contrast(${heroMeta.profile_contrast ?? 100}%) ${heroMeta.profile_style ? STYLE_FILTERS[heroMeta.profile_style] : ''}`.trim()
                             : hFilter;
                           return (
-                            <img key={heroPhoto.id} src={heroPhoto.ruta.startsWith('http') ? heroPhoto.ruta : (heroPhoto.ruta.startsWith('/') ? heroPhoto.ruta : `/${heroPhoto.ruta}`)}
+                            <img key={heroPhoto.id} src={getMediaUrl(heroPhoto.ruta)}
                               alt={heroMeta.seo_alt || formData.laboresnombre}
                               style={{ width: '100%', height: '100%', objectFit: 'cover',
                                 objectPosition: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
@@ -529,7 +530,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                                 onMouseEnter={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1.1)'; }}
                                 onMouseLeave={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1)'; }}
                               >
-                                <img src={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)} alt="" draggable={false}
+                                <img src={getMediaUrl(p.ruta)} alt="" draggable={false}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`, transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }} />
                               </div>
                             );
@@ -649,7 +650,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                           onDragOver={(e) => e.preventDefault()}
                         >
                           {meta.blurhash && <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}><Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} /></div>}
-                          <img src={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)} alt={meta.seo_alt || 'foto'} loading="lazy" style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} draggable={false} />
+                          <img src={getMediaUrl(p.ruta)} alt={meta.seo_alt || 'foto'} loading="lazy" style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} draggable={false} />
                           <div className="photo-actions" style={{ zIndex: 20 }}>
                             <button type="button" className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`} onClick={() => handleSetPrimaryPhoto(p.id)}>{p.esPrincipal ? '★' : '☆'}</button>
                             <button type="button" className="photo-action-btn btn-photo-edit" onClick={() => openPhotoEditor(p)}>✏️</button>
@@ -718,7 +719,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                       ? `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
                       : bFilter;
                     return (
-                      <img src={editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`)} alt="" className="photo-editor-image"
+                      <img src={getMediaUrl(editingPhoto.ruta)} alt="" className="photo-editor-image"
                         style={{ objectPosition: `${editorX}% ${editorY}%`, transform: `scale(${editorZoom / 100})`, filter: fFilter }} />
                     );
                   })()}

@@ -120,7 +120,7 @@ function LoginContent() {
       } catch (err: any) {
         if (err.name === 'NotAllowedError') {
           setIsLoading(false);
-          setError('La verificación biométrica fue cancelada o el dispositivo la denegó. Asegúrate de que la huella está registrada en el SO.');
+          setError('No se ha encontrado una passkey válida para este dominio y este dispositivo. Si la registraste en local o en otro dominio, vuelve a vincularla desde Tu Perfil → Seguridad usando la web online.');
           return;
         }
         if (err.name === 'AbortError') {

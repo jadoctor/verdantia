@@ -259,6 +259,21 @@
   color: white;
 }
 
+.profile-achievement {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #92400e;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
 .profile-edit-hint {
   font-size: 0.65rem;
   color: var(--text-muted);

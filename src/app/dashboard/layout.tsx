@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase/config';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getMediaUrl } from '@/lib/media-url';
 
 interface UserProfile {
   id: number;
@@ -335,11 +336,7 @@ export default function DashboardLayout({
 
     const filterStyle = `${STYLE_FILTERS[meta.profile_style] === 'none' ? '' : (STYLE_FILTERS[meta.profile_style] || '')} brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`.trim();
 
-    const photoPath = profile.fotoPreferida;
-    // Añadimos un timestamp (?t=...) para forzar al navegador a descargar la nueva foto
-    const photoUrl = (photoPath.startsWith('http') 
-      ? photoPath 
-      : (photoPath.startsWith('/') ? photoPath : `/${photoPath}`)) + `?t=${new Date().getTime()}`;
+    const photoUrl = getMediaUrl(profile.fotoPreferida, { cacheBust: true });
 
     AvatarComponent = (
       <img 
@@ -525,6 +522,10 @@ export default function DashboardLayout({
               <span className="profile-name">{displayName}</span>
               {isSuperAdmin && <span className="role-badge superadmin">SUPERADMIN</span>}
               {!isSuperAdmin && isAdmin && <span className="role-badge admin">ADMIN</span>}
+              <span className="profile-achievement">
+                <span>{profile?.roles?.includes('visitante') ? '🧳' : (profile?.iconoLogro || '🧑‍🌾')}</span>
+                <span>{profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz'}</span>
+              </span>
               <span className="profile-edit-hint">✏️ Editar perfil</span>
             </div>
           </a>
@@ -540,10 +541,6 @@ export default function DashboardLayout({
 
             {/* Breadcrumbs eliminados para evitar duplicidad con botones inferiores */}
 
-            <div className="current-medal" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.1)', padding: '4px 10px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)', cursor: 'help', flexShrink: 0 }} title="Rango Actual">
-               <span style={{ fontSize: '1.2rem' }}>{profile?.roles?.includes('visitante') ? '🧳' : '🧑‍🌾'}</span>
-               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz'}</span>
-            </div>
             {profile && (
               <div className="current-calendar" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: profile.tipoCalendario === 'Biodinámico' ? 'rgba(139, 92, 246, 0.1)' : profile.tipoCalendario === 'Lunar' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '20px', border: `1px solid ${profile.tipoCalendario === 'Biodinámico' ? 'rgba(139, 92, 246, 0.3)' : profile.tipoCalendario === 'Lunar' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, marginLeft: '10px' }} 
                 title={`Calendario Agrícola Activo: Calendario de siembra ${profile.tipoCalendario || 'Normal'}${profile.tipoCalendario === 'Lunar' ? ` (${moon.name})` : profile.tipoCalendario === 'Biodinámico' ? ` (${bio.name})` : ''}`}

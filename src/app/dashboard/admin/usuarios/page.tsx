@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getMediaUrl } from '@/lib/media-url';
 
 const PLAN_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
   premium:  { color: '#d97706', bg: '#fffbeb', icon: '🌳', label: 'Premium' },
@@ -203,7 +204,7 @@ export default function UsuariosAdminPage() {
                       <td style={{ padding: '10px 14px' }}>
                         <div style={{ width: '36px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #93c5fd', flexShrink: 0 }}>
                           {u.fotoPrincipal ? (
-                            <img src={u.fotoPrincipal.startsWith('http') ? u.fotoPrincipal : (u.fotoPrincipal.startsWith('/') ? u.fotoPrincipal : `/${u.fotoPrincipal}`)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={getMediaUrl(u.fotoPrincipal)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : u.icono ? (
                             <span style={{ fontSize: '1.4rem' }}>{u.icono}</span>
                           ) : (

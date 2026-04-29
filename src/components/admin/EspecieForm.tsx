@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
+import { getMediaUrl } from '@/lib/media-url';
 import './EspecieForm.css';
 
 interface EspecieFormProps {
@@ -845,7 +846,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   ? `brightness(${heroMeta.profile_brightness ?? 100}%) contrast(${heroMeta.profile_contrast ?? 100}%) ${heroMeta.profile_style ? STYLE_FILTERS[heroMeta.profile_style] : ''}`.trim()
                   : hFilter;
                 return (
-                  <img key={heroPhoto.id} src={heroPhoto.ruta.startsWith('http') ? heroPhoto.ruta : (heroPhoto.ruta.startsWith('/') ? heroPhoto.ruta : `/${heroPhoto.ruta}`)}
+                  <img key={heroPhoto.id} src={getMediaUrl(heroPhoto.ruta)}
                     alt={heroMeta.seo_alt || formData.especiesnombre}
                     style={{ width: '100%', height: '100%', objectFit: 'cover',
                       objectPosition: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
@@ -897,7 +898,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         onMouseEnter={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1.1)'; }}
                         onMouseLeave={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1)'; }}
                       >
-                        <img src={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)}
+                        <img src={getMediaUrl(p.ruta)}
                           draggable={false}
                           alt=""
                           style={{ width: '100%', height: '100%', objectFit: 'cover',
@@ -1436,7 +1437,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
                         };
 
-                        const thumbPath = p.ruta.endsWith('.webp') ? p.ruta.replace('especies/', 'especies/thumb-') : p.ruta;
                         const isDragging = draggedPhotoIndex === index;
                         const isDragOver = draggedOverPhotoIndex === index;
 
@@ -1489,7 +1489,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               </div>
                             )}
                             <img 
-                              src={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)} 
+                              src={getMediaUrl(p.ruta)} 
                               alt={meta.seo_alt || 'foto especie'} 
                               loading="lazy" 
                               style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} 
@@ -1580,7 +1580,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       {pdfs.map(p => (
                         <div key={p.id} className="gallery-item pdf" style={{ display: 'flex', flexDirection: 'column', padding: '10px', gap: '8px', position: 'relative' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <a href={p.ruta.startsWith('http') ? p.ruta : (p.ruta.startsWith('/') ? p.ruta : `/${p.ruta}`)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', textDecoration: 'none', wordBreak: 'break-word', paddingRight: '40px', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                            <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', textDecoration: 'none', wordBreak: 'break-word', paddingRight: '40px', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
                               📄 {p.titulo || p.nombreOriginal} <span style={{ fontSize: '0.7rem' }}>↗</span>
                             </a>
                             <div className="photo-actions" style={{ position: 'absolute', top: '5px', right: '5px', display: 'flex', opacity: 1, gap: '4px' }}>
@@ -1760,7 +1760,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                    onTouchMove={onEditorTouchMove}>
                 <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
                   <img 
-                    src={editingPhoto.ruta.startsWith('http') ? editingPhoto.ruta : (editingPhoto.ruta.startsWith('/') ? editingPhoto.ruta : `/${editingPhoto.ruta}`)} 
+                    src={getMediaUrl(editingPhoto.ruta)} 
                     alt="preview"
                     className="photo-editor-image"
                     draggable="false"

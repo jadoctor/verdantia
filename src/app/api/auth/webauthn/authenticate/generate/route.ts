@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import type { AuthenticatorTransportFuture } from '@simplewebauthn/server';
 import pool from '@/lib/db';
+import { getWebAuthnSettings } from '@/lib/webauthn';
 
 
 export async function POST(req: NextRequest) {
   try {
 
-    const origin = req.headers.get('origin') || 'http://localhost:3000';
-    const rpID = new URL(origin).hostname;
+    const { rpID } = getWebAuthnSettings(req);
 
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email requerido' }, { status: 400 });

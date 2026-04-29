@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 // Asegurar que admin está inicializado (se importa desde admin.ts)
 import './admin';
 
-const bucket = admin.storage().bucket('verdantia-494121.firebasestorage.app');
+const bucket = admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app');
 
 /**
  * Sube un archivo a Firebase Storage y devuelve la URL pública.
@@ -26,11 +26,9 @@ export async function uploadToStorage(
     },
   });
 
-  // Hacer el archivo público
-  await file.makePublic();
-
-  // Devolver URL pública
-  return `https://storage.googleapis.com/${bucket.name}/${destination}`;
+  // En Firebase/Google Cloud moderno puede estar bloqueado el ACL público.
+  // Servimos todos los adjuntos desde /api/media para que local y producción usen la misma ruta.
+  return `/api/media?path=${encodeURIComponent(destination)}`;
 }
 
 /**
