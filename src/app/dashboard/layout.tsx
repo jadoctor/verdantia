@@ -89,12 +89,7 @@ export default function DashboardLayout({
     }
     return true;
   });
-  const [superAdminExpanded, setSuperAdminExpanded] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth > 768;
-    }
-    return true;
-  });
+  const [superAdminExpanded, setSuperAdminExpanded] = useState(true);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
 
@@ -519,7 +514,7 @@ export default function DashboardLayout({
           <a href="/dashboard/perfil" className="sidebar-profile">
             <span className="profile-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{AvatarComponent}</span>
             <div className="profile-info">
-              <span className="profile-name">{displayName}</span>
+              <span className="profile-name">Hola, {displayName}</span>
               {isSuperAdmin && <span className="role-badge superadmin">SUPERADMIN</span>}
               {!isSuperAdmin && isAdmin && <span className="role-badge admin">ADMIN</span>}
               <span className="profile-achievement">
@@ -593,8 +588,6 @@ export default function DashboardLayout({
             )}
             
             <div className="header-profile">
-              <span className="header-greeting">Hola, <strong>{displayName}</strong></span>
-              <a href="/dashboard/perfil" className="profile-avatar" title="Ir a mi perfil" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{AvatarComponent}</a>
             </div>
           </div>
         </header>

@@ -139,7 +139,7 @@ Devuelve tu respuesta ÚNICAMENTE como un objeto JSON válido con la siguiente e
              // Subir a Firebase Storage
              const publicUrl = await uploadToStorage(buffer, storagePath, 'image/jpeg');
              
-             generatedBase64s.push(publicUrl);
+             generatedBase64s.push(storagePath);
           } else {
              generatedBase64s.push(null);
           }

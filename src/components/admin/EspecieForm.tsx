@@ -420,6 +420,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.error || `HTTP Error ${res.status}`);
         }
+        
+        if (type === 'pdfs') {
+          const data = await res.json();
+          if (data.success && data.pdf && !data.pdf.portada) {
+            generatePdfCover(data.pdf);
+          }
+        }
       }
       await loadAttachments(especieId);
     } catch (err) {
@@ -616,6 +623,20 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   // ── Guardar edición de PDF ──
   const savePdfEdits = async () => {
     if (!editingPdf || !especieId) return;
+
+    const hasChanges = pdfTitle !== (editingPdf.titulo || '') || 
+                       pdfSummary !== (editingPdf.resumen || '') || 
+                       pdfApuntes !== (editingPdf.apuntes || '');
+
+    if (!hasChanges) {
+      setPdfEditorSaveStatus('no-changes');
+      setTimeout(() => {
+        setPdfEditorSaveStatus('idle');
+        setEditingPdf(null);
+      }, 1500);
+      return;
+    }
+
     setPdfEditorSaveStatus('saving');
     try {
       await fetch(`/api/admin/especies/${especieId}/pdfs`, {
@@ -632,6 +653,43 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       alert('❌ Error guardando PDF'); 
     } finally {
       setPdfEditorSaveStatus('idle');
+    }
+  };
+
+  // ── Generar Portada de PDF con IA ──
+  const [generatingCoverId, setGeneratingCoverId] = useState<number | null>(null);
+
+  const generatePdfCover = async (pdf: any) => {
+    setGeneratingCoverId(pdf.id);
+    try {
+      const res = await fetch('/api/ai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+        body: JSON.stringify({
+          tipoEntidad: 'especie',
+          especieNombre: formData.especiesnombre,
+          concept: `Portada del documento titulado "${pdf.titulo}". Estilo limpio, académico, con ilustración botánica. Contenido principal: ${pdf.resumen}`
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.base64) {
+        await fetch(`/api/admin/especies/${especieId}/pdfs`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+          body: JSON.stringify({
+            pdfId: pdf.id,
+            base64Cover: `data:image/jpeg;base64,${data.base64}`
+          })
+        });
+        loadAttachments(especieId);
+      } else {
+        alert(data.error || 'Error al generar la portada del documento.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de red al generar portada.');
+    } finally {
+      setGeneratingCoverId(null);
     }
   };
 
@@ -671,6 +729,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       if (data.success) {
         loadAttachments(especieId!);
         setShowPdfSearchModal(false);
+        if (data.pdf && !data.pdf.portada) {
+          generatePdfCover(data.pdf);
+        }
       } else {
         alert(data.error || 'Error al añadir enlace');
       }
@@ -796,6 +857,20 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── Status Bar ── */}
+      <div style={{ background: formData.especiesvisibilidadsino ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid ${formData.especiesvisibilidadsino ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
+        <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', color: '#334155', margin: 0, fontSize: '1.1rem' }}>
+          <input 
+            type="checkbox" 
+            name="especiesvisibilidadsino" 
+            checked={!!formData.especiesvisibilidadsino} 
+            onChange={handleChange} 
+            style={{ width: '22px', height: '22px', accentColor: '#10b981' }}
+          /> 
+          Especie con Visibilidad Global (Pública)
+        </label>
       </div>
 
       {/* HERO GALLERY HEADER */}
@@ -944,17 +1019,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           <div className="collapsible-content">
             
             <div style={{ padding: '15px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px' }}>
-              <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569', margin: 0 }}>
-                <input 
-                  type="checkbox" 
-                  name="especiesvisibilidadsino" 
-                  checked={!!formData.especiesvisibilidadsino} 
-                  onChange={handleChange} 
-                  style={{ width: '18px', height: '18px' }}
-                /> 
-                Activar Visibilidad Global (Pública)
-              </label>
-
               <button type="button" onClick={callAI} className="btn-ai" disabled={aiLoading} style={{ margin: 0 }}>
                 {aiLoading ? 'Pensando...' : '✨ Asistente IA'}
               </button>
@@ -1579,6 +1643,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <div className="gallery pdfs">
                       {pdfs.map(p => (
                         <div key={p.id} className="gallery-item pdf" style={{ display: 'flex', flexDirection: 'column', padding: '10px', gap: '8px', position: 'relative' }}>
+                          
+                          {p.portada ? (
+                            <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px', marginBottom: '4px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '140px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', border: '1px dashed #cbd5e1' }}>
+                              <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
+                              </button>
+                            </div>
+                          )}
+
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', textDecoration: 'none', wordBreak: 'break-word', paddingRight: '40px', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
                               📄 {p.titulo || p.nombreOriginal} <span style={{ fontSize: '0.7rem' }}>↗</span>
@@ -1893,8 +1968,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           </div>
         </div>
       )}
-      {editingPdf && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+      {editingPdf && (() => {
+        const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') || 
+                              pdfSummary !== (editingPdf.resumen || '') || 
+                              pdfApuntes !== (editingPdf.apuntes || '');
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setEditingPdf(null)}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '500px', width: '90%', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
             onClick={e => e.stopPropagation()}>
@@ -1905,9 +1984,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
             </div>
             
+            {editingPdf.portada && (
+              <div style={{ width: '100%', height: '180px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            )}
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Título Público</label>
+                <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
                 <input 
                   type="text" 
                   value={pdfTitle} 
@@ -1945,14 +2030,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
                 Cancelar
               </button>
-              <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
-                style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar'}
-              </button>
+              {hasPdfChanges && (
+                <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
+                  style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Metadatos'}
+                </button>
+              )}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
       {showPdfSearchModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
           onClick={() => setShowPdfSearchModal(false)}>

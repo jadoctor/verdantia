@@ -215,7 +215,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntospesobytes, datosadjuntosresumen
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, publicUrl, esPrimera,
+        file.type || 'image/jpeg', file.name, storagePath, esPrimera,
         total + 1, idlabores, fileSize, initialResumen
       ]
     );
@@ -224,7 +224,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       success: true,
       photo: {
         id: (result as any).insertId,
-        ruta: publicUrl,
+        ruta: storagePath,
         esPrincipal: esPrimera,
         nombreOriginal: file.name,
         resumen: initialResumen

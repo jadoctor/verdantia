@@ -20,6 +20,7 @@ Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la 
 [
   {
     "url": "URL_DEL_DOCUMENTO_AQUI",
+    "nombre": "Nombre descriptivo y claro basado en el contenido (ej. 'Manual de Poda')",
     "resumenCorto": "Breve descripción de 1-2 líneas",
     "apuntes": "Apuntes de estudiante muy detallados y técnicos extraídos de lo que has leído. Usa viñetas y texto largo."
   }
@@ -30,7 +31,7 @@ Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la 
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       tools: [{ googleSearch: {} }],
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0.1
       }
     };
 
@@ -77,18 +78,39 @@ Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la 
         }
       }
     }
+    console.log('[Gemini PDF Search] Raw output length:', textOutput.length);
+    if (!data.candidates) {
+      console.error('[Gemini PDF Search] ERROR FROM API:', JSON.stringify(data));
+    }
 
-    // 2. Extraer los resúmenes y apuntes que Gemini generó en JSON
     let parsedLinks: any[] = [];
     try {
-      const jsonMatch = textOutput.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-      if (jsonMatch) {
-        parsedLinks = JSON.parse(jsonMatch[1]);
-      } else {
+      const firstBracket = textOutput.indexOf('[');
+      const lastBracket = textOutput.lastIndexOf(']');
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        const jsonString = textOutput.substring(firstBracket, lastBracket + 1);
+        parsedLinks = JSON.parse(jsonString);
+      } else if (textOutput.trim() !== '') {
         parsedLinks = JSON.parse(textOutput);
       }
+      
+      // Ensure parsedLinks is an array
+      if (!Array.isArray(parsedLinks)) {
+        if (parsedLinks && typeof parsedLinks === 'object') {
+          // If Gemini wrapped it in an object like { links: [...] }
+          const arrayValues = Object.values(parsedLinks).find(v => Array.isArray(v));
+          if (arrayValues) {
+            parsedLinks = arrayValues as any[];
+          } else {
+            // It might just be a single object
+            parsedLinks = [parsedLinks];
+          }
+        } else {
+          parsedLinks = [];
+        }
+      }
     } catch(e) {
-      console.error('Error parseando JSON de Gemini:', e);
+      console.error('Error parseando JSON de Gemini:', e, textOutput.substring(0, 100));
     }
 
     // 3. Cruzar datos: Evitar URLs alucinadas cruzando el JSON con los enlaces reales por orden
@@ -98,7 +120,7 @@ Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la 
         // Si hay un enlace real disponible, lo usamos (para evitar error 404).
         if (i < realLinks.length) {
           links.push({
-            title: realLinks[i].title, // Priorizamos el título real web
+            title: parsedLinks[i].nombre || realLinks[i].title, // Priorizamos el nombre IA para evitar dominios crudos
             url: realLinks[i].url, // SIEMPRE URL REAL
             summary: parsedLinks[i].resumenCorto || 'Análisis técnico no disponible.',
             apuntes: parsedLinks[i].apuntes || ''

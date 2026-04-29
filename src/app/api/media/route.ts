@@ -6,7 +6,7 @@ import { bucket } from '@/lib/firebase/storage';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_PREFIXES = ['uploads/usuario/', 'uploads/especies/', 'uploads/labores/', 'uploads/blog/', 'uploads/especies_pdfs/'];
+const ALLOWED_PREFIXES = ['uploads/usuario/', 'uploads/especies/', 'uploads/labores/', 'uploads/blog/', 'uploads/especies_pdfs/', 'uploads/variedad/'];
 
 function normalizeRequestedPath(value: string | null) {
   if (!value) return null;

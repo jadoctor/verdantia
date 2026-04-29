@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getMediaUrl } from '@/lib/media-url';
 import '@/app/dashboard/dashboard.css';
 
 const MDI_TO_EMOJI: Record<string, string> = {
@@ -127,7 +128,17 @@ export default function LaboresAdminPage() {
 
                   return (
                     <tr key={labor.idlabores} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '12px', fontSize: '1.5rem', textAlign: 'center' }}>{icono}</td>
+                      <td style={{ padding: '12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                        {labor.primary_photo_ruta ? (
+                          <img 
+                            src={getMediaUrl(labor.primary_photo_ruta)} 
+                            alt={labor.laboresnombre}
+                            style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '1.5rem' }}>{icono}</span>
+                        )}
+                      </td>
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ 

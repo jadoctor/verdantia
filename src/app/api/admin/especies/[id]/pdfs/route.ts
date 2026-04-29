@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const [rows] = await pool.query(
-      `SELECT iddatosadjuntos, datosadjuntosruta, datosadjuntosnombreoriginal, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
+      `SELECT iddatosadjuntos, datosadjuntosruta, datosadjuntosnombreoriginal, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes, datosadjuntosportada
        FROM datosadjuntos 
        WHERE xdatosadjuntosidespecies = ? 
        AND datosadjuntostipo = 'documento' 
@@ -37,7 +37,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       nombreOriginal: r.datosadjuntosnombreoriginal,
       titulo: r.datosadjuntostitulo || '',
       resumen: r.datosadjuntosresumen || '',
-      apuntes: r.datosadjuntosapuntes || ''
+      apuntes: r.datosadjuntosapuntes || '',
+      portada: r.datosadjuntosportada || null
     }));
 
     return NextResponse.json({ pdfs });
@@ -87,7 +88,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const payload = {
           contents: [{
             parts: [
-              { text: `Analiza este documento PDF sobre la especie agrícola. Eres un experto agrónomo. Devuelve EXCLUSIVAMENTE un JSON con tres propiedades: "titulo" (título descriptivo, máximo 80 caracteres), "resumen" (resumen corto de 1-2 líneas), y "apuntes" (un resumen técnico muy detallado de varios párrafos o viñetas estructuradas con datos concretos, plagas, metodologías y consejos vitales para el agricultor).` },
+              { text: `Analiza este documento PDF sobre la especie agrícola. Eres un experto agrónomo. Devuelve EXCLUSIVAMENTE un JSON con tres propiedades: "nombre" (nombre súper corto del documento que aparecerá en el visor, ideal 3-4 palabras, máximo 40 caracteres), "resumen" (resumen corto de 1-2 líneas), y "apuntes" (un resumen técnico muy detallado de varios párrafos o viñetas estructuradas con datos concretos, plagas, metodologías y consejos vitales para el agricultor).` },
               { inlineData: { mimeType: "application/pdf", data: base64Pdf } }
             ]
           }],
@@ -103,11 +104,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         });
         if (aiResponse.ok) {
           const data = await aiResponse.json();
+          if (!data.candidates) console.error('[Gemini PDF Upload] ERROR FROM API:', JSON.stringify(data));
           const textOut = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-          const jsonOut = JSON.parse(textOut);
-          generatedTitle = jsonOut.titulo || '';
-          generatedSummary = jsonOut.resumen || '';
-          generatedApuntes = jsonOut.apuntes || '';
+          
+          let jsonOut = {};
+          try {
+            const firstBracket = textOut.indexOf('{');
+            const lastBracket = textOut.lastIndexOf('}');
+            if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+              jsonOut = JSON.parse(textOut.substring(firstBracket, lastBracket + 1));
+            } else {
+              jsonOut = JSON.parse(textOut);
+            }
+          } catch (e) {
+            console.error('Error parseando JSON de Gemini PDF Upload:', e);
+          }
+          
+          generatedTitle = typeof jsonOut.nombre === 'string' ? jsonOut.nombre : (typeof jsonOut.titulo === 'string' ? jsonOut.titulo : '');
+          generatedSummary = Array.isArray(jsonOut.resumen) ? jsonOut.resumen.join(' ') : (jsonOut.resumen || '');
+          generatedApuntes = Array.isArray(jsonOut.apuntes) ? '- ' + jsonOut.apuntes.join('\n- ') : (jsonOut.apuntes || '');
         }
       }
     } catch (e) {
@@ -129,14 +144,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespecies,
         datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
       ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, ?, ?, ?, ?)`,
-      [file.name, publicUrl, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes]
+      [file.name, storagePath, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes]
     );
 
     return NextResponse.json({
       success: true,
       pdf: {
         id: (result as any).insertId,
-        ruta: publicUrl,
+        ruta: storagePath,
         nombreOriginal: file.name,
         titulo: generatedTitle,
         resumen: generatedSummary,
@@ -160,18 +175,31 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const idespecies = resolvedParams.id;
 
   try {
-    const { pdfId, titulo, resumen, apuntes } = await request.json();
+    const { pdfId, titulo, resumen, apuntes, portada, base64Cover } = await request.json();
 
     if (!pdfId) {
       return NextResponse.json({ error: 'ID de PDF requerido' }, { status: 400 });
     }
 
-    await pool.query(
-      `UPDATE datosadjuntos 
-       SET datosadjuntostitulo = ?, datosadjuntosresumen = ?, datosadjuntosapuntes = ?
-       WHERE iddatosadjuntos = ? AND xdatosadjuntosidespecies = ? AND datosadjuntostipo = 'documento'`,
-      [titulo || '', resumen || '', apuntes || '', pdfId, idespecies]
-    );
+    let finalPortada = portada;
+    if (base64Cover) {
+      const buffer = Buffer.from(base64Cover.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+      const storagePath = `uploads/especies_pdfs_covers/cover_${idespecies}_${pdfId}_${Date.now()}.jpg`;
+      finalPortada = await uploadToStorage(buffer, storagePath, 'image/jpeg');
+    }
+
+    let updateQuery = `UPDATE datosadjuntos SET datosadjuntostitulo = ?, datosadjuntosresumen = ?, datosadjuntosapuntes = ?`;
+    let updateParams = [titulo || '', resumen || '', apuntes || ''];
+
+    if (finalPortada !== undefined) {
+      updateQuery += `, datosadjuntosportada = ?`;
+      updateParams.push(finalPortada);
+    }
+
+    updateQuery += ` WHERE iddatosadjuntos = ? AND xdatosadjuntosidespecies = ? AND datosadjuntostipo = 'documento'`;
+    updateParams.push(pdfId, idespecies);
+
+    await pool.query(updateQuery, updateParams);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

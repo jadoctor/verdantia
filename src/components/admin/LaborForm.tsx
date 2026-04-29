@@ -442,6 +442,14 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
         </div>
       </div>
 
+      {/* ── Status Bar ── */}
+      <div style={{ margin: '0 24px 24px', background: formData.laboresactivosino === 1 ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', border: `1px solid ${formData.laboresactivosino === 1 ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 'bold', color: '#334155', fontSize: '1.1rem', margin: 0 }}>
+          <input type="checkbox" name="laboresactivosino" checked={formData.laboresactivosino === 1} onChange={handleFormChange} style={{ width: '22px', height: '22px', accentColor: '#10b981' }} />
+          Esta labor está activa y disponible globalmente
+        </label>
+      </div>
+
       {/* Main Content Area */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         
@@ -593,13 +601,6 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                     <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', color: '#334155', fontSize: '0.95rem' }}>Descripción</label>
                     <textarea name="laboresdescripcion" value={formData.laboresdescripcion} onChange={handleFormChange} rows={4} placeholder="Describe en qué consiste detalladamente la labor..."
                       style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }} />
-                  </div>
-
-                  <div style={{ background: formData.laboresactivosino === 1 ? '#ecfdf5' : '#f1f5f9', padding: '20px', borderRadius: '8px', border: `1px solid ${formData.laboresactivosino === 1 ? '#10b981' : '#cbd5e1'}`, transition: 'all 0.3s' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 'bold', color: '#334155', fontSize: '1.1rem' }}>
-                      <input type="checkbox" name="laboresactivosino" checked={formData.laboresactivosino === 1} onChange={handleFormChange} style={{ width: '22px', height: '22px', accentColor: '#10b981' }} />
-                      Esta labor está activa y disponible
-                    </label>
                   </div>
                 </div>
               )}

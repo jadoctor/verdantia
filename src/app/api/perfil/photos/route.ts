@@ -71,6 +71,8 @@ export async function POST(request: Request) {
     const esPrimera = total === 0 ? 1 : 0;
 
     // Insertar en la base de datos (con centrado IA)
+    // Guardamos la ruta relativa (uploads/usuario/...) en la DB.
+    // getMediaUrl() la convertirá a /api/media?path=... al renderizar.
     const fileSize = bytes.byteLength;
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
         datosadjuntosresumen, datosadjuntospesobytes
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, publicUrl, esPrimera,
+        file.type || 'image/jpeg', file.name, storagePath, esPrimera,
         total + 1, userId,
         JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: faceZoom, profile_style: '' }),
         fileSize
@@ -91,7 +93,7 @@ export async function POST(request: Request) {
       success: true,
       photo: {
         id: (result as any).insertId,
-        ruta: publicUrl,
+        ruta: storagePath,
         esPrincipal: esPrimera,
         nombreOriginal: file.name
       }
