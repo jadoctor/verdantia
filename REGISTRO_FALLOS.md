@@ -10,7 +10,7 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 
 ---
 
-### 8.1. 🟡 PENDIENTE DE VALIDACIÓN - Imágenes no cargan en Producción (Cloud)
+### 8.1. 🔴 FALLO CONFIRMADO - Imágenes no cargan en Producción (Cloud)
 - **Fallo:** Las fotografías e imágenes (portadas de PDFs, avatares, fotos de especies) que sí se ven en el entorno local (localhost), devuelven un error o aparecen rotas en la web subida a Google Cloud / Firebase Hosting.
 
 #### [29/04/2026 - 15:45]
@@ -21,11 +21,17 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 #### [29/04/2026 - 16:10]
 - **Análisis real:** El endpoint `/api/media` falla en Cloud al hacer `readFile` de fotos antiguas porque la carpeta `public` no se despliega en el entorno Node.js del backend.
 - **Solución aplicada:** Modificado `api/media/route.ts` para que lance un Redirect 302 hacia `/uploads/...` delegando la descarga a Firebase Hosting.
-- **Resultado:** 🟡 PENDIENTE DE VALIDACIÓN.
+- **Resultado:** 🔴 FRACASO CONFIRMADO EN PRODUCCIÓN (validado 30/04/2026).
+
+#### [30/04/2026 - 15:44] — DIAGNÓSTICO Y NUEVA PROPUESTA
+- **Diagnóstico del fracaso anterior:** El Redirect 302 a `/{mediaPath}` falla porque Firebase Hosting NO tiene las fotos en su raíz estática. Las imágenes están en **Firebase Storage** (bucket `verdantia-494121.firebasestorage.app`), no servidas como assets estáticos de Hosting. El redirect apunta a una URL que no existe en el hosting.
+- **Propuesta de solución (Plan A):** Eliminar el fallback de redirect. En su lugar, si el archivo NO existe en Firebase Storage, devolver un **placeholder SVG** (imagen genérica de "foto no disponible") en vez de un redirect roto. Esto evita los errores visibles.
+- **Propuesta de solución (Plan B — Raíz del problema):** Verificar que las fotos que se guardan en la BBDD apunten a rutas de Firebase Storage válidas (no a rutas legacy tipo `uploads/...` que no existen en Cloud). Migrar las rutas antiguas de la BBDD o subir las fotos faltantes al bucket de Storage.
+- **Resultado:** 🔴 PENDIENTE DE APLICAR.
 
 ---
 
-### 8.2. 🟡 PENDIENTE DE VALIDACIÓN - Desplegable Superadministrador truncado en Móvil
+### 8.2. 🔴 FALLO CONFIRMADO - Desplegable Superadministrador truncado en Móvil
 - **Fallo:** Al navegar en un teléfono móvil, el menú de Superadministrador en el panel lateral (Sidebar) no muestra todas sus opciones y se corta. Los otros dashboards laterales tampoco dejan hacer scroll.
 
 #### [29/04/2026 - 15:45]
@@ -36,13 +42,50 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 #### [29/04/2026 - 16:10]
 - **Análisis real:** El CSS del Sidebar usaba `height: 100vh`, el cual en iOS/Android ignora la barra de direcciones y dibuja por fuera de los límites físicos de la pantalla.
 - **Solución aplicada:** Cambiado el CSS móvil a `height: 100dvh` (Dynamic Viewport Height) e inyectado `overflow-y: auto` y `-webkit-overflow-scrolling: touch`.
-- **Resultado:** 🟡 PENDIENTE DE VALIDACIÓN.
+- **Resultado:** 🔴 FRACASO CONFIRMADO EN PRODUCCIÓN (validado 30/04/2026).
+
+#### [30/04/2026 - 15:44] — DIAGNÓSTICO Y NUEVA PROPUESTA
+- **Diagnóstico del fracaso anterior:** El usuario ha identificado que el problema NO es de los desplegables individuales, sino del **contenedor lateral izquierdo completo (`.sidebar`)** que no permite scroll. La causa probable: el layout `dashboard-layout` tiene `overflow: hidden` y el `sidebar-footer` con `margin-top: auto` empuja el contenido fuera de los límites sin permitir que el area de navegación haga scroll independiente.
+- **Hipótesis confirmada por el usuario:** "El lateral no tiene scroll; el problema no está en los desplegables, es el layout izquierdo que no tiene scroll."
+- **Propuesta de solución:** Reestructurar el sidebar para que la zona de navegación (las secciones con los desplegables) sea un contenedor independiente con `overflow-y: auto` y `flex: 1`, mientras que el logo (arriba) y el footer (perfil+logout, abajo) permanezcan **fijos**. De esta forma, solo la zona del medio hace scroll. Esto resuelve el problema en TODOS los dispositivos (no solo móvil).
+- **Resultado:** 🔴 PENDIENTE DE APLICAR.
 
 ---
 
-### 8.3. 🟡 PENDIENTE DE VALIDACIÓN - Bug Destructivo en PDFs IA y Error "Column count doesn't match"
-- **Fallo 1 (Textos borrados):** Al generar la portada del PDF, se borraban el título y los apuntes de la base de datos, dejando la ficha vacía.
-- **Causa 1:** La petición PUT del frontend (`EspecieForm.tsx`) solo enviaba la foto generada y el servidor sobrescribía "ciegamente" los campos no recibidos con strings vacíos.
-- **Fallo 2 (Error SQL):** Al intentar "Añadir" un documento desde el buscador IA, saltaba el error `Column count doesn't match value count`.
-- **Causa 2:** La IA generaba listas (Arrays) de apuntes en lugar de bloques de texto. Al inyectar el Array en `mysql2`, el driver lo expandía creando múltiples parámetros e invalidando la estructura de la tabla.
-- **Solución Aplicada:** Se reescribió `route.ts` del PUT para hacer "actualizaciones parciales dinámicas". En `pdfs/link/route.ts`, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de enviar la petición SQL.
+### 8.3. 🟡 PENDIENTE DE VALIDACIÓN - Bug Destructivo en PDFs IA y Error SQL
+- **Fallo:** Al generar la portada del PDF, se borraban el título y apuntes. Además, al intentar "Añadir" un documento desde el buscador, saltaba un error SQL por discrepancia de columnas.
+
+#### [29/04/2026 - 16:02]
+- **Análisis real:** El PUT sobrescribía ciegamente campos con strings vacíos. Por otro lado, la IA generaba Arrays en lugar de strings, lo que rompía el driver de MySQL al intentar guardarlo.
+- **Solución aplicada:** Se reescribió `route.ts` para hacer actualizaciones parciales dinámicas. Además, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de tocar la base de datos.
+- **Resultado:** 🟡 PENDIENTE DE VALIDACIÓN. *(Sin embargo, al forzar esta conversión se rompió el parseo del frontend, originando el fallo documentado en el Punto 8.4).*
+
+---
+
+### 8.4. 🔴 PENDIENTE DE APLICAR - El Asistente de Búsqueda Falla
+- **Fallo:** El asistente de búsqueda IA se queda colgado infinitamente o devuelve resultados vacíos, sin mostrar ningún error claro al usuario en la interfaz. *(Nota: Este fallo se produjo como efecto secundario al aplicar la corrección del Punto 8.3).*
+
+#### [29/04/2026 - 16:22]
+- **Falso análisis:** Creímos que la API del modelo de lenguaje estaba caída o que había un problema de red.
+- **Solución aplicada:** Se aumentó el timeout de las peticiones a la API.
+- **Resultado:** 🔴 FRACASO.
+
+#### [29/04/2026 - 16:25]
+- **Análisis real:** El componente frontend de búsqueda no está gestionando correctamente los estados de error ni el parseo cuando la IA devuelve un JSON truncado por el límite de tokens, o cuando el formato de la respuesta es inesperado debido a demasiado contexto enviado en el prompt.
+- **Solución propuesta:** Modificar el prompt para forzar una salida JSON estricta y más concisa. Además, implementar un bloque `try/catch` en el cliente para interceptar errores de parseo e inyectar un estado de error visible y manejable en la UI en lugar de fallar silenciosamente.
+- **Resultado:** 🟡 ÉXITO PARCIAL. El buscador IA no se cuelga y permite añadir PDFs, pero los textos de resumen son demasiado escasos y la generación de portada con Imagen 4.0 falla por falta de contexto.
+
+#### [29/04/2026 - 16:35]
+- **Análisis real:** Al forzar en el prompt de la IA una respuesta de "máximo 50 palabras", la descripción resultaba tan corta que el generador de imágenes posterior (Imagen 4.0) fallaba silenciosamente por falta de descripción semántica para componer la portada.
+- **Solución aplicada:** Se ha modificado de nuevo el prompt de `pdf-search/route.ts` para pedir resúmenes técnicos de al menos 4 líneas y apuntes con viñetas reales, proporcionando más "carne" para la generación de la foto.
+- **Resultado:** 🟡 ÉXITO PARCIAL. El resumen ya genera más texto y se guarda, pero la foto sigue sin aparecer por un fallo silencioso de Imagen 4.0.
+
+#### [29/04/2026 - 16:38]
+- **Análisis real:** Al enviar la petición a Imagen 4.0, se enviaba `tipoEntidad: 'especie'`. Esto forzaba a la IA a rechazar cualquier texto y exigir una foto hiperrealista botánica, lo que entraba en conflicto directo con el concepto de "Portada de documento" y causaba el fallo silencioso.
+- **Solución aplicada:** Se creó una directiva en `api/ai/generate-image/route.ts` para `tipoEntidad: 'documento'` y se actualizó `EspecieForm.tsx` para enviarla, pidiendo una "Ilustración digital de estilo editorial y académico".
+- **Resultado:** 🟡 PENDIENTE DE VALIDACIÓN.
+
+#### [30/04/2026 - 15:52] — CAUSA RAÍZ ENCONTRADA
+- **Análisis real:** La imagen SÍ se generaba correctamente con Imagen 4.0 y SÍ se subía a Firebase Storage. El PUT devolvía 200. **PERO** la ruta donde se guardaba (`uploads/especies_pdfs_covers/...`) no estaba en la lista blanca (`ALLOWED_PREFIXES`) de `api/media/route.ts`. Por eso, cada petición GET a la portada devolvía **400 Bad Request** silenciosamente.
+- **Solución aplicada:** Se añadió `'uploads/especies_pdfs_covers/'` a `ALLOWED_PREFIXES` en `api/media/route.ts`.
+- **Resultado:** 🟢 RESUELTO.

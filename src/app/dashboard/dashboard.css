@@ -45,7 +45,7 @@
   background: #ffffff;
   border-right: 1px solid var(--border-color);
   z-index: 10;
-  overflow-y: auto;
+  overflow: hidden;
   transition: width 0.3s ease, opacity 0.3s ease;
   box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
 }
@@ -81,6 +81,15 @@
   background: rgba(255, 255, 255, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+/* ── Sidebar Scrollable Navigation Area ── */
+.sidebar-nav-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 
 /* ── Sidebar Sections ── */
@@ -184,7 +193,7 @@
 
 /* ── Sidebar Footer (Profile + Logout) ── */
 .sidebar-footer {
-  margin-top: auto;
+  flex-shrink: 0;
   padding: 0.75rem;
   border-top: 1px solid var(--border-color);
   background: #f8fafc;
@@ -549,9 +558,7 @@
     height: 100dvh;
     z-index: 100;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
-    padding-bottom: 80px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
   }
 
   .sidebar.collapsed {

@@ -355,8 +355,8 @@ export default function GuiaUsuarioPage() {
           Esta sección actúa como un <strong>disco duro externo para el Asistente de IA</strong>, evitando el "olvido" de fallos críticos debido a las limitaciones de memoria de contexto. Antes de resolver nuevos problemas, la IA debe consultar y vaciar esta lista.
         </p>
 
-        <h3 style={{ color: '#0369a1', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          8.1. Imágenes no cargan en Producción (Cloud)
+        <h3 style={{ color: '#dc2626', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔴 8.1. Imágenes no cargan en Producción (Cloud)
         </h3>
         <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
           <strong>Fallo:</strong> Las fotografías e imágenes (portadas de PDFs, avatares, fotos de especies) que sí se ven en el entorno local devuelven un error en Google Cloud.
@@ -371,17 +371,27 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:10]</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', marginBottom: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:10]</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> La función Node.js falla al intentar leer el disco duro (`public/uploads`) porque en Cloud esa carpeta no existe.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Modificado `api/media/route.ts` para redirigir al estático en Firebase Hosting.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO CONFIRMADO EN PRODUCCIÓN (validado 30/04/2026). Las fotos siguen rotas.</li>
           </ul>
         </div>
 
-        <h3 style={{ color: '#0369a1', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          8.2. Desplegable Superadministrador truncado en Móvil
+        <div style={{ background: '#fff7ed', borderLeft: '4px solid #f97316', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#9a3412', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[30/04/2026 - 15:44] — DIAGNÓSTICO Y NUEVA PROPUESTA</h4>
+          <ul style={{ color: '#7c2d12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico del fracaso anterior:</strong> El Redirect 302 a <code>/{'{'}mediaPath{'}'}</code> falla porque Firebase Hosting NO tiene las fotos en su raíz estática. Las imágenes están en <strong>Firebase Storage</strong> (bucket), no servidas como assets estáticos de Hosting.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Plan A (Paliativo):</strong> Si la foto no existe en Storage, devolver un placeholder SVG en vez de un redirect roto.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Plan B (Raíz del problema):</strong> Verificar que las rutas en la BBDD apunten a Firebase Storage válidas. Migrar rutas legacy <code>uploads/...</code> o subir fotos al bucket.</li>
+            <li><strong>Resultado:</strong> 🔴 PENDIENTE DE APLICAR.</li>
+          </ul>
+        </div>
+
+        <h3 style={{ color: '#dc2626', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔴 8.2. Desplegable Superadministrador truncado en Móvil
         </h3>
         <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
           <strong>Fallo:</strong> El menú en móviles corta las entradas y los dashboards laterales no dejan hacer scroll hacia abajo.
@@ -396,25 +406,92 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:10]</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', marginBottom: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:10]</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Se estaba usando `100vh`, que en iOS ignora las barras de navegación. Faltaban las reglas nativas de Apple para scroll.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Cambiado a `100dvh` (dinámico) y añadido `-webkit-overflow-scrolling`.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO CONFIRMADO EN PRODUCCIÓN (validado 30/04/2026). El sidebar sigue sin scrollear.</li>
           </ul>
         </div>
 
-        <h3 style={{ color: '#eab308', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🟡 [29/04/2026 - 16:02] PENDIENTE DE VALIDACIÓN - Bug Destructivo en PDFs IA y Error "Column count doesn't match"
+        <div style={{ background: '#fff7ed', borderLeft: '4px solid #f97316', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#9a3412', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[30/04/2026 - 15:44] — DIAGNÓSTICO Y NUEVA PROPUESTA</h4>
+          <ul style={{ color: '#7c2d12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico del fracaso anterior:</strong> El problema NO es de los desplegables individuales ni del viewport height. El <strong>contenedor lateral completo (<code>.sidebar</code>)</strong> no permite scroll. La causa raíz: el layout padre (<code>.dashboard-layout</code>) usa <code>overflow: hidden</code> y el <code>.sidebar-footer</code> con <code>margin-top: auto</code> empuja el contenido fuera de los límites sin permitir scroll independiente de la zona de navegación.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Hipótesis del usuario:</strong> {`"El lateral no tiene scroll; el problema no está en los desplegables, es el layout izquierdo que no tiene scroll."`}</li>
+            <li style={{ marginBottom: '4px' }}><strong>Propuesta de solución:</strong> Reestructurar el sidebar en 3 zonas: Logo (fijo arriba), Navegación (zona scrollable con <code>overflow-y: auto</code> y <code>flex: 1</code>) y Footer (fijo abajo). Solo la zona central hará scroll. Esto resuelve en TODOS los dispositivos.</li>
+            <li><strong>Resultado:</strong> 🔴 PENDIENTE DE APLICAR.</li>
+          </ul>
+        </div>
+
+        <h3 style={{ color: '#0369a1', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          8.3. Bug Destructivo en PDFs IA y Error SQL
         </h3>
-        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Fallo 1 (Textos borrados):</strong> Al generar la portada del PDF, se borraban el título y los apuntes de la base de datos, dejando la ficha vacía.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Causa 1:</strong> La petición PUT del frontend (`EspecieForm.tsx`) solo enviaba la foto generada y el servidor sobrescribía "ciegamente" los campos no recibidos con strings vacíos.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Fallo 2 (Error SQL):</strong> Al intentar "Añadir" un documento desde el buscador IA, saltaba el error `Column count doesn't match value count`.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Causa 2:</strong> La IA generaba listas (Arrays) de apuntes en lugar de bloques de texto. Al inyectar el Array en `mysql2`, el driver lo expandía creando múltiples parámetros e invalidando la estructura de la tabla.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Solución Aplicada:</strong> Se reescribió `route.ts` del PUT para hacer "actualizaciones parciales dinámicas" (solo altera lo que recibe). En `pdfs/link/route.ts`, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de tocar la base de datos.</li>
-        </ul>
+        <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
+          <strong>Fallo:</strong> Al generar la portada del PDF, se borraban el título y apuntes. Además, al intentar "Añadir" un documento desde el buscador, saltaba un error SQL por discrepancia de columnas.
+        </p>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:02]</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El PUT sobrescribía ciegamente campos con strings vacíos. Por otro lado, la IA generaba Arrays en lugar de strings, lo que rompía el driver de MySQL al intentar guardarlo.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se reescribió `route.ts` para hacer actualizaciones parciales dinámicas. Además, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de tocar la base de datos.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN. <em>(Sin embargo, al forzar esta conversión se rompió el parseo del frontend, originando el fallo documentado en el Punto 8.4)</em>.</li>
+          </ul>
+        </div>
+
+        <h3 style={{ color: '#0369a1', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          8.4. El Asistente de Búsqueda Falla
+        </h3>
+        <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
+          <strong>Fallo:</strong> El asistente de búsqueda IA se queda colgado infinitamente o devuelve resultados vacíos, sin mostrar ningún error claro al usuario en la interfaz. <em>(Nota: Este fallo se produjo como efecto secundario al aplicar la corrección del Punto 8.3).</em>
+        </p>
+
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', marginBottom: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:22]</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Mi falso análisis:</strong> Creímos que la API del modelo de lenguaje estaba caída o que había un problema de red.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se aumentó el timeout de las peticiones a la API de la IA.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:25]</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El componente frontend de búsqueda no está gestionando los estados de error ni el parseo cuando la IA devuelve un JSON truncado por el límite de tokens o con un formato inesperado.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Modificar el prompt para forzar una salida JSON estricta y más concisa. Además, implementar un bloque <code>try/catch</code> en el cliente para interceptar errores de parseo y mostrar una alerta amigable en la UI.</li>
+            <li><strong>Resultado:</strong> 🟡 ÉXITO PARCIAL. El buscador IA no se cuelga y permite añadir PDFs, pero los textos de resumen son demasiado escasos y la generación de portada con Imagen 4.0 falla por falta de contexto.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:35]</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Al forzar en el prompt de la IA una respuesta de "máximo 50 palabras", la descripción resultaba tan corta que el generador de imágenes posterior (Imagen 4.0) fallaba silenciosamente por falta de descripción semántica para componer la portada.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se ha modificado de nuevo el prompt de <code>pdf-search/route.ts</code> para pedir resúmenes técnicos de al menos 4 líneas y apuntes con viñetas reales, proporcionando más "carne" para la generación de la foto.</li>
+            <li><strong>Resultado:</strong> 🟡 ÉXITO PARCIAL. El resumen ya genera más texto y se guarda, pero la foto sigue sin aparecer por un fallo silencioso de Imagen 4.0.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:38]</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Al enviar la petición a Imagen 4.0, se enviaba <code>tipoEntidad: 'especie'</code>. Esto forzaba a la IA a rechazar cualquier texto y exigir una foto hiperrealista botánica, lo que entraba en conflicto directo con el concepto de "Portada de documento".</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se creó una directiva en <code>api/ai/generate-image/route.ts</code> para <code>tipoEntidad: 'documento'</code> y se actualizó <code>EspecieForm.tsx</code> para enviarla, pidiendo una "Ilustración digital de estilo editorial y académico".</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. La imagen se generaba pero no se mostraba.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>🟢 [30/04/2026 - 15:52] — CAUSA RAÍZ ENCONTRADA Y RESUELTA</h4>
+          <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> La imagen SÍ se generaba con Imagen 4.0 y SÍ se subía correctamente a Firebase Storage. El PUT devolvía 200. <strong>PERO</strong> la ruta donde se guardaba (<code>uploads/especies_pdfs_covers/...</code>) no estaba en la lista blanca (<code>ALLOWED_PREFIXES</code>) de <code>api/media/route.ts</code>. El endpoint devolvía <strong>400 Bad Request</strong> silenciosamente en cada petición GET.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se añadió <code>'uploads/especies_pdfs_covers/'</code> a la constante <code>ALLOWED_PREFIXES</code> en <code>api/media/route.ts</code>.</li>
+            <li><strong>Resultado:</strong> 🟢 RESUELTO.</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { uploadToStorage } from '@/lib/firebase/storage';
+import sharp from 'sharp';
 
 export async function POST(request: Request) {
   try {
-    const { pdfUrl, instructions, especieId, variedadId, autorEmail, especieNombre } = await request.json();
+    const { pdfUrl, instructions, especieId, variedadId, laborId, autorEmail, especieNombre, contexto, pdfSourceId } = await request.json();
+
+    // Contexto adaptativo: especie, variedad o labor
+    const tipoEntidad = contexto?.tipo || 'especie';
+    const nombreEntidad = contexto?.nombre || especieNombre || 'agricultura';
+    
+    const contextoTexto = tipoEntidad === 'labor' 
+      ? `la labor agrícola "${nombreEntidad}"` 
+      : tipoEntidad === 'variedad' 
+        ? `la variedad "${nombreEntidad}"` 
+        : `la especie "${nombreEntidad}"`;
 
     if (!pdfUrl || !instructions) {
       return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 });
@@ -27,27 +38,85 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Error al descargar el PDF de origen' }, { status: 500 });
     }
 
-    // 2. Prepare Gemini prompt
-    const prompt = `Actúa como un experto redactor de blogs agronómicos y de jardinería moderna. Vas a leer el documento adjunto (sobre ${especieNombre || 'agricultura'}) y vas a escribir un artículo de blog altamente atractivo, SEO-optimizado y estructurado.
-Instrucciones específicas del usuario: "${instructions}"
+    // 2. Prepare Gemini prompt con estructura estándar Verdantia (ver BLOG_STANDARD.md)
+    const fichaRapidaEjemplo = tipoEntidad === 'labor'
+      ? `    {"icono": "📅", "label": "Época", "valor": "Mes-Mes"},
+    {"icono": "⏱️", "label": "Duración", "valor": "X horas"},
+    {"icono": "🔧", "label": "Herramientas", "valor": "Lista"},
+    {"icono": "🌡️", "label": "Temp. Ideal", "valor": "XX°C"},
+    {"icono": "⚠️", "label": "Dificultad", "valor": "Fácil/Media/Alta"},
+    {"icono": "💰", "label": "Coste", "valor": "Bajo/Medio/Alto"}`
+      : `    {"icono": "🌡️", "label": "Temp. Óptima", "valor": "XX-XX°C"},
+    {"icono": "🗓️", "label": "Siembra", "valor": "Mes-Mes"},
+    {"icono": "🌱", "label": "Germinación", "valor": "X-X días"},
+    {"icono": "📏", "label": "Marco", "valor": "XXxXXcm"},
+    {"icono": "🕐", "label": "Cosecha", "valor": "XX-XX días"},
+    {"icono": "💧", "label": "Riego", "valor": "Tipo"}`;
 
-Reglas estrictas de Estructura de Blog Moderno:
-1. Sin paja: Ve directo al grano. Párrafos cortos de máximo 3 líneas.
-2. Jerarquía: Usa de 3 a 5 apartados H2 descriptivos. Aplica negritas a los conceptos clave.
-3. El Gancho: La introducción debe ser de máximo 100 palabras empatizando con el problema.
-4. Caja TL;DR: Inmediatamente después de la introducción, incluye una caja de "Puntos Clave" (usa Blockquotes de Markdown > o una lista de viñetas).
-5. CTA Final: Termina con una llamada a la acción o pregunta breve.
-6. Prompts de Imágenes: Imagina fotos o ilustraciones perfectas para acompañar tu artículo. Debes redactar descripciones altamente detalladas en INGLÉS (para DALL-E 3) de estas imágenes. La primera será la foto de portada. La segunda y tercera serán para intercalar en el texto.
+    const prompt = `Actúa como un experto redactor de blogs agronómicos y de jardinería moderna. Vas a leer el documento adjunto sobre ${contextoTexto} y vas a escribir un artículo de blog profesional, SEO-optimizado y visualmente estructurado.
 
-Devuelve tu respuesta ÚNICAMENTE como un objeto JSON válido con la siguiente estructura exacta:
+CONTEXTO: Este blog trata sobre ${tipoEntidad === 'labor' ? 'una LABOR AGRÍCOLA (tarea/técnica del huerto)' : tipoEntidad === 'variedad' ? 'una VARIEDAD específica de una especie vegetal' : 'una ESPECIE vegetal/hortaliza'}.
+
+INDICACIONES DEL USUARIO: "${instructions}"
+
+REGLAS DE ESTRUCTURA OBLIGATORIAS (Blog Verdantia):
+1. SIN PAJA: Párrafos de máximo 3 líneas. Ve directo al grano.
+2. NEGRITAS en conceptos clave. DATOS CONCRETOS: cifras, temperaturas, días, medidas.
+3. TONO: Profesional pero cercano, como un agrónomo hablándote en el huerto.
+4. TÍTULO: Siempre que sea posible, usa un título INTERROGATIVO (ej: "¿Cómo cultivar calabacín?", "¿Cuándo podar los tomates?"). Genera curiosidad.
+
+Devuelve ÚNICAMENTE un JSON válido con esta estructura EXACTA:
 {
-  "titulo": "Título atractivo aquí",
-  "slug": "url-amigable-aqui",
-  "resumen": "Un resumen corto de 2 líneas para la tarjeta del blog",
-  "contenido_markdown": "El texto completo del artículo en Markdown (SIN INCLUIR LAS IMÁGENES AÚN, yo las inyectaré).",
-  "imagenes_prompt": [
-    "A high quality photorealistic image of...", 
-    "An educational illustration showing..."
+  "titulo": "Título SEO interrogativo siempre que sea posible (ej: ¿Cómo cultivar...?), máximo 70 caracteres",
+  "slug": "url-amigable-en-minusculas",
+  "resumen": "Resumen de 2 líneas para la tarjeta del blog",
+  "tags": ["#tag1", "#tag2", "#tag3", "#tag4"],
+  "ficha_rapida": [
+${fichaRapidaEjemplo}
+  ],
+  "introduccion": "Máximo 100 palabras. Gancho emocional que conecte con el lector.",
+  "secciones": [
+    {
+      "titulo_h2": "Emoji + Título descriptivo",
+      "contenido_markdown": "Texto con H3, negritas, listas. Mínimo 150 palabras.",
+      "imagen_posicion": "derecha"
+    },
+    {
+      "titulo_h2": "Emoji + Título descriptivo",
+      "contenido_markdown": "Texto con H3, negritas, listas. Mínimo 150 palabras.",
+      "imagen_posicion": "izquierda"
+    }
+  ],
+  "consejos": {
+    "titulo": "💡 Título atractivo para la caja de consejos",
+    "items": [
+      "**Concepto en negrita** — Explicación breve",
+      "**Concepto en negrita** — Explicación breve",
+      "**Concepto en negrita** — Explicación breve"
+    ]
+  },
+  "cta": {
+    "titulo": "Pregunta o llamada a la acción",
+    "subtitulo": "Frase motivadora corta",
+    "boton_primario": "🌱 Texto del botón principal",
+    "boton_secundario": "📄 Texto del botón secundario"
+  },
+  "imagenes": [
+    {
+      "prompt_en": "Highly detailed professional photorealistic image prompt in English for the hero/cover image",
+      "titulo_seo": "Título SEO en español, max 60 caracteres",
+      "descripcion_seo": "Descripción SEO en español, max 120 caracteres"
+    },
+    {
+      "prompt_en": "Highly detailed image prompt in English for section 1",
+      "titulo_seo": "Título SEO en español",
+      "descripcion_seo": "Descripción SEO en español"
+    },
+    {
+      "prompt_en": "Highly detailed image prompt in English for section 2",
+      "titulo_seo": "Título SEO en español",
+      "descripcion_seo": "Descripción SEO en español"
+    }
   ]
 }`;
 
@@ -91,7 +160,7 @@ Devuelve tu respuesta ÚNICAMENTE como un objeto JSON válido con la siguiente e
       return NextResponse.json({ error: 'La IA no devolvió un formato válido' }, { status: 500 });
     }
 
-    if (!parsedData || !parsedData.titulo || !parsedData.contenido_markdown) {
+    if (!parsedData || !parsedData.titulo || (!parsedData.secciones && !parsedData.contenido_markdown)) {
       return NextResponse.json({ error: 'Faltan datos en la respuesta de la IA' }, { status: 500 });
     }
 
@@ -104,70 +173,6 @@ Devuelve tu respuesta ÚNICAMENTE como un objeto JSON válido con la siguiente e
       }
     }
 
-    // 5. Generación Autónoma de Imágenes con Imagen 4.0 (Gemini)
-    let heroImageUrl = null;
-    let markdownConImagenes = parsedData.contenido_markdown;
-
-    if (parsedData.imagenes_prompt && Array.isArray(parsedData.imagenes_prompt) && parsedData.imagenes_prompt.length > 0) {
-      try {
-        console.log("Generando " + parsedData.imagenes_prompt.length + " imágenes con Imagen 4.0...");
-        
-        // Ejecutamos las promesas en serie para no saturar el rate limit gratuito
-        const generatedBase64s: (string | null)[] = [];
-        for (let i = 0; i < Math.min(3, parsedData.imagenes_prompt.length); i++) {
-          const imgPrompt = parsedData.imagenes_prompt[i];
-          const urlImg = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
-          // Nota: Usamos imagen-3.0-generate-001 porque es más estable en v1beta, aunque podemos probar imagen-4.0 si estuviera disponible.
-          // Usaremos la versión que detectamos soportada
-          const urlImg4 = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`;
-          
-          const res = await fetch(urlImg4, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              instances: [{ prompt: imgPrompt }],
-              parameters: { sampleCount: 1 }
-            })
-          });
-          const data = await res.json();
-          if (data.predictions && data.predictions[0]?.bytesBase64Encoded) {
-             const base64Data = data.predictions[0].bytesBase64Encoded;
-             const buffer = Buffer.from(base64Data, 'base64');
-             const filename = `blog_img_${Date.now()}_${i}.jpg`;
-             const storagePath = `uploads/blog/${filename}`;
-             
-             // Subir a Firebase Storage
-             const publicUrl = await uploadToStorage(buffer, storagePath, 'image/jpeg');
-             
-             generatedBase64s.push(storagePath);
-          } else {
-             generatedBase64s.push(null);
-          }
-        }
-        
-        // Asignar Foto de Portada (Hero Image)
-        if (generatedBase64s[0]) heroImageUrl = generatedBase64s[0];
-
-        // Ensamblar las fotos interiores en el Markdown
-        if (generatedBase64s.length > 1) {
-          let h2Count = 0;
-          markdownConImagenes = markdownConImagenes.replace(/(##\s.*)/g, (match: string) => {
-            h2Count++;
-            if (h2Count === 1 && generatedBase64s[1]) {
-              return `![Imagen ilustrativa](${generatedBase64s[1]})\n\n${match}`;
-            }
-            if (h2Count === 3 && generatedBase64s[2]) {
-              return `![Imagen detallada](${generatedBase64s[2]})\n\n${match}`;
-            }
-            return match;
-          });
-        }
-        console.log("Imágenes de Google Imagen inyectadas correctamente.");
-      } catch(e) {
-        console.error("Error general generando imágenes:", e);
-      }
-    }
-
     // Ensure unique slug
     let finalSlug = (parsedData.slug || parsedData.titulo).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const [slugRows] = await pool.query<any>('SELECT idblog FROM blog WHERE xblogslug = ?', [finalSlug]);
@@ -175,23 +180,175 @@ Devuelve tu respuesta ÚNICAMENTE como un objeto JSON válido con la siguiente e
       finalSlug = `${finalSlug}-${Date.now().toString().slice(-4)}`;
     }
 
-    // 6. Insert into DB
+    // 5. Insert blog entry first (to get the ID for datosadjuntos FK)
     const [result] = await pool.query<any>(`
       INSERT INTO blog 
       (xblogslug, xblogtitulo, xblogresumen, xblogcontenido, xblogimagen, xblogestado, xblogidusuarios, xblogidespecies, xblogidvariedades) 
-      VALUES (?, ?, ?, ?, ?, 'borrador', ?, ?, ?)
+      VALUES (?, ?, ?, ?, NULL, 'borrador', ?, ?, ?)
     `, [
       finalSlug,
       parsedData.titulo,
       parsedData.resumen || '',
-      markdownConImagenes,
-      heroImageUrl,
+      '{}',
       idUsuario,
       especieId || null,
       variedadId || null
     ]);
 
-    return NextResponse.json({ success: true, blogId: result.insertId, slug: finalSlug });
+    const blogId = result.insertId;
+
+    // 6. Generación de imágenes con pipeline estándar Verdantia
+    const imagenesData = parsedData.imagenes || parsedData.imagenes_prompt || [];
+    let heroImagePath: string | null = null;
+    const generatedImagePaths: (string | null)[] = [];
+
+    // Marca de agua SVG Verdantia (estándar del proyecto)
+    const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
+      <text x="290" y="50" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="28" font-weight="bold"
+        fill="white" fill-opacity="0.35" stroke="black" stroke-width="1.5" stroke-opacity="0.25">
+        VERDANTIA
+      </text>
+    </svg>`);
+
+    if (Array.isArray(imagenesData) && imagenesData.length > 0) {
+      try {
+        console.log(`[Blog Gen] Generando ${imagenesData.length} imágenes con pipeline estándar Verdantia...`);
+        
+        const generatedPaths: (string | null)[] = [];
+
+        for (let i = 0; i < Math.min(3, imagenesData.length); i++) {
+          const imgData = imagenesData[i];
+          // Soportar tanto el formato nuevo {prompt_en, titulo_seo, descripcion_seo} como el antiguo (string simple)
+          const imgPrompt = typeof imgData === 'string' ? imgData : imgData.prompt_en;
+          const tituloSeo = typeof imgData === 'string' ? `Imagen ${i + 1} del artículo` : (imgData.titulo_seo || '');
+          const descripcionSeo = typeof imgData === 'string' ? '' : (imgData.descripcion_seo || '');
+
+          const urlImg = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`;
+          
+          const res = await fetch(urlImg, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              instances: [{ prompt: imgPrompt }],
+              parameters: { sampleCount: 1 }
+            })
+          });
+          const imgResponse = await res.json();
+
+          if (imgResponse.predictions && imgResponse.predictions[0]?.bytesBase64Encoded) {
+            const rawBuffer = Buffer.from(imgResponse.predictions[0].bytesBase64Encoded, 'base64');
+            
+            // ── PIPELINE ESTÁNDAR VERDANTIA ──
+
+            // Slugify del título SEO para nombre de archivo
+            const slugifiedTitle = (tituloSeo || `blog-imagen-${i}`)
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+              .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            
+            const filename = `${slugifiedTitle}-${Date.now()}.webp`;
+            const storagePath = `uploads/blog/${filename}`;
+
+            // Redimensionar + marca de agua VERDANTIA + WebP
+            const sharpInstance = sharp(rawBuffer);
+            let mainSharp = sharpInstance
+              .clone()
+              .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true });
+
+            const meta = await sharpInstance.metadata();
+            if ((meta.width || 0) >= 300 && (meta.height || 0) >= 60) {
+              mainSharp = mainSharp.composite([{
+                input: watermarkSvg,
+                gravity: 'southeast'
+              }]);
+            }
+
+            const mainBuffer = await mainSharp.webp({ quality: 80 }).toBuffer();
+            
+            // Subir a Firebase Storage
+            await uploadToStorage(mainBuffer, storagePath, 'image/webp');
+
+            // Guardar en datosadjuntos vinculado al blog
+            const resumenJson = JSON.stringify({
+              seo_alt: descripcionSeo,
+              seo_title: tituloSeo,
+              profile_object_x: 50,
+              profile_object_y: 50,
+              profile_object_zoom: 100,
+              profile_style: '',
+              es_portada_blog: i === 0
+            });
+
+            await pool.query(
+              `INSERT INTO datosadjuntos (
+                datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
+                datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
+                datosadjuntosactivo, datosadjuntosfechacreacion, 
+                xdatosadjuntosidespecies, datosadjuntospesobytes, 
+                datosadjuntostitulo, datosadjuntosresumen
+              ) VALUES ('imagen_blog', 'image/webp', ?, ?, ?, ?, 1, NOW(), ?, ?, ?, ?)`,
+              [
+                filename, storagePath, i === 0 ? 1 : 0, i + 1,
+                especieId || null, mainBuffer.byteLength,
+                tituloSeo, resumenJson
+              ]
+            );
+
+            generatedImagePaths.push(storagePath);
+            console.log(`[Blog Gen] ✅ Imagen ${i + 1} procesada: ${filename} (${tituloSeo})`);
+          } else {
+            generatedImagePaths.push(null);
+            console.warn(`[Blog Gen] ⚠️ Imagen ${i + 1} no generada por Imagen 4.0`);
+          }
+        }
+        
+        // Asignar portada del blog
+        if (generatedImagePaths[0]) {
+          heroImagePath = generatedImagePaths[0];
+        }
+
+        // Inyectar rutas y metadatos SEO de imágenes en las secciones del JSON
+        if (parsedData.secciones && Array.isArray(parsedData.secciones)) {
+          parsedData.secciones.forEach((sec: any, idx: number) => {
+            if (generatedImagePaths[idx + 1]) {
+              sec.imagen_ruta = `/api/media?path=${encodeURIComponent(generatedImagePaths[idx + 1]!)}`;
+              if (imagenesData[idx + 1]) {
+                sec.imagen_alt = imagenesData[idx + 1].descripcion_seo || sec.titulo_h2;
+                sec.imagen_title = imagenesData[idx + 1].titulo_seo || sec.titulo_h2;
+              }
+            }
+          });
+        }
+
+        console.log("[Blog Gen] ✅ Pipeline completo: watermark + SEO + datosadjuntos");
+      } catch(e) {
+        console.error("[Blog Gen] Error general generando imágenes:", e);
+      }
+    }
+
+    // 7. Construir JSON estructurado final y guardar
+    const blogJson = {
+      titulo: parsedData.titulo,
+      resumen: parsedData.resumen,
+      tags: parsedData.tags || [],
+      ficha_rapida: parsedData.ficha_rapida || [],
+      introduccion: parsedData.introduccion || '',
+      secciones: parsedData.secciones || [],
+      consejos: parsedData.consejos || null,
+      cta: parsedData.cta || null,
+      hero_imagen: heroImagePath ? `/api/media?path=${encodeURIComponent(heroImagePath)}` : null,
+      hero_imagen_alt: imagenesData[0]?.descripcion_seo || parsedData.titulo,
+      hero_imagen_title: imagenesData[0]?.titulo_seo || parsedData.titulo,
+      contexto: { tipo: tipoEntidad, nombre: nombreEntidad },
+      pdf_source_id: pdfSourceId || null
+    };
+
+    await pool.query<any>(
+      `UPDATE blog SET xblogcontenido = ?, xblogimagen = ? WHERE idblog = ?`,
+      [JSON.stringify(blogJson), heroImagePath, blogId]
+    );
+
+    return NextResponse.json({ success: true, blogId, slug: finalSlug });
   } catch (error: any) {
     console.error('Error en generate-blog:', error);
     return NextResponse.json({ error: 'Error interno del servidor: ' + (error.message || String(error)) }, { status: 500 });

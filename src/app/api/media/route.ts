@@ -6,7 +6,7 @@ import { bucket } from '@/lib/firebase/storage';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_PREFIXES = ['uploads/usuario/', 'uploads/especies/', 'uploads/labores/', 'uploads/blog/', 'uploads/especies_pdfs/', 'uploads/variedad/'];
+const ALLOWED_PREFIXES = ['uploads/usuario/', 'uploads/especies/', 'uploads/labores/', 'uploads/blog/', 'uploads/especies_pdfs/', 'uploads/especies_pdfs_covers/', 'uploads/variedad/'];
 
 function normalizeRequestedPath(value: string | null) {
   if (!value) return null;
@@ -47,10 +47,23 @@ export async function GET(request: NextRequest) {
     const [exists] = await file.exists();
 
     if (!exists) {
-      // En producción (Google Cloud), la carpeta 'public' no se empaqueta dentro de la Cloud Function.
-      // Firebase Hosting sirve los estáticos directamente. Si la imagen no está en Storage (migración antigua),
-      // redirigimos la petición al asset estático servido por Firebase Hosting (o Next.js en local).
-      return NextResponse.redirect(new URL(`/${mediaPath}`, request.url));
+      // La foto no existe en Firebase Storage. En vez de un redirect roto,
+      // devolvemos un placeholder SVG para evitar imágenes rotas en producción.
+      const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="#f1f5f9"/>
+        <rect x="150" y="80" width="100" height="80" rx="8" fill="#cbd5e1"/>
+        <circle cx="175" cy="105" r="10" fill="#94a3b8"/>
+        <polygon points="155,155 200,115 245,155" fill="#94a3b8"/>
+        <polygon points="185,155 215,130 245,155" fill="#64748b"/>
+        <text x="200" y="195" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="14" font-weight="600">Imagen no disponible</text>
+      </svg>`;
+
+      return new NextResponse(placeholderSvg, {
+        headers: {
+          'Content-Type': 'image/svg+xml',
+          'Cache-Control': 'public, max-age=60',
+        },
+      });
     }
 
     const [metadata] = await file.getMetadata();

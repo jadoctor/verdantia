@@ -15,17 +15,15 @@ export async function POST(request: Request) {
 
     const prompt = `Actúa como un bibliotecario agrónomo experto. Busca 4 enlaces reales a manuales, guías o documentos PDF (preferiblemente de instituciones agrícolas, universidades o ministerios) sobre el cultivo de "${especieNombre}", específicamente enfocados en el tema: "${topic}". 
 Es IMPRESCINDIBLE que uses tu herramienta de búsqueda en internet para obtener enlaces reales y actualizados.
-Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la siguiente estructura:
-\`\`\`json
+Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdown (\`\`\`) ni texto adicional. El JSON debe tener esta estructura exacta:
 [
   {
     "url": "URL_DEL_DOCUMENTO_AQUI",
-    "nombre": "Nombre descriptivo y claro basado en el contenido (ej. 'Manual de Poda')",
-    "resumenCorto": "Breve descripción de 1-2 líneas",
-    "apuntes": "Apuntes de estudiante muy detallados y técnicos extraídos de lo que has leído. Usa viñetas y texto largo."
+    "nombre": "Nombre descriptivo y breve (max 10 palabras)",
+    "resumenCorto": "Resumen técnico detallado de al menos 4 líneas. Menciona métodos, climas y consejos clave de forma redactada y sin viñetas.",
+    "apuntes": "Apuntes muy extensos y técnicos extraídos del documento. Genera al menos 5 viñetas detalladas con datos concretos, plagas, cuidados o metodologías."
   }
-]
-\`\`\``;
+]`;
 
     const payload = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -85,24 +83,43 @@ Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la 
 
     let parsedLinks: any[] = [];
     try {
-      const firstBracket = textOutput.indexOf('[');
-      const lastBracket = textOutput.lastIndexOf(']');
+      // Intentar limpiar posibles caracteres extra antes del [ y después del ]
+      let cleanOutput = textOutput.trim();
+      if (cleanOutput.startsWith('```json')) cleanOutput = cleanOutput.substring(7);
+      if (cleanOutput.startsWith('```')) cleanOutput = cleanOutput.substring(3);
+      if (cleanOutput.endsWith('```')) cleanOutput = cleanOutput.substring(0, cleanOutput.length - 3);
+      cleanOutput = cleanOutput.trim();
+      
+      const firstBracket = cleanOutput.indexOf('[');
+      const lastBracket = cleanOutput.lastIndexOf(']');
+      
       if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-        const jsonString = textOutput.substring(firstBracket, lastBracket + 1);
-        parsedLinks = JSON.parse(jsonString);
-      } else if (textOutput.trim() !== '') {
-        parsedLinks = JSON.parse(textOutput);
+        let jsonString = cleanOutput.substring(firstBracket, lastBracket + 1);
+        try {
+          parsedLinks = JSON.parse(jsonString);
+        } catch (e) {
+          // Si el JSON falla (ej. truncado), intentar arreglar un array truncado simple
+          if (jsonString.endsWith(',\n]') || jsonString.endsWith(',]')) {
+             jsonString = jsonString.replace(/,\s*\]$/, ']');
+             parsedLinks = JSON.parse(jsonString);
+          } else {
+             // Fallback desesperado: forzar cierre
+             if (!jsonString.endsWith('}')) jsonString += '"}]';
+             else jsonString += ']';
+             parsedLinks = JSON.parse(jsonString);
+          }
+        }
+      } else if (cleanOutput !== '') {
+        parsedLinks = JSON.parse(cleanOutput);
       }
       
       // Ensure parsedLinks is an array
       if (!Array.isArray(parsedLinks)) {
         if (parsedLinks && typeof parsedLinks === 'object') {
-          // If Gemini wrapped it in an object like { links: [...] }
           const arrayValues = Object.values(parsedLinks).find(v => Array.isArray(v));
           if (arrayValues) {
             parsedLinks = arrayValues as any[];
           } else {
-            // It might just be a single object
             parsedLinks = [parsedLinks];
           }
         } else {
@@ -110,7 +127,9 @@ Devuelve tu respuesta ÚNICAMENTE como un bloque de código JSON válido con la 
         }
       }
     } catch(e) {
-      console.error('Error parseando JSON de Gemini:', e, textOutput.substring(0, 100));
+      console.error('Error parseando JSON de Gemini:', e, textOutput.substring(0, 200));
+      // Si falla totalmente el parseo, devolver un error controlado al frontend en lugar de continuar a ciegas
+      return NextResponse.json({ error: 'La IA devolvió un formato ilegible (truncado). Por favor, intenta de nuevo con una búsqueda más corta.' }, { status: 422 });
     }
 
     // 3. Cruzar datos: Evitar URLs alucinadas cruzando el JSON con los enlaces reales por orden

@@ -52,6 +52,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [showAiModal, setShowAiModal] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
   const [dragOverPhotos, setDragOverPhotos] = useState(false);
   const [dragOverPdfs, setDragOverPdfs] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -89,11 +90,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [pdfSearchTopic, setPdfSearchTopic] = useState('');
   const [pdfSearchResults, setPdfSearchResults] = useState<{title: string, url: string, summary?: string, apuntes?: string}[]>([]);
   const [pdfSearchLoading, setPdfSearchLoading] = useState(false);
+  const [pdfSearchError, setPdfSearchError] = useState<string | null>(null);
   
   // -- Blog Generator State --
   const [blogGenPdf, setBlogGenPdf] = useState<any>(null);
   const [blogGenInstructions, setBlogGenInstructions] = useState('Escribe un post de blog para agricultores principiantes, con un tono motivador, consejos prácticos, emojis y una buena estructura de Markdown.');
   const [blogGenLoading, setBlogGenLoading] = useState(false);
+  const [showBlogPrompt, setShowBlogPrompt] = useState(false);
 
   // -- AI Image Generator State --
   const [showAiImageModal, setShowAiImageModal] = useState(false);
@@ -177,6 +180,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const dRes = await fetch(`/api/admin/especies/${id}/pdfs`, { headers: { 'x-user-email': userEmail } });
       const dData = await dRes.json();
       setPdfs(dData.pdfs || []);
+
+      const bRes = await fetch(`/api/admin/especies/${id}/blogs`, { headers: { 'x-user-email': userEmail } });
+      const bData = await bRes.json();
+      setBlogs(bData.data || []);
     } catch (e) {
       console.error(e);
     }
@@ -666,7 +673,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({
-          tipoEntidad: 'especie',
+          tipoEntidad: 'documento',
           especieNombre: formData.especiesnombre,
           concept: `Portada del documento titulado "${pdf.titulo}". Estilo limpio, académico, con ilustración botánica. Contenido principal: ${pdf.resumen}`
         })
@@ -698,21 +705,29 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     if (!pdfSearchTopic) return;
     setPdfSearchLoading(true);
     setPdfSearchResults([]);
+    setPdfSearchError(null);
     try {
       const res = await fetch('/api/ai/pdf-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: pdfSearchTopic, especieNombre: formData.especiesnombre })
       });
-      const data = await res.json();
-      if (data.links) {
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        throw new Error('Error al leer la respuesta del servidor.');
+      }
+
+      if (res.ok && data.links) {
         setPdfSearchResults(data.links);
       } else {
-        alert('No se encontraron resultados o hubo un error.');
+        setPdfSearchError(data.error || 'No se encontraron resultados o hubo un error.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Error en la búsqueda');
+      setPdfSearchError(e.message || 'Error en la conexión con el Asistente IA.');
     } finally {
       setPdfSearchLoading(false);
     }
@@ -752,16 +767,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
           instructions: blogGenInstructions,
           especieId: especieId,
-          variedadId: null, // Si fuera en formulario de variedad se pasaría esto
+          variedadId: null,
           autorEmail: userEmail,
-          especieNombre: formData.especiesnombre
+          especieNombre: formData.especiesnombre,
+          contexto: {
+            tipo: 'especie',
+            nombre: formData.especiesnombre || 'Especie'
+          },
+          pdfSourceId: blogGenPdf.id
         })
       });
       const data = await res.json();
       if (data.success) {
         alert('¡Borrador generado con éxito! Slug: ' + data.slug);
         setBlogGenPdf(null);
-        // Opcional: router.push(`/dashboard/admin/blog/${data.blogId}`)
+        if (especieId) {
+          loadAttachments(especieId); // Recargar blogs
+        }
       } else {
         alert(data.error || 'Error al generar blog');
       }
@@ -1642,48 +1664,48 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     </label>
                     <div className="gallery pdfs">
                       {pdfs.map(p => (
-                        <div key={p.id} className="gallery-item pdf" style={{ display: 'flex', flexDirection: 'column', padding: '10px', gap: '8px', position: 'relative' }}>
-                          
-                          {p.portada ? (
-                            <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px', marginBottom: '4px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '140px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', border: '1px dashed #cbd5e1' }}>
-                              <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
-                              </button>
-                            </div>
-                          )}
+                        <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {/* Cuadro de portada — solo la foto */}
+                          <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
+                            {p.portada ? (
+                              <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                            ) : (
+                              <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
+                                </button>
+                              </div>
+                            )}
 
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', textDecoration: 'none', wordBreak: 'break-word', paddingRight: '40px', display: 'flex', alignItems: 'center', gap: '6px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                              📄 {p.titulo || p.nombreOriginal} <span style={{ fontSize: '0.7rem' }}>↗</span>
-                            </a>
-                            <div className="photo-actions" style={{ position: 'absolute', top: '5px', right: '5px', display: 'flex', opacity: 1, gap: '4px' }}>
-                              <button
-                                type="button"
-                                className="photo-action-btn"
-                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer' }}
-                                onClick={() => setBlogGenPdf(p)}
-                                title="Generar Artículo de Blog"
-                              >📝</button>
-                              <button
-                                type="button"
-                                className="photo-action-btn btn-photo-edit"
-                                onClick={() => {
-                                  setEditingPdf(p);
-                                  setPdfTitle(p.titulo || '');
-                                  setPdfSummary(p.resumen || '');
-                                  setPdfApuntes(p.apuntes || '');
-                                }}
-                                title="Editar Metadatos"
-                              >✏️</button>
-                              <button type="button" className="photo-action-btn btn-photo-delete" onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
+                            {/* Botones superpuestos en la foto */}
+                            <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+                              <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
+                              <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
                             </div>
                           </div>
-                          {p.resumen && (
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                              {p.resumen}
-                            </p>
+
+                          {/* Título como hipervínculo debajo del cuadro */}
+                          <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                            📄 {p.titulo || p.nombreOriginal}
+                          </a>
+
+                          {/* Botón generar blog debajo del título */}
+                          <button type="button" onClick={() => setBlogGenPdf(p)} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', alignSelf: 'center', boxShadow: '0 2px 4px rgba(245,158,11,0.3)' }}>
+                            📝 Generar Blog
+                          </button>
+
+                          {/* Blogs relacionados a este PDF */}
+                          {blogs.filter(b => b.pdfSourceId === p.id).length > 0 && (
+                            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>Blogs Generados</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {blogs.filter(b => b.pdfSourceId === p.id).map(b => (
+                                  <a key={b.id} href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#0f766e', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={b.titulo}>
+                                    ✨ {b.titulo}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -2098,6 +2120,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </div>
             )}
 
+            {pdfSearchError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', padding: '16px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                <p style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>{pdfSearchError}</p>
+              </div>
+            )}
+
             {!pdfSearchLoading && pdfSearchResults.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ margin: 0, color: '#334155', fontSize: '1rem' }}>Resultados Encontrados:</h4>
@@ -2136,9 +2165,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <button className="btn-close-modal" onClick={() => setBlogGenPdf(null)}>✖ Cerrar</button>
             </div>
             <div className="ai-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <p style={{ margin: 0, color: '#475569', fontSize: '0.9rem' }}>
-                La Inteligencia Artificial leerá el documento <strong>{blogGenPdf.titulo || blogGenPdf.nombreOriginal}</strong> y redactará un borrador completo para el blog de Verdantia.
-              </p>
+              {/* Contexto: Entidad + PDF */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '200px', background: 'linear-gradient(135deg, #ecfdf5, #f0fdf4)', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '12px 16px' }}>
+                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', fontWeight: 700, marginBottom: '4px' }}>🌱 Especie</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f766e' }}>{formData.especiesnombre || 'Sin nombre'}</div>
+                </div>
+                <div style={{ flex: 1, minWidth: '200px', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1px solid #fcd34d', borderRadius: '10px', padding: '12px 16px' }}>
+                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', fontWeight: 700, marginBottom: '4px' }}>📄 Documento PDF</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#92400e', wordBreak: 'break-word' }}>{blogGenPdf.titulo || blogGenPdf.nombreOriginal}</div>
+                </div>
+              </div>
               
               <div className="form-group full">
                 <label>Instrucciones de estilo y enfoque (Prompt)</label>
@@ -2149,6 +2186,35 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   placeholder="Ej: Escribe un post en tono amigable, para niños, que hable sobre..."
                 />
               </div>
+
+              {/* Toggle para ver el prompt del sistema */}
+              <button type="button" onClick={() => setShowBlogPrompt(!showBlogPrompt)} style={{ background: 'none', border: '1px dashed #94a3b8', borderRadius: '8px', padding: '8px 14px', color: '#64748b', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' }}>
+                {showBlogPrompt ? '🔽 Ocultar' : '👁️ Ver'} Prompt del Sistema enviado a Gemini
+              </button>
+              {showBlogPrompt && (
+                <div style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: '8px', padding: '16px', fontSize: '0.75rem', fontFamily: 'monospace', maxHeight: '300px', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                  {`Actúa como un experto redactor de blogs agronómicos y de jardinería moderna. Vas a leer el documento adjunto sobre la especie "${formData.especiesnombre || 'agricultura'}" y vas a escribir un artículo de blog profesional, SEO-optimizado y visualmente estructurado.
+
+CONTEXTO: Este blog trata sobre una ESPECIE vegetal/hortaliza.
+
+INDICACIONES DEL USUARIO: "${blogGenInstructions}"
+
+REGLAS DE ESTRUCTURA OBLIGATORIAS (Blog Verdantia):
+1. SIN PAJA: Párrafos de máximo 3 líneas.
+2. NEGRITAS en conceptos clave. DATOS CONCRETOS.
+3. TONO: Profesional pero cercano.
+4. TÍTULO: Interrogativo siempre que sea posible (ej: "¿Cómo cultivar...?").
+
+JSON de salida obligatorio:
+→ titulo, slug, resumen, tags[]
+→ ficha_rapida[6]: 🌡️ Temp, 🗓️ Siembra, 🌱 Germinación, 📏 Marco, 🕐 Cosecha, 💧 Riego
+→ introduccion (max 100 palabras)
+→ secciones[]: {titulo_h2, contenido_markdown, imagen_posicion}
+→ consejos: {titulo, items[]}
+→ cta: {titulo, subtitulo, botones}
+→ imagenes[3]: {prompt_en, titulo_seo, descripcion_seo}`}
+                </div>
+              )}
 
               {blogGenLoading ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>

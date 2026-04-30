@@ -41,6 +41,13 @@ Contexto y situación: ${concept || 'realizando la tarea en un entorno natural o
 MUY IMPORTANTE Y ESTRICTO: 
 1. La foto DEBE ilustrar claramente la realización de esta tarea o labor, o las herramientas asociadas.
 2. La foto debe estar perfectamente enfocada en la acción o los elementos de esta labor, ocupando el centro geométrico de la composición y abarcando la mayor parte de la fotografía como foco absoluto de atención.`;
+    } else if (tipoEntidad === 'documento') {
+      finalPrompt = `Ilustración digital de alta calidad, estilo editorial y académico, diseño limpio y minimalista.
+Tema principal: Portada de documento técnico o manual sobre "${especieNombre}".
+Contexto y situación: ${concept || 'Diseño de portada académica'}.
+MUY IMPORTANTE Y ESTRICTO:
+1. La imagen DEBE parecer la portada de un libro o manual técnico, con composición equilibrada y espacio negativo.
+2. Usa colores sobrios y elementos gráficos relacionados con la agricultura o la botánica, pero manteniendo un formato de publicación profesional.`;
     } else {
       // Por defecto 'especie'
       finalPrompt = `Fotografía hiperrealista de alta calidad, estilo fotoperiodístico profesional, iluminación natural, hiperdetallada, resolución 8k.
