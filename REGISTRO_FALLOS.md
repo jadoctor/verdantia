@@ -23,11 +23,12 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 - **Solución aplicada:** Modificado `api/media/route.ts` para que lance un Redirect 302 hacia `/uploads/...` delegando la descarga a Firebase Hosting.
 - **Resultado:** 🔴 FRACASO CONFIRMADO EN PRODUCCIÓN (validado 30/04/2026).
 
-#### [30/04/2026 - 15:44] — DIAGNÓSTICO Y NUEVA PROPUESTA
-- **Diagnóstico del fracaso anterior:** El Redirect 302 a `/{mediaPath}` falla porque Firebase Hosting NO tiene las fotos en su raíz estática. Las imágenes están en **Firebase Storage** (bucket `verdantia-494121.firebasestorage.app`), no servidas como assets estáticos de Hosting. El redirect apunta a una URL que no existe en el hosting.
-- **Propuesta de solución (Plan A):** Eliminar el fallback de redirect. En su lugar, si el archivo NO existe en Firebase Storage, devolver un **placeholder SVG** (imagen genérica de "foto no disponible") en vez de un redirect roto. Esto evita los errores visibles.
-- **Propuesta de solución (Plan B — Raíz del problema):** Verificar que las fotos que se guardan en la BBDD apunten a rutas de Firebase Storage válidas (no a rutas legacy tipo `uploads/...` que no existen en Cloud). Migrar las rutas antiguas de la BBDD o subir las fotos faltantes al bucket de Storage.
-- **Resultado:** 🔴 PENDIENTE DE APLICAR.
+#### [01/05/2026 - 11:00] — ANÁLISIS SERIO Y DEFINITIVO
+- **Diagnóstico Arquitectónico:** Actualmente se sirven las imágenes locales y de Firebase a través de un endpoint intermediario `/api/media`. En el entorno local, funciona correctamente leyendo de la caché o del bucket de desarrollo. Sin embargo, en **Producción (Firebase Cloud Functions)**, ocurren dos problemas graves:
+  1. **Los archivos subidos localmente no están en el bucket:** Cuando se desarrollan especies o blogs en localhost, la API guarda los archivos de forma estática o en un bucket distinto que Firebase Production no reconoce. Al hacer el despliegue, el servidor devuelve un `false` al comprobar la existencia del archivo.
+  2. **Anti-patrón de memoria:** Cuando la imagen existe en el bucket, el endpoint la descarga íntegramente a la memoria RAM de la Cloud Function (`new Uint8Array(contents)`) para servirla. Esto en producción excede los límites de tamaño (10MB) o tiempo de ejecución, provocando que no cargue.
+- **Propuesta de solución (El Plan Definitivo):** Reemplazar el uso de `/api/media` por **URLs Públicas y Directas de Firebase Storage**. Al configurar el bucket `verdantia-494121.firebasestorage.app` con acceso de lectura público, las imágenes y PDFs cargarán instantáneamente como cualquier CDN sin saturar las funciones SSR de Next.js. Las rutas antiguas deben migrarse a esta CDN.
+- **Estado:** 🔴 PENDIENTE DE APLICAR. Se debe desarrollar un script para migrar y reestructurar `getMediaUrl`.
 
 ---
 
@@ -45,12 +46,15 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 - **Resultado:** 🔴 FRACASO CONFIRMADO EN PRODUCCIÓN (validado 30/04/2026).
 
 #### [30/04/2026 - 15:44] — DIAGNÓSTICO Y NUEVA PROPUESTA
-- **Diagnóstico del fracaso anterior:** El usuario ha identificado que el problema NO es de los desplegables individuales, sino del **contenedor lateral izquierdo completo (`.sidebar`)** que no permite scroll. La causa probable: el layout `dashboard-layout` tiene `overflow: hidden` y el `sidebar-footer` con `margin-top: auto` empuja el contenido fuera de los límites sin permitir que el area de navegación haga scroll independiente.
-- **Hipótesis confirmada por el usuario:** "El lateral no tiene scroll; el problema no está en los desplegables, es el layout izquierdo que no tiene scroll."
-- **Propuesta de solución:** Reestructurar el sidebar para que la zona de navegación (las secciones con los desplegables) sea un contenedor independiente con `overflow-y: auto` y `flex: 1`, mientras que el logo (arriba) y el footer (perfil+logout, abajo) permanezcan **fijos**. De esta forma, solo la zona del medio hace scroll. Esto resuelve el problema en TODOS los dispositivos (no solo móvil).
-- **Resultado:** 🔴 PENDIENTE DE APLICAR.
+- **Diagnóstico del fracaso anterior:** El usuario ha identificado que el problema NO es de los desplegables individuales, sino del **contenedor lateral izquierdo completo (`.sidebar`)** que no permite scroll.
+- **Propuesta de solución:** Reestructurar el sidebar para que la zona de navegación sea un contenedor independiente con `overflow-y: auto`.
+- **Resultado:** 🟢 RESUELTO.
 
 ---
+
+### 8.3. 🟢 FALLO CONFIRMADO - Scroll Lateral y Pestañas
+- **Fallo:** El sistema presentaba layout roto a 4 columnas causando scroll lateral en móviles, y las pestañas fallaban.
+- **Estado actual:** 🟢 RESUELTO. Se implementó grid responsivo y persistencia de estado para pestañas.
 
 ### 8.3. 🟡 PENDIENTE DE VALIDACIÓN - Bug Destructivo en PDFs IA y Error SQL
 - **Fallo:** Al generar la portada del PDF, se borraban el título y apuntes. Además, al intentar "Añadir" un documento desde el buscador, saltaba un error SQL por discrepancia de columnas.

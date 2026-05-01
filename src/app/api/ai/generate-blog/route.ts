@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { uploadToStorage } from '@/lib/firebase/storage';
+import { uploadToStorage, bucket } from '@/lib/firebase/storage';
 import sharp from 'sharp';
 
 export async function POST(request: Request) {
@@ -311,7 +311,7 @@ ${fichaRapidaEjemplo}
         if (parsedData.secciones && Array.isArray(parsedData.secciones)) {
           parsedData.secciones.forEach((sec: any, idx: number) => {
             if (generatedImagePaths[idx + 1]) {
-              sec.imagen_ruta = `/api/media?path=${encodeURIComponent(generatedImagePaths[idx + 1]!)}`;
+              sec.imagen_ruta = `https://storage.googleapis.com/${bucket.name}/${generatedImagePaths[idx + 1]!}`;
               if (imagenesData[idx + 1]) {
                 sec.imagen_alt = imagenesData[idx + 1].descripcion_seo || sec.titulo_h2;
                 sec.imagen_title = imagenesData[idx + 1].titulo_seo || sec.titulo_h2;
@@ -336,7 +336,7 @@ ${fichaRapidaEjemplo}
       secciones: parsedData.secciones || [],
       consejos: parsedData.consejos || null,
       cta: parsedData.cta || null,
-      hero_imagen: heroImagePath ? `/api/media?path=${encodeURIComponent(heroImagePath)}` : null,
+      hero_imagen: heroImagePath ? `https://storage.googleapis.com/${bucket.name}/${heroImagePath}` : null,
       hero_imagen_alt: imagenesData[0]?.descripcion_seo || parsedData.titulo,
       hero_imagen_title: imagenesData[0]?.titulo_seo || parsedData.titulo,
       contexto: { tipo: tipoEntidad, nombre: nombreEntidad },

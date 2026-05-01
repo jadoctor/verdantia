@@ -26,9 +26,8 @@ export async function uploadToStorage(
     },
   });
 
-  // En Firebase/Google Cloud moderno puede estar bloqueado el ACL público.
-  // Servimos todos los adjuntos desde /api/media para que local y producción usen la misma ruta.
-  return `/api/media?path=${encodeURIComponent(destination)}`;
+  // URL pública directa de Google Cloud Storage (sin proxy /api/media)
+  return `https://storage.googleapis.com/${bucket.name}/${destination}`;
 }
 
 /**
