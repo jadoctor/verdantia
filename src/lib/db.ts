@@ -1,4 +1,4 @@
-import mysql from 'mysql2/promise';
+import mysql from 'mysql2';
 
 const pool = mysql.createPool({
   host: '34.175.111.133',
@@ -14,6 +14,6 @@ const pool = mysql.createPool({
   ssl: {
     rejectUnauthorized: false
   }
-});
+}).promise();
 
 export default pool;
