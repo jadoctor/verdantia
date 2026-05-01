@@ -394,12 +394,21 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026] — PLAN DE SOLUCIÓN PROPUESTO (PENDIENTE DE VALIDAR)</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo:</strong> Al usar `/api/media` en producción, Firebase levanta una Cloud Function que descarga cada imagen entera en la memoria RAM antes de servirla. Esto colapsa el servidor (OOM) y hace que las fotos no se vean.</li>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026 - 16:35] — PLAN DE SOLUCIÓN PROPUESTO</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo:</strong> Al usar <code>/api/media</code> en producción, Firebase levanta una Cloud Function que descarga cada imagen entera en la memoria RAM antes de servirla. Esto colapsa el servidor (OOM) y hace que las fotos no se vean.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución aplicada en local:</strong> Se ha modificado <code>getMediaUrl</code> para saltarse la API por completo y cargar las imágenes directamente a través de las URLs públicas del CDN de Google Cloud Storage. El bucket se ha abierto a nivel de lectura.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN. Seguramente surjan imprevistos al subirlo.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. (Se pensó que era colapso de RAM, pero el error seguía).</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026 - 16:40] — NUEVO DIAGNÓSTICO (PENDIENTE DE VALIDAR)</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> El servidor de producción devolvía un <strong>Error 500</strong> oculto al llamar a <code>/api/perfil/photos</code>. Al revisar los logs puros de Firebase, el error exacto era <code>Cannot find module 'mysql2/promise'</code>. Next.js estaba excluyendo la librería de la base de datos de la compilación de producción por ser un paquete nativo externo, por lo que la función explotaba y devolvía una lista vacía de fotos.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada en local:</strong> Se ha modificado el archivo <code>next.config.ts</code> añadiendo explícitamente <code>'mysql2'</code> al array de <code>serverExternalPackages</code>. Esto fuerza a la plataforma a incluir la librería física en el despliegue final.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN EN NUBE. A la espera de permiso explícito para ejecutar el despliegue a Firebase.</li>
           </ul>
         </div>
 
