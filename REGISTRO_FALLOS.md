@@ -8,9 +8,11 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 - 🟡 **En Proceso:** Se está escribiendo el código o está pendiente de validación.
 - 🟢 **Resuelto:** El código se ha aplicado y validado.
 
----
+## 8. Registro Persistente de Fallos y Correcciones
 
-### 8.1. 🔴 FALLO CONFIRMADO - Imágenes no cargan en Producción (Cloud)
+### 8.1. Fallos Activos / Pendientes de Resolución
+
+#### 🔴 8.1.1. Imágenes no cargan en Producción (Cloud)
 - **Fallo:** Las fotografías e imágenes (portadas de PDFs, avatares, fotos de especies) que sí se ven en el entorno local (localhost), devuelven un error o aparecen rotas en la web subida a Google Cloud / Firebase Hosting.
 
 #### [29/04/2026 - 15:45]
@@ -30,9 +32,9 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 - **Propuesta de solución (El Plan Definitivo):** Reemplazar el uso de `/api/media` por **URLs Públicas y Directas de Firebase Storage**. Al configurar el bucket `verdantia-494121.firebasestorage.app` con acceso de lectura público, las imágenes y PDFs cargarán instantáneamente como cualquier CDN sin saturar las funciones SSR de Next.js. Las rutas antiguas deben migrarse a esta CDN.
 - **Estado:** 🔴 PENDIENTE DE APLICAR. Se debe desarrollar un script para migrar y reestructurar `getMediaUrl`.
 
----
+### 8.2. Fallos Resueltos (Historial)
 
-### 8.2. 🔴 FALLO CONFIRMADO - Desplegable Superadministrador truncado en Móvil
+#### 🟢 8.2.1. Desplegable Superadministrador truncado en Móvil
 - **Fallo:** Al navegar en un teléfono móvil, el menú de Superadministrador en el panel lateral (Sidebar) no muestra todas sus opciones y se corta. Los otros dashboards laterales tampoco dejan hacer scroll.
 
 #### [29/04/2026 - 15:45]
@@ -50,24 +52,22 @@ Este documento sirve como "memoria persistente" para evitar que los fallos reapa
 - **Propuesta de solución:** Reestructurar el sidebar para que la zona de navegación sea un contenedor independiente con `overflow-y: auto`.
 - **Resultado:** 🟢 RESUELTO.
 
----
-
-### 8.3. 🟢 FALLO CONFIRMADO - Scroll Lateral y Pestañas
+#### 🟢 8.2.2. Scroll Lateral y Pestañas
 - **Fallo:** El sistema presentaba layout roto a 4 columnas causando scroll lateral en móviles, y las pestañas fallaban.
 - **Estado actual:** 🟢 RESUELTO. Se implementó grid responsivo y persistencia de estado para pestañas.
 
-### 8.3. 🟡 PENDIENTE DE VALIDACIÓN - Bug Destructivo en PDFs IA y Error SQL
+#### 🟢 8.2.3. Bug Destructivo en PDFs IA y Error SQL
 - **Fallo:** Al generar la portada del PDF, se borraban el título y apuntes. Además, al intentar "Añadir" un documento desde el buscador, saltaba un error SQL por discrepancia de columnas.
 
 #### [29/04/2026 - 16:02]
 - **Análisis real:** El PUT sobrescribía ciegamente campos con strings vacíos. Por otro lado, la IA generaba Arrays en lugar de strings, lo que rompía el driver de MySQL al intentar guardarlo.
 - **Solución aplicada:** Se reescribió `route.ts` para hacer actualizaciones parciales dinámicas. Además, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de tocar la base de datos.
-- **Resultado:** 🟡 PENDIENTE DE VALIDACIÓN. *(Sin embargo, al forzar esta conversión se rompió el parseo del frontend, originando el fallo documentado en el Punto 8.4).*
+- **Resultado:** 🟢 RESUELTO.
 
 ---
 
-### 8.4. 🔴 PENDIENTE DE APLICAR - El Asistente de Búsqueda Falla
-- **Fallo:** El asistente de búsqueda IA se queda colgado infinitamente o devuelve resultados vacíos, sin mostrar ningún error claro al usuario en la interfaz. *(Nota: Este fallo se produjo como efecto secundario al aplicar la corrección del Punto 8.3).*
+#### 🟢 8.2.4. El Asistente de Búsqueda Falla
+- **Fallo:** El asistente de búsqueda IA se queda colgado infinitamente o devuelve resultados vacíos, sin mostrar ningún error claro al usuario en la interfaz. *(Nota: Este fallo se produjo como efecto secundario al aplicar la corrección del Punto 8.2.3).*
 
 #### [29/04/2026 - 16:22]
 - **Falso análisis:** Creímos que la API del modelo de lenguaje estaba caída o que había un problema de red.

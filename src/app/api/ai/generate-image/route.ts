@@ -48,6 +48,14 @@ Contexto y situación: ${concept || 'Diseño de portada académica'}.
 MUY IMPORTANTE Y ESTRICTO:
 1. La imagen DEBE parecer la portada de un libro o manual técnico, con composición equilibrada y espacio negativo.
 2. Usa colores sobrios y elementos gráficos relacionados con la agricultura o la botánica, pero manteniendo un formato de publicación profesional.`;
+    } else if (tipoEntidad === 'blog') {
+      finalPrompt = `Fotografía hiperrealista de alta calidad, estilo editorial profesional para artículo de blog sobre agricultura y horticultura, iluminación natural cálida, hiperdetallada, resolución 8k.
+Contexto del artículo: "${especieNombre}".
+Enfoque visual: ${concept || 'Escena atractiva y profesional relacionada con el cultivo y la agricultura'}.
+MUY IMPORTANTE Y ESTRICTO:
+1. La foto DEBE ser una imagen editorial atractiva que ilustre visualmente el tema del artículo.
+2. Composición profesional tipo revista, con profundidad de campo, colores vibrantes y un estilo que invite a la lectura.
+3. NO incluir texto, logos ni marcas de agua en la imagen.`;
     } else {
       // Por defecto 'especie'
       finalPrompt = `Fotografía hiperrealista de alta calidad, estilo fotoperiodístico profesional, iluminación natural, hiperdetallada, resolución 8k.

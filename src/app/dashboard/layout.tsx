@@ -110,9 +110,10 @@ export default function DashboardLayout({
     '/dashboard/tareas': { label: 'Tareas', icon: '🔔' },
     '/dashboard/admin/especies': { label: 'Cuarentena de Especies', icon: '🌍' },
     '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '🌱' },
-    '/dashboard/admin/variedades': { label: 'Variedades', icon: '🏷️' },
-    '/dashboard/admin/labores': { label: 'Labores', icon: '🔧' },
+    '/dashboard/admin/variedades': { label: 'Variedades Globales', icon: '🏷️' },
+    '/dashboard/admin/labores': { label: 'Labores Globales', icon: '🔧' },
     '/dashboard/admin/labores/nueva': { label: 'Nueva Labor', icon: '🛠️' },
+    '/dashboard/admin/plagas': { label: 'Plagas Globales', icon: '🐛' },
     '/dashboard/admin/usuarios': { label: 'Usuarios', icon: '👥' },
     '/dashboard/admin/chat': { label: 'Chat Admin', icon: '💬' },
     '/dashboard/admin/meteo': { label: 'Meteo Red Global', icon: '🌐' },
@@ -420,25 +421,29 @@ export default function DashboardLayout({
                     <span className="nav-icon">👥</span>
                     <span>Usuarios</span>
                   </a>
-                  <a href="/dashboard/admin/chat" className={`nav-item ${isActive('/dashboard/admin/chat')}`} onClick={handleNavClick}>
-                    <span className="nav-icon">💬</span>
-                    <span>Chat Moderación</span>
-                  </a>
                   <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} onClick={handleNavClick}>
                     <span className="nav-icon">🌍</span>
                     <span>Especies Globales</span>
                   </a>
                   <a href="/dashboard/admin/variedades" className={`nav-item ${isActive('/dashboard/admin/variedades')}`} onClick={handleNavClick}>
                     <span className="nav-icon">🏷️</span>
-                    <span>Variedades</span>
+                    <span>Variedades Globales</span>
                   </a>
                   <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} onClick={handleNavClick}>
                     <span className="nav-icon">🔧</span>
                     <span>Labores Globales</span>
                   </a>
+                  <a href="/dashboard/admin/plagas" className={`nav-item ${isActive('/dashboard/admin/plagas')}`} onClick={handleNavClick}>
+                    <span className="nav-icon">🐛</span>
+                    <span>Plagas Globales</span>
+                  </a>
                   <a href="/dashboard/admin/blog" className={`nav-item ${isActive('/dashboard/admin/blog')}`} onClick={handleNavClick}>
                     <span className="nav-icon">📝</span>
                     <span>Gestor Blog IA</span>
+                  </a>
+                  <a href="/dashboard/admin/chat" className={`nav-item ${isActive('/dashboard/admin/chat')}`} onClick={handleNavClick}>
+                    <span className="nav-icon">💬</span>
+                    <span>Chat Moderación</span>
                   </a>
                   <a href="/dashboard/admin/meteo" className={`nav-item ${isActive('/dashboard/admin/meteo')}`} onClick={handleNavClick}>
                     <span className="nav-icon">🌐</span>

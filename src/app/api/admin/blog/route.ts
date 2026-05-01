@@ -5,13 +5,13 @@ export async function GET() {
   try {
     const [rows] = await pool.query(`
       SELECT 
-        b.idblog, b.xblogslug, b.xblogtitulo, b.xblogestado, b.xblogfechacreacion, 
+        b.idblog, b.blogslug, b.blogtitulo, b.blogestado, b.blogfechacreacion, 
         u.usuariosnombre as autor, e.especiesnombre, v.variedadesnombre
       FROM blog b
       LEFT JOIN usuarios u ON b.xblogidusuarios = u.idusuarios
       LEFT JOIN especies e ON b.xblogidespecies = e.idespecies
       LEFT JOIN variedades v ON b.xblogidvariedades = v.idvariedades
-      ORDER BY b.xblogfechacreacion DESC
+      ORDER BY b.blogfechacreacion DESC
     `);
     return NextResponse.json({ success: true, data: rows });
   } catch (error: any) {

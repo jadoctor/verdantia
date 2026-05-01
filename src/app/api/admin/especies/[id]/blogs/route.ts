@@ -8,19 +8,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Obtenemos los blogs de esta especie
     const [rows] = await pool.query<any>(`
       SELECT 
-        idblog, xblogslug, xblogtitulo, xblogestado, xblogcontenido, xblogfechapublicacion
-      FROM blog 
-      WHERE xblogidespecies = ?
-      ORDER BY xblogfechacreacion DESC
+        b.idblog, b.blogslug, b.blogtitulo, b.blogresumen, b.blogimagen, 
+        b.blogestado, b.blogcontenido, b.blogfechacreacion, b.blogfechapublicacion,
+        u.nombre as autor_nombre
+      FROM blog b
+      LEFT JOIN usuarios u ON b.xblogidusuarios = u.idusuarios
+      WHERE b.xblogidespecies = ?
+      ORDER BY b.idblog DESC
     `, [resolvedParams.id]);
 
     // Parseamos el JSON para extraer el pdf_source_id
     const blogs = rows.map((row: any) => {
       let pdfSourceId = null;
+      let heroAlt = '';
       try {
-        if (row.xblogcontenido) {
-          const content = JSON.parse(row.xblogcontenido);
+        if (row.blogcontenido) {
+          const content = JSON.parse(row.blogcontenido);
           pdfSourceId = content.pdf_source_id || null;
+          heroAlt = content.hero_imagen_alt || '';
         }
       } catch (e) {
         // Legacy markdown, no tiene pdf_source_id
@@ -28,10 +33,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       
       return {
         id: row.idblog,
-        slug: row.xblogslug,
-        titulo: row.xblogtitulo,
-        estado: row.xblogestado,
-        fecha: row.xblogfechapublicacion,
+        slug: row.blogslug,
+        titulo: row.blogtitulo,
+        resumen: row.blogresumen,
+        hero_imagen: row.blogimagen,
+        hero_imagen_alt: heroAlt,
+        estado: row.blogestado,
+        fechaCreacion: row.blogfechacreacion,
+        fechaPublicacion: row.blogfechapublicacion,
+        autor: row.autor_nombre || 'IA Verdantia',
         pdfSourceId: pdfSourceId
       };
     });

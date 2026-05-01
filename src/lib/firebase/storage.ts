@@ -26,6 +26,12 @@ export async function uploadToStorage(
     },
   });
 
+  try {
+    await file.makePublic();
+  } catch (e) {
+    console.warn('[Storage] No se pudo hacer público el archivo. Verifica permisos.', e);
+  }
+
   // URL pública directa de Google Cloud Storage (sin proxy /api/media)
   return `https://storage.googleapis.com/${bucket.name}/${destination}`;
 }

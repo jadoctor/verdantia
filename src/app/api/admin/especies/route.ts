@@ -88,7 +88,16 @@ export async function POST(request: Request) {
       especiesautosuficienciaconserva,
       especiesicono,
       especiesbiodinamicacategoria,
-      especiesbiodinamicanotas
+      especiesbiodinamicanotas,
+      especiesprofundidadtrasplante,
+      especiesphsuelo,
+      especiesnecesidadriego,
+      especiestiposiembra,
+      especiesvolumenmaceta,
+      especiesluzsolar,
+      especiescaracteristicassuelo,
+      especiesdificultad,
+      especiestemperaturamaxima
     } = body;
 
     if (!especiesnombre) {
@@ -105,8 +114,11 @@ export async function POST(request: Request) {
         especiesfechasiembradirectahasta, especiestrasplantedesde, especiestrasplantehasta, 
         especiesfecharecolecciondesde, especiesfecharecoleccionhasta, especiesvisibilidadsino, 
         especiesfuentesinformacion, especiesautosuficiencia, especiesautosuficienciaconserva, especiesicono,
-        especiesbiodinamicacategoria, especiesbiodinamicanotas
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        especiesbiodinamicacategoria, especiesbiodinamicanotas,
+        especiesprofundidadtrasplante, especiesphsuelo, especiesnecesidadriego, especiestiposiembra,
+        especiesvolumenmaceta, especiesluzsolar, especiescaracteristicassuelo, especiesdificultad,
+        especiestemperaturamaxima
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -142,7 +154,16 @@ export async function POST(request: Request) {
       especiesautosuficienciaconserva || null,
       especiesicono || null,
       especiesbiodinamicacategoria || null,
-      especiesbiodinamicanotas || null
+      especiesbiodinamicanotas || null,
+      especiesprofundidadtrasplante || null,
+      especiesphsuelo || null,
+      especiesnecesidadriego || null,
+      especiestiposiembra || null,
+      especiesvolumenmaceta || null,
+      especiesluzsolar || null,
+      especiescaracteristicassuelo || null,
+      especiesdificultad || null,
+      especiestemperaturamaxima || null
     ];
 
     const [result]: any = await pool.query(query, params);

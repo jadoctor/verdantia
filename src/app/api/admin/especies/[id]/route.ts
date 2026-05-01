@@ -72,7 +72,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesautosuficienciaconserva,
       especiesicono,
       especiesbiodinamicacategoria,
-      especiesbiodinamicanotas
+      especiesbiodinamicanotas,
+      especiesprofundidadtrasplante,
+      especiesphsuelo,
+      especiesnecesidadriego,
+      especiestiposiembra,
+      especiesvolumenmaceta,
+      especiesluzsolar,
+      especiescaracteristicassuelo,
+      especiesdificultad,
+      especiestemperaturamaxima
     } = body;
 
     if (!especiesnombre) {
@@ -89,7 +98,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         especiesfechasiembradirectahasta = ?, especiestrasplantedesde = ?, especiestrasplantehasta = ?, 
         especiesfecharecolecciondesde = ?, especiesfecharecoleccionhasta = ?, especiesvisibilidadsino = ?, 
         especiesfuentesinformacion = ?, especiesautosuficiencia = ?, especiesautosuficienciaconserva = ?, especiesicono = ?,
-        especiesbiodinamicacategoria = ?, especiesbiodinamicanotas = ?
+        especiesbiodinamicacategoria = ?, especiesbiodinamicanotas = ?,
+        especiesprofundidadtrasplante = ?, especiesphsuelo = ?, especiesnecesidadriego = ?, especiestiposiembra = ?,
+        especiesvolumenmaceta = ?, especiesluzsolar = ?, especiescaracteristicassuelo = ?, especiesdificultad = ?,
+        especiestemperaturamaxima = ?
       WHERE idespecies = ?
     `;
 
@@ -127,6 +139,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesicono || null,
       especiesbiodinamicacategoria || null,
       especiesbiodinamicanotas || null,
+      especiesprofundidadtrasplante || null,
+      especiesphsuelo || null,
+      especiesnecesidadriego || null,
+      especiestiposiembra || null,
+      especiesvolumenmaceta || null,
+      especiesluzsolar || null,
+      especiescaracteristicassuelo || null,
+      especiesdificultad || null,
+      especiestemperaturamaxima || null,
       idespecies
     ];
 

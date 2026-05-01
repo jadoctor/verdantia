@@ -36,13 +36,22 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     especieshistoria: '', especiesdescripcion: '', especiesfuentesinformacion: '',
     especiesautosuficiencia: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
     especiesicono: '',
-    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: ''
+    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '',
+    especiesprofundidadtrasplante: '', especiesphsuelo: '', especiesnecesidadriego: '',
+    especiestiposiembra: '', especiesvolumenmaceta: '', especiesluzsolar: '',
+    especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: ''
   };
 
   const [formData, setFormData] = useState<any>(defaultFormData);
   const [initialData, setInitialData] = useState<any>(defaultFormData);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
-  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
+  const [relaciones, setRelaciones] = useState({ beneficiosas: [], perjudiciales: [], plagas: [] });
+  const [initialRelaciones, setInitialRelaciones] = useState({ beneficiosas: [], perjudiciales: [], plagas: [] });
+  const [relacionesDirty, setRelacionesDirty] = useState(false);
+
+  const isFormDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
+  const isDirty = isFormDirty || relacionesDirty;
+  
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('taxonomia');
@@ -63,6 +72,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   // Hero Carousel Drag State
   const [draggedHeroPhotoId, setDraggedHeroPhotoId] = useState<number | null>(null);
   const [draggedOverHeroPhotoId, setDraggedOverHeroPhotoId] = useState<number | null>(null);
+
+  // -- Relaciones State --
+  const [masterEspecies, setMasterEspecies] = useState<any[]>([]);
+  const [masterPlagas, setMasterPlagas] = useState<any[]>([]);
 
   // -- Photo Editor State --
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
@@ -96,6 +109,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [blogGenPdf, setBlogGenPdf] = useState<any>(null);
   const [blogGenInstructions, setBlogGenInstructions] = useState('Escribe un post de blog para agricultores principiantes, con un tono motivador, consejos prácticos, emojis y una buena estructura de Markdown.');
   const [blogGenLoading, setBlogGenLoading] = useState(false);
+  const [blogGenProgress, setBlogGenProgress] = useState('Iniciando motor de IA...');
   const [showBlogPrompt, setShowBlogPrompt] = useState(false);
 
   // -- AI Image Generator State --
@@ -117,11 +131,40 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   };
 
   useEffect(() => {
+    // Cargar catálogos maestros
+    if (userEmail) {
+      fetch('/api/admin/especies', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterEspecies(data.especies || []));
+      fetch('/api/admin/plagas', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterPlagas(data.plagas || []));
+    }
+
     if (especieId) {
       loadEspecie(especieId);
       loadAttachments(especieId);
+      loadRelaciones(especieId);
     }
   }, [especieId, userEmail]);
+
+  const loadRelaciones = async (id: string) => {
+    if (!userEmail) return;
+    try {
+      const res = await fetch(`/api/admin/especies/${id}/relaciones`, { headers: { 'x-user-email': userEmail } });
+      const data = await res.json();
+      const rels = {
+        beneficiosas: data.beneficiosas || [],
+        perjudiciales: data.perjudiciales || [],
+        plagas: data.plagas || []
+      };
+      setRelaciones(rels);
+      setInitialRelaciones(rels);
+      setRelacionesDirty(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     const handleGlobalPaste = (e: ClipboardEvent) => {
@@ -172,21 +215,24 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   const loadAttachments = async (id: string) => {
     if (!userEmail) return;
+    // Cada fetch es independiente para que un fallo en uno no bloquee a los demás
     try {
       const pRes = await fetch(`/api/admin/especies/${id}/photos`, { headers: { 'x-user-email': userEmail } });
       const pData = await pRes.json();
       setPhotos(pData.photos || []);
+    } catch (e) { console.error('Error cargando fotos:', e); }
 
+    try {
       const dRes = await fetch(`/api/admin/especies/${id}/pdfs`, { headers: { 'x-user-email': userEmail } });
       const dData = await dRes.json();
       setPdfs(dData.pdfs || []);
+    } catch (e) { console.error('Error cargando PDFs:', e); }
 
+    try {
       const bRes = await fetch(`/api/admin/especies/${id}/blogs`, { headers: { 'x-user-email': userEmail } });
       const bData = await bRes.json();
       setBlogs(bData.data || []);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error('Error cargando blogs:', e); }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -228,6 +274,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const data = await res.json();
       if (data.success) {
         setInitialData(formData);
+        
+        // Guardar relaciones si han cambiado y ya tenemos ID
+        const targetId = especieId || data.id;
+        if (relacionesDirty && targetId) {
+          try {
+            await fetch(`/api/admin/especies/${targetId}/relaciones`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+              body: JSON.stringify(relaciones)
+            });
+            setInitialRelaciones(relaciones);
+            setRelacionesDirty(false);
+          } catch (e) {
+            console.error('Error guardando relaciones:', e);
+          }
+        }
+
         if (!especieId) {
             router.push(`/dashboard/admin/especies/${data.id}`);
         } else {
@@ -688,7 +751,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             base64Cover: `data:image/jpeg;base64,${data.base64}`
           })
         });
-        loadAttachments(especieId!);
+        
+        await loadAttachments(especieId!);
+        
+        // Si el editor está abierto, actualizar su previsualización al instante
+        setEditingPdf((prev: any) => {
+          if (prev && prev.id === pdf.id) {
+            return { ...prev, portada: `data:image/jpeg;base64,${data.base64}` };
+          }
+          return prev;
+        });
       } else {
         alert(data.error || 'Error al generar la portada del documento.');
       }
@@ -794,6 +866,24 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       setBlogGenLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    if (blogGenLoading) {
+      const phases = [
+        { t: 0, msg: '🧠 Analizando el documento y extrayendo conceptos clave...' },
+        { t: 8000, msg: '✍️ Redactando contenido y optimizando SEO...' },
+        { t: 18000, msg: '🎨 Diseñando portada principal (Imagen 1 de 3)...' },
+        { t: 28000, msg: '🎨 Generando ilustraciones botánicas (Imagen 2 de 3)...' },
+        { t: 38000, msg: '🎨 Generando ilustraciones botánicas (Imagen 3 de 3)...' },
+        { t: 48000, msg: '💾 Aplicando marcas de agua y guardando en servidor...' },
+        { t: 55000, msg: '⌛ Ya casi está listo, finalizando detalles...' }
+      ];
+      const timeouts = phases.map(p => setTimeout(() => setBlogGenProgress(p.msg), p.t));
+      return () => timeouts.forEach(clearTimeout);
+    } else {
+      setBlogGenProgress('Iniciando motor de IA...');
+    }
+  }, [blogGenLoading]);
 
   // ── Drag-to-Pan en el editor de fotos ──
   const editorDragRef = React.useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
@@ -1053,7 +1143,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos</button>
               <button type="button" className={activeTab === 'autosuficiencia' ? 'active' : ''} onClick={() => setActiveTab('autosuficiencia')}>⚖️ Autosuficiencia</button>
               <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna</button>
+              <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Asociaciones</button>
+              <button type="button" className={activeTab === 'plagas' ? 'active' : ''} onClick={() => setActiveTab('plagas')}>🐛 Plagas</button>
               <button type="button" className={activeTab === 'adjuntos' ? 'active' : ''} onClick={() => setActiveTab('adjuntos')}>📎 Adjuntos</button>
+              <button type="button" className={activeTab === 'blogs' ? 'active' : ''} onClick={() => setActiveTab('blogs')}>📰 Blogs</button>
             </div>
 
             <div className="form-tab-content">
@@ -1099,6 +1192,37 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   <option value="pequeno">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
                 </select>
               </div>
+              <div className="form-group">
+                <label>Dificultad</label>
+                <select name="especiesdificultad" value={formData.especiesdificultad || ''} onChange={handleChange}>
+                  <option value="">--</option>
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Luz Solar</label>
+                <select name="especiesluzsolar" value={formData.especiesluzsolar || ''} onChange={handleChange}>
+                  <option value="">--</option>
+                  <option value="pleno_sol">Pleno Sol</option>
+                  <option value="semisombra">Semisombra</option>
+                  <option value="sombra">Sombra</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Necesidad de Riego</label>
+                <select name="especiesnecesidadriego" value={formData.especiesnecesidadriego || ''} onChange={handleChange}>
+                  <option value="">--</option>
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Volumen Maceta (L)</label>
+                <input type="number" name="especiesvolumenmaceta" value={formData.especiesvolumenmaceta || ''} onChange={handleChange} />
+              </div>
             </div>
           )}
 
@@ -1132,6 +1256,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <div className="form-group">
                 <label>Temp. Óptima (°C)</label>
                 <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Temp. Máxima (°C)</label>
+                <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Profundidad Trasplante</label>
+                <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Tipo de Siembra</label>
+                <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange}>
+                  <option value="">--</option>
+                  <option value="directa">Directa</option>
+                  <option value="semillero">Semillero</option>
+                  <option value="ambas">Ambas</option>
+                </select>
               </div>
             </div>
           )}
@@ -1252,6 +1393,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <div className="form-group full">
                 <label>Descripción / Cultivo</label>
                 <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>pH del Suelo</label>
+                <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
+              </div>
+              <div className="form-group full">
+                <label>Características del Suelo</label>
+                <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
               </div>
               <div className="form-group full">
                 <label>Fuentes (URLs separadas por comas)</label>
@@ -1483,6 +1632,230 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             </div>
           )}
 
+          {/* ASOCIACIONES */}
+          {activeTab === 'asociaciones' && (
+            <div className="grid-form">
+              <div className="form-group full">
+                <h4>Asociaciones Beneficiosas</h4>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                    <option value="">Selecciona especie...</option>
+                    {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                  </select>
+                  <input type="text" id="motivoBen" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                  <button type="button" onClick={() => {
+                    const sel = document.getElementById('selBen') as HTMLSelectElement;
+                    const mot = document.getElementById('motivoBen') as HTMLInputElement;
+                    if (!sel.value) return;
+                    if (relaciones.beneficiosas.some((b: any) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
+                    const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                    setRelaciones((prev: any) => ({
+                      ...prev,
+                      beneficiosas: [...prev.beneficiosas, { 
+                        xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
+                        especie_destino_nombre: sp?.especiesnombre,
+                        asociacionesbeneficiosasmotivo: mot.value 
+                      }]
+                    }));
+                    setRelacionesDirty(true);
+                    sel.value = ''; mot.value = '';
+                  }} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {relaciones.beneficiosas.map((b: any, idx: number) => (
+                    <li key={idx} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div><strong>{b.especie_destino_nombre}</strong> {b.asociacionesbeneficiosasmotivo ? `- ${b.asociacionesbeneficiosasmotivo}` : ''}</div>
+                      <button type="button" onClick={() => {
+                        setRelaciones((prev: any) => ({ ...prev, beneficiosas: prev.beneficiosas.filter((_: any, i: number) => i !== idx) }));
+                        setRelacionesDirty(true);
+                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Eliminar</button>
+                    </li>
+                  ))}
+                  {relaciones.beneficiosas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones beneficiosas.</p>}
+                </ul>
+              </div>
+
+              <div className="form-group full" style={{ marginTop: '20px' }}>
+                <h4>Asociaciones Perjudiciales</h4>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <select id="selPer" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                    <option value="">Selecciona especie...</option>
+                    {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                  </select>
+                  <input type="text" id="motivoPer" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                  <button type="button" onClick={() => {
+                    const sel = document.getElementById('selPer') as HTMLSelectElement;
+                    const mot = document.getElementById('motivoPer') as HTMLInputElement;
+                    if (!sel.value) return;
+                    if (relaciones.perjudiciales.some((p: any) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
+                    const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                    setRelaciones((prev: any) => ({
+                      ...prev,
+                      perjudiciales: [...prev.perjudiciales, { 
+                        xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
+                        especie_destino_nombre: sp?.especiesnombre,
+                        asociacionesperjudicialesmotivo: mot.value 
+                      }]
+                    }));
+                    setRelacionesDirty(true);
+                    sel.value = ''; mot.value = '';
+                  }} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {relaciones.perjudiciales.map((p: any, idx: number) => (
+                    <li key={idx} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div><strong>{p.especie_destino_nombre}</strong> {p.asociacionesperjudicialesmotivo ? `- ${p.asociacionesperjudicialesmotivo}` : ''}</div>
+                      <button type="button" onClick={() => {
+                        setRelaciones((prev: any) => ({ ...prev, perjudiciales: prev.perjudiciales.filter((_: any, i: number) => i !== idx) }));
+                        setRelacionesDirty(true);
+                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Eliminar</button>
+                    </li>
+                  ))}
+                  {relaciones.perjudiciales.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones perjudiciales.</p>}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* PLAGAS */}
+          {activeTab === 'plagas' && (
+            <div className="grid-form">
+              <div className="form-group full">
+                <h4>Plagas / Enfermedades Asociadas</h4>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                  <select id="selPla" style={{ flex: 1, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                    <option value="">Selecciona plaga o enfermedad...</option>
+                    {masterPlagas.map(p => <option key={p.idplagas} value={p.idplagas}>{p.plagasnombre} ({p.plagastipo})</option>)}
+                  </select>
+                  <select id="riesgoPla" style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                    <option value="baja">Riesgo Bajo</option>
+                    <option value="media">Riesgo Medio</option>
+                    <option value="alta">Riesgo Alto</option>
+                  </select>
+                  <input type="text" id="notasPla" placeholder="Notas (opcional)" style={{ flex: 2, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                  <button type="button" onClick={() => {
+                    const sel = document.getElementById('selPla') as HTMLSelectElement;
+                    const r = document.getElementById('riesgoPla') as HTMLSelectElement;
+                    const n = document.getElementById('notasPla') as HTMLInputElement;
+                    if (!sel.value) return;
+                    if (relaciones.plagas.some((p: any) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
+                    const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
+                    setRelaciones((prev: any) => ({
+                      ...prev,
+                      plagas: [...prev.plagas, { 
+                        xespeciesplagasidplagas: parseInt(sel.value),
+                        plagasnombre: pla?.plagasnombre,
+                        plagastipo: pla?.plagastipo,
+                        especiesplagasnivelriesgo: r.value,
+                        especiesplagasnotasespecificas: n.value 
+                      }]
+                    }));
+                    setRelacionesDirty(true);
+                    sel.value = ''; n.value = ''; r.value = 'media';
+                  }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {relaciones.plagas.map((p: any, idx: number) => (
+                    <li key={idx} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span> 
+                        <span style={{ margin: '0 8px', color: '#cbd5e1' }}>|</span> 
+                        <span style={{ fontWeight: 'bold', textTransform: 'capitalize', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b' }}>Riesgo {p.especiesplagasnivelriesgo}</span>
+                        {p.especiesplagasnotasespecificas ? ` - ${p.especiesplagasnotasespecificas}` : ''}
+                      </div>
+                      <button type="button" onClick={() => {
+                        setRelaciones((prev: any) => ({ ...prev, plagas: prev.plagas.filter((_: any, i: number) => i !== idx) }));
+                        setRelacionesDirty(true);
+                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Eliminar</button>
+                    </li>
+                  ))}
+                  {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* BLOGS */}
+          {activeTab === 'blogs' && (
+            <div className="grid-form">
+              <div className="form-group full">
+                <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
+                  <span style={{ margin: 0 }}>Artículos del Blog generados para esta Especie</span>
+                </label>
+                {blogs.length === 0 ? (
+                  <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '30px', textAlign: 'center', borderRadius: '12px', color: '#64748b' }}>
+                    No hay ningún artículo generado para esta especie.<br/><br/>
+                    <button type="button" onClick={() => setActiveTab('adjuntos')} style={{ background: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                      Ir a Adjuntos para generar uno a partir de un PDF
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                    {blogs.map(b => {
+                      const linkedPdf = b.pdfSourceId ? pdfs.find((p: any) => p.id === b.pdfSourceId) : null;
+                      return (
+                      <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', flexDirection: 'column' }}>
+                        {b.hero_imagen ? (
+                          <img src={getMediaUrl(b.hero_imagen)} alt={b.hero_imagen_alt || b.titulo} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '140px', background: 'linear-gradient(135deg, #0f766e, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3rem' }}>📝</div>
+                        )}
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                          <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: '#1e293b', lineHeight: 1.3 }}>{b.titulo}</h3>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px', fontSize: '0.75rem', color: '#64748b' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>✍️ {b.autor}</span>
+                            <span>•</span>
+                            <span>{b.fechaCreacion ? new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Sin fecha'}</span>
+                            <span style={{ marginLeft: 'auto', background: b.estado === 'publicado' ? '#dcfce7' : '#fef3c7', color: b.estado === 'publicado' ? '#166534' : '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase' }}>{b.estado}</span>
+                          </div>
+                          <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
+                            {b.resumen}
+                          </p>
+
+                          {/* PDF asociado */}
+                          <div style={{ marginBottom: '12px', padding: '8px 10px', background: linkedPdf ? '#ecfdf5' : '#f8fafc', border: `1px solid ${linkedPdf ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: '6px', fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {linkedPdf ? (
+                              <a href={getMediaUrl(linkedPdf.ruta)} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#0f766e', fontWeight: 600 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                                📄 {linkedPdf.titulo || linkedPdf.nombreOriginal}
+                              </a>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>Sin PDF de origen vinculado</span>
+                            )}
+                          </div>
+
+                          {/* Acciones */}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ textAlign: 'center', background: '#f1f5f9', color: '#0f766e', textDecoration: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #cbd5e1', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
+                              👁️
+                            </a>
+                            <a href={`/dashboard/admin/blog/${b.id}`} style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', textDecoration: 'none', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #bfdbfe', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'} onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}>
+                              ✏️ Editar
+                            </a>
+                            <button type="button" onClick={async () => {
+                              if (!confirm(`¿Estás seguro de que quieres eliminar el blog "${b.titulo}"? Esta acción no se puede deshacer.`)) return;
+                              try {
+                                const res = await fetch(`/api/admin/blog/${b.id}`, { method: 'DELETE' });
+                                const data = await res.json();
+                                if (data.success) {
+                                  setBlogs(prev => prev.filter(x => x.id !== b.id));
+                                } else {
+                                  alert(data.error || 'Error al eliminar');
+                                }
+                              } catch (e) { alert('Error de red al eliminar blog'); }
+                            }} style={{ padding: '8px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; }}>
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ADJUNTOS */}
           {activeTab === 'adjuntos' && (
             <div>
@@ -1680,7 +2053,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             {/* Botones superpuestos en la foto */}
                             <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
                               <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
-                              <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
+                              {(p.hasBlog || blogs.some(b => b.pdfSourceId === p.id)) ? (
+                                <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
+                              ) : (
+                                <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
+                              )}
                             </div>
                           </div>
 
@@ -1744,6 +2121,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </div>
                 </div>
               )}
+
+
             </div>
           )}
 
@@ -1999,10 +2378,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           onClick={() => setEditingPdf(null)}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                📄 Editar Metadatos del PDF
-              </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📄 Editar Metadatos del PDF
+                </h3>
+                <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  🌱 Especie: {formData.especiesnombre || 'Sin nombre'}
+                </span>
+              </div>
               <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
             </div>
             
@@ -2019,11 +2403,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     </div>
                   )}
                 </div>
-                {!editingPdf.portada && (
-                  <button type="button" onClick={() => { generatePdfCover(editingPdf); setEditingPdf(null); }} style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}>
-                    ✨ Generar Portada IA
-                  </button>
-                )}
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    generatePdfCover({ ...editingPdf, titulo: pdfTitle, resumen: pdfSummary }); 
+                  }} 
+                  disabled={generatingCoverId === editingPdf.id}
+                  style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: generatingCoverId === editingPdf.id ? 'wait' : 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                >
+                  {generatingCoverId === editingPdf.id ? '⏳ Generando...' : (editingPdf.portada ? '✨ Regenerar Portada IA' : '✨ Generar Portada IA')}
+                </button>
               </div>
 
               {/* Columna Derecha: Formulario */}
@@ -2217,9 +2606,16 @@ JSON de salida obligatorio:
               )}
 
               {blogGenLoading ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                  <span style={{ fontSize: '2rem', display: 'inline-block', animation: 'spin 2s linear infinite' }}>⏳</span>
-                  <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>Leyendo PDF y redactando artículo. Esto puede tardar unos 10-15 segundos...</p>
+                <div style={{ padding: '30px 20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '2.5rem', display: 'inline-block', animation: 'spin 2s linear infinite', marginBottom: '15px' }}>⏳</span>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#0f766e', fontSize: '1.1rem' }}>Generación en curso</h4>
+                  <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', fontWeight: 500, minHeight: '24px', transition: 'all 0.3s' }}>
+                    {blogGenProgress}
+                  </p>
+                  <div style={{ width: '100%', background: '#e2e8f0', height: '6px', borderRadius: '3px', marginTop: '16px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: '#10b981', width: '100%', animation: 'progress 60s ease-out forwards' }}></div>
+                  </div>
+                  <style>{`@keyframes progress { 0% { width: 0%; } 100% { width: 95%; } }`}</style>
                 </div>
               ) : (
                 <button 

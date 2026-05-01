@@ -1,0 +1,71 @@
+import { NextResponse } from 'next/server';
+import { uploadToStorage } from '@/lib/firebase/storage';
+import { getUserByEmail } from '@/lib/auth';
+import sharp from 'sharp';
+
+export const dynamic = 'force-dynamic';
+
+async function authenticateSuperadmin(request: Request) {
+  const email = request.headers.get('x-user-email');
+  if (!email) return null;
+  const user = await getUserByEmail(email);
+  if (!user || (!user.roles?.includes('superadministrador') && !user.roles?.includes('administrador'))) return null;
+  return user;
+}
+
+export async function POST(request: Request) {
+  const user = await authenticateSuperadmin(request);
+  if (!user) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const path = formData.get('path') as string;
+
+    if (!file || !path) {
+      return NextResponse.json({ error: 'Archivo y ruta requeridos' }, { status: 400 });
+    }
+
+    const bytes = await file.arrayBuffer();
+    
+    // Configurar marca de agua
+    const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
+      <text x="290" y="50" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="28" font-weight="bold"
+        fill="white" fill-opacity="0.35" stroke="black" stroke-width="1.5" stroke-opacity="0.25">
+        VERDANTIA
+      </text>
+    </svg>`);
+
+    const sharpInstance = sharp(Buffer.from(bytes));
+    const metadata = await sharpInstance.metadata();
+    const targetWidth = Math.min(metadata.width || 1920, 1920);
+    const targetHeight = Math.min(metadata.height || 1080, 1080);
+
+    let mainSharp = sharpInstance
+      .clone()
+      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true });
+
+    // Aplicar marca de agua si la imagen es suficientemente grande
+    if (targetWidth >= 300 && targetHeight >= 60) {
+      mainSharp = mainSharp.composite([{
+        input: watermarkSvg,
+        gravity: 'southeast'
+      }]);
+    }
+
+    const processedBuffer = await mainSharp
+      .webp({ quality: 85 })
+      .toBuffer();
+
+    const publicUrl = await uploadToStorage(processedBuffer, path, 'image/webp');
+
+    return NextResponse.json({ success: true, url: publicUrl });
+
+  } catch (error: any) {
+    console.error('[Upload API] Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

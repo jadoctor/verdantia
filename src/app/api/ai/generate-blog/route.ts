@@ -173,9 +173,20 @@ ${fichaRapidaEjemplo}
       }
     }
 
+    // Asegurar que el título sea único
+    let finalTitulo = parsedData.titulo;
+    let titleCounter = 1;
+    while (true) {
+      const [tRows] = await pool.query<any>('SELECT idblog FROM blog WHERE blogtitulo = ?', [finalTitulo]);
+      if (tRows.length === 0) break;
+      titleCounter++;
+      finalTitulo = `${parsedData.titulo} (Versión ${titleCounter})`;
+    }
+    parsedData.titulo = finalTitulo;
+
     // Ensure unique slug
     let finalSlug = (parsedData.slug || parsedData.titulo).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const [slugRows] = await pool.query<any>('SELECT idblog FROM blog WHERE xblogslug = ?', [finalSlug]);
+    const [slugRows] = await pool.query<any>('SELECT idblog FROM blog WHERE blogslug = ?', [finalSlug]);
     if (slugRows.length > 0) {
       finalSlug = `${finalSlug}-${Date.now().toString().slice(-4)}`;
     }
@@ -183,7 +194,7 @@ ${fichaRapidaEjemplo}
     // 5. Insert blog entry first (to get the ID for datosadjuntos FK)
     const [result] = await pool.query<any>(`
       INSERT INTO blog 
-      (xblogslug, xblogtitulo, xblogresumen, xblogcontenido, xblogimagen, xblogestado, xblogidusuarios, xblogidespecies, xblogidvariedades) 
+      (blogslug, blogtitulo, blogresumen, blogcontenido, blogimagen, blogestado, xblogidusuarios, xblogidespecies, xblogidvariedades) 
       VALUES (?, ?, ?, ?, NULL, 'borrador', ?, ?, ?)
     `, [
       finalSlug,
@@ -344,7 +355,7 @@ ${fichaRapidaEjemplo}
     };
 
     await pool.query<any>(
-      `UPDATE blog SET xblogcontenido = ?, xblogimagen = ? WHERE idblog = ?`,
+      `UPDATE blog SET blogcontenido = ?, blogimagen = ? WHERE idblog = ?`,
       [JSON.stringify(blogJson), heroImagePath, blogId]
     );
 

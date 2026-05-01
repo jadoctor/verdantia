@@ -63,7 +63,7 @@ export default function BlogAdminDashboard() {
             <tbody>
               {articulos.map(art => (
                 <tr key={art.idblog} style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer' }} onClick={() => router.push(`/dashboard/admin/blog/${art.idblog}`)}>
-                  <td style={{ padding: '15px', fontWeight: 'bold', color: '#0f172a' }}>{art.xblogtitulo}</td>
+                  <td style={{ padding: '15px', fontWeight: 'bold', color: '#0f172a' }}>{art.blogtitulo}</td>
                   <td style={{ padding: '15px', color: '#64748b' }}>{art.especiesnombre || art.variedadesnombre || '-'}</td>
                   <td style={{ padding: '15px' }}>
                     <span style={{ 
@@ -71,13 +71,13 @@ export default function BlogAdminDashboard() {
                       borderRadius: '20px', 
                       fontSize: '0.8rem', 
                       fontWeight: 'bold',
-                      background: art.xblogestado === 'publicado' ? '#dcfce7' : '#fef3c7',
-                      color: art.xblogestado === 'publicado' ? '#166534' : '#92400e'
+                      background: art.blogestado === 'publicado' ? '#dcfce7' : '#fef3c7',
+                      color: art.blogestado === 'publicado' ? '#166534' : '#92400e'
                     }}>
-                      {art.xblogestado.toUpperCase()}
+                      {art.blogestado.toUpperCase()}
                     </span>
                   </td>
-                  <td style={{ padding: '15px', color: '#64748b' }}>{new Date(art.xblogfechacreacion).toLocaleDateString()}</td>
+                  <td style={{ padding: '15px', color: '#64748b' }}>{new Date(art.blogfechacreacion).toLocaleDateString()}</td>
                   <td style={{ padding: '15px', textAlign: 'center' }}>
                     <button style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}>
                       Editar

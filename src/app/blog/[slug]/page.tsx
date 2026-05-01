@@ -43,7 +43,7 @@ export default function BlogPublicArticle() {
   // Intentar parsear JSON estructurado; si falla, es Markdown legacy
   let blogData: any = null;
   try {
-    blogData = JSON.parse(art.xblogcontenido);
+    blogData = JSON.parse(art.blogcontenido);
   } catch {
     blogData = null;
   }
@@ -53,16 +53,16 @@ export default function BlogPublicArticle() {
     return (
       <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh' }}>
         <div style={{ width: '100%', height: '400px', background: 'linear-gradient(135deg, #10b981, #0ea5e9)', position: 'relative' }}>
-          {art.xblogimagen && <img src={getMediaUrl(art.xblogimagen)} alt={art.xblogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />}
+          {art.blogimagen && <img src={getMediaUrl(art.blogimagen)} alt={art.blogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9), transparent)' }} />
           <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
             <Link href="/blog" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 'bold' }}>← Volver al Blog</Link>
-            <h1 style={{ color: 'white', fontSize: '2.5rem', margin: '10px 0', lineHeight: 1.1 }}>{art.xblogtitulo}</h1>
+            <h1 style={{ color: 'white', fontSize: '2.5rem', margin: '10px 0', lineHeight: 1.1 }}>{art.blogtitulo}</h1>
           </div>
         </div>
         <article style={{ maxWidth: '800px', margin: '0 auto', padding: '60px 20px', background: 'white', borderRadius: '16px', marginTop: '-40px', position: 'relative', zIndex: 10, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)' }}>
           <div className="blog-md" style={{ fontSize: '1.05rem', color: '#334155', lineHeight: 1.8 }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{art.xblogcontenido}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{art.blogcontenido}</ReactMarkdown>
           </div>
         </article>
       </div>
@@ -70,9 +70,9 @@ export default function BlogPublicArticle() {
   }
 
   // ── RENDERIZADO ESTRUCTURADO (JSON Verdantia) ──
-  const heroImg = blogData.hero_imagen || (art.xblogimagen ? getMediaUrl(art.xblogimagen) : null);
-  const fecha = art.xblogfechapublicacion 
-    ? new Date(art.xblogfechapublicacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) 
+  const heroImg = blogData.hero_imagen || (art.blogimagen ? getMediaUrl(art.blogimagen) : null);
+  const fecha = art.blogfechapublicacion 
+    ? new Date(art.blogfechapublicacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) 
     : new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
@@ -170,14 +170,14 @@ export default function BlogPublicArticle() {
       <div className="vblog">
         {/* Breadcrumb */}
         <div className="vblog-bc">
-          <a href="/">🏠 Verdantia</a> › <a href="/blog">Blog</a> › {art.xblogtitulo}
+          <a href="/">🏠 Verdantia</a> › <a href="/blog">Blog</a> › {art.blogtitulo}
         </div>
 
         {/* HEADER */}
         <div className="vblog-header">
           {heroImg && (
             <div className="vblog-header-img" style={{ overflow: 'hidden' }}>
-              <img src={heroImg} alt={blogData.hero_imagen_alt || art.xblogtitulo} title={blogData.hero_imagen_title || art.xblogtitulo} 
+              <img src={heroImg} alt={blogData.hero_imagen_alt || art.blogtitulo} title={blogData.hero_imagen_title || art.blogtitulo} 
                 style={{
                   width: '100%', height: '100%', objectFit: 'cover',
                   objectPosition: blogData.hero_imagen_css ? `${blogData.hero_imagen_css.x}% ${blogData.hero_imagen_css.y}%` : '50% 50%',
@@ -192,8 +192,8 @@ export default function BlogPublicArticle() {
               {art.especiesnombre && <span className="vblog-badge vblog-badge-green">🌱 {art.especiesnombre}</span>}
               <span className="vblog-badge vblog-badge-gray">⏱️ 5 min</span>
             </div>
-            <h1 className="vblog-h1">{art.xblogtitulo}</h1>
-            <p className="vblog-sub">{blogData.resumen || art.xblogresumen}</p>
+            <h1 className="vblog-h1">{art.blogtitulo}</h1>
+            <p className="vblog-sub">{blogData.resumen || art.blogresumen}</p>
             <div className="vblog-meta">
               <span>📅 {fecha}</span>
               {art.especiesnombre && <span>🌍 {art.especiesnombre}</span>}

@@ -355,9 +355,13 @@ export default function GuiaUsuarioPage() {
           Esta sección actúa como un <strong>disco duro externo para el Asistente de IA</strong>, evitando el "olvido" de fallos críticos debido a las limitaciones de memoria de contexto. Antes de resolver nuevos problemas, la IA debe consultar y vaciar esta lista.
         </p>
 
-        <h3 style={{ color: '#dc2626', marginTop: '30px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🔴 8.1. Imágenes no cargan en Producción (Cloud)
+        <h3 style={{ color: '#0f172a', marginTop: '30px', fontSize: '1.4rem' }}>
+          8.1. Fallos Activos / Pendientes de Resolución
         </h3>
+
+        <h4 style={{ color: '#dc2626', marginTop: '20px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔴 8.1.1. Imágenes no cargan en Producción (Cloud)
+        </h4>
         <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
           <strong>Fallo:</strong> Las fotografías e imágenes (portadas de PDFs, avatares, fotos de especies) que sí se ven en el entorno local devuelven un error en Google Cloud.
         </p>
@@ -386,13 +390,26 @@ export default function GuiaUsuarioPage() {
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico del fracaso anterior:</strong> El Redirect 302 a <code>/{'{'}mediaPath{'}'}</code> falla porque Firebase Hosting NO tiene las fotos en su raíz estática. Las imágenes están en <strong>Firebase Storage</strong> (bucket), no servidas como assets estáticos de Hosting.</li>
             <li style={{ marginBottom: '4px' }}><strong>Plan A (Paliativo):</strong> Si la foto no existe en Storage, devolver un placeholder SVG en vez de un redirect roto.</li>
             <li style={{ marginBottom: '4px' }}><strong>Plan B (Raíz del problema):</strong> Verificar que las rutas en la BBDD apunten a Firebase Storage válidas. Migrar rutas legacy <code>uploads/...</code> o subir fotos al bucket.</li>
-            <li><strong>Resultado:</strong> 🔴 PENDIENTE DE APLICAR.</li>
+            <li><strong>Resultado:</strong> 🔴 FALLO. El plan A y B no resolvieron la sobrecarga de RAM en la Cloud Function al servir las fotos.</li>
           </ul>
         </div>
 
-        <h3 style={{ color: '#dc2626', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🔴 8.2. Desplegable Superadministrador truncado en Móvil
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026] — PLAN DE SOLUCIÓN PROPUESTO (PENDIENTE DE VALIDAR)</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo:</strong> Al usar `/api/media` en producción, Firebase levanta una Cloud Function que descarga cada imagen entera en la memoria RAM antes de servirla. Esto colapsa el servidor (OOM) y hace que las fotos no se vean.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada en local:</strong> Se ha modificado <code>getMediaUrl</code> para saltarse la API por completo y cargar las imágenes directamente a través de las URLs públicas del CDN de Google Cloud Storage. El bucket se ha abierto a nivel de lectura.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN. Seguramente surjan imprevistos al subirlo.</li>
+          </ul>
+        </div>
+
+        <h3 style={{ color: '#0f172a', marginTop: '40px', fontSize: '1.4rem' }}>
+          8.2. Fallos Resueltos (Historial)
         </h3>
+
+        <h4 style={{ color: '#16a34a', marginTop: '20px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🟢 8.2.1. Desplegable Superadministrador truncado en Móvil
+        </h4>
         <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
           <strong>Fallo:</strong> El menú en móviles corta las entradas y los dashboards laterales no dejan hacer scroll hacia abajo.
         </p>
@@ -421,13 +438,13 @@ export default function GuiaUsuarioPage() {
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico del fracaso anterior:</strong> El problema NO es de los desplegables individuales ni del viewport height. El <strong>contenedor lateral completo (<code>.sidebar</code>)</strong> no permite scroll. La causa raíz: el layout padre (<code>.dashboard-layout</code>) usa <code>overflow: hidden</code> y el <code>.sidebar-footer</code> con <code>margin-top: auto</code> empuja el contenido fuera de los límites sin permitir scroll independiente de la zona de navegación.</li>
             <li style={{ marginBottom: '4px' }}><strong>Hipótesis del usuario:</strong> {`"El lateral no tiene scroll; el problema no está en los desplegables, es el layout izquierdo que no tiene scroll."`}</li>
             <li style={{ marginBottom: '4px' }}><strong>Propuesta de solución:</strong> Reestructurar el sidebar en 3 zonas: Logo (fijo arriba), Navegación (zona scrollable con <code>overflow-y: auto</code> y <code>flex: 1</code>) y Footer (fijo abajo). Solo la zona central hará scroll. Esto resuelve en TODOS los dispositivos.</li>
-            <li><strong>Resultado:</strong> 🔴 PENDIENTE DE APLICAR.</li>
+            <li><strong>Resultado:</strong> 🟢 RESUELTO. El sidebar ahora permite un scroll perfecto sin romper el layout.</li>
           </ul>
         </div>
 
-        <h3 style={{ color: '#0369a1', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          8.3. Bug Destructivo en PDFs IA y Error SQL
-        </h3>
+        <h4 style={{ color: '#16a34a', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🟢 8.2.2. Bug Destructivo en PDFs IA y Error SQL
+        </h4>
         <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
           <strong>Fallo:</strong> Al generar la portada del PDF, se borraban el título y apuntes. Además, al intentar "Añadir" un documento desde el buscador, saltaba un error SQL por discrepancia de columnas.
         </p>
@@ -437,13 +454,13 @@ export default function GuiaUsuarioPage() {
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El PUT sobrescribía ciegamente campos con strings vacíos. Por otro lado, la IA generaba Arrays en lugar de strings, lo que rompía el driver de MySQL al intentar guardarlo.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se reescribió `route.ts` para hacer actualizaciones parciales dinámicas. Además, se forzó la conversión de Arrays a Strings (`.join('\n')`) antes de tocar la base de datos.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN. <em>(Sin embargo, al forzar esta conversión se rompió el parseo del frontend, originando el fallo documentado en el Punto 8.4)</em>.</li>
+            <li><strong>Resultado:</strong> 🟢 RESUELTO.</li>
           </ul>
         </div>
 
-        <h3 style={{ color: '#0369a1', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          8.4. El Asistente de Búsqueda Falla
-        </h3>
+        <h4 style={{ color: '#16a34a', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🟢 8.2.3. El Asistente de Búsqueda Falla
+        </h4>
         <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
           <strong>Fallo:</strong> El asistente de búsqueda IA se queda colgado infinitamente o devuelve resultados vacíos, sin mostrar ningún error claro al usuario en la interfaz. <em>(Nota: Este fallo se produjo como efecto secundario al aplicar la corrección del Punto 8.3).</em>
         </p>

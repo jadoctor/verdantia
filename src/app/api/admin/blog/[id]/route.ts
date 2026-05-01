@@ -16,22 +16,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const resolvedParams = await params;
     const body = await request.json();
-    const { xblogtitulo, xblogslug, xblogresumen, xblogcontenido, xblogestado, xblogimagen } = body;
+    const { blogtitulo, blogslug, blogresumen, blogcontenido, blogestado, blogimagen } = body;
     
     // Si se pasa a publicado y no tenía fecha, ponersela
     let updatePubDate = '';
     let pubParams: any[] = [];
-    if (xblogestado === 'publicado') {
-       updatePubDate = ', xblogfechapublicacion = COALESCE(xblogfechapublicacion, NOW())';
+    if (blogestado === 'publicado') {
+       updatePubDate = ', blogfechapublicacion = COALESCE(blogfechapublicacion, NOW())';
     }
 
     await pool.query(
       `UPDATE blog SET 
-        xblogtitulo = ?, xblogslug = ?, xblogresumen = ?, 
-        xblogcontenido = ?, xblogestado = ?, xblogimagen = ?
+        blogtitulo = ?, blogslug = ?, blogresumen = ?, 
+        blogcontenido = ?, blogestado = ?, blogimagen = ?
         ${updatePubDate}
        WHERE idblog = ?`,
-      [xblogtitulo, xblogslug, xblogresumen, xblogcontenido, xblogestado, xblogimagen, resolvedParams.id]
+      [blogtitulo, blogslug, blogresumen, blogcontenido, blogestado, blogimagen, resolvedParams.id]
     );
 
     return NextResponse.json({ success: true });

@@ -7,17 +7,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     const { searchParams } = new URL(request.url);
     const isPreview = searchParams.get('preview') === 'true';
 
-    const stateCondition = isPreview ? "" : " AND b.xblogestado = 'publicado'";
+    const stateCondition = isPreview ? "" : " AND b.blogestado = 'publicado'";
 
     const [rows] = await pool.query<any>(`
       SELECT 
-        b.idblog, b.xblogslug, b.xblogtitulo, b.xblogresumen, b.xblogcontenido, b.xblogimagen, b.xblogfechapublicacion, 
+        b.idblog, b.blogslug, b.blogtitulo, b.blogresumen, b.blogcontenido, b.blogimagen, b.blogfechapublicacion, 
         u.usuariosnombre as autor, e.especiesnombre, v.variedadesnombre
       FROM blog b
       LEFT JOIN usuarios u ON b.xblogidusuarios = u.idusuarios
       LEFT JOIN especies e ON b.xblogidespecies = e.idespecies
       LEFT JOIN variedades v ON b.xblogidvariedades = v.idvariedades
-      WHERE b.xblogslug = ? ${stateCondition}
+      WHERE b.blogslug = ? ${stateCondition}
     `, [resolvedParams.slug]);
 
     if (rows.length === 0) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
