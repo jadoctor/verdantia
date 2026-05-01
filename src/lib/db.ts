@@ -1,6 +1,9 @@
-import mysql from 'mysql2';
+import type { Pool } from 'mysql2/promise';
 
-const pool = mysql.createPool({
+// Bypass para evitar que Turbopack hashee el nombre del módulo en producción
+const mysql = require('my' + 'sql2');
+
+const pool: Pool = mysql.createPool({
   host: '34.175.111.133',
   user: 'root',
   password: 'Verdantiaja0334&',
