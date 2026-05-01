@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 1 de Mayo, 16:24 (Limpieza Profunda de Caché)
+            Verificación de Subida: 1 de Mayo, 16:38 (Fix MySQL 500 Perfil)
           </p>
         </div>
       </div>
