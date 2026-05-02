@@ -440,12 +440,21 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:55] — NUEVA PROPUESTA (Bypass Absoluto con Eval y Limpieza de Caché)</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El servidor local se cuelga porque Turbopack intenta resolver de forma estática la concatenación. Para evitar que Turbopack rompa el módulo en producción pero mantener la compatibilidad local, necesitamos una función que el compilador ignore completamente pero Node ejecute en runtime.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> 1) Usar <code>eval("require('firebase-admin')")</code> en <code>admin.ts</code> y <code>storage.ts</code>. 2) Eliminar la carpeta <code>.next</code> y subir a producción.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO CRÍTICO. El uso de <code>eval</code> rompe el modelo Singleton de instanciación en el entorno Serverless de Next.js, provocando que la base de datos de Firebase no se inicialice a tiempo (<code>The default Firebase app does not exist</code>). Esto hizo que toda la aplicación en producción (incluyendo la propia guía de usuario) colapsara devolviendo un Error 500 total.</li>
+          </ul>
+        </div>
+
         <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:55] — NUEVA PROPUESTA (Bypass Absoluto con Eval y Limpieza de Caché)</h4>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 14:15] — PROPUESTA DEFINITIVA (Bypass de Entorno Condicional en Turbopack)</h4>
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El servidor local se cuelga porque Turbopack intenta resolver de forma estática la concatenación. Para evitar que Turbopack rompa el módulo en producción pero mantener la compatibilidad local, necesitamos una función que el compilador ignore completamente pero Node ejecute en runtime. Además, las subidas anteriores conservaban el error porque la carpeta <code>.next</code> de caché no se eliminaba antes del build.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Usar <code>eval("require('firebase-admin')")</code> para ocultar totalmente la dependencia a Turbopack. 2) Eliminar la carpeta <code>.next</code> manualmente para forzar una compilación limpia. 3) Lanzar a producción de nuevo.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. El código ha compilado en local y se va a lanzar el despliegue a Firebase.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> Todos los intentos de engañar a Turbopack manipulando los archivos <code>.ts</code> rompen algo. Necesitamos <code>serverExternalPackages: ['firebase-admin']</code> OBLIGATORIAMENTE para que el entorno local no colapse. Pero si lo dejamos al subir a Producción, Turbopack genera el hash maldito <code>firebase-admin-a14c8...</code> que provoca el Error 500 en Firebase Functions.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Dejar el código fuente intacto (usar los imports normales) y aplicar un condicional dinámico en <code>next.config.ts</code> usando <code>process.env.NODE_ENV</code>. Así, en desarrollo local (<code>development</code>) el array incluirá los paquetes y no se colgará, pero al compilar para Firebase (<code>production</code>), el array estará vacío, evitando que Turbopack genere el hash y permitiendo a la Cloud Function encontrar la librería.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de implementar y desplegar.</li>
           </ul>
         </div>
 

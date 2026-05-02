@@ -1,4 +1,4 @@
-const admin = eval("require('firebase-admin')");
+import * as admin from 'firebase-admin';
 
 // Protect against multiple initializations
 if (!admin.apps.length) {
@@ -25,3 +25,4 @@ if (!admin.apps.length) {
 }
 
 export const adminAuth = admin.auth();
+export const bucket = admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app');

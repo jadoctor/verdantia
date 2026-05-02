@@ -1,9 +1,4 @@
-const admin = eval("require('firebase-admin')");
-
-// Asegurar que admin está inicializado (se importa desde admin.ts)
-import './admin';
-
-const bucket = admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app');
+import { bucket } from './admin';
 
 /**
  * Sube un archivo a Firebase Storage y devuelve la URL pública.
