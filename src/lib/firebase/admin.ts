@@ -1,4 +1,5 @@
-import * as admin from 'firebase-admin';
+// Bypass dinámico para Turbopack
+const admin = require('firebase-' + 'admin');
 
 // Protect against multiple initializations
 if (!admin.apps.length) {

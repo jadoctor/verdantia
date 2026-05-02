@@ -422,12 +422,21 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:10] — DIAGNÓSTICO ERRÓNEO (Sharp Lazy-Load)</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Firebase Functions requiere una estrategia de empaquetado muy estricta para binarios nativos como los de <code>sharp</code>. La mera importación global (<code>import sharp from 'sharp'</code>) fuerza su carga durante la inicialización de la Cloud Function.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Modificar el backend para cargar <code>sharp</code> de forma perezosa/dinámica y añadirlo a <code>serverExternalPackages</code>.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. El endpoint seguía devolviendo un error 500 y las imágenes de los dashboards de edición seguían sin cargar.</li>
+          </ul>
+        </div>
+
         <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:10] — NUEVA PROPUESTA EN CURSO (Sharp Lazy-Load)</h4>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:30] — DIAGNÓSTICO DE LA VERDADERA CAUSA RAÍZ</h4>
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Firebase Functions requiere una estrategia de empaquetado muy estricta para binarios nativos como los de <code>sharp</code>. La mera importación global (<code>import sharp from 'sharp'</code>) fuerza su carga durante la inicialización de la Cloud Function, rompiendo la API completa si el entorno (SO) no es compatible o los binarios no se incluyeron.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Modificar el backend para cargar <code>sharp</code> de forma perezosa/dinámica (<code>await import('sharp')</code>), aislando así el problema y protegiendo el resto de endpoints. 2) Instalar <code>sharp@0.33.5</code>, conocida por ser compatible con <code>firebase-frameworks</code>. 3) Adaptar la configuración de compilación y validar el despliegue a producción para restaurar el renderizado de imágenes.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de autorización.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> Al consultar los logs en vivo de Google Cloud, el error causante del 500 es: <code>Cannot find module 'firebase-admin-a14c8a5423a75469'</code>. ¡Es el mismo bug destructivo de Turbopack que tuvimos con la base de datos (<code>mysql2</code>)! Al tener <code>firebase-admin</code> o <code>sharp</code> en <code>serverExternalPackages</code> dentro del <code>next.config.ts</code>, Turbopack ofusca los nombres de los módulos requeridos (añadiéndoles un hash), lo que provoca que la Cloud Function de Firebase no encuentre las carpetas y el servidor entero colapse al arrancar.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Eliminar <code>serverExternalPackages</code> del <code>next.config.ts</code>. 2) Aplicar un Bypass Dinámico (<code>require('firebase-' + 'admin')</code>) en los archivos <code>admin.ts</code> y <code>storage.ts</code>, engañando al empaquetador para que pase de largo, pero permitiendo a Firebase resolver la ruta limpia. 3) Validar el build local y lanzar a producción.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de autorización para aplicar los cambios en el código.</li>
           </ul>
         </div>
 

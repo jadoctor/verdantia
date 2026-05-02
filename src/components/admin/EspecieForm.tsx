@@ -58,6 +58,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [isEspecieOpen, setIsEspecieOpen] = useState(true);
   const [calcPersonas, setCalcPersonas] = useState<number>(1);
   const [aiProposal, setAiProposal] = useState<any>(null);
+  const [selectedRels, setSelectedRels] = useState<{ ben: string[], per: string[], pla: string[] }>({ ben: [], per: [], pla: [] });
   const [showAiModal, setShowAiModal] = useState(false);
   const [isAssimilatingRels, setIsAssimilatingRels] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
@@ -328,6 +329,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const data = await res.json();
       if (data.success) {
         setAiProposal(data.data);
+        setSelectedRels({
+          ben: data.data.asociaciones_beneficiosas || [],
+          per: data.data.asociaciones_perjudiciales || [],
+          pla: data.data.plagas_asociadas || []
+        });
         setShowAiModal(true);
       } else {
         alert('Error IA: ' + data.error);
@@ -451,9 +457,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setIsAssimilatingRels(true);
 
     try {
-      const benNames = aiProposal.asociaciones_beneficiosas || [];
-      const perNames = aiProposal.asociaciones_perjudiciales || [];
-      const plaNames = aiProposal.plagas_asociadas || [];
+      const benNames = selectedRels.ben;
+      const perNames = selectedRels.per;
+      const plaNames = selectedRels.pla;
 
       const newBen = [...relaciones.beneficiosas];
       const newPer = [...relaciones.perjudiciales];
@@ -471,7 +477,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           const res = await fetch('/api/admin/especies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ especiesnombre: name })
+            body: JSON.stringify({ especiesnombre: name, especiesvisibilidadsino: 0 })
           });
           const data = await res.json();
           if (data.success && data.id) {
@@ -496,7 +502,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           const res = await fetch('/api/admin/especies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ especiesnombre: name })
+            body: JSON.stringify({ especiesnombre: name, especiesvisibilidadsino: 0 })
           });
           const data = await res.json();
           if (data.success && data.id) {
@@ -521,7 +527,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           const res = await fetch('/api/admin/plagas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ plagasnombre: name, plagastipo: 'plaga' })
+            body: JSON.stringify({ plagasnombre: name, plagastipo: 'plaga', plagasestado: 'inactivo' })
           });
           const data = await res.json();
           if (data.success && data.id) {
@@ -2350,8 +2356,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                <input type="checkbox" checked={selectedRels.ben.includes(name)} onChange={(e) => {
+                                  if (e.target.checked) setSelectedRels(p => ({...p, ben: [...p.ben, name]}));
+                                  else setSelectedRels(p => ({...p, ben: p.ben.filter(n => n !== name)}));
+                                }} style={{ width: '16px', height: '16px', accentColor: '#10b981', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará nueva)</small>}
+                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}
                               </li>
                             );
                           })}
@@ -2367,8 +2377,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                <input type="checkbox" checked={selectedRels.per.includes(name)} onChange={(e) => {
+                                  if (e.target.checked) setSelectedRels(p => ({...p, per: [...p.per, name]}));
+                                  else setSelectedRels(p => ({...p, per: p.per.filter(n => n !== name)}));
+                                }} style={{ width: '16px', height: '16px', accentColor: '#ef4444', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará nueva)</small>}
+                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}
                               </li>
                             );
                           })}
@@ -2384,8 +2398,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                <input type="checkbox" checked={selectedRels.pla.includes(name)} onChange={(e) => {
+                                  if (e.target.checked) setSelectedRels(p => ({...p, pla: [...p.pla, name]}));
+                                  else setSelectedRels(p => ({...p, pla: p.pla.filter(n => n !== name)}));
+                                }} style={{ width: '16px', height: '16px', accentColor: '#f97316', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará nueva)</small>}
+                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}
                               </li>
                             );
                           })}

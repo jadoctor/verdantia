@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
     '192.168.18.30',
     'wicked-results-juggle.loca.lt'
   ],
-  serverExternalPackages: ['firebase-admin', 'sharp'],
   images: {
     remotePatterns: [
       {

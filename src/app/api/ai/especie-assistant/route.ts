@@ -71,9 +71,9 @@ Las claves esperadas en el JSON son:
 - especiesluzsolar (string, elige entre: pleno_sol, semisombra, sombra)
 - especiescaracteristicassuelo (string, ej: franco-arcilloso, bien drenado)
 - especiesdificultad (string, elige entre: baja, media, alta)
-- asociaciones_beneficiosas (array de strings, solo nombres comunes, ej: ["Albahaca", "Cebolla"])
-- asociaciones_perjudiciales (array de strings, solo nombres comunes, ej: ["Patata", "Hinojo"])
-- plagas_asociadas (array de strings, solo nombres comunes de plagas/enfermedades, ej: ["Pulgón", "Mosca blanca", "Oídio"])
+- asociaciones_beneficiosas (array de strings, solo nombres comunes exactos y específicos, NUNCA uses términos genéricos como "hierbas aromáticas" o "plantas de hoja verde", DEBES decir especies concretas ej: ["Albahaca", "Cebolla"])
+- asociaciones_perjudiciales (array de strings, solo nombres comunes exactos y específicos, NUNCA uses términos genéricos, DEBES decir especies concretas ej: ["Patata", "Hinojo"])
+- plagas_asociadas (array de strings, solo nombres comunes específicos de plagas/enfermedades, ej: ["Pulgón", "Mosca blanca", "Oídio"])
 
 Recuerda: SOLO JSON válido, nada de formato adicional.
     `;
