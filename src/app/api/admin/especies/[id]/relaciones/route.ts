@@ -92,7 +92,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // -- PLAGAS --
     await connection.query('DELETE FROM especiesplagas WHERE xespeciesplagasidespecies = ?', [idespecies]);
     if (plagas && plagas.length > 0) {
-      const values = plagas.map((p: any) => [idespecies, p.xespeciesplagasidplagas, p.especiesplagasnivelriesgo || 'media', p.especiesplagasnotasespecificas || null]);
+      const values = plagas.map((p: any) => [
+        idespecies, 
+        p.xespeciesplagasidplagas !== undefined ? p.xespeciesplagasidplagas : p.xrelacionesplagasideplaga, 
+        p.especiesplagasnivelriesgo || p.relacionesplagasriesgo || 'media', 
+        p.especiesplagasnotasespecificas || p.relacionesplagasnotas || null
+      ]);
       await connection.query(`
         INSERT INTO especiesplagas (xespeciesplagasidespecies, xespeciesplagasidplagas, especiesplagasnivelriesgo, especiesplagasnotasespecificas)
         VALUES ?

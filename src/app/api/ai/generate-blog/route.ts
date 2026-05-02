@@ -153,10 +153,18 @@ ${fichaRapidaEjemplo}
 
     // 3. Parse JSON
     let parsedData = null;
+    let jsonString = textOutput.trim();
+    if (jsonString.startsWith('```json')) {
+      jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonString.startsWith('```')) {
+      jsonString = jsonString.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
     try {
-      parsedData = JSON.parse(textOutput);
+      parsedData = JSON.parse(jsonString);
     } catch(e) {
       console.error('Error parseando JSON de Gemini:', e);
+      console.error('Output crudo:', textOutput);
       return NextResponse.json({ error: 'La IA no devolvió un formato válido' }, { status: 500 });
     }
 

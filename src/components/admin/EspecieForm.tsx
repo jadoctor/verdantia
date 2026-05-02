@@ -994,9 +994,28 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
     } catch (e) {
       console.error(e);
-      alert('Error de red al generar blog');
+      alert('Error al generar blog');
     } finally {
       setBlogGenLoading(false);
+    }
+  };
+
+  const handleDeleteBlog = async (blogId: number) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este blog generado de la base de datos?')) return;
+    try {
+      const res = await fetch(`/api/admin/blog/${blogId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail || '' }
+      });
+      if (res.ok) {
+        if (especieId) loadAttachments(especieId);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar blog');
+      }
+    } catch(e) {
+      console.error(e);
+      alert('Error de conexión al eliminar blog');
     }
   };
 
@@ -2186,7 +2205,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             {/* Botones superpuestos en la foto */}
                             <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
                               <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
-                              {(p.hasBlog || blogs.some(b => b.pdfSourceId === p.id)) ? (
+                              {(p.hasBlog || blogs.some(b => b.pdfSourceId == p.id)) ? (
                                 <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
                               ) : (
                                 <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
@@ -2205,14 +2224,40 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           </button>
 
                           {/* Blogs relacionados a este PDF */}
-                          {blogs.filter(b => b.pdfSourceId === p.id).length > 0 && (
+                          {blogs.filter(b => b.pdfSourceId == p.id).length > 0 && (
                             <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
                               <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>Blogs Generados</div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {blogs.filter(b => b.pdfSourceId === p.id).map(b => (
-                                  <a key={b.id} href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#0f766e', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={b.titulo}>
-                                    ✨ {b.titulo}
-                                  </a>
+                                {blogs.filter(b => b.pdfSourceId == p.id).map(b => (
+                                  <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                      {b.hero_imagen ? (
+                                        <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
+                                          <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </div>
+                                      ) : (
+                                        <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
+                                      )}
+                                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                        <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                                          {b.titulo}
+                                        </a>
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '46px' }}>
+                                      <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
+                                        {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
+                                      </span>
+                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
+                                          {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                        </span>
+                                        <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
+                                          🗑️
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
                                 ))}
                               </div>
                             </div>

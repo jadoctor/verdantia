@@ -459,12 +459,32 @@ export default function GuiaUsuarioPage() {
         </div>
 
         <div style={{ background: '#ecfdf5', borderLeft: '4px solid #10b981', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#065f46', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 15:00] — SOLUCIÓN DEFINITIVA (Lazy Loading de Firebase Storage)</h4>
+          <h4 style={{ color: '#065f46', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 15:00] — RESOLUCIÓN PARCIAL (Lazy Loading de Firebase Storage)</h4>
           <ul style={{ color: '#064e3b', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Nueva pista descubierta:</strong> Las fotos SÍ se cargan en el listado general del dashboard, pero NO en el formulario individual de la especie.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Final:</strong> El listado general (<code>GET /api/admin/especies</code>) no importa <code>firebase-admin</code>, por lo que funciona perfecto en producción. Sin embargo, el endpoint individual (<code>GET /api/admin/especies/[id]/photos</code>) importaba globalmente <code>uploadToStorage</code>, lo que arrastraba a <code>firebase-admin</code>. Debido a un bug de Turbopack/Next.js 15 en entornos Serverless, cualquier archivo que importe <code>firebase-admin</code> de forma global colapsa con un Error 500 al ejecutar un GET.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se ha eliminado la importación global de <code>uploadToStorage</code> en los endpoints de fotos y PDFs. Ahora, dicha función se importa dinámicamente (<code>await import('@/lib/firebase/storage')</code>) <strong>solo dentro de las funciones POST/PUT</strong> (cuando realmente se va a subir un archivo). De esta manera, las peticiones GET (que solo leen MySQL) nunca tocan Firebase Admin y no colapsan en producción.</li>
-            <li><strong>Resultado:</strong> ✅ ÉXITO. Las galerías de fotos y documentos cargan correctamente en Producción, y el sistema de subidas (POST) también funciona sin afectar a las peticiones de lectura.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Estado:</strong> Las peticiones GET de las especies ya no colapsan en Producción y las galerías se ven perfectamente.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Nuevo Fallo 1 (Dashboard Usuarios):</strong> Las fotos de los usuarios no cargaban, pero se debió a un error SQL. Se estaba consultando la tabla inexistente <code>usuarios_fotos</code> en lugar de <code>datosadjuntos</code>. (Corregido localmente).</li>
+            <li style={{ marginBottom: '4px' }}><strong>Nuevo Fallo 2 (Cargas POST):</strong> Subir fotos desde archivo/cámara/IA falla en Producción. Al ejecutar el POST, se vuelve a cargar <code>firebase-admin</code>, y Turbopack lo destruye o renombra (bug del hash de Next.js 15).</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 20:50] — PROPUESTA TÉCNICA (Bypass de Análisis Estático para Firebase Admin)</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Objetivo:</strong> Restaurar la subida de fotos (POST) que actualmente colapsa en producción al cargar <code>firebase-admin</code> dinámicamente.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución a aplicar:</strong> Aplicar un "Bypass de Análisis Estático" en <code>src/lib/firebase/admin.ts</code>. Sustituiremos el <code>import * as admin from 'firebase-admin'</code> por una llamada ofuscada: <code>const libName = 'firebase-admin'; const admin = require(libName);</code>.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Justificación:</strong> Turbopack analiza estáticamente los <code>require('string')</code> para empaquetarlos, pero no puede resolver variables dinámicas. Al usar una variable, Turbopack ignora la librería, no le aplica ningún hash corrupto y, en producción, Node.js la requerirá nativamente desde los <code>node_modules</code> instalados por Firebase Functions.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE APROBACIÓN POR EL USUARIO.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#f0f9ff', borderLeft: '4px solid #0ea5e9', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 21:15] — MEJORA UX Y CORRECCIÓN DE BUGS (Blog IA y Asimilación)</h4>
+          <ul style={{ color: '#0c4a6e', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Fix Asimilación Plagas:</strong> Corregido el mapeo de variables (<code>xrelacionesplagasideplaga</code>) que provocaba el rollback silencioso de la transacción en la API al guardar plagas sugeridas por IA.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Fix Gemini JSON:</strong> Se implementó un limpiador de formato Markdown (<code>```json</code>) antes del <code>JSON.parse()</code> para prevenir errores de validación desde la respuesta de Gemini.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Fix SQL Blogs (Error 500):</strong> Corregida la consulta a la base de datos que fallaba por buscar <code>u.nombre</code> en lugar de <code>u.usuariosnombre</code>, lo que impedía que los blogs cargasen en el frontend.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Fix Parseo Type-Coercion:</strong> Relajada la igualdad estricta a <code>==</code> para enlazar el ID del PDF y evitado un doble parseo del campo JSON <code>blogcontenido</code> (causado por <code>mysql2</code>).</li>
+            <li style={{ marginBottom: '4px' }}><strong>Mejora UI/UX:</strong> Transformado el enlace simple del blog (bajo el PDF) en una <strong>Mini-Tarjeta Enriquecida</strong> con miniatura (<code>getMediaUrl</code> para resolver el Error 404), badges de estado, título completo no truncado, efectos hover y un botón integrado para eliminar el blog directamente de la base de datos.</li>
           </ul>
         </div>
 

@@ -44,7 +44,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Fotos
     const [fotos] = await pool.query(
-      `SELECT id, ruta, esPrincipal FROM usuarios_fotos WHERE idusuarios = ? ORDER BY esPrincipal DESC`,
+      `SELECT iddatosadjuntos AS id, datosadjuntosruta AS ruta, datosadjuntosesprincipal AS esPrincipal, datosadjuntosresumen AS resumen 
+       FROM datosadjuntos 
+       WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 
+       ORDER BY datosadjuntosesprincipal DESC`,
       [id]
     );
 

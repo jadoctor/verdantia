@@ -10,7 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       SELECT 
         b.idblog, b.blogslug, b.blogtitulo, b.blogresumen, b.blogimagen, 
         b.blogestado, b.blogcontenido, b.blogfechacreacion, b.blogfechapublicacion,
-        u.nombre as autor_nombre
+        u.usuariosnombre as autor_nombre
       FROM blog b
       LEFT JOIN usuarios u ON b.xblogidusuarios = u.idusuarios
       WHERE b.xblogidespecies = ?
@@ -23,7 +23,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       let heroAlt = '';
       try {
         if (row.blogcontenido) {
-          const content = JSON.parse(row.blogcontenido);
+          const content = typeof row.blogcontenido === 'string' 
+            ? JSON.parse(row.blogcontenido) 
+            : row.blogcontenido;
           pdfSourceId = content.pdf_source_id || null;
           heroAlt = content.hero_imagen_alt || '';
         }
