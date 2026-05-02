@@ -404,11 +404,21 @@ export default function GuiaUsuarioPage() {
         </div>
 
         <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026 - 16:40] — NUEVO DIAGNÓSTICO (PENDIENTE DE VALIDAR)</h4>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026 - 16:40] — DIAGNÓSTICO ERRÓNEO</h4>
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> El servidor de producción devolvía un <strong>Error 500</strong> oculto al llamar a <code>/api/perfil/photos</code>. Al revisar los logs puros de Firebase, el error exacto era <code>Cannot find module 'mysql2/promise'</code>. Next.js estaba excluyendo la librería de la base de datos de la compilación de producción por ser un paquete nativo externo, por lo que la función explotaba y devolvía una lista vacía de fotos.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución aplicada en local:</strong> Se ha modificado el archivo <code>next.config.ts</code> añadiendo explícitamente <code>'mysql2'</code> al array de <code>serverExternalPackages</code>. Esto fuerza a la plataforma a incluir la librería física en el despliegue final.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDACIÓN EN NUBE. A la espera de permiso explícito para ejecutar el despliegue a Firebase.</li>
+            <li><strong>Resultado:</strong> 🔴 ÉXITO PARCIAL. Se resolvió la conectividad global de BBDD, pero las fotos de los dashboards de edición (Especies, Labores, Usuarios) siguen rotas.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 12:35] — DIAGNÓSTICO DE LA CAUSA RAÍZ</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Fallo anterior:</strong> La corrección del paquete <code>mysql2</code> resolvió el fallo de la base de datos, pero el listado de adjuntos seguía sin cargar porque la petición devolvía un error 500 en formato HTML en vez de JSON.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El servidor de producción (Firebase Functions) está colapsando al cargar el módulo del endpoint de adjuntos. La API importa la librería <code>sharp</code> para preprocesar imágenes para la IA de Gemini, pero <strong><code>sharp</code> no está listada en el <code>package.json</code></strong>. En desarrollo local funciona por magia negra de Next.js, pero en Serverless (producción), causa un <code>ModuleNotFoundError</code> masivo que tira abajo las rutas <code>/photos</code>, <code>/pdfs</code> y <code>/blogs</code>.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Instalar explícitamente la librería mediante <code>npm install sharp</code> y lanzar el ciclo completo de validación y despliegue a producción.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de autorización.</li>
           </ul>
         </div>
 
