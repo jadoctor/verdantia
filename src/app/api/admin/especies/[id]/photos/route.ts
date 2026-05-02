@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { uploadToStorage } from '@/lib/firebase/storage';
 import { getUserByEmail } from '@/lib/auth';
-// Lazy import of sharp to avoid loading native module on cold start when not needed.
-// It will be required only in the POST handler where image processing occurs.
-import exifr from 'exifr';
-import { Vibrant } from 'node-vibrant/node';
-import { encode } from 'blurhash';
+// Lazy load native modules inside POST to prevent GET from crashing
+// import { uploadToStorage } from '@/lib/firebase/storage';
+// import exifr from 'exifr';
+// import { Vibrant } from 'node-vibrant/node';
+// import { encode } from 'blurhash';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +61,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
     const bytes = await file.arrayBuffer();
+
+    // Lazy load libraries inside POST to avoid blocking the API
+    const sharp = (await import('sharp')).default;
+    const { uploadToStorage } = await import('@/lib/firebase/storage');
+    const exifr = (await import('exifr')).default;
+    const { Vibrant } = await import('node-vibrant/node');
+    const { encode } = await import('blurhash');
 
     const [countResult] = await pool.query(
       "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidespecies = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1",
@@ -154,8 +160,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       </text>
     </svg>`);
 
-    const sharp = (await import('sharp')).default;
-      const sharpInstance = sharp(Buffer.from(bytes));
+    const sharpInstance = sharp(Buffer.from(bytes));
 
     let dominantColor = null;
     try {

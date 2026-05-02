@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { uploadToStorage } from '@/lib/firebase/storage';
 import { getUserByEmail } from '@/lib/auth';
 
 async function authenticateSuperadmin(request: Request) {
@@ -72,6 +71,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const storagePath = `uploads/especies_pdfs/${filename}`;
 
     const bytes = await file.arrayBuffer();
+    const { uploadToStorage } = await import('@/lib/firebase/storage');
     const publicUrl = await uploadToStorage(
       Buffer.from(bytes),
       storagePath,
@@ -185,6 +185,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (base64Cover) {
       const buffer = Buffer.from(base64Cover.replace(/^data:image\/\w+;base64,/, ''), 'base64');
       const storagePath = `uploads/especies_pdfs_covers/cover_${idespecies}_${pdfId}_${Date.now()}.jpg`;
+      const { uploadToStorage } = await import('@/lib/firebase/storage');
       finalPortada = await uploadToStorage(buffer, storagePath, 'image/jpeg');
     }
 

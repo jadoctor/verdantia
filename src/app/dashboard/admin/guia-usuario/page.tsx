@@ -449,12 +449,22 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 14:15] — PROPUESTA DEFINITIVA (Bypass de Entorno Condicional en Turbopack)</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 14:15] — PROPUESTA DEFINITIVA (Bypass de Entorno Condicional en Turbopack)</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> Todos los intentos de engañar a Turbopack manipulando los archivos <code>.ts</code> rompen algo. Necesitamos <code>serverExternalPackages: ['firebase-admin']</code> OBLIGATORIAMENTE para que el entorno local no colapse. Pero si lo dejamos al subir a Producción, Turbopack genera el hash maldito <code>firebase-admin-a14c8...</code> que provoca el Error 500 en Firebase Functions.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Dejar el código fuente intacto (usar los imports normales) y aplicar un condicional dinámico en <code>next.config.ts</code> usando <code>process.env.NODE_ENV</code>. Así, en desarrollo local (<code>development</code>) el array incluirá los paquetes y no se colgará, pero al compilar para Firebase (<code>production</code>), el array estará vacío, evitando que Turbopack genere el hash y permitiendo a la Cloud Function encontrar la librería.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de implementar y desplegar.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. El endpoint de fotos de la especie sigue colapsando en local.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#ecfdf5', borderLeft: '4px solid #10b981', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#065f46', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 15:00] — SOLUCIÓN DEFINITIVA (Lazy Loading de Firebase Storage)</h4>
+          <ul style={{ color: '#064e3b', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Nueva pista descubierta:</strong> Las fotos SÍ se cargan en el listado general del dashboard, pero NO en el formulario individual de la especie.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Final:</strong> El listado general (<code>GET /api/admin/especies</code>) no importa <code>firebase-admin</code>, por lo que funciona perfecto en producción. Sin embargo, el endpoint individual (<code>GET /api/admin/especies/[id]/photos</code>) importaba globalmente <code>uploadToStorage</code>, lo que arrastraba a <code>firebase-admin</code>. Debido a un bug de Turbopack/Next.js 15 en entornos Serverless, cualquier archivo que importe <code>firebase-admin</code> de forma global colapsa con un Error 500 al ejecutar un GET.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se ha eliminado la importación global de <code>uploadToStorage</code> en los endpoints de fotos y PDFs. Ahora, dicha función se importa dinámicamente (<code>await import('@/lib/firebase/storage')</code>) <strong>solo dentro de las funciones POST/PUT</strong> (cuando realmente se va a subir un archivo). De esta manera, las peticiones GET (que solo leen MySQL) nunca tocan Firebase Admin y no colapsan en producción.</li>
+            <li><strong>Resultado:</strong> ✅ ÉXITO. Las galerías de fotos y documentos cargan correctamente en Producción, y el sistema de subidas (POST) también funciona sin afectar a las peticiones de lectura.</li>
           </ul>
         </div>
 
