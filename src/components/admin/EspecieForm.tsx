@@ -45,8 +45,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [formData, setFormData] = useState<any>(defaultFormData);
   const [initialData, setInitialData] = useState<any>(defaultFormData);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
-  const [relaciones, setRelaciones] = useState({ beneficiosas: [], perjudiciales: [], plagas: [] });
-  const [initialRelaciones, setInitialRelaciones] = useState({ beneficiosas: [], perjudiciales: [], plagas: [] });
+  const [relaciones, setRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
+  const [initialRelaciones, setInitialRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
   const [relacionesDirty, setRelacionesDirty] = useState(false);
 
   const isFormDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
@@ -59,6 +59,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [calcPersonas, setCalcPersonas] = useState<number>(1);
   const [aiProposal, setAiProposal] = useState<any>(null);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [isAssimilatingRels, setIsAssimilatingRels] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -355,7 +356,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'fisiologia',
       title: '🌱 Fisiología',
-      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiesdiashastafructificacion', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiesprofundidadsiembra'],
+      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiesdiashastafructificacion', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
       labels: {
         especiesdiasgerminacion: 'Días Germinación',
         especiesdiashastatrasplante: 'Días hasta Trasplante',
@@ -363,7 +364,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         especiesdiashastafructificacion: 'Días a Fruct.',
         especiestemperaturaminima: 'Temp. Mínima',
         especiestemperaturaoptima: 'Temp. Óptima',
-        especiesprofundidadsiembra: 'Profundidad'
+        especiestemperaturamaxima: 'Temp. Máxima',
+        especiesprofundidadsiembra: 'Profundidad Siembra',
+        especiesprofundidadtrasplante: 'Profundidad Trasplante',
+        especiesluzsolar: 'Luz Solar'
+      }
+    },
+    {
+      id: 'cultivo',
+      title: '🚜 Cultivo y Suelo',
+      keys: ['especiesphsuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 'especiestiposiembra', 'especiesvolumenmaceta', 'especiesdificultad'],
+      labels: {
+        especiesphsuelo: 'pH Suelo',
+        especiescaracteristicassuelo: 'Tipo de Suelo',
+        especiesnecesidadriego: 'Nec. Riego',
+        especiestiposiembra: 'Tipo Siembra',
+        especiesvolumenmaceta: 'Vol. Maceta (L)',
+        especiesdificultad: 'Dificultad'
       }
     },
     {
@@ -429,10 +446,120 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const assimilateAll = () => {
+  const assimilateRelacionesAI = async () => {
+    if (!aiProposal) return;
+    setIsAssimilatingRels(true);
+
+    try {
+      const benNames = aiProposal.asociaciones_beneficiosas || [];
+      const perNames = aiProposal.asociaciones_perjudiciales || [];
+      const plaNames = aiProposal.plagas_asociadas || [];
+
+      const newBen = [...relaciones.beneficiosas];
+      const newPer = [...relaciones.perjudiciales];
+      const newPla = [...relaciones.plagas];
+
+      let masterE = [...masterEspecies];
+      let masterP = [...masterPlagas];
+      let madeChanges = false;
+
+      const normalize = (str: string) => str.toLowerCase().trim();
+
+      for (const name of benNames) {
+        let sp = masterE.find(e => normalize(e.especiesnombre) === normalize(name));
+        if (!sp) {
+          const res = await fetch('/api/admin/especies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+            body: JSON.stringify({ especiesnombre: name })
+          });
+          const data = await res.json();
+          if (data.success && data.id) {
+            sp = { idespecies: data.id, especiesnombre: name };
+            masterE.push(sp);
+            setMasterEspecies([...masterE]);
+          }
+        }
+        if (sp && sp.idespecies.toString() !== especieId && !newBen.some(b => b.xasociacionesbeneficiosasidespeciedestino.toString() === sp.idespecies.toString())) {
+          newBen.push({
+            xasociacionesbeneficiosasidespeciedestino: sp.idespecies,
+            especie_destino_nombre: sp.especiesnombre,
+            asociacionesbeneficiosasmotivo: 'Sugerido por IA'
+          });
+          madeChanges = true;
+        }
+      }
+
+      for (const name of perNames) {
+        let sp = masterE.find(e => normalize(e.especiesnombre) === normalize(name));
+        if (!sp) {
+          const res = await fetch('/api/admin/especies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+            body: JSON.stringify({ especiesnombre: name })
+          });
+          const data = await res.json();
+          if (data.success && data.id) {
+            sp = { idespecies: data.id, especiesnombre: name };
+            masterE.push(sp);
+            setMasterEspecies([...masterE]);
+          }
+        }
+        if (sp && sp.idespecies.toString() !== especieId && !newPer.some(p => p.xasociacionesperjudicialesidespeciedestino.toString() === sp.idespecies.toString())) {
+          newPer.push({
+            xasociacionesperjudicialesidespeciedestino: sp.idespecies,
+            especie_destino_nombre: sp.especiesnombre,
+            asociacionesperjudicialesmotivo: 'Sugerido por IA'
+          });
+          madeChanges = true;
+        }
+      }
+
+      for (const name of plaNames) {
+        let p = masterP.find(pl => normalize(pl.plagasnombre) === normalize(name));
+        if (!p) {
+          const res = await fetch('/api/admin/plagas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+            body: JSON.stringify({ plagasnombre: name, plagastipo: 'plaga' })
+          });
+          const data = await res.json();
+          if (data.success && data.id) {
+            p = { idplagas: data.id, plagasnombre: name, plagastipo: 'plaga' };
+            masterP.push(p);
+            setMasterPlagas([...masterP]);
+          }
+        }
+        if (p && !newPla.some(pl => pl.xrelacionesplagasideplaga.toString() === p.idplagas.toString())) {
+          newPla.push({
+            xrelacionesplagasideplaga: p.idplagas,
+            plagasnombre: p.plagasnombre,
+            relacionesplagasriesgo: 'media',
+            relacionesplagasnotas: 'Sugerido por IA'
+          });
+          madeChanges = true;
+        }
+      }
+
+      if (madeChanges) {
+        setRelaciones({ beneficiosas: newBen, perjudiciales: newPer, plagas: newPla });
+        setRelacionesDirty(true);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error asimilando relaciones.');
+    } finally {
+      setIsAssimilatingRels(false);
+    }
+  };
+
+  const assimilateAll = async () => {
     if (!aiProposal) return;
     const allKeys = aiGroups.flatMap(g => g.keys);
     assimilateGroup(allKeys);
+    if (aiProposal.asociaciones_beneficiosas || aiProposal.asociaciones_perjudiciales || aiProposal.plagas_asociadas) {
+      await assimilateRelacionesAI();
+    }
     setShowAiModal(false);
   };
 
@@ -2205,6 +2332,69 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </div>
                 );
               })}
+
+              {(aiProposal.asociaciones_beneficiosas?.length > 0 || aiProposal.asociaciones_perjudiciales?.length > 0 || aiProposal.plagas_asociadas?.length > 0) && (
+                <div className="ai-group-section" style={{ marginTop: '20px' }}>
+                  <div className="ai-group-header" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                    <h3 style={{ color: '#166534' }}>🤝 Asociaciones y Plagas sugeridas</h3>
+                    <button type="button" className="btn-assimilate-group" onClick={assimilateRelacionesAI} disabled={isAssimilatingRels}>
+                      {isAssimilatingRels ? '⏳ Asimilando...' : '✨ Asimilar Asociaciones'}
+                    </button>
+                  </div>
+                  <div style={{ padding: '15px' }}>
+                    {aiProposal.asociaciones_beneficiosas?.length > 0 && (
+                      <div style={{ marginBottom: '15px' }}>
+                        <h4 style={{ color: '#10b981', marginBottom: '5px' }}>Beneficiosas</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                          {aiProposal.asociaciones_beneficiosas.map((name: string) => {
+                            const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            return (
+                              <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                <span>{exists ? '✅' : '➕'}</span>
+                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará nueva)</small>}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {aiProposal.asociaciones_perjudiciales?.length > 0 && (
+                      <div style={{ marginBottom: '15px' }}>
+                        <h4 style={{ color: '#ef4444', marginBottom: '5px' }}>Perjudiciales</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                          {aiProposal.asociaciones_perjudiciales.map((name: string) => {
+                            const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            return (
+                              <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                <span>{exists ? '✅' : '➕'}</span>
+                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará nueva)</small>}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+
+                    {aiProposal.plagas_asociadas?.length > 0 && (
+                      <div>
+                        <h4 style={{ color: '#f97316', marginBottom: '5px' }}>Plagas y Enfermedades</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                          {aiProposal.plagas_asociadas.map((name: string) => {
+                            const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            return (
+                              <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+                                <span>{exists ? '✅' : '➕'}</span>
+                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará nueva)</small>}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="ai-modal-footer">

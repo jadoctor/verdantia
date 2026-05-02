@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 2 de Mayo, 12:38 (Fix Sharp Imágenes Producción)
+            Verificación de Subida: 2 de Mayo, 13:12 (Sharp Lazy-Load Producción)
           </p>
         </div>
       </div>

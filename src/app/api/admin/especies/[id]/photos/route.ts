@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { uploadToStorage } from '@/lib/firebase/storage';
 import { getUserByEmail } from '@/lib/auth';
-import sharp from 'sharp';
+// Lazy import of sharp to avoid loading native module on cold start when not needed.
+// It will be required only in the POST handler where image processing occurs.
 import exifr from 'exifr';
 import { Vibrant } from 'node-vibrant/node';
 import { encode } from 'blurhash';
@@ -84,10 +85,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (apiKey) {
       try {
         // Convertir a JPEG para Gemini (máxima compatibilidad)
-        const jpegBuffer = await sharp(Buffer.from(bytes))
-          .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 70 })
-          .toBuffer();
+        const sharp = (await import('sharp')).default;
+          const jpegBuffer = await sharp(Buffer.from(bytes))
+            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 70 })
+            .toBuffer();
         const base64Data = jpegBuffer.toString('base64');
         
         const payload = {
@@ -152,7 +154,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       </text>
     </svg>`);
 
-    const sharpInstance = sharp(Buffer.from(bytes));
+    const sharp = (await import('sharp')).default;
+      const sharpInstance = sharp(Buffer.from(bytes));
 
     let dominantColor = null;
     try {

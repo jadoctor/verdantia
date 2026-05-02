@@ -42,9 +42,11 @@ Las claves esperadas en el JSON son:
 - especiesdiashastafructificacion (entero aproximado, ej: 75)
 - especiestemperaturaminima (numero decimal, ej: 10.5)
 - especiestemperaturaoptima (numero decimal, ej: 25.0)
+- especiestemperaturamaxima (numero decimal, ej: 35.0)
 - especiesmarcoplantas (entero en cm, ej: 40)
 - especiesmarcofilas (entero en cm, ej: 80)
 - especiesprofundidadsiembra (numero decimal en cm, ej: 1.0)
+- especiesprofundidadtrasplante (numero decimal en cm, ej: 5.0)
 - especieshistoria (string, una breve historia de 2 párrafos sobre su origen)
 - especiesdescripcion (string, consejos breves de cultivo)
 - especiescolor (string, color fenotípico base, ej: Rojo)
@@ -62,6 +64,16 @@ Las claves esperadas en el JSON son:
 - especiesautosuficienciaconserva (entero, plantas estimadas por persona al año con conserva)
 - especiesbiodinamicacategoria (string, elige UNO entre: fruto, raiz, hoja, flor — según la parte comestible/ornamental principal)
 - especiesbiodinamicanotas (string, 2-3 frases concisas sobre cómo aprovechar el calendario lunar biodinámico: siembra, trasplante, poda y recolección)
+- especiesphsuelo (string, ej: 6.0 - 6.8)
+- especiesnecesidadriego (string, elige entre: baja, media, alta)
+- especiestiposiembra (string, elige entre: directa, semillero, ambas)
+- especiesvolumenmaceta (numero entero en litros, ej: 10)
+- especiesluzsolar (string, elige entre: pleno_sol, semisombra, sombra)
+- especiescaracteristicassuelo (string, ej: franco-arcilloso, bien drenado)
+- especiesdificultad (string, elige entre: baja, media, alta)
+- asociaciones_beneficiosas (array de strings, solo nombres comunes, ej: ["Albahaca", "Cebolla"])
+- asociaciones_perjudiciales (array de strings, solo nombres comunes, ej: ["Patata", "Hinojo"])
+- plagas_asociadas (array de strings, solo nombres comunes de plagas/enfermedades, ej: ["Pulgón", "Mosca blanca", "Oídio"])
 
 Recuerda: SOLO JSON válido, nada de formato adicional.
     `;

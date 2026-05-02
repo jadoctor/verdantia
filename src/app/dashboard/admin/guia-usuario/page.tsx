@@ -355,6 +355,15 @@ export default function GuiaUsuarioPage() {
           Esta sección actúa como un <strong>disco duro externo para el Asistente de IA</strong>, evitando el "olvido" de fallos críticos debido a las limitaciones de memoria de contexto. Antes de resolver nuevos problemas, la IA debe consultar y vaciar esta lista.
         </p>
 
+        <div style={{ background: '#eff6ff', borderLeft: '4px solid #3b82f6', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px', marginBottom: '24px' }}>
+          <h4 style={{ color: '#1d4ed8', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>ℹ️ Mecánica del Registro (Obligatorio para la IA)</h4>
+          <ul style={{ color: '#1e3a8a', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Registro Cronológico:</strong> Cada nuevo intento, hipótesis o análisis de un bug debe añadirse al hilo del fallo con su sello de tiempo estricto (Timestamp).</li>
+            <li style={{ marginBottom: '4px' }}><strong>Estados Claros:</strong> Toda propuesta nace como 🟡 PENDIENTE/EN CURSO. Si la ejecución falla, se marca explícitamente el bloque como 🔴 FRACASO para no repetir la misma ruta en el futuro. Si tiene éxito, se marca como 🟢 RESUELTO.</li>
+            <li><strong>Transición:</strong> Una vez que un fallo en la sección "8.1. Fallos Activos" se consolida como 🟢 RESUELTO, el bloque entero debe ser movido a la sección "8.2. Fallos Resueltos" como parte del historial.</li>
+          </ul>
+        </div>
+
         <h3 style={{ color: '#0f172a', marginTop: '30px', fontSize: '1.4rem' }}>
           8.1. Fallos Activos / Pendientes de Resolución
         </h3>
@@ -403,22 +412,38 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[01/05/2026 - 16:40] — DIAGNÓSTICO ERRÓNEO</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> El servidor de producción devolvía un <strong>Error 500</strong> oculto al llamar a <code>/api/perfil/photos</code>. Al revisar los logs puros de Firebase, el error exacto era <code>Cannot find module 'mysql2/promise'</code>. Next.js estaba excluyendo la librería de la base de datos de la compilación de producción por ser un paquete nativo externo, por lo que la función explotaba y devolvía una lista vacía de fotos.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada en local:</strong> Se ha modificado el archivo <code>next.config.ts</code> añadiendo explícitamente <code>'mysql2'</code> al array de <code>serverExternalPackages</code>. Esto fuerza a la plataforma a incluir la librería física en el despliegue final.</li>
-            <li><strong>Resultado:</strong> 🔴 ÉXITO PARCIAL. Se resolvió la conectividad global de BBDD, pero las fotos de los dashboards de edición (Especies, Labores, Usuarios) siguen rotas.</li>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 12:35] — DIAGNÓSTICO DE LA CAUSA RAÍZ</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Fallo anterior:</strong> La corrección del paquete mysql2 resolvió el fallo de la base de datos, pero el listado de adjuntos seguía sin cargar porque la petición devolvía un error 500 en formato HTML en vez de JSON.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El servidor de producción (Firebase Functions) está colapsando al cargar el módulo del endpoint de adjuntos. La API importa la librería <code>sharp</code> para preprocesar imágenes para la IA de Gemini, pero <strong><code>sharp</code> no está listada en el <code>package.json</code></strong>. En desarrollo local funciona por magia negra de Next.js, pero en Serverless (producción), causa un <code>ModuleNotFoundError</code> masivo que tira abajo las rutas <code>/photos</code>, <code>/pdfs</code> y <code>/blogs</code>.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Instalar explícitamente la librería mediante <code>npm install sharp</code> y lanzar el ciclo completo de validación y despliegue a producción.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. (La librería se instaló pero Firebase continuó fallando al encontrar problemas con los binarios de sharp en el entorno Serverless).</li>
           </ul>
         </div>
 
         <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 12:35] — DIAGNÓSTICO DE LA CAUSA RAÍZ</h4>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:10] — NUEVA PROPUESTA EN CURSO (Sharp Lazy-Load)</h4>
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Fallo anterior:</strong> La corrección del paquete <code>mysql2</code> resolvió el fallo de la base de datos, pero el listado de adjuntos seguía sin cargar porque la petición devolvía un error 500 en formato HTML en vez de JSON.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El servidor de producción (Firebase Functions) está colapsando al cargar el módulo del endpoint de adjuntos. La API importa la librería <code>sharp</code> para preprocesar imágenes para la IA de Gemini, pero <strong><code>sharp</code> no está listada en el <code>package.json</code></strong>. En desarrollo local funciona por magia negra de Next.js, pero en Serverless (producción), causa un <code>ModuleNotFoundError</code> masivo que tira abajo las rutas <code>/photos</code>, <code>/pdfs</code> y <code>/blogs</code>.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Instalar explícitamente la librería mediante <code>npm install sharp</code> y lanzar el ciclo completo de validación y despliegue a producción.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Firebase Functions requiere una estrategia de empaquetado muy estricta para binarios nativos como los de <code>sharp</code>. La mera importación global (<code>import sharp from 'sharp'</code>) fuerza su carga durante la inicialización de la Cloud Function, rompiendo la API completa si el entorno (SO) no es compatible o los binarios no se incluyeron.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Modificar el backend para cargar <code>sharp</code> de forma perezosa/dinámica (<code>await import('sharp')</code>), aislando así el problema y protegiendo el resto de endpoints. 2) Instalar <code>sharp@0.33.5</code>, conocida por ser compatible con <code>firebase-frameworks</code>. 3) Adaptar la configuración de compilación y validar el despliegue a producción para restaurar el renderizado de imágenes.</li>
             <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de autorización.</li>
+          </ul>
+        </div>
+
+        <h4 style={{ color: '#dc2626', marginTop: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔴 8.1.2. Desincronización del Asistente IA de Especies con el Dashboard
+        </h4>
+        <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '16px' }}>
+          <strong>Fallo:</strong> El asistente de IA para autocompletar la ficha de especies devuelve datos que no son compatibles con las nuevas opciones (select-options) del formulario en el frontend, como el tipo de siembra, requerimientos de luz y dificultad.
+        </p>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:08] — PROPUESTA EN CURSO</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El prompt actual de la IA no está restringido a devolver valores exactos que coincidan con los nuevos enumerados del formulario. Además, la lógica de asimilación en el frontend (<code>EspecieForm.tsx</code>) necesita expandirse para mapear y aplicar correctamente estos nuevos atributos.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Actualizar el prompt en el backend para forzar compatibilidad con los selectores de la interfaz. 2) Ampliar la lógica de comparación y asimilación en el frontend para incluir los nuevos campos. 3) Mantener los cambios en entorno local hasta confirmar estabilidad.</li>
+            <li><strong>Resultado:</strong> 🟡 EN DESARROLLO. Trabajando en la implementación local.</li>
           </ul>
         </div>
 
