@@ -431,12 +431,21 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:30] — SOLUCIÓN DEFINITIVA A LA OFUSCACIÓN DE TURBOPACK</h4>
-          <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:30] — DIAGNÓSTICO DE LA VERDADERA CAUSA RAÍZ</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> Al consultar los logs en vivo de Google Cloud, el error causante del 500 es: <code>Cannot find module 'firebase-admin-a14c8a5423a75469'</code>. ¡Es el mismo bug destructivo de Turbopack que tuvimos con la base de datos (<code>mysql2</code>)! Al tener <code>firebase-admin</code> o <code>sharp</code> en <code>serverExternalPackages</code> dentro del <code>next.config.ts</code>, Turbopack ofusca los nombres de los módulos requeridos (añadiéndoles un hash), lo que provoca que la Cloud Function de Firebase no encuentre las carpetas y el servidor entero colapse al arrancar.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> 1) Eliminar <code>serverExternalPackages</code> del <code>next.config.ts</code>. 2) Aplicar un Bypass Dinámico Absoluto usando <code>eval("require('firebase-admin')")</code> en los archivos <code>admin.ts</code> y <code>storage.ts</code>. Usar <code>eval()</code> es obligatorio aquí, ya que una simple concatenación de strings bloqueaba el servidor de desarrollo local de Next.js en un bucle infinito intentando analizar el paquete binario.</li>
-            <li><strong>Resultado:</strong> 🟢 ÉXITO. El entorno local de desarrollo carga perfectamente sin colapsos, y la ofuscación en producción queda desactivada, permitiendo acceder a Firebase Admin de nuevo.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> 1) Eliminar <code>serverExternalPackages</code> del <code>next.config.ts</code>. 2) Aplicar un Bypass Dinámico usando <code>require('firebase-' + 'admin')</code> en los archivos <code>admin.ts</code> y <code>storage.ts</code>.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. El bypass con concatenación de strings provocó que el servidor de desarrollo local (Turbopack) entrara en un bucle infinito y se colgara, impidiendo el trabajo local.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:55] — NUEVA PROPUESTA (Bypass Absoluto con Eval y Limpieza de Caché)</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El servidor local se cuelga porque Turbopack intenta resolver de forma estática la concatenación. Para evitar que Turbopack rompa el módulo en producción pero mantener la compatibilidad local, necesitamos una función que el compilador ignore completamente pero Node ejecute en runtime. Además, las subidas anteriores conservaban el error porque la carpeta <code>.next</code> de caché no se eliminaba antes del build.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Usar <code>eval("require('firebase-admin')")</code> para ocultar totalmente la dependencia a Turbopack. 2) Eliminar la carpeta <code>.next</code> manualmente para forzar una compilación limpia. 3) Lanzar a producción de nuevo.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. El código ha compilado en local y se va a lanzar el despliegue a Firebase.</li>
           </ul>
         </div>
 
