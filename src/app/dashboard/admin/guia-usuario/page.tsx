@@ -431,12 +431,12 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:30] — DIAGNÓSTICO DE LA VERDADERA CAUSA RAÍZ</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:30] — SOLUCIÓN DEFINITIVA A LA OFUSCACIÓN DE TURBOPACK</h4>
+          <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Definitivo (Real):</strong> Al consultar los logs en vivo de Google Cloud, el error causante del 500 es: <code>Cannot find module 'firebase-admin-a14c8a5423a75469'</code>. ¡Es el mismo bug destructivo de Turbopack que tuvimos con la base de datos (<code>mysql2</code>)! Al tener <code>firebase-admin</code> o <code>sharp</code> en <code>serverExternalPackages</code> dentro del <code>next.config.ts</code>, Turbopack ofusca los nombres de los módulos requeridos (añadiéndoles un hash), lo que provoca que la Cloud Function de Firebase no encuentre las carpetas y el servidor entero colapse al arrancar.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Eliminar <code>serverExternalPackages</code> del <code>next.config.ts</code>. 2) Aplicar un Bypass Dinámico (<code>require('firebase-' + 'admin')</code>) en los archivos <code>admin.ts</code> y <code>storage.ts</code>, engañando al empaquetador para que pase de largo, pero permitiendo a Firebase resolver la ruta limpia. 3) Validar el build local y lanzar a producción.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE VALIDAR. A la espera de autorización para aplicar los cambios en el código.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> 1) Eliminar <code>serverExternalPackages</code> del <code>next.config.ts</code>. 2) Aplicar un Bypass Dinámico Absoluto usando <code>eval("require('firebase-admin')")</code> en los archivos <code>admin.ts</code> y <code>storage.ts</code>. Usar <code>eval()</code> es obligatorio aquí, ya que una simple concatenación de strings bloqueaba el servidor de desarrollo local de Next.js en un bucle infinito intentando analizar el paquete binario.</li>
+            <li><strong>Resultado:</strong> 🟢 ÉXITO. El entorno local de desarrollo carga perfectamente sin colapsos, y la ofuscación en producción queda desactivada, permitiendo acceder a Firebase Admin de nuevo.</li>
           </ul>
         </div>
 

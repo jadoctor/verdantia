@@ -1,5 +1,4 @@
-// Bypass dinámico para Turbopack
-const admin = require('firebase-' + 'admin');
+const admin = eval("require('firebase-admin')");
 
 // Asegurar que admin está inicializado (se importa desde admin.ts)
 import './admin';
