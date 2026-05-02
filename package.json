@@ -30,7 +30,7 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "resend": "^6.12.2",
-    "sharp": "^0.34.5"
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/node": "^20",
