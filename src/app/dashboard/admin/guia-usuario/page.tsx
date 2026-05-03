@@ -477,12 +477,12 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[03/05/2026 - 07:50] — NUEVA PROPUESTA (Importación Dinámica Unificada en todas las rutas API)</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[03/05/2026 - 07:50] — SOLUCIÓN DEFINITIVA (Importación Dinámica Unificada en todas las rutas API)</h4>
+          <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Diagnóstico:</strong> La API de especies (<code>/api/admin/especies/[id]/photos</code>) funciona en producción porque carga <code>firebase-admin</code> mediante <code>await import()</code> dentro del handler POST (lazy loading). En cambio, la API de perfil (<code>/api/perfil/photos</code>) falla porque importa <code>uploadToStorage</code> de forma estática al inicio del archivo, lo que fuerza a Turbopack a empaquetar <code>firebase-admin</code> al compilar y genera el hash corrupto.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Cambiar TODAS las rutas API que usan <code>firebase-admin</code> (directa o indirectamente via <code>storage.ts</code>) a importaciones dinámicas (<code>await import()</code>) dentro del handler, igual que ya funciona en la API de especies. Archivos afectados: <code>src/app/api/perfil/photos/route.ts</code>, y cualquier otra ruta que importe <code>@/lib/firebase/storage</code> o <code>@/lib/firebase/admin</code> estáticamente.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE IMPLEMENTAR Y VALIDAR.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Cambiar TODAS las rutas API (10 archivos) que usan <code>firebase-admin</code> (directa o indirectamente via <code>storage.ts</code>) a importaciones dinámicas (<code>await import()</code>) dentro del handler. Archivos corregidos: <code>perfil/photos</code>, <code>media</code>, <code>admin/upload</code>, <code>ai/generate-blog</code>, <code>admin/labores/photos</code>, <code>auth/on-verified</code>, <code>auth/send-verification</code>, <code>auth/send-password-reset</code>, <code>auth/update-email</code>, <code>auth/webauthn/verify</code>.</li>
+            <li><strong>Resultado:</strong> 🟢 ÉXITO. El paquete de producción bajó de 167 MB a 38 MB (confirmación de que firebase-admin ya no se empaqueta estáticamente). Las fotos del dashboard de usuario y de especies cargan correctamente en producción. Desplegado el 3 de Mayo a las 08:06.</li>
           </ul>
         </div>
 
