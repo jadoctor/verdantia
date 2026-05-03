@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import nodePath from 'path';
-import { bucket } from '@/lib/firebase/storage';
+// Lazy load: NO importar firebase/storage estáticamente (causa hash corrupto en Turbopack)
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ function normalizeRequestedPath(value: string | null) {
   try {
     if (/^https?:\/\//i.test(path)) {
       const url = new URL(path);
-      const storagePrefix = `/${bucket.name}/`;
+      const storagePrefix = `/${process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app'}/`;
       if (url.hostname === 'storage.googleapis.com' && url.pathname.startsWith(storagePrefix)) {
         path = decodeURIComponent(url.pathname.slice(storagePrefix.length));
       } else if (url.hostname === 'firebasestorage.googleapis.com') {
@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Lazy import para evitar hash corrupto de Turbopack en producción
+    const { bucket } = await import('@/lib/firebase/storage');
     const file = bucket.file(mediaPath);
     const [exists] = await file.exists();
 

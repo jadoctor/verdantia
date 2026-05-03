@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
+// Lazy load: NO importar firebase/admin estáticamente (causa hash corrupto en Turbopack)
 import { Resend } from 'resend';
 import { VerificationEmail } from '@/emails/VerificationEmail';
 
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const host = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     
     // 1. Generar el enlace mágico de verificación con Firebase Admin, indicando que vuelva al perfil
+    const { adminAuth } = await import('@/lib/firebase/admin');
     let firebaseVerificationLink: string;
     try {
       const actionCodeSettings = {

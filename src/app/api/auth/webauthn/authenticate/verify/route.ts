@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 import pool from '@/lib/db';
-import { adminAuth } from '@/lib/firebase/admin';
+// Lazy load: NO importar firebase/admin estáticamente (causa hash corrupto en Turbopack)
 import { getWebAuthnSettings } from '@/lib/webauthn';
 
 
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       await pool.execute(`DELETE FROM webauthn_challenges WHERE email = ?`, [email]);
 
       // 💥 MAGIA DE FIREBASE: Obtener el UID del usuario en Firebase mediante su email
+      const { adminAuth } = await import('@/lib/firebase/admin');
       let userRecord;
       try {
         userRecord = await adminAuth.getUserByEmail(email);

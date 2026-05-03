@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 2 de Mayo, 21:15 (UX Tarjetas Blog IA y Corrección SQL)
+            Verificación de Subida: 3 de Mayo, 07:55 (Lazy Import Unificado Firebase)
           </p>
         </div>
       </div>

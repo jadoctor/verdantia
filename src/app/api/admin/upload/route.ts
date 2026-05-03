@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { uploadToStorage } from '@/lib/firebase/storage';
+// Lazy load: NO importar firebase/storage ni sharp estáticamente (causa hash corrupto en Turbopack)
 import { getUserByEmail } from '@/lib/auth';
-import sharp from 'sharp';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +28,10 @@ export async function POST(request: Request) {
     }
 
     const bytes = await file.arrayBuffer();
+
+    // Lazy import para evitar hash corrupto de Turbopack en producción
+    const sharp = (await import('sharp')).default;
+    const { uploadToStorage } = await import('@/lib/firebase/storage');
     
     // Configurar marca de agua
     const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">

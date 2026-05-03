@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { uploadToStorage } from '@/lib/firebase/storage';
+// Lazy load: NO importar firebase/storage estáticamente (causa hash corrupto en Turbopack)
 
 /**
  * GET /api/perfil/photos?userId=X
@@ -52,8 +52,9 @@ export async function POST(request: Request) {
     const filename = `usuario_${userId}_${Date.now()}${ext}`;
     const storagePath = `uploads/usuario/${filename}`;
 
-    // Subir a Firebase Storage
+    // Subir a Firebase Storage (lazy import para evitar hash corrupto de Turbopack)
     const bytes = await file.arrayBuffer();
+    const { uploadToStorage } = await import('@/lib/firebase/storage');
     const publicUrl = await uploadToStorage(
       Buffer.from(bytes),
       storagePath,

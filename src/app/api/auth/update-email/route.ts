@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
+// Lazy load: NO importar firebase/admin estáticamente (causa hash corrupto en Turbopack)
 import pool from '@/lib/db';
 
 /**
@@ -26,6 +26,7 @@ export async function PUT(request: Request) {
     }
 
     // 1. Verificar que el email actual NO está verificado en Firebase
+    const { adminAuth } = await import('@/lib/firebase/admin');
     let firebaseUser;
     try {
       firebaseUser = await adminAuth.getUserByEmail(currentEmail);

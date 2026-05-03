@@ -1,8 +1,7 @@
 // Bypass de Análisis Estático para Turbopack/Next.js 15
 // Usamos una variable para evitar que Next.js detecte y empaquete firebase-admin,
 // lo que rompía la aplicación en producción con el error del hash (a14c8...).
-const libName = 'firebase-admin';
-const admin = require(libName);
+const admin = require('firebase-' + 'admin');
 
 // Protect against multiple initializations
 if (!admin.apps.length) {

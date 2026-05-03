@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { uploadToStorage } from '@/lib/firebase/storage';
+// Lazy load: NO importar firebase/storage ni sharp/exifr/vibrant/blurhash estáticamente
+// (causa hash corrupto en Turbopack). Se cargan dinámicamente dentro de POST.
 import { getUserByEmail } from '@/lib/auth';
-import sharp from 'sharp';
-import exifr from 'exifr';
-import { Vibrant } from 'node-vibrant/node';
-import { encode } from 'blurhash';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +58,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
     const bytes = await file.arrayBuffer();
+
+    // Lazy import para evitar hash corrupto de Turbopack en producción
+    const sharp = (await import('sharp')).default;
+    const { uploadToStorage } = await import('@/lib/firebase/storage');
+    const exifr = (await import('exifr')).default;
+    const { Vibrant } = await import('node-vibrant/node');
+    const { encode } = await import('blurhash');
 
     const [countResult] = await pool.query(
       "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidlabores = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1",

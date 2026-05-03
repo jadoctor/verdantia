@@ -467,13 +467,22 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
-        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 20:50] — PROPUESTA TÉCNICA (Bypass de Análisis Estático para Firebase Admin)</h4>
-          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 20:50] — PROPUESTA TÉCNICA (Bypass de Análisis Estático para Firebase Admin)</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Objetivo:</strong> Restaurar la subida de fotos (POST) que actualmente colapsa en producción al cargar <code>firebase-admin</code> dinámicamente.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución a aplicar:</strong> Aplicar un "Bypass de Análisis Estático" en <code>src/lib/firebase/admin.ts</code>. Sustituiremos el <code>import * as admin from 'firebase-admin'</code> por una llamada ofuscada: <code>const libName = 'firebase-admin'; const admin = require(libName);</code>.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Justificación:</strong> Turbopack analiza estáticamente los <code>require('string')</code> para empaquetarlos, pero no puede resolver variables dinámicas. Al usar una variable, Turbopack ignora la librería, no le aplica ningún hash corrupto y, en producción, Node.js la requerirá nativamente desde los <code>node_modules</code> instalados por Firebase Functions.</li>
-            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE APROBACIÓN POR EL USUARIO.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Bypass de Análisis Estático en <code>src/lib/firebase/admin.ts</code> usando <code>const libName = 'firebase-admin'; const admin = require(libName);</code> + condicional <code>NODE_ENV</code> en <code>next.config.ts</code> para <code>serverExternalPackages</code>.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Justificación:</strong> Turbopack analiza estáticamente los <code>require('string')</code> para empaquetarlos, pero no puede resolver variables dinámicas.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO PARCIAL. El dashboard de Especies Globales sí carga las fotos correctamente en producción (GET funciona), pero el dashboard de Perfil de Usuario NO carga sus fotos. Los logs de Google Cloud siguen mostrando <code>Cannot find module 'firebase-admin-a14c8...'</code> en las rutas que importan <code>firebase-admin</code> de forma estática. La diferencia clave: la API de especies usa <code>await import()</code> (lazy/dinámico) y la de perfil usa <code>import</code> estático al inicio del archivo.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[03/05/2026 - 07:50] — NUEVA PROPUESTA (Importación Dinámica Unificada en todas las rutas API)</h4>
+          <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico:</strong> La API de especies (<code>/api/admin/especies/[id]/photos</code>) funciona en producción porque carga <code>firebase-admin</code> mediante <code>await import()</code> dentro del handler POST (lazy loading). En cambio, la API de perfil (<code>/api/perfil/photos</code>) falla porque importa <code>uploadToStorage</code> de forma estática al inicio del archivo, lo que fuerza a Turbopack a empaquetar <code>firebase-admin</code> al compilar y genera el hash corrupto.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> Cambiar TODAS las rutas API que usan <code>firebase-admin</code> (directa o indirectamente via <code>storage.ts</code>) a importaciones dinámicas (<code>await import()</code>) dentro del handler, igual que ya funciona en la API de especies. Archivos afectados: <code>src/app/api/perfil/photos/route.ts</code>, y cualquier otra ruta que importe <code>@/lib/firebase/storage</code> o <code>@/lib/firebase/admin</code> estáticamente.</li>
+            <li><strong>Resultado:</strong> 🟡 PENDIENTE DE IMPLEMENTAR Y VALIDAR.</li>
           </ul>
         </div>
 

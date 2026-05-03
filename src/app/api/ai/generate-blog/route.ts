@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { uploadToStorage, bucket } from '@/lib/firebase/storage';
-import sharp from 'sharp';
+// Lazy load: NO importar firebase/storage ni sharp estáticamente (causa hash corrupto en Turbopack)
 
 export async function POST(request: Request) {
   try {
@@ -222,6 +221,11 @@ ${fichaRapidaEjemplo}
     const generatedImagePaths: (string | null)[] = [];
 
     // Marca de agua SVG Verdantia (estándar del proyecto)
+    // Lazy import para evitar hash corrupto de Turbopack en producción
+    const sharp = (await import('sharp')).default;
+    const { uploadToStorage } = await import('@/lib/firebase/storage');
+    const storageBucketName = process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app';
+
     const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
       <text x="290" y="50" text-anchor="end"
         font-family="Arial, sans-serif" font-size="28" font-weight="bold"
@@ -330,7 +334,7 @@ ${fichaRapidaEjemplo}
         if (parsedData.secciones && Array.isArray(parsedData.secciones)) {
           parsedData.secciones.forEach((sec: any, idx: number) => {
             if (generatedImagePaths[idx + 1]) {
-              sec.imagen_ruta = `https://storage.googleapis.com/${bucket.name}/${generatedImagePaths[idx + 1]!}`;
+              sec.imagen_ruta = `https://storage.googleapis.com/${storageBucketName}/${generatedImagePaths[idx + 1]!}`;
               if (imagenesData[idx + 1]) {
                 sec.imagen_alt = imagenesData[idx + 1].descripcion_seo || sec.titulo_h2;
                 sec.imagen_title = imagenesData[idx + 1].titulo_seo || sec.titulo_h2;
@@ -355,7 +359,7 @@ ${fichaRapidaEjemplo}
       secciones: parsedData.secciones || [],
       consejos: parsedData.consejos || null,
       cta: parsedData.cta || null,
-      hero_imagen: heroImagePath ? `https://storage.googleapis.com/${bucket.name}/${heroImagePath}` : null,
+      hero_imagen: heroImagePath ? `https://storage.googleapis.com/${storageBucketName}/${heroImagePath}` : null,
       hero_imagen_alt: imagenesData[0]?.descripcion_seo || parsedData.titulo,
       hero_imagen_title: imagenesData[0]?.titulo_seo || parsedData.titulo,
       contexto: { tipo: tipoEntidad, nombre: nombreEntidad },
