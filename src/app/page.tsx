@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 4 de Mayo, 10:41 (Fix Turbopack estático erradicado)
+            Verificación de Subida: 4 de Mayo, 12:46 (Fix Evasión Total con Eval)
           </p>
         </div>
       </div>

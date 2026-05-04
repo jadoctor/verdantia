@@ -486,12 +486,20 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
 
+        <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#991b1b', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[04/05/2026 - 10:40] — RESOLUCIÓN FALLIDA (Erradicación del Import Estático Transitivo)</h4>
+          <ul style={{ color: '#7f1d1d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis:</strong> Creíamos que eliminar el import estático en <code>storage.ts</code> iba a evitar que Turbopack viera <code>firebase-admin</code>. Modificamos <code>storage.ts</code> para cargar dinámicamente el bucket y revertimos <code>next.config.ts</code>.</li>
+            <li><strong>Resultado:</strong> 🔴 FRACASO. Las subidas de fotos en producción (POST) seguían devolviendo el Error 500: <code>Cannot find module 'firebase-admin-a14c8a5423a75469'</code>. Al analizar el código compilado (<code>.next/server/chunks</code>), descubrimos que Turbopack en Next.js 15 es lo suficientemente avanzado como para evaluar estáticamente concatenaciones de strings, por lo que <code>require('firebase-' + 'admin')</code> en <code>admin.ts</code> seguía siendo interceptado y hasheado.</li>
+          </ul>
+        </div>
+
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>🟢 [04/05/2026 - 10:40] — SOLUCIÓN DEFINITIVA (Erradicación del Import Estático Transitivo)</h4>
+          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>🟢 [04/05/2026 - 12:45] — PROPUESTA DEFINITIVA (Evasión Total con Eval)</h4>
           <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El archivo <code>src/lib/firebase/storage.ts</code> todavía conservaba la importación estática <code>import {'{'} bucket {'}'} from './admin'</code> en su cabecera. Aunque las rutas API hacían <code>await import('storage')</code>, la mera presencia de este import estático transitivo provocaba que Turbopack generase el hash maldito para <code>firebase-admin</code> al compilar las utilidades. Además, <code>next.config.ts</code> forzaba el external de firebase-admin en producción, provocando la discrepancia.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> 1) Se revirtió <code>next.config.ts</code> para que externalice <code>firebase-admin</code> SÓLO en development. 2) Se eliminó el import estático en <code>storage.ts</code>, moviendo <code>const {'{'} bucket {'}'} = await import('./admin')</code> dentro de las funciones <code>uploadToStorage</code> y <code>deleteFromStorage</code>.</li>
-            <li><strong>Resultado:</strong> 🟢 RESUELTO. Ninguna ruta de Next.js carga firebase-admin de forma estática transitiva, esquivando el bug del empaquetador definitivamente.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico Real:</strong> El problema persistente es que Next.js 15 (Turbopack) analiza agresivamente cualquier variante de <code>require</code> y <code>import</code>, incluso si concatenamos strings. Al encontrar <code>firebase-admin</code>, lo marca como paquete externo problemático y lo reemplaza por un hash aleatorio en la compilación, pero en el servidor de producción (Firebase) no existe una carpeta con ese nombre hasheado, sino el paquete normal.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> En <code>src/lib/firebase/admin.ts</code>, cambiamos la inicialización a <code>const admin = eval(`require('firebase-admin')`);</code>. Turbopack no puede, por definición, analizar estáticamente lo que ocurre dentro de un <code>eval</code>.</li>
+            <li><strong>Estado:</strong> Compilación local exitosa. 🟡 Esperando autorización para realizar el commit y el despliegue a Firebase Functions para confirmar su resolución en producción.</li>
           </ul>
         </div>
 
