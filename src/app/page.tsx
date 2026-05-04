@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 3 de Mayo, 07:55 (Lazy Import Unificado Firebase)
+            Verificación de Subida: 4 de Mayo, 09:56 (MySQL migrado a Hostinger)
           </p>
         </div>
       </div>

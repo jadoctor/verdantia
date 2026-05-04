@@ -4,19 +4,16 @@ import type { Pool } from 'mysql2/promise';
 const mysql = require('my' + 'sql2');
 
 const pool: Pool = mysql.createPool({
-  host: '34.175.111.133',
-  user: 'root',
-  password: 'Verdantiaja0334&',
-  database: 'semillas_db',
+  host: 'srv2070.hstgr.io',
+  user: 'u117557593_Verdantia',
+  password: 'Hostingerja0334&',
+  database: 'u117557593_Verdantia',
   waitForConnections: true,
   connectionLimit: 5,
   queueLimit: 0,
   connectTimeout: 5000,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-  ssl: {
-    rejectUnauthorized: false
-  }
 }).promise();
 
 export default pool;
