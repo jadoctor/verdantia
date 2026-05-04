@@ -478,11 +478,20 @@ export default function GuiaUsuarioPage() {
         </div>
 
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
-          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[03/05/2026 - 07:50] — SOLUCIÓN DEFINITIVA (Importación Dinámica Unificada en todas las rutas API)</h4>
+          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[03/05/2026 - 07:50] — RESOLUCIÓN PARCIAL (Importación Dinámica en Rutas API)</h4>
           <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico:</strong> La API de especies (<code>/api/admin/especies/[id]/photos</code>) funciona en producción porque carga <code>firebase-admin</code> mediante <code>await import()</code> dentro del handler POST (lazy loading). En cambio, la API de perfil (<code>/api/perfil/photos</code>) falla porque importa <code>uploadToStorage</code> de forma estática al inicio del archivo, lo que fuerza a Turbopack a empaquetar <code>firebase-admin</code> al compilar y genera el hash corrupto.</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Cambiar TODAS las rutas API (10 archivos) que usan <code>firebase-admin</code> (directa o indirectamente via <code>storage.ts</code>) a importaciones dinámicas (<code>await import()</code>) dentro del handler. Archivos corregidos: <code>perfil/photos</code>, <code>media</code>, <code>admin/upload</code>, <code>ai/generate-blog</code>, <code>admin/labores/photos</code>, <code>auth/on-verified</code>, <code>auth/send-verification</code>, <code>auth/send-password-reset</code>, <code>auth/update-email</code>, <code>auth/webauthn/verify</code>.</li>
-            <li><strong>Resultado:</strong> 🟢 ÉXITO. El paquete de producción bajó de 167 MB a 38 MB (confirmación de que firebase-admin ya no se empaqueta estáticamente). Las fotos del dashboard de usuario y de especies cargan correctamente en producción. Desplegado el 3 de Mayo a las 08:06.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Diagnóstico:</strong> La API de especies funcionaba en producción porque usaba <code>await import()</code>. En cambio, las otras APIs importaban <code>uploadToStorage</code> de forma estática, forzando el empaquetado de <code>firebase-admin</code>.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Cambiamos todas las rutas API a importaciones dinámicas.</li>
+            <li><strong>Resultado:</strong> 🟡 ÉXITO PARCIAL. El paquete bajó de tamaño y los GET funcionaban, pero los POST (subida de fotos) seguían fallando en producción por el hash corrupto.</li>
+          </ul>
+        </div>
+
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <h4 style={{ color: '#166534', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>🟢 [04/05/2026 - 10:40] — SOLUCIÓN DEFINITIVA (Erradicación del Import Estático Transitivo)</h4>
+          <ul style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El archivo <code>src/lib/firebase/storage.ts</code> todavía conservaba la importación estática <code>import {'{'} bucket {'}'} from './admin'</code> en su cabecera. Aunque las rutas API hacían <code>await import('storage')</code>, la mera presencia de este import estático transitivo provocaba que Turbopack generase el hash maldito para <code>firebase-admin</code> al compilar las utilidades. Además, <code>next.config.ts</code> forzaba el external de firebase-admin en producción, provocando la discrepancia.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> 1) Se revirtió <code>next.config.ts</code> para que externalice <code>firebase-admin</code> SÓLO en development. 2) Se eliminó el import estático en <code>storage.ts</code>, moviendo <code>const {'{'} bucket {'}'} = await import('./admin')</code> dentro de las funciones <code>uploadToStorage</code> y <code>deleteFromStorage</code>.</li>
+            <li><strong>Resultado:</strong> 🟢 RESUELTO. Ninguna ruta de Next.js carga firebase-admin de forma estática transitiva, esquivando el bug del empaquetador definitivamente.</li>
           </ul>
         </div>
 

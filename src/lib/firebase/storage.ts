@@ -1,4 +1,4 @@
-import { bucket } from './admin';
+// Lazy loaded to avoid Turbopack hash bug
 
 /**
  * Sube un archivo a Firebase Storage y devuelve la URL pública.
@@ -12,6 +12,7 @@ export async function uploadToStorage(
   destination: string,
   contentType: string
 ): Promise<string> {
+  const { bucket } = await import('./admin');
   const file = bucket.file(destination);
 
   await file.save(buffer, {
@@ -37,6 +38,7 @@ export async function uploadToStorage(
  */
 export async function deleteFromStorage(destination: string): Promise<void> {
   try {
+    const { bucket } = await import('./admin');
     const file = bucket.file(destination);
     await file.delete();
   } catch (error: any) {
@@ -47,4 +49,4 @@ export async function deleteFromStorage(destination: string): Promise<void> {
   }
 }
 
-export { bucket };
+

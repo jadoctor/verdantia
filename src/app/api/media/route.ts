@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Lazy import para evitar hash corrupto de Turbopack en producción
-    const { bucket } = await import('@/lib/firebase/storage');
+    const { bucket } = await import('@/lib/firebase/admin');
     const file = bucket.file(mediaPath);
     const [exists] = await file.exists();
 
