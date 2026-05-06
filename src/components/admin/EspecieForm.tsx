@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
+import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css';
 
 interface EspecieFormProps {
@@ -612,7 +613,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         }
 
         if (type === 'photos') {
-          const { storage } = await import('@/lib/firebase/config');
           const { ref, uploadBytes } = await import('firebase/storage');
           const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
           const storagePath = `uploads/temp/${fileName}`;
@@ -701,7 +701,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
       const { ref, uploadBytes } = await import('firebase/storage');
-      const { storage } = await import('@/lib/firebase/config');
       const fileName = `temp-ai-${Date.now()}.jpg`;
       const storagePath = `uploads/temp/${fileName}`;
       const storageRef = ref(storage, storagePath);

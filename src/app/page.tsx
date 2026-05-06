@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 6 de Mayo, 12:42 (Fix orden imports Firebase Storage)
+            Verificación de Subida: 6 de Mayo, 13:22 (Fix import estático Firebase Storage)
           </p>
         </div>
       </div>

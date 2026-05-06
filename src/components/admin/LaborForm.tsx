@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
+import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css'; // Reuse the EspecieForm CSS for the common classes
 
 interface LaborFormProps {
@@ -203,7 +204,6 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
     try {
       for (const file of validImageFiles) {
         const { ref, uploadBytes } = await import('firebase/storage');
-        const { storage } = await import('@/lib/firebase/config');
         const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
         const storagePath = `uploads/temp/${fileName}`;
         const storageRef = ref(storage, storagePath);
@@ -267,7 +267,6 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
       const { ref, uploadBytes } = await import('firebase/storage');
-      const { storage } = await import('@/lib/firebase/config');
       const fileName = `temp-ai-labor-${Date.now()}.jpg`;
       const storagePath = `uploads/temp/${fileName}`;
       const storageRef = ref(storage, storagePath);

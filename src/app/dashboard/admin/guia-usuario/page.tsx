@@ -496,6 +496,25 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 13:22 – Fix DEFINITIVO: Import estático de Firebase en componentes admin</strong>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Causa raíz real</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><code>perfil/page.tsx</code> tiene <code>import {'{'} auth {'}'} from &apos;@/lib/firebase/config&apos;</code> como import <strong>estático en el top del archivo</strong>. Esto garantiza que <code>initializeApp()</code> se ejecuta en el momento en que el módulo se carga en el navegador, antes de cualquier interacción del usuario.</li>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code> y <code>LaborForm.tsx</code> solo tenían imports dinámicos de <code>firebase/config</code> dentro de los handlers. En producción (Cloud Function), el bundler no garantizaba la ejecución de <code>initializeApp()</code> en tiempo de carga, provocando el error <em>"The default Firebase app does not exist"</em>.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Regla de oro para futuros módulos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Todo componente &apos;use client&apos; que use Firebase Storage DEBE tener</strong> <code>import {'{'} storage {'}'} from &apos;@/lib/firebase/config&apos;</code> como import estático en la cabecera del archivo. Esta regla aplica a <code>EspecieForm.tsx</code>, <code>LaborForm.tsx</code> y cualquier futuro formulario administrativo.</li>
+                  <li>Los imports dinámicos de <code>firebase/storage</code> dentro de handlers siguen siendo correctos para optimizar el bundle size.</li>
+                </ul>
+              </div>
+            </li>
 
           </ol>
         </div>
