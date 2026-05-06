@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
       await pool.execute(`DELETE FROM webauthn_challenges WHERE email = ?`, [email]);
 
       // 💥 MAGIA DE FIREBASE: Obtener el UID del usuario en Firebase mediante su email
-      const { adminAuth } = await import('@/lib/firebase/admin');
+      const { getAdminAuth } = await import('@/lib/firebase/admin');
+      const adminAuth = getAdminAuth();
       let userRecord;
       try {
         userRecord = await adminAuth.getUserByEmail(email);

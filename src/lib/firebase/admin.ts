@@ -1,31 +1,39 @@
 // Bypass de Análisis Estático para Turbopack/Next.js 15
 // Usamos eval para evitar que Turbopack detecte y empaquete/hashee firebase-admin,
 // lo que rompía la aplicación en producción con el error del hash (a14c8...).
-const admin = eval(`require('firebase-admin')`);
 
-// Protect against multiple initializations
-if (!admin.apps.length) {
-  try {
-    // Para entornos locales, esto inicializa Firebase Admin si usaste:
-    // set GOOGLE_APPLICATION_CREDENTIALS=ruta/a/tu/archivo.json
-    // En producción (Vercel), usará las variables de entorno.
-    if (process.env.FIREBASE_PRIVATE_KEY) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          // Reemplaza los saltos de línea literales \n por saltos reales (requerido en Next.js/Vercel)
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        }),
-      });
-    } else {
-      // Intenta usar las credenciales por defecto (Application Default Credentials)
-      admin.initializeApp();
+export function getAdminApp() {
+  const admin = eval(`require('firebase-admin')`);
+  
+  // Protect against multiple initializations
+  if (!admin.apps.length) {
+    try {
+      // Para entornos locales, esto inicializa Firebase Admin si usaste:
+      // En producción (Vercel/Firebase), usará las variables de entorno o ADC.
+      if (process.env.FIREBASE_PRIVATE_KEY) {
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          }),
+        });
+      } else {
+        // Intenta usar las credenciales por defecto (Application Default Credentials)
+        admin.initializeApp();
+      }
+    } catch (error) {
+      console.error('[Firebase Admin] Error crítico de inicialización:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('Firebase admin initialization error', error);
   }
+  return admin;
 }
 
-export const adminAuth = admin.auth();
-export const bucket = admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app');
+export function getAdminAuth() {
+  return getAdminApp().auth();
+}
+
+export function getAdminBucket() {
+  return getAdminApp().storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app');
+}

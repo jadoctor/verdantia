@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     const host = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     
     // 1. Generar el enlace mágico de verificación con Firebase Admin, indicando que vuelva al perfil
-    const { adminAuth } = await import('@/lib/firebase/admin');
+    const { getAdminAuth } = await import('@/lib/firebase/admin');
+    const adminAuth = getAdminAuth();
     let firebaseVerificationLink: string;
     try {
       const actionCodeSettings = {

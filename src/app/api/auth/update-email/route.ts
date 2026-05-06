@@ -26,7 +26,8 @@ export async function PUT(request: Request) {
     }
 
     // 1. Verificar que el email actual NO está verificado en Firebase
-    const { adminAuth } = await import('@/lib/firebase/admin');
+    const { getAdminAuth } = await import('@/lib/firebase/admin');
+    const adminAuth = getAdminAuth();
     let firebaseUser;
     try {
       firebaseUser = await adminAuth.getUserByEmail(currentEmail);

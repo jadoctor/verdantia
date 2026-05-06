@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     }
 
     // Verificar que el usuario existe en Firebase
-    const { adminAuth } = await import('@/lib/firebase/admin');
+    const { getAdminAuth } = await import('@/lib/firebase/admin');
+    const adminAuth = getAdminAuth();
     let userRecord;
     try {
       userRecord = await adminAuth.getUserByEmail(email);

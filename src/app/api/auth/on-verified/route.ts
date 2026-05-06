@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     }
 
     // 1. Verificar con Firebase Admin que el email está realmente verificado
-    const { adminAuth } = await import('@/lib/firebase/admin');
+    const { getAdminAuth } = await import('@/lib/firebase/admin');
+    const adminAuth = getAdminAuth();
     let firebaseUser;
     try {
       firebaseUser = await adminAuth.getUserByEmail(email);

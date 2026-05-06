@@ -12,7 +12,8 @@ export async function uploadToStorage(
   destination: string,
   contentType: string
 ): Promise<string> {
-  const { bucket } = await import('./admin');
+  const { getAdminBucket } = await import('./admin');
+  const bucket = getAdminBucket();
   const file = bucket.file(destination);
 
   await file.save(buffer, {
@@ -38,7 +39,8 @@ export async function uploadToStorage(
  */
 export async function deleteFromStorage(destination: string): Promise<void> {
   try {
-    const { bucket } = await import('./admin');
+    const { getAdminBucket } = await import('./admin');
+    const bucket = getAdminBucket();
     const file = bucket.file(destination);
     await file.delete();
   } catch (error: any) {

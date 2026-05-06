@@ -348,6 +348,25 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 06:58 – Inicialización Segura de Admin y WASM Threads</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Refactorización de <code>src/lib/firebase/admin.ts</code> implementando "getters" dinámicos (<code>getAdminApp</code>, <code>getAdminAuth</code>, <code>getAdminBucket</code>) en lugar de inicialización a nivel de módulo, interceptando fallos silenciosos mediante <code>throw error</code> explícito.</li>
+                  <li style={{ marginBottom: '8px' }}>Actualización de todos los endpoints de autenticación y carga multimedia (ej. <code>api/perfil/photos/route.ts</code>) para invocar <code>getAdminBucket()</code> en lugar de intentar cargar la librería de Storage prematuramente.</li>
+                  <li>Inyección de cabeceras <code>Cross-Origin-Opener-Policy: same-origin</code> y <code>Cross-Origin-Embedder-Policy: require-corp</code> en <code>firebase.json</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Error 500 "The default Firebase app does not exist":</strong> Resuelto el colapso de las subidas de fotos en producción causado por la condición de carrera en entornos Serverless, donde el módulo de Storage se invocaba antes que el bypass de <code>eval</code>.</li>
+                  <li><strong>Timeouts de IA y Lentitud Cliente:</strong> Desbloqueado el acceso Multihilo (Multi-threading) para WebAssembly en navegadores, eliminando el error <code>env.wasm.numThreads is set to 4</code> y los bloqueos por timeout en el recorte inteligente de fotos y caras.</li>
+                </ul>
+              </div>
+            </li>
           </ol>
         </div>
       </div>
