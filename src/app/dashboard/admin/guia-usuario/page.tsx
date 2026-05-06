@@ -457,6 +457,26 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 11:20 – Resolución de Bugs de Renderizado (Sintaxis JSX)</strong>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Al realizar la inyección global del atributo <code>crossOrigin</code> para el COEP, se introdujo un error tipográfico en <code>EspecieForm.tsx</code> que rompía el componente y simulaba un "falso fallo de subida" al intentar renderizar la galería dinámicamente tras la respuesta de la API.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Causa raíz del 403 en Storage:</strong> Verdantia usa NextAuth con <code>signInWithCustomToken</code> para autenticarse en Firebase, pero el token de Firebase Web SDK caduca cada hora. Las fotos de usuario funcionaban porque su token nunca expiraba en la misma sesión; sin embargo, en el panel de administración de Especies (una sesión más larga), el token ya había caducado, provocando que el SDK de Storage rechazara el archivo con un Error 403 silencioso.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Se reparó el cierre de la etiqueta <code>&lt;img /&gt;</code> en la línea 1195 de <code>EspecieForm.tsx</code>.</li>
+                  <li><strong>Se amplió <code>storage.rules</code></strong> para permitir escritura pública en la carpeta temporal <code>uploads/temp/</code>. Esta carpeta actúa como zona de transit: el cliente sube el binario sin necesidad de token, el servidor la procesa y destruye el archivo temporal de forma inmediata. El resto de carpetas siguen requiriendo autenticación.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>

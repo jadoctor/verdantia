@@ -651,8 +651,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         }
       }
       await loadAttachments(especieId);
-    } catch (err) {
-      alert('Error al subir archivos');
+    } catch (err: any) {
+      console.error('UPLOAD ERROR:', err);
+      alert('Error al subir archivos: ' + err.message);
     } finally {
       if (type === 'photos') setUploadingPhotos(false);
       else setUploadingPdfs(false);
