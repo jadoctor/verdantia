@@ -34,7 +34,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     especiestrasplantedesde: '', especiestrasplantehasta: '',
     especiesfecharecolecciondesde: '', especiesfecharecoleccionhasta: '',
     especieshistoria: '', especiesdescripcion: '', especiesfuentesinformacion: '',
-    especiesautosuficiencia: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
+    especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
     especiesicono: '',
     especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '',
     especiesprofundidadtrasplante: '', especiesphsuelo: '', especiesnecesidadriego: '',
@@ -58,7 +58,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [isEspecieOpen, setIsEspecieOpen] = useState(true);
   const [calcPersonas, setCalcPersonas] = useState<number>(1);
   const [aiProposal, setAiProposal] = useState<any>(null);
-  const [selectedRels, setSelectedRels] = useState<{ ben: string[], per: string[], pla: string[] }>({ ben: [], per: [], pla: [] });
+  const [selectedRels, setSelectedRels] = useState<{ ben: any[], per: any[], pla: any[] }>({ ben: [], per: [], pla: [] });
   const [showAiModal, setShowAiModal] = useState(false);
   const [isAssimilatingRels, setIsAssimilatingRels] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
@@ -392,11 +392,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'autosuficiencia',
       title: 'Autosuficiencia y Marcos',
-      keys: ['especiesmarcoplantas', 'especiesmarcofilas', 'especiesautosuficiencia', 'especiesautosuficienciaconserva'],
+      keys: ['especiesmarcoplantas', 'especiesmarcofilas', 'especiesautosuficienciaparcial', 'especiesautosuficiencia', 'especiesautosuficienciaconserva'],
       labels: {
         especiesmarcoplantas: 'Marco Plantas',
         especiesmarcofilas: 'Marco Filas',
-        especiesautosuficiencia: 'Autosuf. Fresco',
+        especiesautosuficienciaparcial: 'Autosuf. Parcial',
+        especiesautosuficiencia: 'Autosuf. Completa',
         especiesautosuficienciaconserva: 'Autosuf. Conserva'
       }
     },
@@ -457,9 +458,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setIsAssimilatingRels(true);
 
     try {
-      const benNames = selectedRels.ben;
-      const perNames = selectedRels.per;
-      const plaNames = selectedRels.pla;
+      const benNames = Array.isArray(selectedRels?.ben) ? selectedRels.ben : [];
+      const perNames = Array.isArray(selectedRels?.per) ? selectedRels.per : [];
+      const plaNames = Array.isArray(selectedRels?.pla) ? selectedRels.pla : [];
 
       const newBen = [...relaciones.beneficiosas];
       const newPer = [...relaciones.perjudiciales];
@@ -469,9 +470,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       let masterP = [...masterPlagas];
       let madeChanges = false;
 
-      const normalize = (str: string) => str.toLowerCase().trim();
+      const normalize = (str: string) => (str || "").toLowerCase().trim();
 
-      for (const name of benNames) {
+      for (const item of benNames) {
+        const name = typeof item === 'string' ? item : item?.nombre;
+        const motivo = typeof item === 'string' ? 'Sugerido por IA' : (item?.motivo || 'Sugerido por IA');
+        if (!name || typeof name !== 'string') continue;
         let sp = masterE.find(e => normalize(e.especiesnombre) === normalize(name));
         if (!sp) {
           const res = await fetch('/api/admin/especies', {
@@ -486,17 +490,20 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             setMasterEspecies([...masterE]);
           }
         }
-        if (sp && sp.idespecies.toString() !== especieId && !newBen.some(b => b.xasociacionesbeneficiosasidespeciedestino.toString() === sp.idespecies.toString())) {
+        if (sp && sp.idespecies.toString() !== especieId && !newBen.some(b => b.xasociacionesbeneficiosasidespeciedestino?.toString() === sp.idespecies?.toString())) {
           newBen.push({
             xasociacionesbeneficiosasidespeciedestino: sp.idespecies,
             especie_destino_nombre: sp.especiesnombre,
-            asociacionesbeneficiosasmotivo: 'Sugerido por IA'
+            asociacionesbeneficiosasmotivo: motivo
           });
           madeChanges = true;
         }
       }
 
-      for (const name of perNames) {
+      for (const item of perNames) {
+        const name = typeof item === 'string' ? item : item?.nombre;
+        const motivo = typeof item === 'string' ? 'Sugerido por IA' : (item?.motivo || 'Sugerido por IA');
+        if (!name || typeof name !== 'string') continue;
         let sp = masterE.find(e => normalize(e.especiesnombre) === normalize(name));
         if (!sp) {
           const res = await fetch('/api/admin/especies', {
@@ -511,17 +518,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             setMasterEspecies([...masterE]);
           }
         }
-        if (sp && sp.idespecies.toString() !== especieId && !newPer.some(p => p.xasociacionesperjudicialesidespeciedestino.toString() === sp.idespecies.toString())) {
+        if (sp && sp.idespecies.toString() !== especieId && !newPer.some(p => p.xasociacionesperjudicialesidespeciedestino?.toString() === sp.idespecies?.toString())) {
           newPer.push({
             xasociacionesperjudicialesidespeciedestino: sp.idespecies,
             especie_destino_nombre: sp.especiesnombre,
-            asociacionesperjudicialesmotivo: 'Sugerido por IA'
+            asociacionesperjudicialesmotivo: motivo
           });
           madeChanges = true;
         }
       }
 
-      for (const name of plaNames) {
+      for (const item of plaNames) {
+        const name = typeof item === 'string' ? item : item?.nombre;
+        const notas = typeof item === 'string' ? 'Sugerido por IA' : (item?.notas || 'Sugerido por IA');
+        const riesgo = typeof item === 'string' ? 'media' : (item?.riesgo || 'media');
+        if (!name || typeof name !== 'string') continue;
         let p = masterP.find(pl => normalize(pl.plagasnombre) === normalize(name));
         if (!p) {
           const res = await fetch('/api/admin/plagas', {
@@ -536,12 +547,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             setMasterPlagas([...masterP]);
           }
         }
-        if (p && !newPla.some(pl => pl.xrelacionesplagasideplaga.toString() === p.idplagas.toString())) {
+        if (p && !newPla.some(pl => (pl.xrelacionesplagasideplaga || pl.xespeciesplagasidplagas)?.toString() === p.idplagas?.toString())) {
           newPla.push({
             xrelacionesplagasideplaga: p.idplagas,
+            xespeciesplagasidplagas: p.idplagas,
             plagasnombre: p.plagasnombre,
-            relacionesplagasriesgo: 'media',
-            relacionesplagasnotas: 'Sugerido por IA'
+            especiesplagasnivelriesgo: riesgo,
+            especiesplagasnotasespecificas: notas
           });
           madeChanges = true;
         }
@@ -567,6 +579,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       await assimilateRelacionesAI();
     }
     setShowAiModal(false);
+  };
+
+  const saveRelacionesNow = async (updatedRels: any) => {
+    if (!especieId || !userEmail) return;
+    try {
+      await fetch(`/api/admin/especies/${especieId}/relaciones`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+        body: JSON.stringify(updatedRels)
+      });
+      setInitialRelaciones(updatedRels);
+      setRelacionesDirty(false);
+    } catch (e) {
+      console.error('Error auto-guardando relaciones:', e);
+    }
   };
 
   const normalizePathSegment = (value: string) =>
@@ -1812,14 +1839,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 </div>
               )}
 
-              <div className="form-group">
-                <label>Autosuficiencia Fresco (plantas/pers)</label>
-                <input type="number" step="0.1" name="especiesautosuficiencia" value={formData.especiesautosuficiencia || ''} onChange={handleChange} />
+              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                <div>
+                  <label>🌱 Parcial (plantas/pers)</label>
+                  <input type="number" step="0.1" name="especiesautosuficienciaparcial" value={formData.especiesautosuficienciaparcial || ''} onChange={handleChange} />
+                </div>
+                <div>
+                  <label>🥬 Completa (plantas/pers)</label>
+                  <input type="number" step="0.1" name="especiesautosuficiencia" value={formData.especiesautosuficiencia || ''} onChange={handleChange} />
+                </div>
+                <div>
+                  <label>🥫 Conserva (plantas/pers)</label>
+                  <input type="number" step="0.1" name="especiesautosuficienciaconserva" value={formData.especiesautosuficienciaconserva || ''} onChange={handleChange} />
+                </div>
               </div>
-              <div className="form-group">
-                <label>Autosuficiencia Conserva (plantas/pers)</label>
-                <input type="number" step="0.1" name="especiesautosuficienciaconserva" value={formData.especiesautosuficienciaconserva || ''} onChange={handleChange} />
-              </div>
+              
               <div className="form-group full" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '10px' }}>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, textAlign: 'center' }}>
                   <strong>Nota:</strong> Estos valores indican el número estimado de plantas necesarias para abastecer a <strong>una persona</strong> durante un año.
@@ -1828,8 +1862,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
               {/* CALCULADORA */}
               {(() => {
+                const pParcial = parseFloat(formData.especiesautosuficienciaparcial) || 0;
                 const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;
                 const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;
+                const totalPParcial = pParcial * calcPersonas;
                 const totalPFresco = pFresco * calcPersonas;
                 const totalPConserva = pConserva * calcPersonas;
                 
@@ -1837,6 +1873,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 const marcoF = (parseFloat(formData.especiesmarcofilas) || 0) / 100;
                 const areaPlant = marcoP * marcoF;
                 
+                const m2Parcial = totalPParcial * areaPlant;
                 const m2Fresco = totalPFresco * areaPlant;
                 const m2Conserva = totalPConserva * areaPlant;
 
@@ -1858,9 +1895,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                       <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Solo Consumo en Fresco</h4>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Parcial</h4>
+                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPParcial.toFixed(1)}</strong>
+                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Parcial > 0 ? `${m2Parcial.toFixed(2)} m²` : '--- m²'}</strong>
+                      </div>
+
+                      <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥬 Completa</h4>
                         <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
                         <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>
                         <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
@@ -1868,10 +1913,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       </div>
 
                       <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥫 Fresco + Conserva (Total)</h4>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Totales Necesarias</span>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥫 Conserva</h4>
+                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
                         <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPConserva.toFixed(1)}</strong>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Total Necesario</span>
+                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
                         <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Conserva > 0 ? `${m2Conserva.toFixed(2)} m²` : '--- m²'}</strong>
                       </div>
                     </div>
@@ -1912,12 +1957,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 </div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {relaciones.beneficiosas.map((b: any, idx: number) => (
-                    <li key={idx} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div><strong>{b.especie_destino_nombre}</strong> {b.asociacionesbeneficiosasmotivo ? `- ${b.asociacionesbeneficiosasmotivo}` : ''}</div>
-                      <button type="button" onClick={() => {
-                        setRelaciones((prev: any) => ({ ...prev, beneficiosas: prev.beneficiosas.filter((_: any, i: number) => i !== idx) }));
+                    <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                      <div><strong>{b.especie_destino_nombre}</strong></div>
+                      <input type="text" value={b.asociacionesbeneficiosasmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
+                        const updatedBen = relaciones.beneficiosas.map((bb: any, i: number) => i === idx ? { ...bb, asociacionesbeneficiosasmotivo: e.target.value } : bb);
+                        setRelaciones({ ...relaciones, beneficiosas: updatedBen });
                         setRelacionesDirty(true);
-                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Eliminar</button>
+                      }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                      <button type="button" onClick={() => {
+                        const updated = { ...relaciones, beneficiosas: relaciones.beneficiosas.filter((_: any, i: number) => i !== idx) };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
                     </li>
                   ))}
                   {relaciones.beneficiosas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones beneficiosas.</p>}
@@ -1952,12 +2003,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 </div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {relaciones.perjudiciales.map((p: any, idx: number) => (
-                    <li key={idx} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div><strong>{p.especie_destino_nombre}</strong> {p.asociacionesperjudicialesmotivo ? `- ${p.asociacionesperjudicialesmotivo}` : ''}</div>
-                      <button type="button" onClick={() => {
-                        setRelaciones((prev: any) => ({ ...prev, perjudiciales: prev.perjudiciales.filter((_: any, i: number) => i !== idx) }));
+                    <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                      <div><strong>{p.especie_destino_nombre}</strong></div>
+                      <input type="text" value={p.asociacionesperjudicialesmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
+                        const updatedPer = relaciones.perjudiciales.map((pp: any, i: number) => i === idx ? { ...pp, asociacionesperjudicialesmotivo: e.target.value } : pp);
+                        setRelaciones({ ...relaciones, perjudiciales: updatedPer });
                         setRelacionesDirty(true);
-                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Eliminar</button>
+                      }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                      <button type="button" onClick={() => {
+                        const updated = { ...relaciones, perjudiciales: relaciones.perjudiciales.filter((_: any, i: number) => i !== idx) };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
                     </li>
                   ))}
                   {relaciones.perjudiciales.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones perjudiciales.</p>}
@@ -2005,17 +2062,30 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 </div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {relaciones.plagas.map((p: any, idx: number) => (
-                    <li key={idx} style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '4px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '12px', alignItems: 'center' }}>
                       <div>
-                        <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span> 
-                        <span style={{ margin: '0 8px', color: '#cbd5e1' }}>|</span> 
-                        <span style={{ fontWeight: 'bold', textTransform: 'capitalize', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b' }}>Riesgo {p.especiesplagasnivelriesgo}</span>
-                        {p.especiesplagasnotasespecificas ? ` - ${p.especiesplagasnotasespecificas}` : ''}
+                        <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span>
                       </div>
-                      <button type="button" onClick={() => {
-                        setRelaciones((prev: any) => ({ ...prev, plagas: prev.plagas.filter((_: any, i: number) => i !== idx) }));
+                      <select value={p.especiesplagasnivelriesgo || 'media'} onChange={(e) => {
+                        const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnivelriesgo: e.target.value } : pl);
+                        const updated = { ...relaciones, plagas: updatedPlagas };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                      }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
+                        <option value="baja">🟢 Riesgo Bajo</option>
+                        <option value="media">🟡 Riesgo Medio</option>
+                        <option value="alta">🔴 Riesgo Alto</option>
+                      </select>
+                      <input type="text" value={p.especiesplagasnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
+                        const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnotasespecificas: e.target.value } : pl);
+                        setRelaciones({ ...relaciones, plagas: updatedPlagas });
                         setRelacionesDirty(true);
-                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>Eliminar</button>
+                      }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                      <button type="button" onClick={() => {
+                        const updated = { ...relaciones, plagas: relaciones.plagas.filter((_: any, i: number) => i !== idx) };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
                     </li>
                   ))}
                   {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
@@ -2494,16 +2564,20 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <div style={{ marginBottom: '15px' }}>
                         <h4 style={{ color: '#10b981', marginBottom: '5px' }}>Beneficiosas</h4>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {aiProposal.asociaciones_beneficiosas.map((name: string) => {
+                          {aiProposal.asociaciones_beneficiosas.map((item: any) => {
+                            const name = typeof item === 'string' ? item : item?.nombre;
+                            const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
+                            if (!name) return null;
                             const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            const isChecked = selectedRels.ben.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                <input type="checkbox" checked={selectedRels.ben.includes(name)} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({...p, ben: [...p.ben, name]}));
-                                  else setSelectedRels(p => ({...p, ben: p.ben.filter(n => n !== name)}));
+                                <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                  if (e.target.checked) setSelectedRels(p => ({...p, ben: [...p.ben, item]}));
+                                  else setSelectedRels(p => ({...p, ben: p.ben.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name)}));
                                 }} style={{ width: '16px', height: '16px', accentColor: '#10b981', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}
+                                <div><span style={{fontWeight: 'bold'}}>{name}</span>{motivo ? <span style={{color: '#64748b', fontSize: '0.85rem'}}> — {motivo}</span> : ''} {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}</div>
                               </li>
                             );
                           })}
@@ -2515,16 +2589,20 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <div style={{ marginBottom: '15px' }}>
                         <h4 style={{ color: '#ef4444', marginBottom: '5px' }}>Perjudiciales</h4>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {aiProposal.asociaciones_perjudiciales.map((name: string) => {
+                          {aiProposal.asociaciones_perjudiciales.map((item: any) => {
+                            const name = typeof item === 'string' ? item : item?.nombre;
+                            const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
+                            if (!name) return null;
                             const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            const isChecked = selectedRels.per.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                <input type="checkbox" checked={selectedRels.per.includes(name)} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({...p, per: [...p.per, name]}));
-                                  else setSelectedRels(p => ({...p, per: p.per.filter(n => n !== name)}));
+                                <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                  if (e.target.checked) setSelectedRels(p => ({...p, per: [...p.per, item]}));
+                                  else setSelectedRels(p => ({...p, per: p.per.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name)}));
                                 }} style={{ width: '16px', height: '16px', accentColor: '#ef4444', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}
+                                <div><span style={{fontWeight: 'bold'}}>{name}</span>{motivo ? <span style={{color: '#64748b', fontSize: '0.85rem'}}> — {motivo}</span> : ''} {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}</div>
                               </li>
                             );
                           })}
@@ -2536,16 +2614,20 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <div>
                         <h4 style={{ color: '#f97316', marginBottom: '5px' }}>Plagas y Enfermedades</h4>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {aiProposal.plagas_asociadas.map((name: string) => {
+                          {aiProposal.plagas_asociadas.map((item: any) => {
+                            const name = typeof item === 'string' ? item : item?.nombre;
+                            const notas = typeof item === 'string' ? '' : (item?.notas || '');
+                            if (!name) return null;
                             const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            const isChecked = selectedRels.pla.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                <input type="checkbox" checked={selectedRels.pla.includes(name)} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({...p, pla: [...p.pla, name]}));
-                                  else setSelectedRels(p => ({...p, pla: p.pla.filter(n => n !== name)}));
+                                <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                  if (e.target.checked) setSelectedRels(p => ({...p, pla: [...p.pla, item]}));
+                                  else setSelectedRels(p => ({...p, pla: p.pla.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name)}));
                                 }} style={{ width: '16px', height: '16px', accentColor: '#f97316', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <span>{name}</span> {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}
+                                <div><span style={{fontWeight: 'bold'}}>{name}</span>{notas ? <span style={{color: '#64748b', fontSize: '0.85rem'}}> — {notas}</span> : ''} {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}</div>
                               </li>
                             );
                           })}

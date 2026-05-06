@@ -60,8 +60,9 @@ Las claves esperadas en el JSON son:
 - especiesfecharecolecciondesde (entero del mes, 1 a 12)
 - especiesfecharecoleccionhasta (entero del mes, 1 a 12)
 - especiesfuentesinformacion (string, IMPORTANTE: Proporciona SOLO 2 URLs absolutas, reales y comprobables. 1) La página de Wikipedia de la especie usando el nombre científico (ej: https://es.wikipedia.org/wiki/Solanum_lycopersicum). 2) La URL oficial de Wikipedia sobre Agricultura Biodinámica para justificar el calendario lunar: https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica )
-- especiesautosuficiencia (entero, plantas estimadas por persona al año fresco)
-- especiesautosuficienciaconserva (entero, plantas estimadas por persona al año con conserva)
+- especiesautosuficiencia (entero, plantas estimadas por persona al año para consumo COMPLETO en fresco, es decir, cubrir el 100% de la demanda anual)
+- especiesautosuficienciaparcial (entero, plantas estimadas por persona para un consumo PARCIAL/básico, aproximadamente un 30-40% de la demanda, solo para complementar la compra)
+- especiesautosuficienciaconserva (entero, plantas estimadas por persona al año con conserva, incluye fresco + producción extra para conservar)
 - especiesbiodinamicacategoria (string, elige UNO entre: fruto, raiz, hoja, flor — según la parte comestible/ornamental principal)
 - especiesbiodinamicanotas (string, 2-3 frases concisas sobre cómo aprovechar el calendario lunar biodinámico: siembra, trasplante, poda y recolección)
 - especiesphsuelo (string, ej: 6.0 - 6.8)
@@ -71,9 +72,9 @@ Las claves esperadas en el JSON son:
 - especiesluzsolar (string, elige entre: pleno_sol, semisombra, sombra)
 - especiescaracteristicassuelo (string, ej: franco-arcilloso, bien drenado)
 - especiesdificultad (string, elige entre: baja, media, alta)
-- asociaciones_beneficiosas (array de strings, solo nombres comunes exactos y específicos, NUNCA uses términos genéricos como "hierbas aromáticas" o "plantas de hoja verde", DEBES decir especies concretas ej: ["Albahaca", "Cebolla"])
-- asociaciones_perjudiciales (array de strings, solo nombres comunes exactos y específicos, NUNCA uses términos genéricos, DEBES decir especies concretas ej: ["Patata", "Hinojo"])
-- plagas_asociadas (array de strings, solo nombres comunes específicos de plagas/enfermedades, ej: ["Pulgón", "Mosca blanca", "Oídio"])
+- asociaciones_beneficiosas (array de objetos {nombre: string, motivo: string}, solo nombres comunes exactos y específicos, NUNCA uses términos genéricos como "hierbas aromáticas", DEBES decir especies concretas. El motivo debe explicar brevemente POR QUÉ es beneficiosa, ej: [{"nombre": "Albahaca", "motivo": "Repele pulgones y mejora el sabor"}, {"nombre": "Cebolla", "motivo": "Ahuyenta plagas por su olor"}])
+- asociaciones_perjudiciales (array de objetos {nombre: string, motivo: string}, solo nombres comunes exactos, NUNCA genéricos. El motivo debe explicar POR QUÉ es perjudicial, ej: [{"nombre": "Patata", "motivo": "Compiten por nutrientes y comparten enfermedades"}, {"nombre": "Hinojo", "motivo": "Inhibe el crecimiento por alelopatía"}])
+- plagas_asociadas (array de objetos {nombre: string, riesgo: string, notas: string}, solo nombres comunes específicos. El riesgo debe ser "baja", "media" o "alta". Las notas deben describir brevemente el daño o síntoma, ej: [{"nombre": "Pulgón", "riesgo": "alta", "notas": "Coloniza brotes tiernos y transmite virus"}, {"nombre": "Oídio", "riesgo": "media", "notas": "Hongo blanco en hojas, reduce fotosíntesis"}])
 
 Recuerda: SOLO JSON válido, nada de formato adicional.
     `;

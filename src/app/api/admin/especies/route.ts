@@ -85,6 +85,7 @@ export async function POST(request: Request) {
       especiesvisibilidadsino,
       especiesfuentesinformacion,
       especiesautosuficiencia,
+      especiesautosuficienciaparcial,
       especiesautosuficienciaconserva,
       especiesicono,
       especiesbiodinamicacategoria,
@@ -113,12 +114,12 @@ export async function POST(request: Request) {
         especiesfechasemillerodesde, especiesfechasemillerohasta, especiesfechasiembradirectadesde, 
         especiesfechasiembradirectahasta, especiestrasplantedesde, especiestrasplantehasta, 
         especiesfecharecolecciondesde, especiesfecharecoleccionhasta, especiesvisibilidadsino, 
-        especiesfuentesinformacion, especiesautosuficiencia, especiesautosuficienciaconserva, especiesicono,
+        especiesfuentesinformacion, especiesautosuficiencia, especiesautosuficienciaparcial, especiesautosuficienciaconserva, especiesicono,
         especiesbiodinamicacategoria, especiesbiodinamicanotas,
         especiesprofundidadtrasplante, especiesphsuelo, especiesnecesidadriego, especiestiposiembra,
         especiesvolumenmaceta, especiesluzsolar, especiescaracteristicassuelo, especiesdificultad,
         especiestemperaturamaxima
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -151,6 +152,7 @@ export async function POST(request: Request) {
       especiesvisibilidadsino !== undefined ? especiesvisibilidadsino : 1,
       especiesfuentesinformacion || null,
       especiesautosuficiencia || null,
+      especiesautosuficienciaparcial || null,
       especiesautosuficienciaconserva || null,
       especiesicono || null,
       especiesbiodinamicacategoria || null,

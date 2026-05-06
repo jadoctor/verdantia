@@ -528,6 +528,30 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 21:28 – Autosuficiencia 3 Niveles, IA con Motivos y Plagas Editables</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Autosuficiencia Parcial (BD + API + UI):</strong> Nuevo campo <code>especiesautosuficienciaparcial</code> en la tabla <code>especies</code>. Las rutas POST y PUT lo procesan. El formulario muestra 3 inputs en fila: 🌱 Parcial, 🥬 Completa, 🥫 Conserva.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Calculadora 3 Tarjetas:</strong> La calculadora de autosuficiencia ahora muestra las 3 categorías con sus respectivos cálculos de plantas y metros cuadrados por persona.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>IA: Motivos en Asociaciones:</strong> El asistente Gemini ahora devuelve objetos <code>{'{nombre, motivo}'}</code> para asociaciones beneficiosas y perjudiciales, explicando el porqué de cada relación.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>IA: Plagas con Riesgo y Notas:</strong> Las plagas sugeridas incluyen <code>{'{nombre, riesgo, notas}'}</code> con nivel de riesgo (baja/media/alta) y descripción del daño.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Edición Inline de Asociaciones:</strong> Cada asociación beneficiosa/perjudicial muestra nombre + campo de motivo editable en línea, con auto-guardado al perder el foco.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Edición Inline de Plagas:</strong> Cada plaga muestra nombre + selector de riesgo con colores (🟢🟡🔴) + campo de descripción editable, todo con auto-guardado.</li>
+                  <li><strong>Auto-guardado al Eliminar:</strong> Al eliminar cualquier asociación o plaga, se guarda inmediatamente en la base de datos sin necesidad de pulsar el botón Guardar del formulario.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>SVG Corrupto:</strong> Reparación del bloque SVG roto en el diagrama de marcos de plantación.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Plagas sin Datos Visibles:</strong> Nombres de campo internos no coincidían con los de la UI.</li>
+                  <li><strong>Eliminación No Persistente:</strong> Resuelto con auto-guardado inmediato al eliminar relaciones.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
