@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 6 de Mayo, 08:36 (Arquitectura Client-Side Uploads y CORS Nativo)
+            Verificación de Subida: 6 de Mayo, 09:47 (Client-Side Uploads Globales)
           </p>
         </div>
       </div>

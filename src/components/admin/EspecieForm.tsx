@@ -611,23 +611,42 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           }
         }
 
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('especieNombre', formData.especiesnombre || '');
-        const res = await fetch(`/api/admin/especies/${especieId}/${type}`, { 
-          method: 'POST', 
-          headers: { 'x-user-email': userEmail || '' },
-          body: fd 
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `HTTP Error ${res.status}`);
-        }
-        
-        if (type === 'pdfs') {
-          const data = await res.json();
-          if (data.success && data.pdf && !data.pdf.portada) {
-            generatePdfCover(data.pdf);
+        if (type === 'photos') {
+          const { ref, uploadBytes } = await import('firebase/storage');
+          const { storage } = await import('@/lib/firebase/config');
+          const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+          const storagePath = `uploads/temp/${fileName}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, file);
+
+          const res = await fetch(`/api/admin/especies/${especieId}/photos`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+            body: JSON.stringify({ rawStoragePath: storagePath, especieNombre: formData.especiesnombre || '' }) 
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP Error ${res.status}`);
+          }
+        } else {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('especieNombre', formData.especiesnombre || '');
+          const res = await fetch(`/api/admin/especies/${especieId}/${type}`, { 
+            method: 'POST', 
+            headers: { 'x-user-email': userEmail || '' },
+            body: fd 
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP Error ${res.status}`);
+          }
+          
+          if (type === 'pdfs') {
+            const data = await res.json();
+            if (data.success && data.pdf && !data.pdf.portada) {
+              generatePdfCover(data.pdf);
+            }
           }
         }
       }
@@ -680,16 +699,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
-      const file = new File([blob], `ai-generated-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      
-      const formDataPayload = new FormData();
-      formDataPayload.append('file', file);
-      formDataPayload.append('especieNombre', formData.especiesnombre);
+      const { ref, uploadBytes } = await import('firebase/storage');
+      const { storage } = await import('@/lib/firebase/config');
+      const fileName = `temp-ai-${Date.now()}.jpg`;
+      const storagePath = `uploads/temp/${fileName}`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, blob);
 
       await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'POST',
-        headers: { 'x-user-email': userEmail || '' },
-        body: formDataPayload
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+        body: JSON.stringify({ rawStoragePath: storagePath, especieNombre: formData.especiesnombre || '' })
       });
       await loadAttachments(especieId);
       setAiImageResult(null);

@@ -52,15 +52,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const idespecies = resolvedParams.id;
 
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const body = await request.json();
+    const { rawStoragePath, especieNombre: reqEspecieNombre } = body;
 
-    if (!file) {
-      return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 });
+    if (!rawStoragePath) {
+      return NextResponse.json({ error: 'Ruta de archivo requerida' }, { status: 400 });
     }
 
-    const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
-    const bytes = await file.arrayBuffer();
+    // Descargar el archivo temporal subido por el cliente
+    const { getAdminBucket } = await import('@/lib/firebase/admin');
+    const bucket = getAdminBucket();
+    const fileRef = bucket.file(rawStoragePath);
+    const [downloadedFile] = await fileRef.download();
+    const bytes = downloadedFile;
+
+    const ext = (rawStoragePath.match(/\.\w+$/) || ['.jpg'])[0];
 
     // Lazy load libraries inside POST to avoid blocking the API
     const sharp = (await import('sharp')).default;
@@ -79,7 +85,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const fileSize = bytes.byteLength;
 
     // Obtener nombre de la especie para contexto de IA
-    let especieNombre = formData.get('especieNombre') as string;
+    let especieNombre = reqEspecieNombre as string;
     if (!especieNombre) {
       const [especieResult] = await pool.query("SELECT especiesnombre FROM especies WHERE idespecies = ?", [idespecies]);
       especieNombre = (especieResult as any[])[0]?.especiesnombre || 'Planta';
@@ -251,6 +257,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       exif_data: exifData
     });
 
+    const fileName = rawStoragePath.split('/').pop() || 'uploaded.jpg';
+    const fileType = 'image/' + ext.replace('.', '');
+
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
@@ -259,10 +268,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntospesobytes, datosadjuntosresumen
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, storagePath, esPrimera,
+        fileType, fileName, storagePath, esPrimera,
         total + 1, idespecies, fileSize, initialResumen
       ]
     );
+
+    // Eliminar el archivo temporal subido por el cliente
+    await fileRef.delete().catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -270,7 +282,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         id: (result as any).insertId,
         ruta: storagePath,
         esPrincipal: esPrimera,
-        nombreOriginal: file.name,
+        nombreOriginal: fileName,
         resumen: initialResumen
       }
     });

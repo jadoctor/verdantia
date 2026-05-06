@@ -49,15 +49,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const idlabores = resolvedParams.id;
 
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const body = await request.json();
+    const { rawStoragePath, laborNombre: reqLaborNombre } = body;
 
-    if (!file) {
-      return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 });
+    if (!rawStoragePath) {
+      return NextResponse.json({ error: 'Ruta de archivo requerida' }, { status: 400 });
     }
 
-    const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
-    const bytes = await file.arrayBuffer();
+    const { getAdminBucket } = await import('@/lib/firebase/admin');
+    const bucket = getAdminBucket();
+    const fileRef = bucket.file(rawStoragePath);
+    const [downloadedFile] = await fileRef.download();
+    const bytes = downloadedFile;
+
+    const ext = (rawStoragePath.match(/\.\w+$/) || ['.jpg'])[0];
 
     // Lazy import para evitar hash corrupto de Turbopack en producción
     const sharp = (await import('sharp')).default;
@@ -76,7 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const fileSize = bytes.byteLength;
 
     // Obtener nombre de la labor para contexto de IA
-    let laborNombre = formData.get('laborNombre') as string;
+    let laborNombre = reqLaborNombre as string;
     if (!laborNombre) {
       const [laborResult] = await pool.query("SELECT laboresnombre FROM labores WHERE idlabores = ?", [idlabores]);
       laborNombre = (laborResult as any[])[0]?.laboresnombre || 'Labor';
@@ -211,6 +216,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       exif_data: exifData
     });
 
+    const fileName = rawStoragePath.split('/').pop() || 'uploaded.jpg';
+    const fileType = 'image/' + ext.replace('.', '');
+
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
@@ -219,10 +227,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntospesobytes, datosadjuntosresumen
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, storagePath, esPrimera,
+        fileType, fileName, storagePath, esPrimera,
         total + 1, idlabores, fileSize, initialResumen
       ]
     );
+
+    // Eliminar el archivo temporal
+    await fileRef.delete().catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -230,7 +241,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         id: (result as any).insertId,
         ruta: storagePath,
         esPrincipal: esPrimera,
-        nombreOriginal: file.name,
+        nombreOriginal: fileName,
         resumen: initialResumen
       }
     });

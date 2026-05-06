@@ -202,14 +202,17 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
     setUploadingPhotos(true);
     try {
       for (const file of validImageFiles) {
-        const formDataPayload = new FormData();
-        formDataPayload.append('file', file);
-        formDataPayload.append('laborNombre', formData.laboresnombre);
+        const { ref, uploadBytes } = await import('firebase/storage');
+        const { storage } = await import('@/lib/firebase/config');
+        const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+        const storagePath = `uploads/temp/${fileName}`;
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, file);
 
         await fetch(`/api/admin/labores/${laborId}/photos`, {
           method: 'POST',
-          headers: { 'x-user-email': userEmail },
-          body: formDataPayload
+          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+          body: JSON.stringify({ rawStoragePath: storagePath, laborNombre: formData.laboresnombre })
         });
       }
       await loadPhotos(laborId);
@@ -263,16 +266,17 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
     try {
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
-      const file = new File([blob], `ai-generated-labor-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      
-      const formDataPayload = new FormData();
-      formDataPayload.append('file', file);
-      formDataPayload.append('laborNombre', formData.laboresnombre);
+      const { ref, uploadBytes } = await import('firebase/storage');
+      const { storage } = await import('@/lib/firebase/config');
+      const fileName = `temp-ai-labor-${Date.now()}.jpg`;
+      const storagePath = `uploads/temp/${fileName}`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, blob);
 
       await fetch(`/api/admin/labores/${laborId}/photos`, {
         method: 'POST',
-        headers: { 'x-user-email': userEmail },
-        body: formDataPayload
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+        body: JSON.stringify({ rawStoragePath: storagePath, laborNombre: formData.laboresnombre })
       });
       await loadPhotos(laborId);
       setAiImageResult(null);

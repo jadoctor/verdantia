@@ -431,6 +431,32 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 09:50 – Client-Side Uploads Globales (Administración)</strong>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Las subidas de fotos en los formularios de administración (Especies y Labores) seguían fallando en producción por culpa de las restricciones Serverless. A diferencia del Perfil de Usuario, estas galerías incluían procesamiento pesado (Blurhash, IA Gemini, Extracción de color) dentro del backend, lo cual impedía usar un modelo "Client-Side" directo tradicional.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Refactorización de <code>EspecieForm.tsx</code> y <code>LaborForm.tsx</code> para forzar al cliente (navegador) a subir el binario crudo (FormData limit bypass) a <code>uploads/temp/</code> en Firebase Storage.</li>
+                  <li>Las APIs <code>/api/admin/especies/[id]/photos</code> y <code>/api/admin/labores/[id]/photos</code> fueron reescritas para aceptar únicamente un JSON con el path del archivo temporal. El servidor lo descarga nativamente desde Google Cloud, lo procesa con Sharp/Gemini/Blurhash, lo almacena, y destruye el temporal.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Resolución total y universal del Error 500 y Timeouts Serverless en todas las subidas de archivos en la infraestructura de Verdantia, logrando un híbrido estable entre cliente ligero y backend intensivo.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
