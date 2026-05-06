@@ -223,8 +223,9 @@ export default function GuiaUsuarioPage() {
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px', marginBottom: '24px' }}>
           <li style={{ marginBottom: '8px' }}><strong>Encabezado:</strong> Fecha, hora de la subida y un título descriptivo claro (ej: <code>06/05/2026 12:45 – Bypass de Análisis Estático...</code>).</li>
-          <li style={{ marginBottom: '8px' }}><strong>A. Modificaciones Realizadas:</strong> Una lista detallada enumerando y explicando a nivel técnico qué archivos se han tocado, qué componentes se han añadido o qué lógicas se han refactorizado.</li>
-          <li style={{ marginBottom: '8px' }}><strong>B. Problemas Resueltos:</strong> Una argumentación profunda de qué errores, bugs o carencias se solucionan con este despliegue, indicando siempre la causa raíz del fallo original.</li>
+          <li style={{ marginBottom: '8px' }}><strong>A. Problemas detectados:</strong> Una descripción analítica de qué errores, bugs o carencias existen, indicando la causa raíz del fallo original.</li>
+          <li style={{ marginBottom: '8px' }}><strong>B. Modificaciones realizadas:</strong> Una lista detallada enumerando y explicando a nivel técnico qué archivos se han tocado, qué componentes se han añadido o qué lógicas se han refactorizado.</li>
+          <li style={{ marginBottom: '8px' }}><strong>C. Problemas resueltos:</strong> Breve confirmación del estado final de éxito y la resolución del problema.</li>
         </ul>
 
         <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>Fase 0: Estampado de Versión (Timestamp)</h4>
@@ -351,19 +352,29 @@ export default function GuiaUsuarioPage() {
 
             <li style={{ marginBottom: '24px' }}>
               <strong>06/05/2026 06:58 – Inicialización Segura de Admin y WASM Threads</strong>
-              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Error 500 (App does not exist):</strong> La subida de fotos colapsaba en producción por una condición de carrera; <code>firebase-admin/storage</code> se importaba dinámicamente antes de que <code>admin.ts</code> inicializara la aplicación mediante el bypass de <code>eval</code>.</li>
+                  <li><strong>Lentitud y Timeouts IA:</strong> El cliente WebAssembly no podía usar multihilo (Multi-threading) porque Firebase Hosting no enviaba las cabeceras de aislamiento CORS requeridas, provocando timeouts.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}>Refactorización de <code>src/lib/firebase/admin.ts</code> implementando "getters" dinámicos (<code>getAdminApp</code>, <code>getAdminAuth</code>, <code>getAdminBucket</code>) en lugar de inicialización a nivel de módulo, interceptando fallos silenciosos mediante <code>throw error</code> explícito.</li>
-                  <li style={{ marginBottom: '8px' }}>Actualización de todos los endpoints de autenticación y carga multimedia (ej. <code>api/perfil/photos/route.ts</code>) para invocar <code>getAdminBucket()</code> en lugar de intentar cargar la librería de Storage prematuramente.</li>
-                  <li>Inyección de cabeceras <code>Cross-Origin-Opener-Policy: same-origin</code> y <code>Cross-Origin-Embedder-Policy: require-corp</code> en <code>firebase.json</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Actualización de todos los endpoints de autenticación y carga multimedia (ej. <code>api/perfil/photos/route.ts</code>) para invocar <code>getAdminBucket()</code> o <code>getAdminAuth()</code>.</li>
+                  <li>Inyección de cabeceras <code>Cross-Origin-Opener-Policy: same-origin</code> y <code>Cross-Origin-Embedder-Policy: require-corp</code> en la sección de hosting de <code>firebase.json</code>.</li>
                 </ul>
               </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><strong>Error 500 "The default Firebase app does not exist":</strong> Resuelto el colapso de las subidas de fotos en producción causado por la condición de carrera en entornos Serverless, donde el módulo de Storage se invocaba antes que el bypass de <code>eval</code>.</li>
-                  <li><strong>Timeouts de IA y Lentitud Cliente:</strong> Desbloqueado el acceso Multihilo (Multi-threading) para WebAssembly en navegadores, eliminando el error <code>env.wasm.numThreads is set to 4</code> y los bloqueos por timeout en el recorte inteligente de fotos y caras.</li>
+                  <li style={{ marginBottom: '8px' }}>Las fotos de perfil se suben exitosamente al entorno Cloud y el navegador puede usar múltiples procesadores para recortar rostros instantáneamente. Ambos cuellos de botella fueron erradicados permanentemente.</li>
+                  <li><strong>Update:</strong> Se trasladaron las cabeceras WASM desde <code>firebase.json</code> a <code>next.config.ts</code> porque el entorno Serverless de Next.js sobrescribe los headers del HTML principal.</li>
                 </ul>
               </div>
             </li>
