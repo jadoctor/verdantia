@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
-import type { FirebaseStorage } from 'firebase/storage';
 import { getMediaUrl } from '@/lib/media-url';
 import './EspecieForm.css';
 
@@ -570,6 +569,51 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setShowAiModal(false);
   };
 
+  const normalizePathSegment = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+  const getExtensionFromFile = (file: File) => {
+    const byName = (file.name.match(/\.([a-zA-Z0-9]+)$/)?.[1] || '').toLowerCase();
+    if (byName) return byName;
+
+    const mimeToExt: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+      'image/avif': 'avif'
+    };
+    return mimeToExt[file.type] || 'jpg';
+  };
+
+  const buildEspecieStoragePath = (file: File, isAi = false) => {
+    const baseName = normalizePathSegment(formData.especiesnombre || `especie-${especieId || 'nueva'}`) || `especie-${especieId || 'nueva'}`;
+    const randomSuffix = Math.random().toString(36).slice(2, 8);
+    const extension = getExtensionFromFile(file);
+    return `uploads/especies/${baseName}-${isAi ? 'ai-' : ''}${Date.now()}-${randomSuffix}.${extension}`;
+  };
+
+  const buildDefaultPhotoResumen = (seoAlt = '') =>
+    JSON.stringify({
+      profile_object_x: 50,
+      profile_object_y: 50,
+      profile_object_zoom: 100,
+      profile_brightness: 100,
+      profile_contrast: 100,
+      profile_style: '',
+      seo_alt: seoAlt,
+      dominant_color: null,
+      vibrant_color: null,
+      blurhash: null,
+      exif_data: null
+    });
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | any, type: 'photos' | 'pdfs') => {
     if (!especieId) {
       alert('Guarda la especie primero antes de subir archivos.');
@@ -584,7 +628,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       let imageCompression: any = null;
       let storageApi: typeof import('firebase/storage') | null = null;
-      let clientStorage: FirebaseStorage | null = null;
+      let clientStorage: any = null;
 
       if (type === 'photos') {
         imageCompression = (await import('browser-image-compression')).default;
@@ -623,15 +667,25 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             throw new Error('Firebase Storage no inicializado');
           }
           const { ref, uploadBytes } = storageApi;
-          const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
-          const storagePath = `uploads/temp/${fileName}`;
+          const storagePath = buildEspecieStoragePath(file);
           const storageRef = ref(clientStorage, storagePath);
-          await uploadBytes(storageRef, file);
+          await uploadBytes(storageRef, file, {
+            cacheControl: 'public, max-age=31536000',
+            contentType: file.type || 'image/jpeg'
+          });
+
+          const defaultAlt = `${formData.especiesnombre || 'especie'} ${i + 1}`.trim();
 
           const res = await fetch(`/api/admin/especies/${especieId}/photos`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ rawStoragePath: storagePath, especieNombre: formData.especiesnombre || '' }) 
+            body: JSON.stringify({
+              storagePath,
+              nombreOriginal: file.name || 'foto-especie.jpg',
+              mimeType: file.type || 'image/jpeg',
+              fileSize: file.size || 0,
+              resumen: buildDefaultPhotoResumen(defaultAlt)
+            })
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -711,16 +765,29 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const blob = await res.blob();
       const { storage } = await import('@/lib/firebase/config');
       const { ref, uploadBytes } = await import('firebase/storage');
-      const fileName = `temp-ai-${Date.now()}.jpg`;
-      const storagePath = `uploads/temp/${fileName}`;
+      const aiFile = new File([blob], `ai-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+      const storagePath = buildEspecieStoragePath(aiFile, true);
       const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, blob);
+      await uploadBytes(storageRef, aiFile, {
+        cacheControl: 'public, max-age=31536000',
+        contentType: aiFile.type
+      });
 
-      await fetch(`/api/admin/especies/${especieId}/photos`, {
+      const saveRes = await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-        body: JSON.stringify({ rawStoragePath: storagePath, especieNombre: formData.especiesnombre || '' })
+        body: JSON.stringify({
+          storagePath,
+          nombreOriginal: aiFile.name,
+          mimeType: aiFile.type,
+          fileSize: aiFile.size,
+          resumen: buildDefaultPhotoResumen(`${formData.especiesnombre || 'especie'} generada por IA`)
+        })
       });
+      if (!saveRes.ok) {
+        const errData = await saveRes.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP Error ${saveRes.status}`);
+      }
       await loadAttachments(especieId);
       setAiImageResult(null);
       setAiImageConcept('');

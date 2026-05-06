@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 6 de Mayo, 18:05 (Fix inicialización Firebase Admin en especies)
+            Verificación de Subida: 6 de Mayo, 19:37 (Subida a producción final)
           </p>
         </div>
       </div>
