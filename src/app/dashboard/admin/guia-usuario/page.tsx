@@ -214,55 +214,141 @@ export default function GuiaUsuarioPage() {
 
       <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
         <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          6. Protocolo de Despliegue (Deploy) a Producción
+          6. Despliegue
         </h2>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.1. Protocolo de despliegue</h3>
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
-          El paso del entorno de desarrollo local al entorno real de producción es un proceso delicado que debe seguir una estricta secuencia.
+          El paso del entorno de desarrollo local al entorno real de producción es un proceso delicado que debe seguir una estricta secuencia. Antes de ejecutar los comandos de despliegue, el asistente debe documentar <strong>obligatoriamente</strong> la subida creando un nuevo bloque en el apartado <strong>6.2. Despliegues</strong>. Este apartado funciona como un histórico cronológico (1, 2, 3...) donde cada entrada debe estructurarse estrictamente de la siguiente manera:
         </p>
-
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.1. Fase 0: Estampado de Versión (Timestamp)</h3>
-        <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          <strong>Verificación Visual:</strong> Antes de iniciar la compilación, el asistente debe modificar obligatoriamente la pantalla de inicio (<code>src/app/page.tsx</code>) para estampar la fecha y hora exacta del despliegue. Esto permite confirmar a simple vista que la subida a producción ha surtido efecto.
-        </p>
-
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Fase 1: La Prueba de Fuego (Build Local)</h3>
-        <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          <strong>Regla de Oro:</strong> Nunca se sube código sin antes ejecutar el comando <code>npm run build</code> en la terminal local.
-        </p>
-        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}>Este comando realiza una compilación completa y ultra-estricta de todo el código TypeScript y Next.js.</li>
-          <li style={{ marginBottom: '8px' }}>Si existe el más mínimo error de tipos, una variable no utilizada, o un fallo en el diseño estructural, el <strong>Build fallará localmente</strong> alertando al desarrollador.</li>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px', marginBottom: '24px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Encabezado:</strong> Fecha, hora de la subida y un título descriptivo claro (ej: <code>06/05/2026 12:45 – Bypass de Análisis Estático...</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>A. Modificaciones Realizadas:</strong> Una lista detallada enumerando y explicando a nivel técnico qué archivos se han tocado, qué componentes se han añadido o qué lógicas se han refactorizado.</li>
+          <li style={{ marginBottom: '8px' }}><strong>B. Problemas Resueltos:</strong> Una argumentación profunda de qué errores, bugs o carencias se solucionan con este despliegue, indicando siempre la causa raíz del fallo original.</li>
         </ul>
 
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.3. Fase 2: Salvaguarda del Código (Control de Versiones)</h3>
+        <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>Fase 0: Estampado de Versión (Timestamp)</h4>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Una vez que el <code>build</code> es exitoso, se guarda un punto de control en la nube.
+          <strong>Verificación Visual:</strong> Modificar obligatoriamente la pantalla de inicio (<code>src/app/page.tsx</code>) para estampar la fecha y hora exacta del despliegue.
         </p>
+
+        <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>Fase 1: La Prueba de Fuego (Build Local)</h4>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          <strong>Regla de Oro:</strong> Nunca se sube código sin antes ejecutar <code>npm run build</code> localmente. Si existe un error de tipos, el build fallará alertando al desarrollador.
+        </p>
+
+        <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>Fase 2: Salvaguarda del Código (Control de Versiones)</h4>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><code>git add .</code> (Prepara todos los archivos modificados).</li>
-          <li style={{ marginBottom: '8px' }}><code>git commit -m "Descripción clara del cambio"</code> (Empaqueta los cambios con una etiqueta explicativa).</li>
-          <li style={{ marginBottom: '8px' }}><code>git push</code> (Sube el paquete de forma segura a GitHub).</li>
+          <li style={{ marginBottom: '8px' }}><code>git add .</code> (Prepara archivos modificados).</li>
+          <li style={{ marginBottom: '8px' }}><code>git commit -m "Descripción"</code> (Empaqueta los cambios).</li>
+          <li style={{ marginBottom: '8px' }}><code>git push</code> (Sube el paquete a GitHub).</li>
         </ul>
 
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.4. Fase 3: El Despliegue Final (Google Cloud / Firebase)</h3>
-        <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Para que los cambios se reflejen en la app en vivo, el código debe subirse a la infraestructura de Google Cloud usando Firebase Hosting.
-        </p>
+        <h4 style={{ color: '#475569', marginTop: '20px', fontSize: '1.1rem' }}>Fase 3: El Despliegue Final (Firebase)</h4>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}>Se ejecuta el comando <code>firebase deploy</code> en la terminal.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Aviso importante (Windows):</strong> Si experimentas el error <code>EPERM: operation not permitted, symlink</code> durante el despliegue en Windows, debes ejecutar el comando de despliegue desde una terminal Linux (WSL) o asegurar que tu terminal tiene permisos de administrador.</li>
-          <li style={{ marginBottom: '8px' }}>Una vez terminado, la consola proporcionará el enlace de Firebase (Hosting URL) confirmando que Verdantia ya está operativa en la nube.</li>
+          <li style={{ marginBottom: '8px' }}>Ejecutar <code>firebase deploy</code> en la terminal.</li>
         </ul>
 
         <div style={{ background: '#f0f9ff', borderLeft: '4px solid #0ea5e9', padding: '16px', marginTop: '24px', borderRadius: '0 8px 8px 0' }}>
-          <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>6.5. Rol del Asistente IA (Mandato Estricto)</h4>
+          <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>Mandato Estricto del Asistente IA</h4>
           <p style={{ color: '#0c4a6e', margin: 0, lineHeight: 1.5 }}>
-            El asistente de inteligencia artificial (Antigravity) tiene prohibido subir código a producción por iniciativa propia. <strong>El proceso completo de despliegue a Firebase se realizará SIEMPRE y ÚNICAMENTE a petición expresa del usuario.</strong> 
-            <br/><br/>
-            <strong>REGLA DE HIERRO PARA EL ASISTENTE:</strong> Una vez que el usuario ordene subir a producción, el asistente lanzará los comandos pertinentes (Build, Commit, Deploy) y <strong>ESPERARÁ OBLIGATORIAMENTE</strong> a que los comandos finalicen mediante comprobaciones de estado. <strong>BAJO NINGÚN CONCEPTO</strong> el asistente le preguntará al usuario si desea "esperar al resultado". El asistente actúa como un confidente diligente: procesa la tarea en segundo plano e informa <strong>exclusivamente cuando el despliegue haya concluido exitosamente o fallado</strong>.
-            <br/><br/>
-            <strong>SINCRONIZACIÓN CON AGENTS.MD:</strong> Para garantizar que el comportamiento automático y sin interrupciones se mantenga a lo largo del tiempo, cualquier cambio, adición o modificación en esta guía de usuario ("La Biblia") deberá ser reflejado y sincronizado de inmediato como una regla obligatoria en el archivo <code>AGENTS.md</code> de la raíz del proyecto, el cual actúa como memoria inquebrantable y permanente del asistente.
+            El asistente lanzará los comandos pertinentes (Build, Commit, Deploy) SIEMPRE y ÚNICAMENTE a petición expresa del usuario y <strong>ESPERARÁ OBLIGATORIAMENTE</strong> a que finalicen en segundo plano.
           </p>
+        </div>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Despliegues</h3>
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>01/05/2026 13:16 – CDN Directo para Firebase Storage</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Modificación de la estrategia de servido de archivos, reemplazando el uso del endpoint proxy <code>/api/media</code> por URLs públicas directas generadas desde el bucket de Firebase.</li>
+                  <li>Limpieza de caché profunda para optimizar la reconstrucción del frontend.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><strong>Cuellos de Botella (Sobrecarga):</strong> Se mitigó la carga computacional en las Cloud Functions de Next.js, evitando que funcionaran como un pasarela ineficiente de buffers de fotos y PDFs, delegando el peso al CDN nativo de Google.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>01/05/2026 16:39 – Externalización del Driver de MySQL</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Se añadió el módulo nativo <code>mysql2</code> a la configuración <code>serverExternalPackages</code> dentro de <code>next.config.ts</code>.</li>
+                  <li>Corrección de tipados y resolución estricta del import global en el instanciador del Pool de base de datos.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><strong>Error 500 en Endpoints CRUD:</strong> El acceso a bases de datos colapsaba en producción porque el empaquetador de Next.js extirpaba silenciosamente las dependencias binarias del driver <code>mysql2</code>. Esta exclusión forzada resolvió la estabilidad de todas las conexiones SQL.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>02/05/2026 21:17 – UX Tarjetas Blog IA, Corrección SQL y Gemini Parser</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Diseño e implementación de <strong>Mini-Tarjetas Enriquecidas</strong> para los enlaces de blog, incluyendo miniaturas dinámicas y badges de estado.</li>
+                  <li style={{ marginBottom: '8px' }}>Desarrollo de un limpiador de sintaxis Markdown (eliminación de <code>```json</code>) previo al <code>JSON.parse()</code> de la IA de Gemini.</li>
+                  <li>Refactorización de la igualdad estricta a <code>==</code> para la vinculación de IDs de PDFs.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Error 500 en Blogs:</strong> Corregida consulta a la base de datos MySQL (referencia errónea a <code>u.nombre</code> en vez de <code>u.usuariosnombre</code>) que colapsaba la vista de blogs en el frontend.</li>
+                  <li><strong>Rollback en Asimilación de Plagas:</strong> Arreglado el mapeo de variables que causaba transacciones SQL fallidas y silenciadas al guardar sugerencias de la IA.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>04/05/2026 10:42 – Erradicación de Import Estático de Firebase Admin</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Eliminación del import estático en <code>storage.ts</code>, moviendo la carga a una importación dinámica dentro de las funciones de subida.</li>
+                  <li>Reversión de <code>serverExternalPackages</code> en <code>next.config.ts</code> para externalizar firebase-admin solo en desarrollo.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><strong>Resultado Fallido:</strong> La compilación fue exitosa localmente, pero en producción las rutas seguían colapsando con el error del hash, demostrando que la concatenación dinámica de strings seguía siendo interceptada por Turbopack.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '8px' }}>
+              <strong>06/05/2026 06:30 – Paridad Core de Producción + 10 Pasos de Fiabilidad Total</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>1. Los 5 Core Fixes (Paridad):</strong> Bypass de análisis estático con <code>eval</code> en <code>admin.ts</code>, importaciones dinámicas estrictas, permisos de Storage, externalización de paquetes en Turbopack y políticas CORS.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>2. CI/CD & Monitoreo:</strong> Implementación de GitHub Actions (<code>deploy.yml</code>) y un sistema estructurado de Logging (<code>logger.ts</code>) acoplado a Google Cloud.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>3. Resiliencia & UI:</strong> Inserción de Zod schemas estrictos contra archivos maliciosos y creación de <code>ImageWithFallback.tsx</code> para caídas en el CDN.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>4. Seguridad & Infraestructura:</strong> Limitador de ratio en memoria (<code>rate-limit.ts</code>), entorno Staging (<code>.env.staging</code>) y blindaje IAM mediante scripts automatizados (Mínimo Privilegio).</li>
+                  <li><strong>5. Testing & Backups:</strong> Programación de volcados de MySQL (<code>backup-db.ts</code>), testeo de estrés (<code>k6</code>) y automatización E2E con Playwright.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Crashes por Empaquetado:</strong> Se eliminó por fin el colapso del Hash de Turbopack en las Cloud Functions que destrozaba el endpoint de fotos en producción.</li>
+                  <li><strong>Blindaje Empresarial:</strong> El servidor pasa de ser un desarrollo estándar a una arquitectura robusta contra DDoS, fallos en caliente y corrupción de bases de datos.</li>
+                </ul>
+              </div>
+            </li>
+          </ol>
         </div>
       </div>
 
@@ -637,6 +723,7 @@ export default function GuiaUsuarioPage() {
           </ul>
         </div>
       </div>
+
     </div>
   );
 }

@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 4 de Mayo, 12:46 (Fix Evasión Total con Eval)
+            Verificación de Subida: 6 de Mayo, 06:30 (Paridad Core + 10 Fiabilidad)
           </p>
         </div>
       </div>
