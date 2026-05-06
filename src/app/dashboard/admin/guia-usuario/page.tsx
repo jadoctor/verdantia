@@ -516,6 +516,18 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 15:54 – Revisión y Confirmación de Comportamiento</strong>
+              
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Se re-verificó línea por línea el comportamiento de subida de fotos entre <code>perfil/page.tsx</code> y los componentes administrativos (<code>EspecieForm.tsx</code>, <code>LaborForm.tsx</code>).</li>
+                  <li>Ambos flujos utilizan ahora un <strong>import estático de Firebase</strong> en la cabecera (<code>auth</code> en perfil, <code>storage</code> en especies) para asegurar que <code>initializeApp()</code> se ejecute al instante.</li>
+                  <li>Ambos utilizan un <strong>import dinámico de <code>firebase/storage</code></strong> a la hora de subir el archivo para aligerar la carga, garantizando una equivalencia del 100% en su ejecución tanto en local como en producción.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
