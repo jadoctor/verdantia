@@ -403,6 +403,31 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 07:44 – Despliegue Final con Cabeceras y Middleware</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Los encabezados de aislamiento no se entregaban al cliente, provocando el warning <code>env.wasm.numThreads is set to 4</code> y caídas de IA.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se creó <code>src/middleware.ts</code> que agrega los encabezados <code>Cross-Origin-Opener-Policy</code> y <code>Cross-Origin-Embedder-Policy</code> a todas las respuestas.</li>
+                  <li>Se reforzó <code>next.config.ts</code> con la función <code>async headers()</code> cubriendo la ruta <code>/ (.*)</code>.</li>
+                  <li>Se actualizó el timestamp en <code>src/app/page.tsx</code> a 07:44.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>El warning de WASM desapareció y la IA vuelve a operar en multi‑threading sin timeouts.</li>
+                  <li>Las fotos de perfil se suben y procesan correctamente en producción.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
