@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 6 de Mayo, 06:58 (Inicialización Segura Serverless + Multihilo WASM)
+            Verificación de Subida: 6 de Mayo, 07:27 (Cabeceras Nativas Next.js WASM)
           </p>
         </div>
       </div>
