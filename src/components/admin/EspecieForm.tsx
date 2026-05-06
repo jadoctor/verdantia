@@ -612,8 +612,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         }
 
         if (type === 'photos') {
-          const { ref, uploadBytes } = await import('firebase/storage');
           const { storage } = await import('@/lib/firebase/config');
+          const { ref, uploadBytes } = await import('firebase/storage');
           const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
           const storagePath = `uploads/temp/${fileName}`;
           const storageRef = ref(storage, storagePath);

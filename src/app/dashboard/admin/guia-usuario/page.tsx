@@ -477,6 +477,26 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 12:42 – Fix crítico: Orden de imports Firebase SDK en producción</strong>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problema detectado</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>En producción (Cloud Function Firebase), la subida de fotos en Especies fallaba con <code>The default Firebase app does not exist</code>. En local funcionaba. Las fotos de usuario (perfil) no tenían este error.</li>
+                  <li><strong>Causa raíz:</strong> En <code>EspecieForm.tsx</code>, el módulo <code>firebase/storage</code> se importaba <em>antes</em> que <code>@/lib/firebase/config</code>. En local los módulos ya están cacheados, pero en producción cada Cloud Function arranca en frío. Al importar <code>firebase/storage</code> primero, ese módulo intenta referenciar la app por defecto que aún no existe porque <code>initializeApp()</code> (dentro de <code>config.ts</code>) no había corrido todavía.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Regla establecida (Patrón Oficial)</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>SIEMPRE importar <code>@/lib/firebase/config</code> antes de <code>firebase/storage</code></strong>. Este orden garantiza que <code>initializeApp()</code> corre primero en cualquier entorno.</li>
+                  <li>Corrección aplicada en <code>EspecieForm.tsx</code> para que coincida con el patrón ya funcional de <code>perfil/page.tsx</code>.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
