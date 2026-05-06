@@ -340,6 +340,7 @@ export default function DashboardLayout({
       <img 
         src={photoUrl} 
         alt="Avatar" 
+        crossOrigin="anonymous"
         style={{ 
           width: '100%', 
           height: '100%', 

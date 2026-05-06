@@ -1192,7 +1192,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       transformOrigin: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
                       transform: `scale(${(heroMeta.profile_object_zoom ?? 100) / 100})`,
                       filter: fullFilter, transition: 'opacity 0.3s ease' }}
-                  />
+                   crossOrigin="anonymous" />
                 );
               })()}
             </div>
@@ -1243,7 +1243,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           style={{ width: '100%', height: '100%', objectFit: 'cover',
                             objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
                             transformOrigin: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
-                            transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }} />
+                            transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }}  crossOrigin="anonymous" />
                       </div>
                     );
                   })}
@@ -1948,7 +1948,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       return (
                       <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', flexDirection: 'column' }}>
                         {b.hero_imagen ? (
-                          <img src={getMediaUrl(b.hero_imagen)} alt={b.hero_imagen_alt || b.titulo} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                          <img src={getMediaUrl(b.hero_imagen)} alt={b.hero_imagen_alt || b.titulo} style={{ width: '100%', height: '140px', objectFit: 'cover' }}  crossOrigin="anonymous" />
                         ) : (
                           <div style={{ width: '100%', height: '140px', background: 'linear-gradient(135deg, #0f766e, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3rem' }}>📝</div>
                         )}
@@ -2105,7 +2105,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               loading="lazy" 
                               style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} 
                               draggable={false} 
-                            />
+                             crossOrigin="anonymous" />
                             {meta.exif_data && (
                               <div style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', cursor: 'help', zIndex: 10 }} title={`Cámara: ${meta.exif_data.make || ''} ${meta.exif_data.model || ''}\nFecha: ${meta.exif_data.date ? new Date(meta.exif_data.date).toLocaleDateString() : 'Desconocida'}`}>
                                 ℹ️
@@ -2193,7 +2193,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           {/* Cuadro de portada — solo la foto */}
                           <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
                             {p.portada ? (
-                              <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                              <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}  crossOrigin="anonymous" />
                             ) : (
                               <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2233,7 +2233,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                     <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                                       {b.hero_imagen ? (
                                         <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
-                                          <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                          <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
                                         </div>
                                       ) : (
                                         <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
@@ -2499,7 +2499,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       transform: `scale(${editorZoom / 100})`,
                       filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
                     }}
-                  />
+                   crossOrigin="anonymous" />
                 </div>
                 <div className="photo-editor-hint">
                   <span>Arrastra para encuadrar</span>
@@ -2648,7 +2648,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {editingPdf.portada ? (
-                    <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
                   ) : (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
                       <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>

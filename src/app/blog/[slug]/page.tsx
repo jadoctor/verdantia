@@ -53,7 +53,7 @@ export default function BlogPublicArticle() {
     return (
       <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh' }}>
         <div style={{ width: '100%', height: '400px', background: 'linear-gradient(135deg, #10b981, #0ea5e9)', position: 'relative' }}>
-          {art.blogimagen && <img src={getMediaUrl(art.blogimagen)} alt={art.blogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />}
+          {art.blogimagen && <img src={getMediaUrl(art.blogimagen)} alt={art.blogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}  crossOrigin="anonymous" />}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9), transparent)' }} />
           <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
             <Link href="/blog" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 'bold' }}>← Volver al Blog</Link>

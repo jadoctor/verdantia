@@ -501,7 +501,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                                 transformOrigin: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
                                 transform: `scale(${(heroMeta.profile_object_zoom ?? 100) / 100})`,
                                 filter: fullFilter, transition: 'opacity 0.3s ease' }}
-                            />
+                             crossOrigin="anonymous" />
                           );
                         })()}
                       </div>
@@ -539,7 +539,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                                 onMouseLeave={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1)'; }}
                               >
                                 <img src={getMediaUrl(p.ruta)} alt="" draggable={false}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`, transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }} />
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`, transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }}  crossOrigin="anonymous" />
                               </div>
                             );
                           })}
@@ -651,7 +651,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                           onDragOver={(e) => e.preventDefault()}
                         >
                           {meta.blurhash && <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}><Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} /></div>}
-                          <img src={getMediaUrl(p.ruta)} alt={meta.seo_alt || 'foto'} loading="lazy" style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} draggable={false} />
+                          <img src={getMediaUrl(p.ruta)} alt={meta.seo_alt || 'foto'} loading="lazy" style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} draggable={false}  crossOrigin="anonymous" />
                           <div className="photo-actions" style={{ zIndex: 20 }}>
                             <button type="button" className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`} onClick={() => handleSetPrimaryPhoto(p.id)}>{p.esPrincipal ? '★' : '☆'}</button>
                             <button type="button" className="photo-action-btn btn-photo-edit" onClick={() => openPhotoEditor(p)}>✏️</button>
@@ -721,7 +721,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                       : bFilter;
                     return (
                       <img src={getMediaUrl(editingPhoto.ruta)} alt="" className="photo-editor-image"
-                        style={{ objectPosition: `${editorX}% ${editorY}%`, transform: `scale(${editorZoom / 100})`, filter: fFilter }} />
+                        style={{ objectPosition: `${editorX}% ${editorY}%`, transform: `scale(${editorZoom / 100})`, filter: fFilter }}  crossOrigin="anonymous" />
                     );
                   })()}
                 </div>

@@ -36,30 +36,12 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const userId = formData.get('userId') as string;
-    const faceX = Number(formData.get('faceX')) || 50;
-    const faceY = Number(formData.get('faceY')) || 38;
-    const faceZoom = Number(formData.get('faceZoom')) || 100;
+    const dataPayload = await request.json();
+    const { userId, storagePath, faceX = 50, faceY = 38, faceZoom = 100, nombreOriginal = 'foto.jpg' } = dataPayload;
 
-    if (!file || !userId) {
-      return NextResponse.json({ error: 'Archivo y userId requeridos' }, { status: 400 });
+    if (!userId || !storagePath) {
+      return NextResponse.json({ error: 'Faltan datos de la foto' }, { status: 400 });
     }
-
-    // Generar nombre único
-    const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
-    const filename = `usuario_${userId}_${Date.now()}${ext}`;
-    const storagePath = `uploads/usuario/${filename}`;
-
-    // Subir a Firebase Storage (lazy import para evitar hash corrupto de Turbopack)
-    const bytes = await file.arrayBuffer();
-    const { uploadToStorage } = await import('@/lib/firebase/storage');
-    const publicUrl = await uploadToStorage(
-      Buffer.from(bytes),
-      storagePath,
-      file.type || 'image/jpeg'
-    );
 
     // Contar fotos existentes para el orden
     const [countResult] = await pool.query(
@@ -73,8 +55,9 @@ export async function POST(request: Request) {
 
     // Insertar en la base de datos (con centrado IA)
     // Guardamos la ruta relativa (uploads/usuario/...) en la DB.
-    // getMediaUrl() la convertirá a /api/media?path=... al renderizar.
-    const fileSize = bytes.byteLength;
+    const fileSize = 0; // We no longer know the exact file size on the server
+    const mimeType = nombreOriginal.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+    
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
@@ -83,7 +66,7 @@ export async function POST(request: Request) {
         datosadjuntosresumen, datosadjuntospesobytes
       ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
       [
-        file.type || 'image/jpeg', file.name, storagePath, esPrimera,
+        mimeType, nombreOriginal, storagePath, esPrimera,
         total + 1, userId,
         JSON.stringify({ profile_object_x: faceX, profile_object_y: faceY, profile_object_zoom: faceZoom, profile_style: '' }),
         fileSize
@@ -96,7 +79,7 @@ export async function POST(request: Request) {
         id: (result as any).insertId,
         ruta: storagePath,
         esPrincipal: esPrimera,
-        nombreOriginal: file.name
+        nombreOriginal: nombreOriginal
       }
     });
 

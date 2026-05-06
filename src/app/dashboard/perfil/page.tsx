@@ -350,20 +350,34 @@ function PerfilContent() {
         /* usar defaults: centrado 50/38, zoom 100 */
       }
 
-      // ── Paso 3: Subir la imagen (siempre se ejecuta) ──
-      const formData = new FormData();
-      const safeName = (file.name && file.name !== 'image.jpg' && file.name !== 'image.jpeg') 
-        ? file.name.replace(/\.\w+$/, '.jpg') 
-        : `foto_${Date.now()}.jpg`;
-      formData.append('file', processedBlob, safeName);
-      formData.append('userId', String(profile.id));
-      formData.append('faceX', String(Math.round(faceX)));
-      formData.append('faceY', String(Math.round(faceY)));
-      formData.append('faceZoom', String(autoZoom));
 
+      // ── Paso 3: Subir la imagen (siempre se ejecuta) directamente a Storage ──
+      const ext = (file.name.match(/\.\w+$/) || ['.jpg'])[0];
+      const filename = `usuario_${profile.id}_${Date.now()}${ext}`;
+      const storagePath = `uploads/usuario/${filename}`;
+
+      const { storage } = await import('@/lib/firebase/config');
+      const { ref, uploadBytes } = await import('firebase/storage');
+      const storageRef = ref(storage, storagePath);
+      
+      showToast('☁️ Subiendo imagen a la nube...');
+      await uploadBytes(storageRef, processedBlob, {
+        cacheControl: 'public, max-age=31536000',
+        contentType: processedBlob.type
+      });
+
+      // Guardar la referencia en MySQL
       const res = await fetch('/api/perfil/photos', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: profile.id,
+          storagePath,
+          faceX: Math.round(faceX),
+          faceY: Math.round(faceY),
+          faceZoom: autoZoom,
+          nombreOriginal: file.name
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -1095,6 +1109,7 @@ function PerfilContent() {
                   <img
                     src={getMediaUrl(mainPhoto.ruta)}
                     alt=""
+                    crossOrigin="anonymous"
                     style={{
                       width: '100%', height: '100%', objectFit: 'cover',
                       objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
@@ -1144,6 +1159,7 @@ function PerfilContent() {
                 <img
                   src={getMediaUrl(photo.ruta)}
                   alt="Foto de perfil"
+                  crossOrigin="anonymous"
                   style={{
                     cursor: isLocked ? 'not-allowed' : 'default',
                     objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
@@ -2427,6 +2443,7 @@ function PerfilContent() {
                 <img
                   src={getMediaUrl(editingPhoto.ruta)}
                   alt="Preview"
+                  crossOrigin="anonymous"
                   draggable={false}
                   style={{
                     objectPosition: `${editorX}% ${editorY}%`,

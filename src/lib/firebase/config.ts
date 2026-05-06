@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBq3yOKLmVHoZEoYCbUyTlpOGxXNaIyAm8",
@@ -13,5 +14,6 @@ const firebaseConfig = {
 // Initialize Firebase (evita el error de múltiples inicializaciones en Next.js)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
+const storage = getStorage(app);
 
-export { app, auth };
+export { app, auth, storage };

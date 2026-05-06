@@ -102,7 +102,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
         {/* Avatar */}
         <div style={{ width: '80px', height: '106px', borderRadius: '14px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.4)', background: '#e0f2fe', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {u.fotoPrincipal ? (
-            <img src={getMediaUrl(u.fotoPrincipal)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={getMediaUrl(u.fotoPrincipal)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
           ) : u.icono ? (
             <span style={{ fontSize: '2.5rem' }}>{u.icono}</span>
           ) : (
@@ -217,7 +217,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
             {fotos.map((f: any) => (
               <div key={f.id} style={{ aspectRatio: '3/4', borderRadius: '10px', overflow: 'hidden', border: f.esPrincipal ? '3px solid #f59e0b' : '2px solid #e2e8f0', boxShadow: f.esPrincipal ? '0 0 0 2px rgba(245,158,11,0.3)' : 'none' }}>
-                <img src={getMediaUrl(f.ruta)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={getMediaUrl(f.ruta)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
               </div>
             ))}
           </div>

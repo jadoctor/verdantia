@@ -173,6 +173,7 @@ export default function EspeciesAdminPage() {
                             <img 
                               src={getMediaUrl(e.primary_photo_ruta)} 
                               alt={e.especiesnombre} 
+                              crossOrigin="anonymous"
                               loading="lazy"
                               style={{ 
                                 width: '100%', 

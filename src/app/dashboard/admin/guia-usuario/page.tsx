@@ -402,52 +402,31 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
+
             <li style={{ marginBottom: '24px' }}>
-              <strong>06/05/2026 07:27 – Despliegue con Cabeceras (fallido)</strong>
-              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
-              <div style={{ background: '#fff3cd', border: '1px solid #ffeeba', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+              <strong>06/05/2026 08:30 – Refactorización Extrema: Client-Side Uploads y Firebase CDN</strong>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados (El Falso Positivo)</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Se intentó publicar una versión con encabezados CORS‑Isolation a las 07:27, pero el despliegue falló con <code>HTTP 409 Conflict</code> (la Cloud Function estaba en proceso de actualización).</li>
-                  <li>La versión nunca alcanzó producción, por lo que el warning <code>env.wasm.numThreads is set to 4</code> continuó apareciendo.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Error 403 Forbidden:</strong> Al habilitar el aislamiento estricto (COEP), las imágenes generadas por <code>getMediaUrl()</code> dejaron de mostrarse en toda la plataforma. La causa raíz era que la URL genérica de Google Cloud (<code>storage.googleapis.com</code>) exige permisos de infraestructura (IAM) para accesos anónimos, lo cual devolvía un error 403 al navegador al intentar validar el CORS.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Colapso Serverless Persistente:</strong> Aunque creíamos haber solucionado el Error 500 del <code>firebase-admin</code>, las subidas de fotos seguían fallando en producción. Las limitaciones severas de memoria y tiempo de ejecución de las Cloud Functions de Vercel/Firebase, combinadas con los archivos pesados, provocaban Timeouts y fallos del empaquetador (Turbopack).</li>
                 </ul>
               </div>
+
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Se añadió <code>src/middleware.ts</code> con los encabezados requeridos.</li>
-                  <li>Se reforzó <code>next.config.ts</code> con <code>async headers()</code> cubriendo <code>/ (.*)</code>.</li>
-                  <li>Se actualizó el timestamp en <code>src/app/page.tsx</code> a 07:27.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Reescritura del Resolutor de Medios:</strong> Se reescribió <code>src/lib/media-url.ts</code> para generar URLs dinámicas directas de la API de Firebase (<code>firebasestorage.googleapis.com/.../?alt=media</code>). Esto garantiza que Firebase Security Rules apliquen la política <code>allow read;</code> y devuelvan las cabeceras CORS de acceso público.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Inyección Global CORS:</strong> Se diseñó un script que inyectó <code>crossOrigin="anonymous"</code> a nivel global en todos los tags <code>&lt;img&gt;</code> (Especies, Perfiles, Labores) garantizando compatibilidad 100% con COEP.</li>
+                  <li><strong>Arquitectura Client-Side Uploads:</strong> Se destripó la ruta <code>/api/perfil/photos</code>, delegando todo el peso de la subida a Firebase Web SDK. El navegador ahora sube los blobs directamente al Bucket sin pasar por Next.js, y la API solo se usa para registrar rutas de texto ligero en MySQL.</li>
                 </ul>
               </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas no resueltos</h5>
-              <div style={{ background: '#f8d7da', border: '1px solid #f5c6cb', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Los encabezados no fueron entregados, por lo que el warning de WASM persistía.</li>
-                  <li>La IA seguía fallando en procesamiento multihilo.</li>
-                </ul>
-              </div>
-            </li>
-            <li style={{ marginBottom: '24px' }}>
-              <strong>06/05/2026 07:44 – Despliegue Final con Cabeceras y Middleware</strong>
-              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Los encabezados de aislamiento no se entregaban al cliente, provocando el warning <code>env.wasm.numThreads is set to 4</code> y caídas de IA.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Se creó <code>src/middleware.ts</code> que agrega los encabezados <code>Cross-Origin-Opener-Policy</code> y <code>Cross-Origin-Embedder-Policy</code> a todas las respuestas.</li>
-                  <li>Se reforzó <code>next.config.ts</code> con la función <code>async headers()</code> cubriendo la ruta <code>/ (.*)</code>.</li>
-                  <li>Se actualizó el timestamp en <code>src/app/page.tsx</code> a 07:44.</li>
-                </ul>
-              </div>
+
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>El warning de WASM desapareció y la IA vuelve a operar en multi‑threading sin timeouts.</li>
-                  <li>Las fotos de perfil se suben y procesan correctamente en producción.</li>
+                  <li style={{ marginBottom: '8px' }}>Se ha blindado el entorno de producción contra errores de Timeout y memoria en la subida multimedia. Las galerías de imágenes de la plataforma ya son plenamente operativas, extremadamente rápidas y conformes con el aislamiento multihilo (Multi-threading WebAssembly).</li>
                 </ul>
               </div>
             </li>

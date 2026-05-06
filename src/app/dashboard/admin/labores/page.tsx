@@ -134,7 +134,7 @@ export default function LaboresAdminPage() {
                             src={getMediaUrl(labor.primary_photo_ruta)} 
                             alt={labor.laboresnombre}
                             style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}
-                          />
+                           crossOrigin="anonymous" />
                         ) : (
                           <span style={{ fontSize: '1.5rem' }}>{icono}</span>
                         )}
