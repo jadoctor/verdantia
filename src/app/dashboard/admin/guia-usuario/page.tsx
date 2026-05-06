@@ -402,7 +402,31 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
-
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 07:27 – Despliegue con Cabeceras (fallido)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#fff3cd', border: '1px solid #ffeeba', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se intentó publicar una versión con encabezados CORS‑Isolation a las 07:27, pero el despliegue falló con <code>HTTP 409 Conflict</code> (la Cloud Function estaba en proceso de actualización).</li>
+                  <li>La versión nunca alcanzó producción, por lo que el warning <code>env.wasm.numThreads is set to 4</code> continuó apareciendo.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se añadió <code>src/middleware.ts</code> con los encabezados requeridos.</li>
+                  <li>Se reforzó <code>next.config.ts</code> con <code>async headers()</code> cubriendo <code>/ (.*)</code>.</li>
+                  <li>Se actualizó el timestamp en <code>src/app/page.tsx</code> a 07:27.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas no resueltos</h5>
+              <div style={{ background: '#f8d7da', border: '1px solid #f5c6cb', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Los encabezados no fueron entregados, por lo que el warning de WASM persistía.</li>
+                  <li>La IA seguía fallando en procesamiento multihilo.</li>
+                </ul>
+              </div>
+            </li>
             <li style={{ marginBottom: '24px' }}>
               <strong>06/05/2026 07:44 – Despliegue Final con Cabeceras y Middleware</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
