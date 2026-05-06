@@ -374,10 +374,35 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}>Las fotos de perfil se suben exitosamente al entorno Cloud y el navegador puede usar múltiples procesadores para recortar rostros instantáneamente. Ambos cuellos de botella fueron erradicados permanentemente.</li>
-                  <li><strong>Update:</strong> Se trasladaron las cabeceras WASM desde <code>firebase.json</code> a <code>next.config.ts</code> porque el entorno Serverless de Next.js sobrescribe los headers del HTML principal.</li>
                 </ul>
               </div>
             </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>06/05/2026 07:13 – Native Next.js Headers for WebAssembly</strong>
+              
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El error de WebAssembly multihilo (<code>env.wasm.numThreads</code>) persistía en producción a pesar de haber añadido las cabeceras en <code>firebase.json</code>. Esto ocurría porque Firebase Hosting ignora su propia configuración estática cuando las rutas son generadas y devueltas por una Cloud Function de Next.js (Web Frameworks mode).</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se añadió la función asíncrona <code>headers()</code> directamente en el <code>next.config.ts</code> inyectando <code>Cross-Origin-Opener-Policy: same-origin</code> y <code>Cross-Origin-Embedder-Policy: require-corp</code>, obligando a Next.js a servirlas desde su motor Serverless.</li>
+                </ul>
+              </div>
+
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La aplicación web ahora tiene Cross-Origin Isolation habilitado a nivel nativo. El recorte inteligente con IA corre a máxima velocidad utilizando todos los núcleos del dispositivo del cliente.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
