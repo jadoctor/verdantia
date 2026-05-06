@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
+import type { FirebaseStorage } from 'firebase/storage';
 import { getMediaUrl } from '@/lib/media-url';
-import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css';
 
 interface EspecieFormProps {
@@ -583,8 +583,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
     try {
       let imageCompression: any = null;
+      let storageApi: typeof import('firebase/storage') | null = null;
+      let clientStorage: FirebaseStorage | null = null;
+
       if (type === 'photos') {
         imageCompression = (await import('browser-image-compression')).default;
+        const firebaseConfigModule = await import('@/lib/firebase/config');
+        clientStorage = firebaseConfigModule.storage;
+        storageApi = await import('firebase/storage');
       }
 
       for (let i = 0; i < files.length; i++) {
@@ -613,10 +619,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         }
 
         if (type === 'photos') {
-          const { ref, uploadBytes } = await import('firebase/storage');
+          if (!storageApi || !clientStorage) {
+            throw new Error('Firebase Storage no inicializado');
+          }
+          const { ref, uploadBytes } = storageApi;
           const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
           const storagePath = `uploads/temp/${fileName}`;
-          const storageRef = ref(storage, storagePath);
+          const storageRef = ref(clientStorage, storagePath);
           await uploadBytes(storageRef, file);
 
           const res = await fetch(`/api/admin/especies/${especieId}/photos`, { 
@@ -700,6 +709,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
+      const { storage } = await import('@/lib/firebase/config');
       const { ref, uploadBytes } = await import('firebase/storage');
       const fileName = `temp-ai-${Date.now()}.jpg`;
       const storagePath = `uploads/temp/${fileName}`;
