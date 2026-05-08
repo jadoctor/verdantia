@@ -73,10 +73,12 @@ export function getAdminApp() {
   if (cachedAdminApp) return cachedAdminApp;
 
   const admin = getAdminSdk();
-  if (admin.apps?.length) {
+  try {
     cachedAdminApp = admin.app();
     adminGlobals.__verdantiaAdminApp = cachedAdminApp;
     return cachedAdminApp;
+  } catch {
+    // Si no existe app por defecto en esta instancia del SDK, la inicializamos abajo.
   }
 
   const storageBucket = process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app';

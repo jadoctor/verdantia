@@ -759,6 +759,28 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/05/2026 00:41 – Fix Try/Catch para inicialización segura del Admin SDK</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La comprobación <code>admin.apps?.length</code> no era suficientemente fiable. En algunos estados de la instancia, intentar llamar a <code>admin.app()</code> lanzaba un error no capturado ("The default Firebase app does not exist") en lugar de caer al bloque de inicialización.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se ha envuelto la llamada a <code>admin.app()</code> en un bloque <code>try/catch</code> silencioso dentro de <code>getAdminApp()</code> en <code>admin.ts</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Si la aplicación no existe, el error se traga de forma controlada y el flujo continúa hacia la correcta inicialización con <code>admin.initializeApp()</code>, garantizando que nunca se rompa el endpoint.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
