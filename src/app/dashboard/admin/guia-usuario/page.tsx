@@ -280,6 +280,30 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 21:32 – Fix Crítico: Turbopack vs Módulos Nativos (Sharp)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Las subidas de fotos de Especies fallaban en producción con el error <code>Cannot find module 'sharp-20c6a5...'</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Este es el mismo síntoma de corrupción de hash que tuvimos hace unos días con <code>firebase-admin</code>.</li>
+                  <li>Ocurría porque la matriz <code>serverExternalPackages</code> estaba configurada para aplicarse <em>solo</em> en entorno de desarrollo. Al construir en producción, Turbopack intentaba empaquetar librerías binarias nativas (como Sharp) y rompía las referencias.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Modificado <code>next.config.ts</code> para que <code>serverExternalPackages</code> incluya explícita y permanentemente a <code>firebase-admin, sharp, mysql2, node-vibrant, blurhash, exifr</code> independientemente del entorno.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Restaurado el funcionamiento del ecosistema de subida de fotos (compresión webp, extracción de paletas vibrantes y firmas blurhash) en producción sin colapsos de Next.js.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
               <strong>08/05/2026 20:15 – Sistema de Hibernación y Bypass ENUM SQL</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
