@@ -186,9 +186,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       blurhashStr = encode(new Uint8ClampedArray(data), info.width, info.height, 4, 3);
     } catch (e) {}
 
-    const mainSharp = sharpInstance
+    const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
+      <text x="290" y="50" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="28" font-weight="bold"
+        fill="white" fill-opacity="0.35" stroke="black" stroke-width="1.5" stroke-opacity="0.25">
+        VERDANTIA
+      </text>
+    </svg>`);
+
+    const metadata = await sharpInstance.metadata();
+    const targetWidth = Math.min(metadata.width || 1920, 1920);
+    const targetHeight = Math.min(metadata.height || 1080, 1080);
+
+    let mainSharp = sharpInstance
       .clone()
       .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true });
+
+    if (targetWidth >= 300 && targetHeight >= 60) {
+      mainSharp = mainSharp.composite([{
+        input: watermarkSvg,
+        gravity: 'southeast'
+      }]);
+    }
 
     const mainBuffer = await mainSharp
       .webp({ quality: 80 })

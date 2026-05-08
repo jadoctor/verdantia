@@ -1,0 +1,19 @@
+const fs = require('fs');
+const file = 'src/components/admin/EspecieForm.tsx';
+let content = fs.readFileSync(file, 'utf8');
+
+// 1. Add pParcial and totalPParcial variables
+content = content.replace(
+  `const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;\r\n                const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;\r\n                const totalPFresco = pFresco * calcPersonas;\r\n                const totalPConserva = pConserva * calcPersonas;`,
+  `const pParcial = parseFloat(formData.especiesautosuficienciaparcial) || 0;\r\n                const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;\r\n                const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;\r\n                const totalPParcial = pParcial * calcPersonas;\r\n                const totalPFresco = pFresco * calcPersonas;\r\n                const totalPConserva = pConserva * calcPersonas;`
+);
+
+// 2. Replace the old "Solo Consumo en Fresco" card with the Parcial + Completa cards
+const oldCard = `<div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>\r\n                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Solo Consumo en Fresco</h4>\r\n                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>\r\n                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>\r\n                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>\r\n                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Fresco > 0 ? \`\${m2Fresco.toFixed(2)} m²\` : '--- m²'}</strong>\r\n                      </div>`;
+
+const newCards = `<div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>\r\n                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Parcial</h4>\r\n                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>\r\n                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPParcial.toFixed(1)}</strong>\r\n                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>\r\n                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Parcial > 0 ? \`\${m2Parcial.toFixed(2)} m²\` : '--- m²'}</strong>\r\n                      </div>\r\n\r\n                      <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>\r\n                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥬 Completa</h4>\r\n                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>\r\n                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>\r\n                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>\r\n                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Fresco > 0 ? \`\${m2Fresco.toFixed(2)} m²\` : '--- m²'}</strong>\r\n                      </div>`;
+
+content = content.replace(oldCard, newCards);
+
+fs.writeFileSync(file, content);
+console.log('Calculator fully updated to 3 cards.');

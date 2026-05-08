@@ -23,7 +23,7 @@ export default function Home() {
             Acceder a mi Huerto
           </a>
           <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 6 de Mayo, 21:28 (Autosuficiencia 3 niveles, IA motivos y plagas editables)
+            Verificación de Subida: 8 de Mayo, 17:28 (Guía de Usuario - Reglas de Suscripción de Avisos)
           </p>
         </div>
       </div>

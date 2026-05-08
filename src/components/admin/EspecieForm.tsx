@@ -79,6 +79,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [masterEspecies, setMasterEspecies] = useState<any[]>([]);
   const [masterPlagas, setMasterPlagas] = useState<any[]>([]);
 
+  // -- Sinonimos State --
+  const [sinonimos, setSinonimos] = useState<any[]>([]);
+  const [initialSinonimos, setInitialSinonimos] = useState<any[]>([]);
+  const [sinonimosDirty, setSinonimosDirty] = useState(false);
+  const [masterIdiomas, setMasterIdiomas] = useState<any[]>([]);
+  const [masterPaises, setMasterPaises] = useState<any[]>([]);
+  const [sinonimosAiLoading, setSinonimosAiLoading] = useState(false);
+  const [showSinonimosAiModal, setShowSinonimosAiModal] = useState(false);
+  const [aiSinonimosProposal, setAiSinonimosProposal] = useState<any[]>([]);
+
   // -- Photo Editor State --
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
   const [editorX, setEditorX] = useState(50);
@@ -114,21 +124,27 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [blogGenProgress, setBlogGenProgress] = useState('Iniciando motor de IA...');
   const [showBlogPrompt, setShowBlogPrompt] = useState(false);
 
-  // -- AI Image Generator State --
   const [showAiImageModal, setShowAiImageModal] = useState(false);
   const [aiImageConcept, setAiImageConcept] = useState('');
   const [aiImageLoading, setAiImageLoading] = useState(false);
   const [aiImageResult, setAiImageResult] = useState<string | null>(null);
+  const [aiImageDescription, setAiImageDescription] = useState('');
+  const [aiImagePromptPreview, setAiImagePromptPreview] = useState('');
+  const [aiImagePromptEdited, setAiImagePromptEdited] = useState(false);
+  const [showPromptDetails, setShowPromptDetails] = useState(false);
 
   const STYLE_FILTERS: Record<string, string> = {
     '': 'none',
     comic: 'contrast(1.45) saturate(1.55) brightness(1.08)',
     manga: 'grayscale(1) contrast(1.85) brightness(1.1)',
     watercolor: 'saturate(1.35) contrast(0.88) brightness(1.14)',
+    vintage: 'sepia(40%) contrast(110%) saturate(120%) brightness(95%) hue-rotate(-5deg)',
+    cinematic: 'contrast(120%) saturate(110%) brightness(90%) sepia(20%) hue-rotate(180deg) hue-rotate(-180deg)',
+    vibrant: 'saturate(150%) contrast(105%) brightness(105%)',
+    bnw: 'grayscale(100%) contrast(120%) brightness(105%)',
+    fade: 'contrast(85%) brightness(110%) saturate(80%) sepia(10%)',
     sketch: 'grayscale(1) contrast(2.2) brightness(1.18)',
     pop: 'saturate(1.95) contrast(1.3) brightness(1.06)',
-    vintage: 'sepia(0.65) contrast(1.08) saturate(0.78) brightness(1.03)',
-    cinematic: 'contrast(1.22) saturate(0.72) hue-rotate(338deg) brightness(0.98)',
     hdr: 'contrast(1.35) saturate(1.3) brightness(1.07)'
   };
 
@@ -141,14 +157,33 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       fetch('/api/admin/plagas', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterPlagas(data.plagas || []));
+      fetch('/api/admin/ajustes/idiomas')
+        .then(res => res.json())
+        .then(data => setMasterIdiomas(Array.isArray(data) ? data : []));
+      fetch('/api/admin/ajustes/paises')
+        .then(res => res.json())
+        .then(data => setMasterPaises(Array.isArray(data) ? data : []));
     }
 
     if (especieId) {
       loadEspecie(especieId);
       loadAttachments(especieId);
       loadRelaciones(especieId);
+      loadSinonimos(especieId);
     }
   }, [especieId, userEmail]);
+
+  const loadSinonimos = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/especies/${id}/sinonimos`);
+      const data = await res.json();
+      setSinonimos(Array.isArray(data) ? data : []);
+      setInitialSinonimos(Array.isArray(data) ? data : []);
+      setSinonimosDirty(false);
+    } catch (e) {
+      console.error('Error loading sinonimos:', e);
+    }
+  };
 
   const loadRelaciones = async (id: string) => {
     if (!userEmail) return;
@@ -581,6 +616,72 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setShowAiModal(false);
   };
 
+  const proponerSinonimosAI = async () => {
+    if (!formData.especiesnombre) {
+      alert('Se necesita el nombre de la especie para proponer sinónimos.');
+      return;
+    }
+    setSinonimosAiLoading(true);
+    try {
+      const res = await fetch('/api/ai/proponer-sinonimos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          especieNombre: formData.especiesnombre,
+          especieCientifico: formData.especiesnombrecientifico
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.sinonimos) {
+        // En vez de añadir directamente, guardamos en el estado temporal y abrimos el modal
+        const propuestos = data.sinonimos.map((s: any) => ({
+          ...s,
+          idespeciessinonimos: null, // null significa que es nuevo
+          _selected: true // Por defecto seleccionados
+        }));
+        setAiSinonimosProposal(propuestos);
+        setShowSinonimosAiModal(true);
+      } else {
+        alert(data.error || 'Error al proponer sinónimos.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión con la IA.');
+    } finally {
+      setSinonimosAiLoading(false);
+    }
+  };
+
+  const saveSinonimosNow = async () => {
+    if (!especieId) return;
+    try {
+      // 1. Encontramos los que hay que borrar (estaban en initial pero no en actuales)
+      const toDelete = initialSinonimos.filter(init => !sinonimos.some(s => s.idespeciessinonimos === init.idespeciessinonimos));
+      for (const del of toDelete) {
+        await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${del.idespeciessinonimos}`, { method: 'DELETE' });
+      }
+
+      // 2. Guardar o actualizar los actuales
+      for (const s of sinonimos) {
+        const isNew = !s.idespeciessinonimos;
+        const res = await fetch(`/api/admin/especies/${especieId}/sinonimos`, {
+          method: isNew ? 'POST' : 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(s)
+        });
+        if (!res.ok) {
+           console.error('Error guardando sinónimo', s);
+        }
+      }
+
+      await loadSinonimos(especieId);
+      alert('Sinónimos guardados con éxito.');
+    } catch (err) {
+      console.error(err);
+      alert('Error guardando sinónimos.');
+    }
+  };
+
   const saveRelacionesNow = async (updatedRels: any) => {
     if (!especieId || !userEmail) return;
     try {
@@ -623,7 +724,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     const baseName = normalizePathSegment(formData.especiesnombre || `especie-${especieId || 'nueva'}`) || `especie-${especieId || 'nueva'}`;
     const randomSuffix = Math.random().toString(36).slice(2, 8);
     const extension = getExtensionFromFile(file);
-    return `uploads/especies/${baseName}-${isAi ? 'ai-' : ''}${Date.now()}-${randomSuffix}.${extension}`;
+    return `uploads/especies/${baseName}-${Date.now()}-${randomSuffix}.${extension}`;
   };
 
   const buildDefaultPhotoResumen = (seoAlt = '') =>
@@ -694,24 +795,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             throw new Error('Firebase Storage no inicializado');
           }
           const { ref, uploadBytes } = storageApi;
-          const storagePath = buildEspecieStoragePath(file);
+          const fileName = `temp-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+          const storagePath = `uploads/temp/${fileName}`;
           const storageRef = ref(clientStorage, storagePath);
-          await uploadBytes(storageRef, file, {
-            cacheControl: 'public, max-age=31536000',
-            contentType: file.type || 'image/jpeg'
-          });
-
-          const defaultAlt = `${formData.especiesnombre || 'especie'} ${i + 1}`.trim();
+          await uploadBytes(storageRef, file);
 
           const res = await fetch(`/api/admin/especies/${especieId}/photos`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
             body: JSON.stringify({
-              storagePath,
-              nombreOriginal: file.name || 'foto-especie.jpg',
-              mimeType: file.type || 'image/jpeg',
-              fileSize: file.size || 0,
-              resumen: buildDefaultPhotoResumen(defaultAlt)
+              rawStoragePath: storagePath,
+              especieNombre: formData.especiesnombre || 'especie'
             })
           });
           if (!res.ok) {
@@ -751,6 +845,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
   };
 
+  const buildPromptPreview = () => {
+    const nombre = formData.especiesnombre || 'especie';
+    const sciCtx = formData.especiesnombrecientifico ? ` Nombre científico: ${formData.especiesnombrecientifico}.` : '';
+    const famCtx = formData.especiesfamilia ? ` Familia botánica: ${formData.especiesfamilia}.` : '';
+    const defaultConcept = `varios ejemplares de ${nombre} recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
+    return `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.\nSujeto principal: ${nombre} (hortaliza/planta comestible de huerto).${sciCtx}${famCtx}\nEscena concreta: ${aiImageConcept || defaultConcept}.\nComposición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.\nREGLAS ESTRICTAS:\n1. El sujeto es SIEMPRE una planta, hortaliza, fruto o semilla comestible de huerto.\n2. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura.\n3. El entorno debe ser siempre agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica.\n4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n5. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible.`;
+  };
+
   const generateAiImage = async () => {
     if (!formData.especiesnombre) {
       alert('Se necesita el nombre de la especie para generar la imagen.');
@@ -758,20 +860,31 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
     setAiImageLoading(true);
     setAiImageResult(null);
+    setAiImageDescription('');
     try {
+      const body: any = { 
+        especieNombre: formData.especiesnombre,
+        especieNombreCientifico: formData.especiesnombrecientifico,
+        especieFamilia: formData.especiesfamilia,
+        concept: aiImageConcept 
+      };
+      // Si el usuario ha editado manualmente el prompt, enviarlo como customPrompt
+      if (aiImagePromptEdited && aiImagePromptPreview.trim()) {
+        body.customPrompt = aiImagePromptPreview;
+      }
       const res = await fetch('/api/ai/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-        body: JSON.stringify({ 
-          especieNombre: formData.especiesnombre,
-          especieNombreCientifico: formData.especiesnombrecientifico,
-          especieFamilia: formData.especiesfamilia,
-          concept: aiImageConcept 
-        })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (data.success && data.base64) {
         setAiImageResult(`data:image/jpeg;base64,${data.base64}`);
+        if (data.description) setAiImageDescription(data.description);
+        if (data.promptUsed) {
+          setAiImagePromptPreview(data.promptUsed);
+          setAiImagePromptEdited(false);
+        }
       } else {
         alert(data.error || 'Error al generar la imagen.');
       }
@@ -790,25 +903,37 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
-      const { storage } = await import('@/lib/firebase/config');
-      const { ref, uploadBytes } = await import('firebase/storage');
-      const aiFile = new File([blob], `ai-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
-      const storagePath = buildEspecieStoragePath(aiFile, true);
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, aiFile, {
-        cacheControl: 'public, max-age=31536000',
-        contentType: aiFile.type
+      const descBase = aiImageDescription || formData.especiesnombre || 'especie';
+      const descriptionSlug = descBase
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-+|-+$)/g, '');
+      const descriptiveFileName = `${descriptionSlug}-${Date.now()}.webp`;
+      const storagePath = `uploads/especies/${descriptiveFileName}`;
+      const aiFile = new File([blob], descriptiveFileName, { type: blob.type || 'image/jpeg' });
+      
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', aiFile);
+      formDataUpload.append('path', storagePath);
+
+      const uploadRes = await fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: { 'x-user-email': userEmail || '' },
+        body: formDataUpload
       });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.error || 'Error subiendo con marca de agua');
 
       const saveRes = await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({
           storagePath,
-          nombreOriginal: aiFile.name,
-          mimeType: aiFile.type,
+          nombreOriginal: descriptiveFileName,
+          mimeType: 'image/webp',
           fileSize: aiFile.size,
-          resumen: buildDefaultPhotoResumen(`${formData.especiesnombre || 'especie'} generada por IA`)
+          resumen: buildDefaultPhotoResumen(descBase)
         })
       });
       if (!saveRes.ok) {
@@ -818,6 +943,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       await loadAttachments(especieId);
       setAiImageResult(null);
       setAiImageConcept('');
+      setAiImageDescription('');
+      setAiImagePromptPreview('');
+      setAiImagePromptEdited(false);
     } catch (error) {
       console.error('Error uploading AI image:', error);
       alert('Error al guardar la imagen generada.');
@@ -1421,6 +1549,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna</button>
               <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Asociaciones</button>
               <button type="button" className={activeTab === 'plagas' ? 'active' : ''} onClick={() => setActiveTab('plagas')}>🐛 Plagas</button>
+              <button type="button" className={activeTab === 'sinonimos' ? 'active' : ''} onClick={() => setActiveTab('sinonimos')}>🗣️ Sinónimos</button>
               <button type="button" className={activeTab === 'adjuntos' ? 'active' : ''} onClick={() => setActiveTab('adjuntos')}>📎 Adjuntos</button>
               <button type="button" className={activeTab === 'blogs' ? 'active' : ''} onClick={() => setActiveTab('blogs')}>📰 Blogs</button>
             </div>
@@ -2093,6 +2222,146 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </div>
             </div>
           )}
+          {/* SINONIMOS */}
+          {activeTab === 'sinonimos' && (
+            <div className="grid-form">
+              <div className="form-group full" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0 }}>Gestión de Sinónimos y Nombres Locales</h3>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    type="button" 
+                    onClick={proponerSinonimosAI}
+                    disabled={sinonimosAiLoading}
+                    style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {sinonimosAiLoading ? 'Pensando...' : '✨ Proponer Sinónimos (IA)'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setSinonimos([...sinonimos, { idespeciessinonimos: null, especiessinonimosnombre: '', xespeciessinonimosididiomas: '', xespeciessinonimosidpaises: '', especiessinonimosnotas: '' }]);
+                      setSinonimosDirty(true);
+                    }}
+                    style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    + Añadir Manualmente
+                  </button>
+                  {sinonimosDirty && (
+                    <button 
+                      type="button" 
+                      onClick={saveSinonimosNow}
+                      style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(16,185,129,0.4)' }}
+                    >
+                      💾 Guardar Cambios
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-group full">
+                {sinonimos.length === 0 && !sinonimosAiLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                    <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay sinónimos registrados.</p>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "Proponer Sinónimos" para que la Inteligencia Artificial busque por ti.</p>
+                  </div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', width: '30%' }}>Nombre / Sinónimo</th>
+                        <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Idioma</th>
+                        <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>País / Región</th>
+                        <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Notas</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '10%' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sinonimos.map((s, index) => (
+                        <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: s.idespeciessinonimos === null ? '#fefce8' : 'transparent' }}>
+                          <td style={{ padding: '8px' }}>
+                            <input 
+                              type="text" 
+                              value={s.especiessinonimosnombre} 
+                              onChange={e => {
+                                const newSin = [...sinonimos];
+                                newSin[index].especiessinonimosnombre = e.target.value;
+                                setSinonimos(newSin);
+                                setSinonimosDirty(true);
+                              }}
+                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                              placeholder="Ej. Palta"
+                            />
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <select 
+                              value={s.xespeciessinonimosididiomas || ''} 
+                              onChange={e => {
+                                const newSin = [...sinonimos];
+                                newSin[index].xespeciessinonimosididiomas = e.target.value;
+                                setSinonimos(newSin);
+                                setSinonimosDirty(true);
+                              }}
+                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                            >
+                              <option value="">-- General --</option>
+                              {masterIdiomas.map(i => (
+                                <option key={i.ididiomas} value={i.ididiomas}>{i.idiomasnombre}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <select 
+                              value={s.xespeciessinonimosidpaises || ''} 
+                              onChange={e => {
+                                const newSin = [...sinonimos];
+                                newSin[index].xespeciessinonimosidpaises = e.target.value;
+                                setSinonimos(newSin);
+                                setSinonimosDirty(true);
+                              }}
+                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                            >
+                              <option value="">-- General --</option>
+                              {masterPaises.map(p => (
+                                <option key={p.idpaises} value={p.idpaises}>{p.paisesnombre}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <input 
+                              type="text" 
+                              value={s.especiessinonimosnotas || ''} 
+                              onChange={e => {
+                                const newSin = [...sinonimos];
+                                newSin[index].especiessinonimosnotas = e.target.value;
+                                setSinonimos(newSin);
+                                setSinonimosDirty(true);
+                              }}
+                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                              placeholder="Notas opcionales"
+                            />
+                          </td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                const newSin = [...sinonimos];
+                                newSin.splice(index, 1);
+                                setSinonimos(newSin);
+                                setSinonimosDirty(true);
+                              }}
+                              style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* BLOGS */}
           {activeTab === 'blogs' && (
@@ -2649,16 +2918,35 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       )}
       {/* EDITOR DE FOTOS MODAL */}
       {editingPhoto && (
-        <div className="photo-editor-overlay" onClick={() => setEditingPhoto(null)}>
+        <div className="photo-editor-overlay">
           <div className="photo-editor-content" onClick={e => e.stopPropagation()}>
-            <div className="photo-editor-header">
+            <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3>Ajustar Fotografía y SEO</h3>
-                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '2px' }}>
+                <h3 style={{ margin: 0 }}>Ajustar Fotografía y SEO</h3>
+                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
                   📄 {editingPhoto.ruta.split('/').pop()}
                 </small>
               </div>
-              <button type="button" className="photo-editor-close" onClick={() => setEditingPhoto(null)}>✕</button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button type="button" onClick={() => setEditingPhoto(null)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
+                {(() => {
+                  const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
+                  if (currentState !== editorInitialState) {
+                    return (
+                      <button 
+                        type="button" 
+                        onClick={savePhotoEdits} 
+                        className={`btn-primary ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
+                        style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
+                        disabled={photoEditorSaveStatus === 'saving'}
+                      >
+                        {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Cambios'}
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
             </div>
 
             <div className="photo-editor-body">
@@ -2762,6 +3050,27 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </button>
                 </div>
                 
+                <div className="editor-control-group" style={{ marginBottom: '15px' }}>
+                  <label>
+                    <span className="control-label">🎨 Estilos y Filtros de IA</span>
+                  </label>
+                  <select 
+                    value={editorStyle} 
+                    onChange={e => setEditorStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
+                  >
+                    <option value="">Sin Filtro (Original)</option>
+                    <option value="vibrant">Saturado (Vibrant)</option>
+                    <option value="vintage">Vintage (Cálido)</option>
+                    <option value="cinematic">Cinemático (Dramatic)</option>
+                    <option value="bnw">Blanco y Negro (Clásico)</option>
+                    <option value="fade">Desaturado (Fade)</option>
+                    <option value="comic">Comic (Vibrante)</option>
+                    <option value="manga">Manga (B/N Intenso)</option>
+                    <option value="watercolor">Acuarela (Suave)</option>
+                  </select>
+                </div>
+                
                 <div className="editor-control-group">
                   <label><span className="control-label">🏷️ Descripción SEO (Alt Text)</span></label>
                   <input 
@@ -2778,26 +3087,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </div>
             </div>
 
-            {(() => {
-              const currentEditorState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
-              const hasPhotoChanges = currentEditorState !== editorInitialState;
-              return (
-                <div className="photo-editor-footer">
-                  <button type="button" className="btn-secondary" onClick={() => setEditingPhoto(null)}>Cerrar</button>
-                  {hasPhotoChanges && (
-                    <button 
-                      type="button" 
-                      className="btn-primary"
-                      onClick={savePhotoEdits}
-                      disabled={photoEditorSaveStatus === 'saving'}
-                      style={{ minWidth: '175px', transition: 'all 0.3s ease' }}
-                    >
-                      {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Cambios'}
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
+
           </div>
         </div>
       )}
@@ -3112,7 +3402,7 @@ JSON de salida obligatorio:
                     </label>
                     <textarea 
                       value={aiImageConcept} 
-                      onChange={e => setAiImageConcept(e.target.value)}
+                      onChange={e => { setAiImageConcept(e.target.value); if (!aiImagePromptEdited) setAiImagePromptPreview(buildPromptPreview()); }}
                       placeholder="Ej. Fotografía macro de las hojas con rocío de la mañana..."
                       rows={3}
                       style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical' }}
@@ -3133,7 +3423,7 @@ JSON de salida obligatorio:
                         <button 
                           key={preset}
                           type="button"
-                          onClick={() => setAiImageConcept(preset)}
+                          onClick={() => { setAiImageConcept(preset); if (!aiImagePromptEdited) setAiImagePromptPreview(buildPromptPreview()); }}
                           style={{
                             padding: '6px 12px',
                             borderRadius: '20px',
@@ -3150,6 +3440,27 @@ JSON de salida obligatorio:
                       ))}
                     </div>
                   </div>
+
+                  {/* Prompt colapsable y editable */}
+                  <details open={showPromptDetails} onToggle={(e: any) => setShowPromptDetails(e.target.open)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+                    <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
+                      <span style={{ transition: 'transform 0.2s', transform: showPromptDetails ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▶</span>
+                      🔧 Prompt técnico {aiImagePromptEdited && <span style={{ background: '#fef08a', color: '#854d0e', padding: '1px 6px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold' }}>Editado</span>}
+                    </summary>
+                    <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0' }}>
+                      <textarea
+                        value={aiImagePromptPreview || buildPromptPreview()}
+                        onChange={e => { setAiImagePromptPreview(e.target.value); setAiImagePromptEdited(true); }}
+                        rows={8}
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical', lineHeight: '1.5', color: '#334155', background: aiImagePromptEdited ? '#fffbeb' : '#f8fafc' }}
+                      />
+                      {aiImagePromptEdited && (
+                        <button type="button" onClick={() => { setAiImagePromptPreview(buildPromptPreview()); setAiImagePromptEdited(false); }} style={{ marginTop: '8px', padding: '4px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontSize: '0.75rem', cursor: 'pointer' }}>
+                          ↩️ Restaurar prompt original
+                        </button>
+                      )}
+                    </div>
+                  </details>
 
                   <button 
                     type="button" 
@@ -3200,6 +3511,82 @@ JSON de salida obligatorio:
           </div>
         </div>
       )}
-    </>
+        {/* SINONIMOS AI MODAL */}
+        {showSinonimosAiModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+               onClick={() => setShowSinonimosAiModal(false)}>
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
+                 onClick={e => e.stopPropagation()}>
+              <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                <span>✨ Sinónimos Propuestos por la IA</span>
+                <button type="button" onClick={() => setShowSinonimosAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
+              </h2>
+              
+              <p style={{ color: '#475569', marginBottom: '20px' }}>
+                Revisa la lista y desmarca los sinónimos que no desees incorporar a la base de datos de Verdantia.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                {aiSinonimosProposal.map((prop, idx) => {
+                  const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
+                  const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
+                  
+                  return (
+                    <label key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', padding: '16px', border: prop._selected ? '2px solid #10b981' : '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: prop._selected ? '#f0fdf4' : '#f8fafc', transition: 'all 0.2s' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={prop._selected}
+                        onChange={(e) => {
+                          const newProps = [...aiSinonimosProposal];
+                          newProps[idx]._selected = e.target.checked;
+                          setAiSinonimosProposal(newProps);
+                        }}
+                        style={{ marginTop: '4px', width: '22px', height: '22px', accentColor: '#10b981' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: prop._selected ? '#065f46' : '#64748b' }}>{prop.especiessinonimosnombre}</div>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '0.9rem', color: '#64748b' }}>
+                          {idioma && <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>🗣️ {idioma.idiomasnombre}</span>}
+                          {pais && <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>🌍 {pais.paisesnombre}</span>}
+                          {!pais && <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontStyle: 'italic' }}>🌍 Término General Mundial</span>}
+                        </div>
+                        {prop.especiessinonimosnotas && (
+                          <div style={{ marginTop: '8px', fontSize: '0.95rem', color: '#475569' }}>
+                            "{prop.especiessinonimosnotas}"
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowSinonimosAiModal(false)}>
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}
+                  onClick={() => {
+                    const selected = aiSinonimosProposal.filter(p => p._selected);
+                    // Remove the _selected property before merging
+                    const cleanedSelected = selected.map(s => {
+                      const copy = { ...s };
+                      delete copy._selected;
+                      return copy;
+                    });
+                    setSinonimos(prev => [...prev, ...cleanedSelected]);
+                    setSinonimosDirty(true);
+                    setShowSinonimosAiModal(false);
+                  }}
+                >
+                  Incorporar Seleccionados ({aiSinonimosProposal.filter(p => p._selected).length})
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
   );
 }

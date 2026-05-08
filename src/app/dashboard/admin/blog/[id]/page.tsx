@@ -6,6 +6,18 @@ import '@/components/admin/EspecieForm.css';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 
+function getMediaUrl(path: string) {
+  if (!path) return '';
+  if (path.startsWith('/api/media')) return path;
+  if (path.startsWith('http')) {
+    if (path.includes('googleapis.com')) {
+      return `/api/media?path=${encodeURIComponent(path)}`;
+    }
+    return path;
+  }
+  return `/api/media?path=${encodeURIComponent(path)}`;
+}
+
 export default function BlogEditorDashboard() {
   const params = useParams();
   const router = useRouter();
@@ -325,7 +337,7 @@ export default function BlogEditorDashboard() {
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '32px' }}>
                   {heroImg && (
                     <div style={{ position: 'relative', width: '180px', height: '180px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 6px 20px rgba(0,0,0,.1)' }}>
-                      <img src={heroImg} alt="" style={{
+                      <img src={getMediaUrl(heroImg)} alt="" style={{
                         width: '100%', height: '100%', objectFit: 'cover',
                         objectPosition: blogData.hero_imagen_css ? `${blogData.hero_imagen_css.x}% ${blogData.hero_imagen_css.y}%` : '50% 50%',
                         transform: blogData.hero_imagen_css ? `scale(${blogData.hero_imagen_css.zoom / 100})` : 'scale(1)',
@@ -385,7 +397,7 @@ export default function BlogEditorDashboard() {
                       <div style={{ overflow: 'hidden' }}>
                         {hasImg && (
                           <div style={{ float: imgFloat as any, width: '280px', height: '200px', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 6px 24px rgba(0,0,0,.1)', margin: imgFloat === 'left' ? '0 24px 16px 0' : '0 0 16px 24px', position: 'relative' }}>
-                            <img src={sec.imagen_ruta} alt="" style={{
+                            <img src={getMediaUrl(sec.imagen_ruta)} alt="" style={{
                               width: '100%', height: '100%', objectFit: 'cover',
                               objectPosition: sec.imagen_css ? `${sec.imagen_css.x}% ${sec.imagen_css.y}%` : '50% 50%',
                               transform: sec.imagen_css ? `scale(${sec.imagen_css.zoom / 100})` : 'scale(1)',
@@ -502,7 +514,7 @@ export default function BlogEditorDashboard() {
               <div className="photo-editor-preview-container" onMouseDown={onEditorMouseDown}>
                 <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', width: '220px', height: '220px', overflow: 'hidden' }}>
                   <img 
-                    src={editingPhoto.url} 
+                    src={getMediaUrl(editingPhoto.url)} 
                     alt="preview"
                     className="photo-editor-image"
                     draggable="false"

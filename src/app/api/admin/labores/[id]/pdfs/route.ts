@@ -17,17 +17,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 
-  const idespecies = resolvedParams.id;
+  const idlabores = resolvedParams.id;
 
   try {
     const [rows] = await pool.query(
       `SELECT iddatosadjuntos, datosadjuntosruta, datosadjuntosnombreoriginal, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes, datosadjuntosportada
        FROM datosadjuntos 
-       WHERE xdatosadjuntosidespecies = ? 
+       WHERE xdatosadjuntosidlabores = ? 
        AND datosadjuntostipo = 'documento' 
        AND datosadjuntosactivo = 1 
        ORDER BY datosadjuntosorden ASC`,
-      [idespecies]
+      [idlabores]
     );
 
     const pdfs = (rows as any[]).map(r => ({
@@ -53,7 +53,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 
-  const idespecies = resolvedParams.id;
+  const idlabores = resolvedParams.id;
 
   try {
     const formData = await request.formData();
@@ -67,8 +67,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Solo se permiten archivos PDF' }, { status: 400 });
     }
 
-    const filename = `especie_${idespecies}_${Date.now()}.pdf`;
-    const storagePath = `uploads/especies_pdfs/${filename}`;
+    const filename = `labor_${idlabores}_${Date.now()}.pdf`;
+    const storagePath = `uploads/labores_pdfs/${filename}`;
 
     const bytes = await file.arrayBuffer();
     const { uploadToStorage } = await import('@/lib/firebase/storage');
@@ -84,11 +84,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     try {
       const base64Pdf = Buffer.from(bytes).toString('base64');
       const apiKey = process.env.GEMINI_API_KEY;
-      if (apiKey && bytes.byteLength < 10 * 1024 * 1024) { // Only process if < 10MB to avoid timeouts/limits
+      if (apiKey && bytes.byteLength < 10 * 1024 * 1024) { 
         const payload = {
           contents: [{
             parts: [
-              { text: `Analiza este documento PDF sobre la especie agrícola. Eres un experto agrónomo. Devuelve EXCLUSIVAMENTE un JSON con tres propiedades: "nombre" (nombre súper corto del documento que aparecerá en el visor, ideal 3-4 palabras, máximo 40 caracteres), "resumen" (resumen corto de 1-2 líneas), y "apuntes" (un resumen técnico muy detallado de varios párrafos o viñetas estructuradas con datos concretos, plagas, metodologías y consejos vitales para el agricultor).` },
+              { text: `Analiza este documento PDF sobre labores agrícolas. Eres un experto agrónomo. Devuelve EXCLUSIVAMENTE un JSON con tres propiedades: "nombre" (nombre súper corto del documento que aparecerá en el visor, ideal 3-4 palabras, máximo 40 caracteres), "resumen" (resumen corto de 1-2 líneas), y "apuntes" (un resumen técnico muy detallado de varios párrafos o viñetas estructuradas con datos concretos, metodologías y consejos vitales para el agricultor).` },
               { inlineData: { mimeType: "application/pdf", data: base64Pdf } }
             ]
           }],
@@ -104,7 +104,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         });
         if (aiResponse.ok) {
           const data = await aiResponse.json();
-          if (!data.candidates) console.error('[Gemini PDF Upload] ERROR FROM API:', JSON.stringify(data));
           const textOut = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
           
           let jsonOut: any = {};
@@ -130,8 +129,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const [countResult] = await pool.query(
-      "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidespecies = ? AND datosadjuntostipo = 'documento' AND datosadjuntosactivo = 1",
-      [idespecies]
+      "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidlabores = ? AND datosadjuntostipo = 'documento' AND datosadjuntosactivo = 1",
+      [idlabores]
     );
     const total = (countResult as any[])[0].total;
 
@@ -141,10 +140,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
         datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
-        datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespecies,
+        datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidlabores,
         datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
       ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, ?, ?, ?, ?)`,
-      [file.name, storagePath, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes]
+      [file.name, storagePath, total + 1, idlabores, fileSize, generatedTitle, generatedSummary, generatedApuntes]
     );
 
     return NextResponse.json({
@@ -160,7 +159,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
 
   } catch (error: any) {
-    console.error('[Especie PDFs API] Upload error:', error);
+    console.error('[Labor PDFs API] Upload error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -172,7 +171,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 
-  const idespecies = resolvedParams.id;
+  const idlabores = resolvedParams.id;
 
   try {
     const { pdfId, titulo, resumen, apuntes, portada, base64Cover } = await request.json();
@@ -184,7 +183,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     let finalPortada = portada;
     if (base64Cover) {
       const buffer = Buffer.from(base64Cover.replace(/^data:image\/\w+;base64,/, ''), 'base64');
-      const storagePath = `uploads/especies_pdfs_covers/cover_${idespecies}_${pdfId}_${Date.now()}.jpg`;
+      const storagePath = `uploads/labores_pdfs_covers/cover_${idlabores}_${pdfId}_${Date.now()}.jpg`;
       const { uploadToStorage } = await import('@/lib/firebase/storage');
       finalPortada = await uploadToStorage(buffer, storagePath, 'image/jpeg');
     }
@@ -215,14 +214,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     updateQuery += setClauses.join(', ');
-    updateQuery += " WHERE iddatosadjuntos = ? AND xdatosadjuntosidespecies = ? AND datosadjuntostipo = 'documento'";
-    updateParams.push(pdfId, idespecies);
+    updateQuery += " WHERE iddatosadjuntos = ? AND xdatosadjuntosidlabores = ? AND datosadjuntostipo = 'documento'";
+    updateParams.push(pdfId, idlabores);
 
     await pool.query(updateQuery, updateParams);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[Especie PDFs PUT API] error:', error);
+    console.error('[Labor PDFs PUT API] error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -239,7 +238,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   try {
     await pool.query(
-      'UPDATE datosadjuntos SET datosadjuntosactivo = 0, datosadjuntosfechaeliminacion = NOW() WHERE iddatosadjuntos = ? AND xdatosadjuntosidespecies = ?',
+      'UPDATE datosadjuntos SET datosadjuntosactivo = 0, datosadjuntosfechaeliminacion = NOW() WHERE iddatosadjuntos = ? AND xdatosadjuntosidlabores = ?',
       [pdfId, resolvedParams.id]
     );
     return NextResponse.json({ success: true, message: 'PDF eliminado' });

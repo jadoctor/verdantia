@@ -210,6 +210,25 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>Jerarquía de Título:</strong> Muestra el nombre de la entidad que se está editando en grande (ej. "Editar Especie: Tomate") y debajo el subtítulo o nombre científico.</li>
           <li style={{ marginBottom: '8px' }}><strong>Indicador de Cambios (isDirty):</strong> A la derecha del título, dentro del propio subheader, aparece la etiqueta dinámica amarilla de <code>"Cambios sin guardar"</code> cuando <code>isDirty === true</code>.</li>
         </ul>
+        
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>5.4. Estándar Estructural de Muestra y Edición (The Gold Standard)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para garantizar la consistencia visual y técnica en toda la plataforma, se han establecido dos rutas absolutas como el <strong>"Gold Standard" (Patrón Oro)</strong> de la arquitectura frontend. Todo nuevo módulo (Variedades, Plagas, Labores, etc.) debe calcar estos dos patrones:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px', marginBottom: '16px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Para Listados y Muestra de Datos:</strong> La ruta <code>/dashboard/admin/especies</code> es el estándar. Define cómo se deben estructurar las tablas, los filtros de búsqueda, el subheader de contexto global y la paginación.</li>
+          <li><strong>Para Edición e Inserción:</strong> La ruta <code>/dashboard/admin/especies/[id]</code> (por ejemplo <code>/dashboard/admin/especies/23</code> gestionado por <code>EspecieForm.tsx</code>) es el estándar definitivo de formularios.</li>
+        </ul>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Reglas inquebrantables del patrón de edición:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Integración de IA con Checklist:</strong> Los datos generados por Inteligencia Artificial (ej. proponer sinónimos, plagas o asociaciones) NUNCA se inyectan directamente. Deben mostrar un modal superpuesto de "Checklist" donde el usuario pueda revisar las propuestas, desmarcar las erróneas y confirmar su asimilación explícitamente.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Cuadrículas de Edición en Línea (Inline Editable Grids):</strong> Las listas de elementos relacionados no utilizan modales adicionales ni páginas externas para su edición. Se rigen por un formato de "cuadrícula compacta" donde cada celda o fila tiene inputs directos y selectores visibles, incorporando auto-guardado automático (<i>onBlur</i> o <i>onChange</i>) al perder el foco o modificar la opción.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Botones Escondidos (Smart Actions):</strong> Cualquier botón de acción global (Guardar Cambios) debe permanecer oculto hasta que se detecten modificaciones no persistidas (<code>isDirty === true</code>), previniendo saturación visual y peticiones API vacías.</li>
+          <li style={{ marginBottom: '8px' }}><strong>El Editor de Fotos Estándar:</strong> Todos los modales de edición de fotografía en el proyecto (Especies, Labores, etc.) deben seguir estrictamente el patrón de Especies. Esto incluye: soporte drag-to-pan, controles de Zoom, Brillo, Contraste, Estilos IA (Filtros), un campo de Texto Alternativo SEO (Alt Tag) guardado en el JSON de resumen, y botones de Auto-Mejora y Reset.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pestaña de Adjuntos Segmentada:</strong> La pestaña de "Documentos Adjuntos" debe segmentarse siempre en dos secciones distintas: una galería drag-and-drop para <strong>Fotos</strong> con soporte de Generador IA, y una sección inferior separada para <strong>Documentos Adicionales (PDF)</strong>.</li>
+        </ul>
       </div>
 
       <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
@@ -551,6 +570,23 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
+            
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 17:28 – Guía de Usuario: Sistema de Suscripciones y Avisos</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Se añadió el bloque <strong>7.4. Recepción de Boletines y Blogs (Email)</strong> documentando la lógica de recepción para los planes gratuitos frente a los de pago.</li>
+                  <li>Estampado de versión actualizado en <code>page.tsx</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Problemas Resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li><strong>Claridad Normativa:</strong> Se formalizó la regla inquebrantable de envío de correos, sentando las bases documentales para la próxima migración a un motor relacional de 3 estados (Opcional, Obligatorio, Bloqueado).</li>
+                </ul>
+              </div>
+            </li>
 
           </ol>
         </div>
@@ -634,6 +670,14 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}>El endpoint comprueba la fecha de caducidad actual (<code>usuariossuscripcionesfechafin</code>).</li>
           <li style={{ marginBottom: '8px' }}>Si la fecha ya ha pasado, la base de datos se actualiza instantáneamente en cascada al siguiente nivel inferior, asignando otros +30 días (pero calculados basándose en milisegundos para evitar bugs de cambios de hora DST).</li>
           <li style={{ marginBottom: '8px' }}>Si el límite de fotos excede el del nuevo plan (ej. pasa de 5 a 3 fotos al bajar de Premium a Avanzado), <strong>ninguna foto se borra</strong>. El sistema bloquea temporalmente la edición visual del perfil hasta que el usuario elimine voluntariamente el exceso para cuadrar con el nuevo plan.</li>
+        </ul>
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>7.4. Recepción de Boletines y Blogs (Email)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          La política de recepción de correos con los artículos y blogs generados por Verdantia depende estrictamente del nivel de suscripción del usuario:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Suscripción Gratuita (Free):</strong> Los usuarios están obligados a recibir el boletín con los blogs publicados. No disponen de opción para anular la suscripción a esta lista de correo (actúa como contrapartida al uso gratuito de la plataforma).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Suscripciones de Pago (Esencial, Avanzado, Premium):</strong> Tienen control total sobre sus preferencias de comunicación. Pueden optar por anular la recepción de correos (opt-out) desde su panel de ajustes, garantizando una experiencia libre de interrupciones si así lo desean.</li>
         </ul>
       </div>
       

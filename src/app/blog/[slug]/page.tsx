@@ -8,7 +8,12 @@ import remarkGfm from 'remark-gfm';
 function getMediaUrl(path: string) {
   if (!path) return '';
   if (path.startsWith('/api/media')) return path;
-  if (path.startsWith('http')) return path;
+  if (path.startsWith('http')) {
+    if (path.includes('googleapis.com')) {
+      return `/api/media?path=${encodeURIComponent(path)}`;
+    }
+    return path;
+  }
   return `/api/media?path=${encodeURIComponent(path)}`;
 }
 
@@ -70,7 +75,7 @@ export default function BlogPublicArticle() {
   }
 
   // ── RENDERIZADO ESTRUCTURADO (JSON Verdantia) ──
-  const heroImg = blogData.hero_imagen || (art.blogimagen ? getMediaUrl(art.blogimagen) : null);
+  const heroImg = blogData.hero_imagen ? getMediaUrl(blogData.hero_imagen) : (art.blogimagen ? getMediaUrl(art.blogimagen) : null);
   const fecha = art.blogfechapublicacion 
     ? new Date(art.blogfechapublicacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) 
     : new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -237,7 +242,7 @@ export default function BlogPublicArticle() {
                 <div className="vblog-section-text">
                   {hasImg && (
                     <div className={`vblog-section-img-wrapper ${imgClass}`}>
-                      <img src={sec.imagen_ruta} alt={sec.imagen_alt || sec.titulo_h2} title={sec.imagen_title || sec.titulo_h2} 
+                      <img src={getMediaUrl(sec.imagen_ruta)} alt={sec.imagen_alt || sec.titulo_h2} title={sec.imagen_title || sec.titulo_h2} 
                         style={{
                           width: '100%', height: '100%', objectFit: 'cover',
                           objectPosition: sec.imagen_css ? `${sec.imagen_css.x}% ${sec.imagen_css.y}%` : '50% 50%',

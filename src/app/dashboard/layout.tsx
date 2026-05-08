@@ -454,6 +454,10 @@ export default function DashboardLayout({
                     <span className="nav-icon">📖</span>
                     <span>Guía de Usuario</span>
                   </a>
+                  <a href="/dashboard/admin/ajustes" className={`nav-item ${isActive('/dashboard/admin/ajustes')}`} onClick={handleNavClick}>
+                    <span className="nav-icon">⚙️</span>
+                    <span>Ajustes de Programa</span>
+                  </a>
                 </nav>
               )}
             </div>

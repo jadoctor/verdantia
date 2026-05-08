@@ -24,7 +24,7 @@ export default function EditarLaborPage() {
   if (!id) return <div>ID no vǭlido</div>;
 
   return (
-    <div style={{ padding: '0px', height: '100%' }}>
+    <div style={{ padding: '20px' }}>
       <LaborForm laborId={id} userEmail={userEmail} />
     </div>
   );
