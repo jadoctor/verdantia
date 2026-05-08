@@ -19,7 +19,15 @@ type AdminSdk = {
   };
 };
 
-let cachedAdminApp: unknown = null;
+type AdminGlobals = {
+  __verdantiaAdminSdk?: AdminSdk;
+  __verdantiaAdminApp?: unknown;
+};
+
+const adminGlobals = globalThis as unknown as AdminGlobals;
+
+let cachedAdminSdk: AdminSdk | null = adminGlobals.__verdantiaAdminSdk || null;
+let cachedAdminApp: unknown = adminGlobals.__verdantiaAdminApp || null;
 
 type AdminBucketFile = {
   save: (data: Buffer, options?: { metadata?: { contentType?: string; cacheControl?: string } }) => Promise<unknown>;
@@ -55,7 +63,10 @@ type AdminAuth = {
 };
 
 function getAdminSdk() {
-  return eval(`require('firebase-admin')`) as AdminSdk;
+  if (cachedAdminSdk) return cachedAdminSdk;
+  cachedAdminSdk = eval(`require('firebase-admin')`) as AdminSdk;
+  adminGlobals.__verdantiaAdminSdk = cachedAdminSdk;
+  return cachedAdminSdk;
 }
 
 export function getAdminApp() {
@@ -64,6 +75,7 @@ export function getAdminApp() {
   const admin = getAdminSdk();
   if (admin.apps?.length) {
     cachedAdminApp = admin.app();
+    adminGlobals.__verdantiaAdminApp = cachedAdminApp;
     return cachedAdminApp;
   }
 
@@ -88,12 +100,14 @@ export function getAdminApp() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes('already exists')) {
       cachedAdminApp = admin.app();
+      adminGlobals.__verdantiaAdminApp = cachedAdminApp;
       return cachedAdminApp;
     }
     console.error('[Firebase Admin] Error crítico de inicialización:', error);
     throw error;
   }
 
+  adminGlobals.__verdantiaAdminApp = cachedAdminApp;
   return cachedAdminApp;
 }
 

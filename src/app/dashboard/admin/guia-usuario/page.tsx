@@ -736,6 +736,29 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/05/2026 00:20 – Refactor: Caché Persistente Admin SDK vía globalThis</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La eliminación de la caché en el SDK de Firebase Admin provocaba ralentizaciones y posibles problemas de cuota debido a inicializaciones múltiples innecesarias durante las llamadas recurrentes a la API.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se ha implementado una caché persistente de alto nivel utilizando <code>globalThis.__verdantiaAdminSdk</code> y <code>globalThis.__verdantiaAdminApp</code> en <code>admin.ts</code>.</li>
+                  <li>Esto asegura que la caché sobreviva a las recargas en caliente de Next.js sin causar inconsistencias en Cloud Functions.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Rendimiento de los endpoints de servidor optimizado y protegida la instancia de Firebase de reinicios innecesarios.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>

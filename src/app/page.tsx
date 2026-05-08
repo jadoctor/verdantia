@@ -24,10 +24,10 @@ export default function Home() {
           </a>
           <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="text-sm text-green-700 bg-green-100 px-4 py-2 rounded-full font-medium inline-block mb-2 shadow-sm border border-green-200">
-              ✅ <span className="font-bold">Verificado:</span> 08/05/2026 23:55
+              ✅ <span className="font-bold">Verificado:</span> 09/05/2026 00:20
             </div>
             <div className="text-xs text-slate-500 max-w-xl mx-auto italic">
-              "Aumento de RAM a 2GB en Firebase Serverless (Fix Móviles)"
+              "Refactor: Caché Persistente Admin SDK vía globalThis"
             </div>
           </div>
         </div>
