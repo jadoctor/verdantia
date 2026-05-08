@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { RowDataPacket, ResultSetHeader } from 'mysql2';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {

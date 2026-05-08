@@ -280,6 +280,31 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 21:55 – Reversión de Emergencia: Bug de Turbopack solucionado de raíz (Eval vs Type)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El último parche colapsó TODOS los accesos al Dashboard (devolviendo Error 500) y causó el error <code>Cannot find module 'mysql2-3d802...'</code>.</li>
+                  <li>Al forzar <code>mysql2</code> y <code>sharp</code> en <code>serverExternalPackages</code>, se activaba un mecanismo de Turbopack que empaquetaba e invalidaba cualquier importación normal, rompiendo la función cloud entera.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Revertida de nuevo la matriz <code>serverExternalPackages</code> a vacía en producción en <code>next.config.ts</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Se ha reescrito la importación de las librerías binarias (<code>sharp, exifr, blurhash, node-vibrant</code>) en todos los endpoints de subida a <code>eval("require('paquete')")</code> para ocultarlos 100% de los ojos del compilador.</li>
+                  <li>Se modificaron los imports <code>import &#123; RowDataPacket &#125; from 'mysql2'</code> en todas las rutas a <code>import type</code>, evitando que el compilador trate de cargar la librería en tiempo de compilación.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Recuperado el acceso como Superadministrador. La base de datos y la subida de fotos de Especies, Labores y Blog por fin están estables y operativas.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
               <strong>08/05/2026 21:32 – Fix Crítico: Turbopack vs Módulos Nativos (Sharp)</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>

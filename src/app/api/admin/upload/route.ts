@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
 
     // Lazy import para evitar hash corrupto de Turbopack en producción
-    const sharp = (await import('sharp')).default;
+    const sharp = eval(`require('sharp')`);
     const { uploadToStorage } = await import('@/lib/firebase/storage');
     
     // Configurar marca de agua

@@ -222,7 +222,7 @@ ${fichaRapidaEjemplo}
 
     // Marca de agua SVG Verdantia (estándar del proyecto)
     // Lazy import para evitar hash corrupto de Turbopack en producción
-    const sharp = (await import('sharp')).default;
+    const sharp = eval(`require('sharp')`);
     const { uploadToStorage } = await import('@/lib/firebase/storage');
     const storageBucketName = process.env.FIREBASE_STORAGE_BUCKET || 'verdantia-494121.firebasestorage.app';
 

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const sharp = (await import('sharp')).default;
+    const sharp = eval(`require('sharp')`);
     const bucket = getAdminBucket();
 
     const [rows] = await pool.query(`

@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     'tiny-cooks-doubt.loca.lt',
     'some-wings-serve.loca.lt'
   ],
-  serverExternalPackages: ['firebase-admin', 'sharp', 'mysql2', 'node-vibrant', 'blurhash', 'exifr'],
+  serverExternalPackages: process.env.NODE_ENV === 'development' ? ['firebase-admin', 'sharp'] : [],
   images: {
     remotePatterns: [
       {

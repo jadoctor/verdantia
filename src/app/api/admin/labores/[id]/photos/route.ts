@@ -65,11 +65,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const ext = (rawStoragePath.match(/\.\w+$/) || ['.jpg'])[0];
 
     // Lazy import para evitar hash corrupto de Turbopack en producción
-    const sharp = (await import('sharp')).default;
+    const sharp = eval(`require('sharp')`);
     const { uploadToStorage } = await import('@/lib/firebase/storage');
-    const exifr = (await import('exifr')).default;
-    const { Vibrant } = await import('node-vibrant/node');
-    const { encode } = await import('blurhash');
+    const exifr = eval(`require('exifr')`);
+    const { Vibrant } = eval(`require('node-vibrant/node')`);
+    const { encode } = eval(`require('blurhash')`);
 
     const [countResult] = await pool.query(
       "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidlabores = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1",
