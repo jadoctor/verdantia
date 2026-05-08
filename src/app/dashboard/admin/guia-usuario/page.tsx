@@ -272,13 +272,40 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0f9ff', borderLeft: '4px solid #0ea5e9', padding: '16px', marginTop: '24px', borderRadius: '0 8px 8px 0' }}>
           <h4 style={{ color: '#0369a1', marginTop: 0, marginBottom: '8px', fontSize: '1.1rem' }}>Mandato Estricto del Asistente IA</h4>
           <p style={{ color: '#0c4a6e', margin: 0, lineHeight: 1.5 }}>
-            El asistente lanzará los comandos pertinentes (Build, Commit, Deploy) SIEMPRE y ÚNICAMENTE a petición expresa del usuario y <strong>ESPERARÁ OBLIGATORIAMENTE</strong> a que finalicen en segundo plano.
+            El asistente tiene <strong>TOTALMENTE PROHIBIDO</strong> lanzar comandos de despliegue (Build, Commit, Deploy) de forma autónoma, <strong>A MENOS</strong> que el usuario pronuncie exactamente las palabras mágicas: <strong>"SUBE A PRODUCCION"</strong>. Si el usuario no dice esta frase literal, el asistente no subirá nada bajo ninguna circunstancia.
           </p>
         </div>
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Despliegues</h3>
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 20:15 – Sistema de Hibernación y Bypass ENUM SQL</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Ausencia de un mecanismo seguro para que usuarios gratuitos pudiesen pausar su cuenta al negarse a recibir el boletín.</li>
+                  <li style={{ marginBottom: '8px' }}>El botón de desuscripción fallaba silenciosamente en base de datos al intentar establecer <code>usuariosestadocuenta = 'inactiva'</code>, porque la columna <code>ENUM</code> era demasiado estricta.</li>
+                  <li>Las plantillas de email (Resend) no cargaban el logo porque las rutas relativas o variables de entorno <code>localhost</code> no son accesibles desde clientes de correo externos.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Diseño e implementación de un <strong>Endpoint Criptográfico HMAC-SHA256</strong> (<code>/api/unsubscribe</code>) para validar cancelaciones sin requerir login.</li>
+                  <li style={{ marginBottom: '8px' }}>Creación del <strong>Muro de Hibernación</strong> en <code>layout.tsx</code>, interceptando a los usuarios inactivos y obligándoles a elegir entre reactivación o cancelación definitiva.</li>
+                  <li style={{ marginBottom: '8px' }}>Ejecución de un script <code>ALTER TABLE</code> para inyectar <code>'inactiva'</code> y <code>'pausada'</code> en el esquema estricto de MySQL.</li>
+                  <li>Inyección de URLs absolutas persistentes (<code>verdantia.life</code>) en React Email y actualización visual del editor de blogs para discriminar el estado <em>Sucio</em> (isDirty).</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Protección legal asegurada (1-click unsubscribe), preservación de la entregabilidad del correo (evitando marcas de spam) y un muro de retención UX claro para forzar el engagement del usuario.</li>
+                </ul>
+              </div>
+            </li>
+
             <li style={{ marginBottom: '24px' }}>
               <strong>01/05/2026 13:16 – CDN Directo para Firebase Storage</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Modificaciones Realizadas</h5>

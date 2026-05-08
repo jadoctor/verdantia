@@ -111,7 +111,7 @@ export default function LaboresAdminPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
             <tr>
-              <th style={{ padding: '12px', width: '80px', textAlign: 'center' }}>Icono</th>
+              <th style={{ padding: '12px', width: '80px', textAlign: 'center', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Icono</th>
               <th style={{ padding: '12px' }}>Nombre</th>
               <th style={{ padding: '12px' }}>Descripción</th>
               <th style={{ padding: '12px' }}>Estado</th>
@@ -128,7 +128,7 @@ export default function LaboresAdminPage() {
 
                   return (
                     <tr key={labor.idlabores} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '12px', textAlign: 'center', verticalAlign: 'middle', position: 'sticky', left: 0, zIndex: 1, background: 'white' }}>
                         {labor.primary_photo_ruta ? (
                           <img 
                             src={getMediaUrl(labor.primary_photo_ruta)} 

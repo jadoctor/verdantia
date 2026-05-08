@@ -24,6 +24,8 @@ export default function BlogEditorDashboard() {
   const [blog, setBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [notifying, setNotifying] = useState(false);
+  const [originalBlog, setOriginalBlog] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function BlogEditorDashboard() {
       .then(data => {
         if (data.success) {
           setBlog(data.data);
+          setOriginalBlog(JSON.stringify(data.data));
         } else {
           alert('Artículo no encontrado');
           router.push('/dashboard/admin/blog');
@@ -79,8 +82,9 @@ export default function BlogEditorDashboard() {
       });
       const data = await res.json();
       if (data.success) {
+        setBlog({ ...blog, blogestado: estado });
+        setOriginalBlog(JSON.stringify({ ...blog, blogestado: estado }));
         alert('Guardado correctamente');
-        router.push('/dashboard/admin/blog');
       } else {
         alert('Error: ' + data.error);
       }
@@ -88,6 +92,49 @@ export default function BlogEditorDashboard() {
       alert('Error de conexión');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleNotify = async () => {
+    if (!confirm('¿Seguro que quieres enviar un correo masivo a todos los suscriptores? Esta acción no se puede deshacer.')) return;
+    setNotifying(true);
+    try {
+      const res = await fetch(`/api/admin/blog/${params.id}/notify`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Boletín enviado con éxito a ${data.sent} suscriptores.`);
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (e) {
+      alert('Error de conexión al enviar boletín');
+    } finally {
+      setNotifying(false);
+    }
+  };
+
+  const handleTestNotify = async () => {
+    if (!userEmail) {
+      alert('No se pudo detectar tu email. Inicia sesión de nuevo.');
+      return;
+    }
+    setNotifying(true);
+    try {
+      const res = await fetch(`/api/admin/blog/${params.id}/notify-test`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailDestino: userEmail })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`¡Correo de prueba enviado a ${userEmail}! Revisa tu bandeja de entrada.`);
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (e) {
+      alert('Error de conexión al enviar prueba');
+    } finally {
+      setNotifying(false);
     }
   };
 
@@ -226,6 +273,8 @@ export default function BlogEditorDashboard() {
   if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando...</div>;
   if (!blog) return null;
 
+  const globalHasChanges = originalBlog !== JSON.stringify(blog);
+
   return (
     <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
       {/* ── Navegación ── */}
@@ -255,23 +304,65 @@ export default function BlogEditorDashboard() {
               target="_blank" 
               rel="noopener noreferrer"
               style={{ padding: '8px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'none', color: 'white', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}
+              title="Abre una nueva pestaña para ver cómo queda el diseño en la web pública"
             >
-              👁️ Visualizar
+              👁️ Ver en la Web
             </a>
-            <button 
-              onClick={() => handleSave('borrador')} 
-              disabled={saving}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'white', color: '#047857', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              💾 Guardar Borrador
-            </button>
-            <button 
-              onClick={() => handleSave('publicado')} 
-              disabled={saving}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #10b981', background: '#064e3b', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              🚀 Publicar Ahora
-            </button>
+
+            {/* Si es borrador, siempre puede Publicar. Si es publicado, siempre puede Despublicar. */}
+            {(blog.blogestado === 'borrador' || globalHasChanges) && (
+              <button 
+                onClick={() => handleSave('borrador')} 
+                disabled={saving}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'white', color: '#047857', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
+                title="Guarda los cambios pero el artículo no será visible para los usuarios"
+              >
+                {blog.blogestado === 'publicado' ? '🔒 Despublicar (Borrador)' : '💾 Guardar Borrador'}
+              </button>
+            )}
+
+            {/* El botón de verde oscuro (Publicar/Actualizar) */}
+            {(blog.blogestado === 'borrador' || globalHasChanges) && (
+              <button 
+                onClick={() => handleSave('publicado')} 
+                disabled={saving}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #10b981', background: '#064e3b', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                {blog.blogestado === 'publicado' ? '🔄 Actualizar Artículo' : '🚀 Publicar Ahora'}
+              </button>
+            )}
+
+            {blog.blogestado === 'publicado' && !globalHasChanges && (
+              <button 
+                onClick={() => handleSave('borrador')} 
+                disabled={saving}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #ef4444', background: 'white', color: '#ef4444', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
+                title="Quita el artículo de la web pública y lo devuelve al estado de borrador"
+              >
+                🔒 Despublicar
+              </button>
+            )}
+
+            {blog.blogestado === 'publicado' && !globalHasChanges && (
+              <>
+                <button 
+                  onClick={handleTestNotify} 
+                  disabled={notifying}
+                  style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #8b5cf6', background: 'white', color: '#6d28d9', fontWeight: 'bold', cursor: notifying ? 'wait' : 'pointer', fontSize: '0.85rem', marginLeft: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  title="Enviará un correo de prueba solo a tu dirección personal"
+                >
+                  🧪 Prueba a mi Email
+                </button>
+                <button 
+                  onClick={handleNotify} 
+                  disabled={notifying}
+                  style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #3b82f6', background: '#1d4ed8', color: 'white', fontWeight: 'bold', cursor: notifying ? 'wait' : 'pointer', fontSize: '0.85rem', marginLeft: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  title="Asegúrate de haber guardado los cambios antes de enviar el boletín a todos los usuarios"
+                >
+                  {notifying ? '⏳ Enviando...' : '📢 Enviar Boletín a Todos'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

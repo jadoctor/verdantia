@@ -92,6 +92,7 @@ export default function DashboardLayout({
   const [superAdminExpanded, setSuperAdminExpanded] = useState(true);
   const [huertoExpanded, setHuertoExpanded] = useState(true);
   const [utilidadesExpanded, setUtilidadesExpanded] = useState(true);
+  const [ajustesHover, setAjustesHover] = useState(false);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
 
@@ -380,6 +381,70 @@ export default function DashboardLayout({
     );
   }
 
+  // Muro de Hibernación
+  if (profile?.estadoCuenta === 'inactiva' || profile?.estadoCuenta === 'pausada') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f8fafc', padding: '20px', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ background: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', maxWidth: '450px', textAlign: 'center', borderTop: '6px solid #64748b', width: '100%' }}>
+          <div style={{ fontSize: '54px', marginBottom: '20px' }}>💤</div>
+          <h1 style={{ margin: '0 0 10px', color: '#0f172a' }}>Cuenta en Hibernación</h1>
+          <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '24px' }}>
+            Tu cuenta está pausada. No estás recibiendo notificaciones ni tienes acceso a tu huerto. Para continuar usando Verdantia, elige una de las siguientes opciones:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button 
+              onClick={async () => {
+                const res = await fetch('/api/auth/account-state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: profile.email, action: 'reactivate' }) });
+                if (res.ok) window.location.reload();
+              }}
+              style={{ background: '#10b981', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s', fontSize: '1rem' }}
+              onMouseOver={e => e.currentTarget.style.background = '#059669'}
+              onMouseOut={e => e.currentTarget.style.background = '#10b981'}
+            >
+              ▶️ Reactivar mi cuenta (y correos)
+            </button>
+            <button 
+              onClick={async () => {
+                const res = await fetch('/api/auth/account-state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: profile.email, action: 'reactivate' }) });
+                if (res.ok) window.location.href = '/dashboard/perfil?upgrade=true';
+              }}
+              style={{ background: '#3b82f6', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s', fontSize: '1rem' }}
+              onMouseOver={e => e.currentTarget.style.background = '#2563eb'}
+              onMouseOut={e => e.currentTarget.style.background = '#3b82f6'}
+            >
+              ⭐ Mejorar mi Plan (Premium)
+            </button>
+            <button 
+              onClick={async () => {
+                if (confirm('⚠️ ¿Estás seguro de que quieres eliminar tu cuenta?\\n\\nTus datos personales se destruirán tras 30 días. Esta acción es irreversible pasado ese plazo.')) {
+                  if (confirm('🔴 ÚLTIMA CONFIRMACIÓN\\n\\n¿Realmente deseas continuar con el borrado?')) {
+                    const res = await fetch('/api/auth/account-state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: profile.email, action: 'delete' }) });
+                    if (res.ok) {
+                      handleLogout();
+                    }
+                  }
+                }
+              }}
+              style={{ background: '#ef4444', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s', fontSize: '1rem' }}
+              onMouseOver={e => e.currentTarget.style.background = '#dc2626'}
+              onMouseOut={e => e.currentTarget.style.background = '#ef4444'}
+            >
+              🗑️ Cancelar cuenta definitivamente
+            </button>
+            <button 
+              onClick={handleLogout}
+              style={{ background: 'transparent', color: '#64748b', padding: '12px 24px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600, cursor: 'pointer', marginTop: '10px' }}
+              onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar Lateral */}
@@ -454,10 +519,18 @@ export default function DashboardLayout({
                     <span className="nav-icon">📖</span>
                     <span>Guía de Usuario</span>
                   </a>
-                  <a href="/dashboard/admin/ajustes" className={`nav-item ${isActive('/dashboard/admin/ajustes')}`} onClick={handleNavClick}>
-                    <span className="nav-icon">⚙️</span>
-                    <span>Ajustes de Programa</span>
-                  </a>
+                  <div className="nav-submenu-wrapper" onMouseEnter={() => setAjustesHover(true)} onMouseLeave={() => setAjustesHover(false)}>
+                    <a href="/dashboard/admin/ajustes" className={`nav-item ${pathname.includes('/admin/ajustes') ? 'active' : ''}`} onClick={handleNavClick}>
+                      <span className="nav-icon">⚙️</span>
+                      <span style={{flex: 1}}>Ajustes de Programa</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: ajustesHover || pathname.includes('/admin/ajustes') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                    </a>
+                    <div style={{ display: ajustesHover || pathname.includes('/admin/ajustes') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                      <a href="/dashboard/admin/ajustes/idiomas" className={`nav-item ${pathname.includes('/admin/ajustes/idiomas') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🗣️ Idiomas</a>
+                      <a href="/dashboard/admin/ajustes/paises" className={`nav-item ${pathname.includes('/admin/ajustes/paises') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌎 Países</a>
+                      <a href="/dashboard/admin/ajustes/avisos" className={`nav-item ${pathname.includes('/admin/ajustes/avisos') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔔 Avisos y Reglas</a>
+                    </div>
+                  </div>
                 </nav>
               )}
             </div>

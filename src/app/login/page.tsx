@@ -17,6 +17,7 @@ function LoginContent() {
   const [resetError, setResetError] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   // Pre-rellenar el email si viene de un enlace de restablecimiento de contraseña
   useEffect(() => {
@@ -59,7 +60,7 @@ function LoginContent() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      setTimeout(() => router.push('/dashboard'), 500);
+      setTimeout(() => router.push(callbackUrl), 500);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         setError('');
@@ -152,7 +153,7 @@ function LoginContent() {
       
       // 4. Iniciar sesión en Firebase con Custom Token
       await signInWithCustomToken(auth, data.customToken);
-      setTimeout(() => router.push('/dashboard'), 500);
+      setTimeout(() => router.push(callbackUrl), 500);
 
     } catch (err: any) {
       setError(err.message || 'Error desconocido con Passkey');
@@ -182,8 +183,8 @@ function LoginContent() {
 
     try {
       await signInWithEmailAndPassword(auth, finalEmail, finalPassword);
-      // Tras el login exitoso, redirigimos al dashboard
-      setTimeout(() => router.push('/dashboard'), 500);
+      // Tras el login exitoso, redirigimos al callbackUrl o dashboard
+      setTimeout(() => router.push(callbackUrl), 500);
     } catch (err: any) {
       console.error('[Login] Firebase error:', err.code, err.message);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
@@ -310,8 +311,8 @@ function LoginContent() {
               setIsLoading(true);
               signInWithEmailAndPassword(auth, 'jaillueca@gmail.com', 'Papaja0334')
                 .then(() => {
-                  alert('¡Login correcto! Redirigiendo al dashboard...');
-                  window.location.href = '/dashboard';
+                  alert('¡Login correcto! Redirigiendo...');
+                  window.location.href = callbackUrl;
                 })
                 .catch(err => { 
                   alert('Fallo Firebase: ' + err.message);

@@ -18,9 +18,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     const { blogtitulo, blogslug, blogresumen, blogcontenido, blogestado, blogimagen } = body;
     
+    // Obtenemos el estado anterior para saber si recién se está publicando
+    const [oldRows] = await pool.query<any>('SELECT blogestado FROM blog WHERE idblog = ?', [resolvedParams.id]);
+    const wasPublished = oldRows.length > 0 && oldRows[0].blogestado === 'publicado';
+
     // Si se pasa a publicado y no tenía fecha, ponersela
     let updatePubDate = '';
-    let pubParams: any[] = [];
     if (blogestado === 'publicado') {
        updatePubDate = ', blogfechapublicacion = COALESCE(blogfechapublicacion, NOW())';
     }

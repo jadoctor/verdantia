@@ -22,9 +22,14 @@ export default function Home() {
           <a href="/login" style={{ display: 'inline-block', padding: '1rem 2.5rem', backgroundColor: 'var(--primary)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.1rem', transition: 'all 0.2s', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             Acceder a mi Huerto
           </a>
-          <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2.5rem', fontWeight: 500 }}>
-            Verificación de Subida: 8 de Mayo, 17:28 (Guía de Usuario - Reglas de Suscripción de Avisos)
-          </p>
+          <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div className="text-sm text-green-700 bg-green-100 px-4 py-2 rounded-full font-medium inline-block mb-2 shadow-sm border border-green-200">
+              ✅ <span className="font-bold">Verificado:</span> 08/05/2026 20:15
+            </div>
+            <div className="text-xs text-slate-500 max-w-xl mx-auto italic">
+              "Sistema de Hibernación Un-clic, Enums SQL y URLs absolutas completados"
+            </div>
+          </div>
         </div>
       </div>
     </main>
