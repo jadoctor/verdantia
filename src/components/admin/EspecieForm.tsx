@@ -904,36 +904,22 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
       const descBase = aiImageDescription || formData.especiesnombre || 'especie';
-      const descriptionSlug = descBase
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-+|-+$)/g, '');
-      const descriptiveFileName = `${descriptionSlug}-${Date.now()}.webp`;
-      const storagePath = `uploads/especies/${descriptiveFileName}`;
-      const aiFile = new File([blob], descriptiveFileName, { type: blob.type || 'image/jpeg' });
-      
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', aiFile);
-      formDataUpload.append('path', storagePath);
 
-      const uploadRes = await fetch('/api/admin/upload', {
-        method: 'POST',
-        headers: { 'x-user-email': userEmail || '' },
-        body: formDataUpload
-      });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error || 'Error subiendo con marca de agua');
+      // Subir a ruta temporal vía Firebase client-side (mismo flujo que fotos normales)
+      const firebaseConfigModule = await import('@/lib/firebase/config');
+      const storageApi = await import('firebase/storage');
+      const tempFileName = `temp-ai-${Date.now()}-${descBase.replace(/[^a-zA-Z0-9.-]/g, '')}.webp`;
+      const tempPath = `uploads/temp/${tempFileName}`;
+      const storageRef = storageApi.ref(firebaseConfigModule.storage, tempPath);
+      await storageApi.uploadBytes(storageRef, blob);
 
+      // Llamar a la API de especies que descarga, procesa y guarda
       const saveRes = await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({
-          storagePath,
-          nombreOriginal: descriptiveFileName,
-          mimeType: 'image/webp',
-          fileSize: aiFile.size,
-          resumen: buildDefaultPhotoResumen(descBase)
+          rawStoragePath: tempPath,
+          especieNombre: formData.especiesnombre || 'especie'
         })
       });
       if (!saveRes.ok) {

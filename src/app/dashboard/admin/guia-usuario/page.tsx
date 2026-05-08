@@ -280,6 +280,36 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 22:35 – Fix Definitivo: Subida Fotos Especies + Firebase Admin Init</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>La función <code>uploadAiImage</code> en <code>EspecieForm.tsx</code> enviaba los campos del formato antiguo de la API (<code>storagePath, nombreOriginal, mimeType</code>), pero la API fue reescrita en esta misma sesión para esperar <code>rawStoragePath</code>. Resultado: <code>Error: Ruta de archivo requerida</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>La función <code>getAdminSdk()</code> en <code>admin.ts</code> tenía una caché (<code>cachedAdminSdk</code>) que en el entorno de Cloud Functions provocaba que <code>admin.apps</code> devolviera un estado inconsistente, causando <code>The default Firebase app does not exist</code>.</li>
+                  <li>El problema de <code>sharp</code> se resolvió reemplazando <code>await import('sharp')</code> por <code>eval("require('sharp')")</code> en todos los endpoints de subida, haciéndolos invisibles a Turbopack.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code>: Reescrita <code>uploadAiImage</code> para usar el mismo flujo que la subida normal (Firebase client → <code>uploads/temp/</code> → API con <code>rawStoragePath</code>), eliminando el paso intermedio por <code>/api/admin/upload</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><code>admin.ts</code>: Eliminada la caché <code>cachedAdminSdk</code>. Ahora <code>getAdminSdk()</code> llama a <code>eval("require('firebase-admin')")</code> directamente cada vez (Node.js ya cachéa internamente los módulos con <code>require</code>).</li>
+                  <li style={{ marginBottom: '8px' }}>Todos los <code>await import('sharp/exifr/vibrant/blurhash')</code> cambiados a <code>eval("require(...)")</code> en: especies photos, labores photos, upload, watermark-legacy y generate-blog.</li>
+                  <li style={{ marginBottom: '8px' }}>Imports de <code>mysql2</code> cambiados a <code>import type</code> en: sinonimos, paises, idiomas y proponer-sinonimos.</li>
+                  <li><code>AGENTS.md</code>: Reescrito el protocolo de despliegue para incluir el mandato estricto de las palabras mágicas "SUBE A PRODUCCION", la obligación de documentar en 6.2 antes de desplegar, y la obligación de leer la sección 6 completa antes de cada despliegue.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Restaurada la subida de fotos de Especies (tanto manuales como generadas por IA) en local y producción.</li>
+                  <li style={{ marginBottom: '8px' }}>Eliminado el error 500 de inicialización de Firebase Admin en Cloud Functions.</li>
+                  <li>Blindaje total contra Turbopack: ningún módulo nativo (<code>sharp, exifr, blurhash, node-vibrant, firebase-admin, mysql2</code>) es visible al compilador en producción.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
               <strong>08/05/2026 21:55 – Reversión de Emergencia: Bug de Turbopack solucionado de raíz (Eval vs Type)</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>

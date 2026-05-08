@@ -11,15 +11,26 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **SIEMPRE** usar Git + GitHub para sincronizar entre dispositivos.
 
 ## Flujo de Trabajo y Despliegue Obligatorio
-Una vez que el usuario te dé una instrucción para desplegar o indique "adelante" tras un cambio, **DEBES ejecutar el flujo completo de forma autónoma sin detenerte a pedir confirmación**, en este orden estricto:
 
-1. **Estampado de Versión (Timestamp):** Modificar la pantalla de inicio (`src/app/page.tsx`) con la fecha y hora de la subida para validación visual en producción.
-2. **Test de Fuego Local:** `npm run build`
-   (Debe compilar sin errores antes de subir nada a la nube).
-3. **Commit y Push:**
+### MANDATO ESTRICTO
+El asistente tiene **TOTALMENTE PROHIBIDO** lanzar comandos de despliegue (Build, Commit, Deploy) de forma autónoma, **A MENOS** que el usuario pronuncie exactamente las palabras mágicas: **"SUBE A PRODUCCION"**. Si el usuario no dice esta frase literal, el asistente no subirá nada bajo ninguna circunstancia. Cualquier otra variante ("súbelo", "haz deploy", "adelante") **NO es suficiente**.
+
+### Protocolo de Despliegue (Orden Estricto)
+Antes de ejecutar los comandos, el asistente debe documentar **obligatoriamente** la subida creando un nuevo bloque en el apartado **6.2. Despliegues** de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`). Cada entrada debe tener:
+- **Encabezado:** Fecha, hora y título descriptivo.
+- **A. Problemas detectados:** Causa raíz del fallo original.
+- **B. Modificaciones realizadas:** Lista técnica de archivos tocados y lógicas refactorizadas.
+- **C. Problemas resueltos:** Confirmación del estado final.
+
+Una vez documentado y con las palabras mágicas recibidas, ejecutar en este orden estricto:
+
+1. **Fase 0 - Estampado de Versión:** Modificar `src/app/page.tsx` con fecha y hora exacta del despliegue.
+2. **Fase 1 - Test de Fuego Local:** `npm run build` (Debe compilar sin errores).
+3. **Fase 2 - Control de Versiones:**
    `git add .`
    `git commit -m "descripción del cambio"`
    `git push`
-4. **Despliegue a Producción:** `firebase deploy`
+4. **Fase 3 - Despliegue Final:** `firebase deploy`
 
-Mientras estos comandos se ejecutan, mantén al usuario informado de que están corriendo en segundo plano. **Nunca te detengas para preguntar si quieres subir a producción si ya has recibido luz verde.**
+### Referencia Técnica Obligatoria
+El asistente **DEBE leer** la sección 6 completa de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`) antes de cualquier despliegue, para verificar que cumple con todos los estándares documentados.

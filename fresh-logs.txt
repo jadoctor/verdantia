@@ -1,0 +1,27 @@
+2026-05-08T20:17:59.601073Z I ssrverdantia494121: 
+2026-05-08T20:17:59.601823Z I ssrverdantia494121: 
+2026-05-08T20:17:59.602354Z I ssrverdantia494121: 
+2026-05-08T20:17:59.604259Z I ssrverdantia494121: 
+2026-05-08T20:17:59.605276Z I ssrverdantia494121: 
+2026-05-08T20:17:59.607946Z I ssrverdantia494121: 
+2026-05-08T20:17:59.610052Z I ssrverdantia494121: 
+2026-05-08T20:17:59.642483Z I ssrverdantia494121: 
+2026-05-08T20:18:00.238025Z I ssrverdantia494121: 
+2026-05-08T20:18:00.421646Z I ssrverdantia494121: 
+2026-05-08T20:18:17.761135Z I ssrverdantia494121: 
+2026-05-08T20:18:39.843992Z E ssrverdantia494121: 
+2026-05-08T20:18:40.288891Z ? ssrverdantia494121: [Upload API] Error: Error: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+    at getAdminApp (.next/server/chunks/[root-of-the-server]__0f5-a6p._.js:1:1561)
+    at getAdminBucket (.next/server/chunks/[root-of-the-server]__0f5-a6p._.js:1:2290)
+    at e (.next/server/chunks/src_lib_firebase_0plfpge._.js:1:105)
+    at async POST (.next/server/chunks/[root-of-the-server]__0sxtc7d._.js:40:467)
+    at async l (.next/server/chunks/[root-of-the-server]__0sxtc7d._.js:40:4863) {
+  errorInfo: {
+    code: 'app/no-app',
+    message: 'The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.'
+  },
+  codePrefix: 'app'
+}
+
+2026-05-08T20:18:53.235150Z I ssrverdantia494121: 
+2026-05-08T20:18:54.147344Z I ssrverdantia494121: 

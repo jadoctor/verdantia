@@ -19,7 +19,6 @@ type AdminSdk = {
   };
 };
 
-let cachedAdminSdk: AdminSdk | null = null;
 let cachedAdminApp: unknown = null;
 
 type AdminBucketFile = {
@@ -56,9 +55,7 @@ type AdminAuth = {
 };
 
 function getAdminSdk() {
-  if (cachedAdminSdk) return cachedAdminSdk;
-  cachedAdminSdk = eval(`require('firebase-admin')`) as AdminSdk;
-  return cachedAdminSdk;
+  return eval(`require('firebase-admin')`) as AdminSdk;
 }
 
 export function getAdminApp() {
