@@ -7,6 +7,42 @@ export const dynamic = 'force-dynamic';
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Error interno del servidor';
 
+const ALLOWED_UPLOAD_PREFIXES = ['uploads/temp/', 'uploads/especies/'];
+
+function normalizeIncomingStoragePath(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  let path = trimmed.replace(/\\/g, '/');
+
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const parsed = new URL(path);
+      const firebaseObjectMatch = parsed.pathname.match(/\/o\/([^?]+)/);
+      if (firebaseObjectMatch?.[1]) {
+        path = decodeURIComponent(firebaseObjectMatch[1]);
+      } else {
+        path = parsed.pathname;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return path.split('?')[0].replace(/^\/+/, '');
+}
+
+function isAllowedUploadPath(path: string): boolean {
+  return ALLOWED_UPLOAD_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
+type UploadPhotoRequestBody = {
+  rawStoragePath?: unknown;
+  storagePath?: unknown;
+  especieNombre?: unknown;
+};
+
 async function authenticateSuperadmin(request: Request) {
   const email = request.headers.get('x-user-email');
   if (!email) return null;
@@ -50,17 +86,39 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const idespecies = resolvedParams.id;
 
   try {
-    const body = await request.json();
-    const { rawStoragePath, especieNombre: reqEspecieNombre } = body;
+    const body = (await request.json()) as UploadPhotoRequestBody;
+    const legacyStoragePath = normalizeIncomingStoragePath(body.storagePath);
+    const rawStoragePath = normalizeIncomingStoragePath(body.rawStoragePath) || legacyStoragePath;
+    const reqEspecieNombre =
+      typeof body.especieNombre === 'string' ? body.especieNombre : '';
 
     if (!rawStoragePath) {
       return NextResponse.json({ error: 'Ruta de archivo requerida' }, { status: 400 });
+    }
+    if (!isAllowedUploadPath(rawStoragePath)) {
+      return NextResponse.json({ error: 'Ruta de archivo no permitida' }, { status: 400 });
     }
 
     const { getAdminBucket } = await import('@/lib/firebase/admin');
     const bucket = getAdminBucket();
     const fileRef = bucket.file(rawStoragePath);
-    const [downloadedFile] = await fileRef.download();
+    let downloadedFile: Buffer;
+    try {
+      [downloadedFile] = await fileRef.download();
+    } catch (downloadError: unknown) {
+      const errorObj = downloadError as { code?: unknown; statusCode?: unknown; message?: unknown };
+      const notFound =
+        errorObj.code === 404 ||
+        errorObj.statusCode === 404 ||
+        (typeof errorObj.message === 'string' && errorObj.message.includes('No such object'));
+      if (notFound) {
+        return NextResponse.json(
+          { error: 'Archivo no encontrado en Storage. Recarga la página y reintenta la subida.' },
+          { status: 404 }
+        );
+      }
+      throw downloadError;
+    }
     const bytes = downloadedFile;
 
     const ext = (rawStoragePath.match(/\.\w+$/) || ['.jpg'])[0];
@@ -250,7 +308,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       ]
     );
 
-    await fileRef.delete().catch(() => {});
+    if (rawStoragePath.startsWith('uploads/temp/')) {
+      await fileRef.delete().catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

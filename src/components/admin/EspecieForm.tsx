@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
+import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css';
 
 interface EspecieFormProps {
@@ -760,8 +761,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
       if (type === 'photos') {
         imageCompression = (await import('browser-image-compression')).default;
-        const firebaseConfigModule = await import('@/lib/firebase/config');
-        clientStorage = firebaseConfigModule.storage;
+        clientStorage = storage;
         storageApi = await import('firebase/storage');
       }
 
@@ -769,15 +769,26 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         let file = files[i];
 
         if (type === 'photos') {
-          const isHeic = file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic';
-          if (isHeic) {
+          const lowerName = (file.name || '').toLowerCase();
+          const lowerType = (file.type || '').toLowerCase();
+          const isHeicLike =
+            lowerName.endsWith('.heic') ||
+            lowerName.endsWith('.heif') ||
+            lowerType === 'image/heic' ||
+            lowerType === 'image/heif' ||
+            lowerType === 'image/heic-sequence' ||
+            lowerType === 'image/heif-sequence';
+
+          if (isHeicLike) {
             try {
               const heic2any = (await import('heic2any')).default;
               const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
               const blobArray = Array.isArray(convertedBlob) ? convertedBlob : [convertedBlob];
-              file = new File(blobArray, file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+              const convertedName = (file.name || 'foto.heic').replace(/\.(heic|heif)$/i, '.jpg');
+              file = new File(blobArray, convertedName, { type: 'image/jpeg' });
             } catch (error) {
-              console.error('Error convirtiendo HEIC', error);
+              console.error('Error convirtiendo HEIC/HEIF', error);
+              throw new Error('No se pudo convertir la foto HEIC/HEIF. Intenta subirla desde Galería como JPG o PNG.');
             }
           }
 
@@ -816,16 +827,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           const fd = new FormData();
           fd.append('file', file);
           fd.append('especieNombre', formData.especiesnombre || '');
-          const res = await fetch(`/api/admin/especies/${especieId}/${type}`, { 
-            method: 'POST', 
+          const res = await fetch(`/api/admin/especies/${especieId}/${type}`, {
+            method: 'POST',
             headers: { 'x-user-email': userEmail || '' },
-            body: fd 
+            body: fd
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
             throw new Error(errData.error || `HTTP Error ${res.status}`);
           }
-          
+
           if (type === 'pdfs') {
             const data = await res.json();
             if (data.success && data.pdf && !data.pdf.portada) {
@@ -906,11 +917,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const descBase = aiImageDescription || formData.especiesnombre || 'especie';
 
       // Subir a ruta temporal vía Firebase client-side (mismo flujo que fotos normales)
-      const firebaseConfigModule = await import('@/lib/firebase/config');
       const storageApi = await import('firebase/storage');
       const tempFileName = `temp-ai-${Date.now()}-${descBase.replace(/[^a-zA-Z0-9.-]/g, '')}.webp`;
       const tempPath = `uploads/temp/${tempFileName}`;
-      const storageRef = storageApi.ref(firebaseConfigModule.storage, tempPath);
+      const storageRef = storageApi.ref(storage, tempPath);
       await storageApi.uploadBytes(storageRef, blob);
 
       // Llamar a la API de especies que descarga, procesa y guarda

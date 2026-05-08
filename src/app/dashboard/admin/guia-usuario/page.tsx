@@ -712,6 +712,30 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 23:55 – Aumento de Memoria en Firebase (Fix Subidas Móvil)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Las subidas de fotos desde la cámara del móvil (archivos de +10MB) fallaban con error silencioso o Timeout en Producción, mientras que en PC local funcionaban perfectamente.</li>
+                  <li>La causa raíz era que la Cloud Function serverless se quedaba sin memoria RAM al intentar usar <code>sharp</code> para procesar imágenes de 48 Megapíxeles con el límite por defecto de Google Cloud.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Modificado el archivo <code>firebase.json</code> añadiendo la directiva <code>"memory": "2GiB"</code> a la configuración <code>frameworksBackend</code>.</li>
+                  <li>Actualización manual forzada de la fecha de despliegue en <code>page.tsx</code> para no dejar inconsistencias en la portada del proyecto.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La infraestructura ahora es capaz de soportar la ingesta en crudo de fotografías pesadas nativas desde dispositivos móviles, procesándolas en memoria sin sufrir Out of Memory (OOM).</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>
