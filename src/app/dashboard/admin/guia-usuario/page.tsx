@@ -280,86 +280,7 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
-              <strong>08/05/2026 22:35 – Fix Definitivo: Subida Fotos Especies + Firebase Admin Init</strong>
-              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>La función <code>uploadAiImage</code> en <code>EspecieForm.tsx</code> enviaba los campos del formato antiguo de la API (<code>storagePath, nombreOriginal, mimeType</code>), pero la API fue reescrita en esta misma sesión para esperar <code>rawStoragePath</code>. Resultado: <code>Error: Ruta de archivo requerida</code>.</li>
-                  <li style={{ marginBottom: '8px' }}>La función <code>getAdminSdk()</code> en <code>admin.ts</code> tenía una caché (<code>cachedAdminSdk</code>) que en el entorno de Cloud Functions provocaba que <code>admin.apps</code> devolviera un estado inconsistente, causando <code>The default Firebase app does not exist</code>.</li>
-                  <li>El problema de <code>sharp</code> se resolvió reemplazando <code>await import('sharp')</code> por <code>eval("require('sharp')")</code> en todos los endpoints de subida, haciéndolos invisibles a Turbopack.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code>: Reescrita <code>uploadAiImage</code> para usar el mismo flujo que la subida normal (Firebase client → <code>uploads/temp/</code> → API con <code>rawStoragePath</code>), eliminando el paso intermedio por <code>/api/admin/upload</code>.</li>
-                  <li style={{ marginBottom: '8px' }}><code>admin.ts</code>: Eliminada la caché <code>cachedAdminSdk</code>. Ahora <code>getAdminSdk()</code> llama a <code>eval("require('firebase-admin')")</code> directamente cada vez (Node.js ya cachéa internamente los módulos con <code>require</code>).</li>
-                  <li style={{ marginBottom: '8px' }}>Todos los <code>await import('sharp/exifr/vibrant/blurhash')</code> cambiados a <code>eval("require(...)")</code> en: especies photos, labores photos, upload, watermark-legacy y generate-blog.</li>
-                  <li style={{ marginBottom: '8px' }}>Imports de <code>mysql2</code> cambiados a <code>import type</code> en: sinonimos, paises, idiomas y proponer-sinonimos.</li>
-                  <li><code>AGENTS.md</code>: Reescrito el protocolo de despliegue para incluir el mandato estricto de las palabras mágicas "SUBE A PRODUCCION", la obligación de documentar en 6.2 antes de desplegar, y la obligación de leer la sección 6 completa antes de cada despliegue.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Restaurada la subida de fotos de Especies (tanto manuales como generadas por IA) en local y producción.</li>
-                  <li style={{ marginBottom: '8px' }}>Eliminado el error 500 de inicialización de Firebase Admin en Cloud Functions.</li>
-                  <li>Blindaje total contra Turbopack: ningún módulo nativo (<code>sharp, exifr, blurhash, node-vibrant, firebase-admin, mysql2</code>) es visible al compilador en producción.</li>
-                </ul>
-              </div>
-            </li>
-
-            <li style={{ marginBottom: '24px' }}>
-              <strong>08/05/2026 21:55 – Reversión de Emergencia: Bug de Turbopack solucionado de raíz (Eval vs Type)</strong>
-              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>El último parche colapsó TODOS los accesos al Dashboard (devolviendo Error 500) y causó el error <code>Cannot find module 'mysql2-3d802...'</code>.</li>
-                  <li>Al forzar <code>mysql2</code> y <code>sharp</code> en <code>serverExternalPackages</code>, se activaba un mecanismo de Turbopack que empaquetaba e invalidaba cualquier importación normal, rompiendo la función cloud entera.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Revertida de nuevo la matriz <code>serverExternalPackages</code> a vacía en producción en <code>next.config.ts</code>.</li>
-                  <li style={{ marginBottom: '8px' }}>Se ha reescrito la importación de las librerías binarias (<code>sharp, exifr, blurhash, node-vibrant</code>) en todos los endpoints de subida a <code>eval("require('paquete')")</code> para ocultarlos 100% de los ojos del compilador.</li>
-                  <li>Se modificaron los imports <code>import &#123; RowDataPacket &#125; from 'mysql2'</code> en todas las rutas a <code>import type</code>, evitando que el compilador trate de cargar la librería en tiempo de compilación.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Recuperado el acceso como Superadministrador. La base de datos y la subida de fotos de Especies, Labores y Blog por fin están estables y operativas.</li>
-                </ul>
-              </div>
-            </li>
-
-            <li style={{ marginBottom: '24px' }}>
-              <strong>08/05/2026 21:32 – Fix Crítico: Turbopack vs Módulos Nativos (Sharp)</strong>
-              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Las subidas de fotos de Especies fallaban en producción con el error <code>Cannot find module 'sharp-20c6a5...'</code>.</li>
-                  <li style={{ marginBottom: '8px' }}>Este es el mismo síntoma de corrupción de hash que tuvimos hace unos días con <code>firebase-admin</code>.</li>
-                  <li>Ocurría porque la matriz <code>serverExternalPackages</code> estaba configurada para aplicarse <em>solo</em> en entorno de desarrollo. Al construir en producción, Turbopack intentaba empaquetar librerías binarias nativas (como Sharp) y rompía las referencias.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Modificado <code>next.config.ts</code> para que <code>serverExternalPackages</code> incluya explícita y permanentemente a <code>firebase-admin, sharp, mysql2, node-vibrant, blurhash, exifr</code> independientemente del entorno.</li>
-                </ul>
-              </div>
-              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
-              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Restaurado el funcionamiento del ecosistema de subida de fotos (compresión webp, extracción de paletas vibrantes y firmas blurhash) en producción sin colapsos de Next.js.</li>
-                </ul>
-              </div>
-            </li>
-
-            <li style={{ marginBottom: '24px' }}>
-              <strong>08/05/2026 20:15 – Sistema de Hibernación y Bypass ENUM SQL</strong>
+              <strong>30/04/2026 20:40 – Corrección de Interfaz y primera subida estable</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
@@ -690,6 +611,103 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li><strong>Claridad Normativa:</strong> Se formalizó la regla inquebrantable de envío de correos, sentando las bases documentales para la próxima migración a un motor relacional de 3 estados (Opcional, Obligatorio, Bloqueado).</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 20:15 – Sistema de Hibernación y Bypass ENUM SQL</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Ausencia de un mecanismo seguro para que usuarios gratuitos pudiesen pausar su cuenta.</li>
+                  <li>El botón de desuscripción fallaba en BD por la columna ENUM demasiado estricta.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Creado endpoint <code>/api/unsubscribe</code> y muro de hibernación en <code>dashboard/layout.tsx</code>.</li>
+                  <li>URLs de assets en emails cambiadas a absolutas.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Sistema de hibernación operativo.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 21:32 – Fix Crítico: Turbopack vs Módulos Nativos (Sharp)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Fotos de Especies fallaban con <code>Cannot find module 'sharp-20c6a5...'</code> por hash de Turbopack.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Añadido <code>sharp, mysql2</code> etc. a <code>serverExternalPackages</code> permanentemente.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>FRACASO: rompió mysql2 y causó Error 500. Revertida en la siguiente entrada.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 21:55 – Reversión de Emergencia: Bug de Turbopack (Eval vs Type)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>El parche anterior colapsó el Dashboard con <code>Cannot find module 'mysql2-3d802...'</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Revertida <code>serverExternalPackages</code>. Binarios a <code>eval("require(...)")</code>. mysql2 a <code>import type</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Recuperado acceso Superadministrador. Hashes de Turbopack eliminados.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/05/2026 22:35 – Fix Definitivo: Subida Fotos Especies + Firebase Admin Init</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><code>uploadAiImage</code> enviaba <code>storagePath</code> pero la API esperaba <code>rawStoragePath</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><code>getAdminSdk()</code> tenía caché <code>cachedAdminSdk</code> que causaba <code>Firebase app does not exist</code>.</li>
+                  <li><code>sharp</code> resuelto con <code>eval("require('sharp')")</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code>: Reescrita <code>uploadAiImage</code> (Firebase client → temp → API con <code>rawStoragePath</code>).</li>
+                  <li style={{ marginBottom: '8px' }}><code>admin.ts</code>: Eliminada caché <code>cachedAdminSdk</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Todos los binarios a <code>eval("require(...)")</code>. mysql2 a <code>import type</code>.</li>
+                  <li><code>AGENTS.md</code>: Protocolo de despliegue con mandato "SUBE A PRODUCCION".</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Restaurada subida de fotos de Especies (manuales e IA).</li>
+                  <li style={{ marginBottom: '8px' }}>Eliminado error 500 Firebase Admin en Cloud Functions.</li>
+                  <li>Blindaje total contra Turbopack.</li>
                 </ul>
               </div>
             </li>
