@@ -17,7 +17,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [rows] = await pool.query('SELECT * FROM plagas ORDER BY plagasnombre');
+    const [rows] = await pool.query(`
+      SELECT p.*, 
+             d.datosadjuntosruta as primary_photo_ruta, 
+             d.datosadjuntosresumen as primary_photo_resumen 
+      FROM plagas p
+      LEFT JOIN datosadjuntos d 
+        ON p.idplagas = d.xdatosadjuntosidplagas 
+        AND d.datosadjuntostipo = 'imagen' 
+        AND d.datosadjuntosesprincipal = 1 
+        AND d.datosadjuntosactivo = 1
+      ORDER BY p.plagasnombre
+    `);
     return NextResponse.json({ plagas: rows });
   } catch (error: any) {
     console.error('Error fetching plagas:', error);

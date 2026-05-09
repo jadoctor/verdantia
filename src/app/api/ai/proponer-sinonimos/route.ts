@@ -4,7 +4,7 @@ import type { RowDataPacket } from 'mysql2';
 
 export async function POST(request: Request) {
   try {
-    const { especieNombre, especieCientifico } = await request.json();
+    const { especieNombre, especieCientifico, existingSinonimos, extraInstructions } = await request.json();
     if (!especieNombre) {
       return NextResponse.json({ error: 'Nombre de la especie requerido' }, { status: 400 });
     }
@@ -21,32 +21,66 @@ export async function POST(request: Request) {
     const idiomasList = idiomas.map(i => `${i.ididiomas}: ${i.idiomasnombre}`).join(', ');
     const paisesList = paises.map(p => `${p.idpaises}: ${p.paisesnombre}`).join(', ');
 
+    const existingText = existingSinonimos && existingSinonimos.length > 0 
+      ? `\nSINÓNIMOS YA EXISTENTES (No propongas estos mismos para los mismos países):\n${existingSinonimos.map((s: any) => `- ${s.nombre} (País ID: ${s.idPais || 'General'})`).join('\n')}`
+      : '';
+
+    const extraText = extraInstructions ? `\nINSTRUCCIONES DEL USUARIO (PRIORIDAD ALTA):\n${extraInstructions}` : '';
+
     const prompt = `
 Eres un experto botánico y filólogo especializado en términos agrícolas y nombres comunes de plantas.
 La especie es: "${especieNombre}" (Nombre científico: ${especieCientifico || 'Desconocido'}).
+${existingText}
 
-Necesito que propongas los sinónimos y nombres locales/regionales más conocidos de esta especie.
-Para cada sinónimo, asocia el idioma y el país (si aplica).
+Necesito que propongas SOLO los nombres ALTERNATIVOS de esta especie: palabras DIFERENTES al nombre principal "${especieNombre}".
+
+⚠️ REGLA FUNDAMENTAL — LEE ESTO PRIMERO:
+Un sinónimo es ÚNICAMENTE un nombre DIFERENTE para la misma planta.
+Si en Colombia, México y España la planta se llama igual (ej. "Ajo"), NO la repitas para cada país.
+Solo propón una entrada si el NOMBRE EN SÍ es una palabra distinta.
+
+EJEMPLO CORRECTO para "Ajo" (Allium sativum):
+✅ "All" (Valenciano, España) — palabra DIFERENTE
+✅ "Baratxuri" (Euskera, España) — palabra DIFERENTE
+✅ "Garlic" (Inglés, Internacional) — palabra DIFERENTE
+
+EJEMPLO INCORRECTO:
+❌ "Ajo" (Español, México) — es la MISMA PALABRA
+❌ "Ajo" (Español, Colombia) — es la MISMA PALABRA
+${extraText}
 
 REGLAS ESTRICTAS:
-1. Responde ÚNICAMENTE con un array en formato JSON. Nada más.
-2. Cada objeto del array debe tener exactamente esta estructura:
+1. Responde ÚNICAMENTE con un array JSON. Nada más.
+2. Cada objeto debe tener exactamente esta estructura:
    {
-     "especiessinonimosnombre": "El sinónimo aquí",
-     "xespeciessinonimosididiomas": <ID del idioma según la lista>,
-     "xespeciessinonimosidpaises": <ID del país según la lista o null si es general>,
-     "especiessinonimosnotas": "Breve nota de uso o región"
+     "especiessinonimosnombre": "El sinónimo aquí (DEBE ser diferente a ${especieNombre})",
+     "xespeciessinonimosididiomas": <ID del idioma>,
+     "xespeciessinonimosidpaises": <ID del país>,
+     "especiessinonimosnotas": "Breve nota"
    }
-3. IMPORTANTE: Si vas a proponer un sinónimo de la región de levante, Cataluña, Valencia o Baleares (ej. Aj, Tomaca, etc.), DEBES usar obligatoriamente el idioma "Valenciano". Tienes prohibido usar la denominación "Catalán". Busca en la lista de idiomas el ID que corresponde a "Valenciano".
-4. IMPORTANTE SOBRE EL PAÍS: Intenta asociar SIEMPRE un ID de país si el sinónimo es característico de una región o país en particular (ej. España o México). Usa "null" SOLO si el sinónimo es mundialmente conocido y estándar en todo el idioma sin distinción regional.
-5. Usa los siguientes IDs de IDIOMAS permitidos (solo usa el ID numérico):
-${idiomasList}
-6. Usa los siguientes IDs de PAÍSES permitidos (solo usa el ID numérico, o null si es muy general):
-${paisesList}
+3. VALENCIANO: Toda referencia a catalán/valenciano/balear DEBE usar el idioma "Valenciano". Prohibido usar "Catalán".
+4. PAÍS OBLIGATORIO Y COHERENTE CON EL IDIOMA: Cada idioma tiene su país natural. Asócialos correctamente:
+   - Valenciano, Gallego, Euskera → España
+   - Inglés → Estados Unidos, Reino Unido, Canadá, Australia o India según contexto
+   - Francés → Francia (o Canadá si es variante canadiense)
+   - Italiano → Italia
+   - Portugués → Portugal (o Brasil si es variante brasileña)
+   - Alemán → Alemania
+   - Chino → China
+   - Japonés → Japón
+   - Guaraní → Paraguay
+   - Quechua → Perú
+   - Latín → Internacional
+   NUNCA uses "Internacional" si existe el país natural del idioma. NUNCA uses null.
+5. NO repitas el mismo nombre para distintos países. Si "Palta" se usa en Argentina, Perú y Uruguay, pon UNA sola entrada con el país más representativo y menciónalo en las notas.
+6. NUNCA propongas el nombre principal "${especieNombre}" ni su nombre científico como sinónimo.
+7. IDs de IDIOMAS: ${idiomasList}
+8. IDs de PAÍSES: ${paisesList}
 
-Ejemplo de respuesta (solo el JSON):
+Ejemplo de respuesta:
 [
-  { "especiessinonimosnombre": "Palta", "xespeciessinonimosididiomas": 1, "xespeciessinonimosidpaises": 3, "especiessinonimosnotas": "Uso en Sudamérica" }
+  { "especiessinonimosnombre": "Palta", "xespeciessinonimosididiomas": 1, "xespeciessinonimosidpaises": 3, "especiessinonimosnotas": "Argentina, Uruguay y Perú" },
+  { "especiessinonimosnombre": "Alvocat", "xespeciessinonimosididiomas": 2, "xespeciessinonimosidpaises": 1, "especiessinonimosnotas": "Valenciano" }
 ]
 `;
 
@@ -89,6 +123,40 @@ Ejemplo de respuesta (solo el JSON):
       console.error('Error parseando JSON de Gemini:', resultText);
       return NextResponse.json({ error: 'Formato de respuesta inválido de IA' }, { status: 500 });
     }
+
+    // Sanitización: forzar que SIEMPRE tengan país e idioma válidos
+    const validPaisIds = new Set(paises.map(p => p.idpaises));
+    const validIdiomaIds = new Set(idiomas.map(i => i.ididiomas));
+    const ID_INTERNACIONAL = paises.find(p => p.paisesnombre === 'Internacional')?.idpaises || 22;
+    const ID_ESPANOL = idiomas.find(i => i.idiomasnombre === 'Español')?.ididiomas || 1;
+
+    sinonimos = sinonimos.map((s: any) => ({
+      ...s,
+      xespeciessinonimosidpaises: validPaisIds.has(Number(s.xespeciessinonimosidpaises))
+        ? Number(s.xespeciessinonimosidpaises)
+        : ID_INTERNACIONAL,
+      xespeciessinonimosididiomas: validIdiomaIds.has(Number(s.xespeciessinonimosididiomas))
+        ? Number(s.xespeciessinonimosididiomas)
+        : ID_ESPANOL
+    }));
+
+    // Filtro anti-duplicados:
+    // 1. Eliminar sinónimos que sean idénticos al nombre de la especie
+    const nombreNorm = especieNombre.toLowerCase().trim();
+    const cientificoNorm = (especieCientifico || '').toLowerCase().trim();
+    sinonimos = sinonimos.filter((s: any) => {
+      const sinNorm = (s.especiessinonimosnombre || '').toLowerCase().trim();
+      return sinNorm !== nombreNorm && sinNorm !== cientificoNorm && sinNorm.length > 0;
+    });
+
+    // 2. Eliminar nombres repetidos: si "Palta" aparece 3 veces para 3 países, dejar solo la primera
+    const seenNames = new Set<string>();
+    sinonimos = sinonimos.filter((s: any) => {
+      const key = (s.especiessinonimosnombre || '').toLowerCase().trim();
+      if (seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
+    });
 
     return NextResponse.json({ success: true, sinonimos });
   } catch (error: any) {

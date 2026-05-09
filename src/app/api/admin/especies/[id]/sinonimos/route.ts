@@ -37,6 +37,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: 'El nombre del sinónimo es requerido' }, { status: 400 });
     }
 
+    // Comprobar duplicado: mismo nombre + mismo país para la misma especie
+    const paisValue = data.xespeciessinonimosidpaises || null;
+    const [existing] = await pool.query<RowDataPacket[]>(
+      `SELECT idespeciessinonimos FROM especiessinonimos 
+       WHERE xespeciessinonimosidespecies = ? 
+         AND LOWER(TRIM(especiessinonimosnombre)) = LOWER(TRIM(?))
+         AND (xespeciessinonimosidpaises = ? OR (xespeciessinonimosidpaises IS NULL AND ? IS NULL))`,
+      [especieId, data.especiessinonimosnombre, paisValue, paisValue]
+    );
+    if (existing.length > 0) {
+      return NextResponse.json({ success: true, id: existing[0].idespeciessinonimos, skipped: true, message: 'Sinónimo ya existe' });
+    }
+
     const [result] = await pool.query<ResultSetHeader>(`
       INSERT INTO especiessinonimos 
       (xespeciessinonimosidespecies, xespeciessinonimosididiomas, xespeciessinonimosidpaises, especiessinonimosnombre, especiessinonimosnotas)
@@ -44,7 +57,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     `, [
       especieId, 
       data.xespeciessinonimosididiomas || null, 
-      data.xespeciessinonimosidpaises || null, 
+      paisValue, 
       data.especiessinonimosnombre, 
       data.especiessinonimosnotas || null
     ]);

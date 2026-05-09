@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
@@ -49,6 +49,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [relaciones, setRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
   const [initialRelaciones, setInitialRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
   const [relacionesDirty, setRelacionesDirty] = useState(false);
+  const [relacionesSaveStatus, setRelacionesSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
 
   const isFormDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
   const isDirty = isFormDirty || relacionesDirty;
@@ -87,8 +88,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [masterIdiomas, setMasterIdiomas] = useState<any[]>([]);
   const [masterPaises, setMasterPaises] = useState<any[]>([]);
   const [sinonimosAiLoading, setSinonimosAiLoading] = useState(false);
+  const [sinonimosAiSeconds, setSinonimosAiSeconds] = useState(0);
+  const sinonimosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showSinonimosAiModal, setShowSinonimosAiModal] = useState(false);
   const [aiSinonimosProposal, setAiSinonimosProposal] = useState<any[]>([]);
+
+  // -- Synonym AI Config Panel --
+  const [showSinonimosConfig, setShowSinonimosConfig] = useState(false);
+  const [sinConfigPromptOpen, setSinConfigPromptOpen] = useState(false);
+  const [sinSelectedScope, setSinSelectedScope] = useState<string>('general');
+  const [sinExtraInstructions, setSinExtraInstructions] = useState('Busca sinónimos en español de Latinoamérica y principales idiomas mundiales. Incluye variantes regionales donde el nombre sea diferente al principal.');
+  const sinScopePresets: Record<string, string> = {
+    general: 'Busca sinónimos en español de Latinoamérica y principales idiomas mundiales. Incluye variantes regionales donde el nombre sea diferente al principal.',
+    cooficiales: 'Busca sinónimos en las lenguas cooficiales de España: Valenciano, Gallego y Euskera. Prioriza nombres tradicionales peninsulares.',
+    europa: 'Busca sinónimos en idiomas europeos: Francés, Italiano, Portugués, Alemán e Inglés. Asocia cada nombre a su país correspondiente.'
+  };
 
   // -- Photo Editor State --
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
@@ -617,30 +631,41 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setShowAiModal(false);
   };
 
-  const proponerSinonimosAI = async () => {
+  const openSinonimosConfig = () => {
     if (!formData.especiesnombre) {
       alert('Se necesita el nombre de la especie para proponer sinónimos.');
       return;
     }
+    setShowSinonimosConfig(true);
+  };
+
+  const proponerSinonimosAI = async () => {
     setSinonimosAiLoading(true);
+    setSinonimosAiSeconds(0);
+    sinonimosTimerRef.current = setInterval(() => setSinonimosAiSeconds(s => s + 1), 1000);
     try {
       const res = await fetch('/api/ai/proponer-sinonimos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           especieNombre: formData.especiesnombre,
-          especieCientifico: formData.especiesnombrecientifico
+          especieCientifico: formData.especiesnombrecientifico,
+          existingSinonimos: sinonimos.map(s => ({
+            nombre: s.especiessinonimosnombre,
+            idPais: s.xespeciessinonimosidpaises
+          })),
+          extraInstructions: sinExtraInstructions
         })
       });
       const data = await res.json();
       if (data.success && data.sinonimos) {
-        // En vez de añadir directamente, guardamos en el estado temporal y abrimos el modal
         const propuestos = data.sinonimos.map((s: any) => ({
           ...s,
-          idespeciessinonimos: null, // null significa que es nuevo
-          _selected: true // Por defecto seleccionados
+          idespeciessinonimos: null,
+          _selected: true
         }));
         setAiSinonimosProposal(propuestos);
+        setShowSinonimosConfig(false);
         setShowSinonimosAiModal(true);
       } else {
         alert(data.error || 'Error al proponer sinónimos.');
@@ -650,6 +675,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       alert('Error de conexión con la IA.');
     } finally {
       setSinonimosAiLoading(false);
+      if (sinonimosTimerRef.current) { clearInterval(sinonimosTimerRef.current); sinonimosTimerRef.current = null; }
     }
   };
 
@@ -685,6 +711,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   const saveRelacionesNow = async (updatedRels: any) => {
     if (!especieId || !userEmail) return;
+    setRelacionesSaveStatus('saving');
     try {
       await fetch(`/api/admin/especies/${especieId}/relaciones`, {
         method: 'PUT',
@@ -693,8 +720,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       });
       setInitialRelaciones(updatedRels);
       setRelacionesDirty(false);
+      setRelacionesSaveStatus('no-changes');
+      setTimeout(() => setRelacionesSaveStatus('idle'), 2000);
     } catch (e) {
       console.error('Error auto-guardando relaciones:', e);
+      setRelacionesSaveStatus('idle');
     }
   };
 
@@ -2055,7 +2085,19 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           {activeTab === 'asociaciones' && (
             <div className="grid-form">
               <div className="form-group full">
-                <h4>Asociaciones Beneficiosas</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h4 style={{ margin: 0 }}>Asociaciones Beneficiosas</h4>
+                  {relacionesSaveStatus !== 'idle' && (
+                    <span style={{ 
+                      fontSize: '0.85rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px',
+                      color: relacionesSaveStatus === 'no-changes' ? '#10b981' : '#64748b',
+                      background: relacionesSaveStatus === 'no-changes' ? '#dcfce7' : '#f1f5f9',
+                      transition: 'all 0.3s'
+                    }}>
+                      {relacionesSaveStatus === 'saving' ? '⏳ Guardando...' : '✓ Guardado'}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                   <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                     <option value="">Selecciona especie...</option>
@@ -2068,15 +2110,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     if (!sel.value) return;
                     if (relaciones.beneficiosas.some((b: any) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
                     const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
-                    setRelaciones((prev: any) => ({
-                      ...prev,
-                      beneficiosas: [...prev.beneficiosas, { 
+                    const updated = {
+                      ...relaciones,
+                      beneficiosas: [...relaciones.beneficiosas, { 
                         xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
                         especie_destino_nombre: sp?.especiesnombre,
                         asociacionesbeneficiosasmotivo: mot.value 
                       }]
-                    }));
-                    setRelacionesDirty(true);
+                    };
+                    setRelaciones(updated);
+                    saveRelacionesNow(updated);
                     sel.value = ''; mot.value = '';
                   }} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
                 </div>
@@ -2114,15 +2157,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     if (!sel.value) return;
                     if (relaciones.perjudiciales.some((p: any) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
                     const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
-                    setRelaciones((prev: any) => ({
-                      ...prev,
-                      perjudiciales: [...prev.perjudiciales, { 
+                    const updated = {
+                      ...relaciones,
+                      perjudiciales: [...relaciones.perjudiciales, { 
                         xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
                         especie_destino_nombre: sp?.especiesnombre,
                         asociacionesperjudicialesmotivo: mot.value 
                       }]
-                    }));
-                    setRelacionesDirty(true);
+                    };
+                    setRelaciones(updated);
+                    saveRelacionesNow(updated);
                     sel.value = ''; mot.value = '';
                   }} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
                 </div>
@@ -2171,17 +2215,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     if (!sel.value) return;
                     if (relaciones.plagas.some((p: any) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
                     const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
-                    setRelaciones((prev: any) => ({
-                      ...prev,
-                      plagas: [...prev.plagas, { 
+                    const updated = {
+                      ...relaciones,
+                      plagas: [...relaciones.plagas, { 
                         xespeciesplagasidplagas: parseInt(sel.value),
                         plagasnombre: pla?.plagasnombre,
                         plagastipo: pla?.plagastipo,
                         especiesplagasnivelriesgo: r.value,
                         especiesplagasnotasespecificas: n.value 
                       }]
-                    }));
-                    setRelacionesDirty(true);
+                    };
+                    setRelaciones(updated);
+                    saveRelacionesNow(updated);
                     sel.value = ''; n.value = ''; r.value = 'media';
                   }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
                 </div>
@@ -2226,11 +2271,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button 
                     type="button" 
-                    onClick={proponerSinonimosAI}
+                    onClick={openSinonimosConfig}
                     disabled={sinonimosAiLoading}
                     style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer' }}
                   >
-                    {sinonimosAiLoading ? 'Pensando...' : '✨ Proponer Sinónimos (IA)'}
+                    {sinonimosAiLoading ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.1rem' }}>⏳</span>
+                        Buscando... {sinonimosAiSeconds}s
+                      </span>
+                    ) : '✨ Proponer Sinónimos (IA)'}
                   </button>
                   <button 
                     type="button" 
@@ -2299,7 +2349,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               }}
                               style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                             >
-                              <option value="">-- General --</option>
+                              <option value="">-- Sin especificar --</option>
                               {masterIdiomas.map(i => (
                                 <option key={i.ididiomas} value={i.ididiomas}>{i.idiomasnombre}</option>
                               ))}
@@ -2316,7 +2366,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               }}
                               style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                             >
-                              <option value="">-- General --</option>
+                              <option value="">-- Sin especificar --</option>
                               {masterPaises.map(p => (
                                 <option key={p.idpaises} value={p.idpaises}>{p.paisesnombre}</option>
                               ))}
@@ -2339,11 +2389,19 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           <td style={{ padding: '8px', textAlign: 'center' }}>
                             <button 
                               type="button" 
-                              onClick={() => {
+                              onClick={async () => {
+                                const sinToDelete = sinonimos[index];
                                 const newSin = [...sinonimos];
                                 newSin.splice(index, 1);
                                 setSinonimos(newSin);
-                                setSinonimosDirty(true);
+                                // Auto-borrar de la BD si ya estaba guardado
+                                if (sinToDelete.idespeciessinonimos && especieId) {
+                                  try {
+                                    await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
+                                  } catch (err) {
+                                    console.error('Error borrando sinónimo:', err);
+                                  }
+                                }
                               }}
                               style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
                             >
@@ -3507,82 +3565,286 @@ JSON de salida obligatorio:
           </div>
         </div>
       )}
-        {/* SINONIMOS AI MODAL */}
-        {showSinonimosAiModal && (
+
+        {/* SINÓNIMOS AI CONFIG PANEL */}
+        {showSinonimosConfig && (
+          <div className="ai-modal-overlay">
+            <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
+              <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ color: 'white', margin: 0, fontSize: '1.15rem' }}>🔍 Asistente IA — Buscador de Sinónimos</h2>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    disabled={sinonimosAiLoading || !sinExtraInstructions.trim()}
+                    onClick={proponerSinonimosAI}
+                    style={{ 
+                      padding: '8px 20px', background: sinonimosAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)', 
+                      color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold', 
+                      cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.95rem',
+                      opacity: !sinExtraInstructions.trim() ? 0.4 : 1,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {sinonimosAiLoading ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.1rem' }}>⏳</span>
+                        Buscando... {sinonimosAiSeconds}s
+                      </span>
+                    ) : '🚀 Lanzar Búsqueda'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSinonimosConfig(false)} 
+                    style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
+                  >
+                    ✖ Cerrar
+                  </button>
+                </div>
+              </div>
+
+              <div className="ai-modal-body">
+                <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                  <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
+                    Objetivo: Encontrar nombres alternativos para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
+                  </p>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                    {formData.especiesnombrecientifico && <em>({formData.especiesnombrecientifico}) — </em>}
+                    Selecciona un ámbito para cargar las instrucciones, o escribe las tuyas propias.
+                  </p>
+                </div>
+
+                {/* Prompt colapsable */}
+                <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <button 
+                    type="button"
+                    onClick={() => setSinConfigPromptOpen(!sinConfigPromptOpen)}
+                    style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
+                  >
+                    <span>📋 Instrucciones del Prompt (técnico)</span>
+                    <span style={{ transform: sinConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                  </button>
+                  {sinConfigPromptOpen && (
+                    <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
+                      La IA recibirá la lista de idiomas y países del sistema, los sinónimos existentes, y el texto de instrucciones que escribas abajo. Filtrará automáticamente duplicados y el nombre principal.
+                    </div>
+                  )}
+                </div>
+
+                {/* Ámbitos de búsqueda — Radio buttons */}
+                <div style={{ marginBottom: '16px' }}>
+                  <h4 style={{ margin: '0 0 12px', color: '#1e293b', fontSize: '1rem' }}>🌍 Ámbito de Búsqueda</h4>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                      { key: 'general', emoji: '🌎', label: 'General' },
+                      { key: 'cooficiales', emoji: '🇪🇸', label: 'Lenguas Cooficiales' },
+                      { key: 'europa', emoji: '🇪🇺', label: 'Europea' },
+                    ].map(scope => (
+                      <label key={scope.key} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', 
+                        border: sinSelectedScope === scope.key ? '2px solid #7c3aed' : '1px solid #e2e8f0',
+                        borderRadius: '8px', cursor: 'pointer',
+                        background: sinSelectedScope === scope.key ? '#f5f3ff' : '#fff',
+                        transition: 'all 0.2s', flex: '1', minWidth: '150px'
+                      }}>
+                        <input 
+                          type="radio"
+                          name="sinScope"
+                          checked={sinSelectedScope === scope.key}
+                          onChange={() => {
+                            setSinSelectedScope(scope.key);
+                            setSinExtraInstructions(sinScopePresets[scope.key]);
+                          }}
+                          style={{ width: '18px', height: '18px', accentColor: '#7c3aed', flexShrink: 0 }}
+                        />
+                        <span style={{ fontWeight: sinSelectedScope === scope.key ? 'bold' : 'normal', color: '#1e293b', fontSize: '0.95rem' }}>{scope.emoji} {scope.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Textarea — Instrucciones que la IA leerá */}
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
+                  <textarea
+                    value={sinExtraInstructions}
+                    onChange={e => setSinExtraInstructions(e.target.value)}
+                    placeholder="Escribe las instrucciones de búsqueda para la IA..."
+                    rows={4}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' }}
+                  />
+                  <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>
+                    Puedes modificar el texto libremente. La IA leerá exactamente lo que esté escrito aquí.
+                  </p>
+                </div>
+
+                {/* Sinónimos actuales */}
+                {sinonimos.length > 0 && (
+                  <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.9rem' }}>📊 Ya tienes {sinonimos.length} sinónimo{sinonimos.length !== 1 ? 's' : ''} registrado{sinonimos.length !== 1 ? 's' : ''}</span>
+                    <span style={{ color: '#15803d', fontSize: '0.85rem', marginLeft: '8px' }}>— La IA evitará duplicados</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showSinonimosAiModal && (() => {
+          const isExisting = (prop: any) => sinonimos.some(s =>
+            s.especiessinonimosnombre?.toLowerCase().trim() === prop.especiessinonimosnombre?.toLowerCase().trim() &&
+            String(s.xespeciessinonimosidpaises || '') === String(prop.xespeciessinonimosidpaises || '')
+          );
+          const existingOnes = aiSinonimosProposal.filter(isExisting);
+          const newOnes = aiSinonimosProposal.filter(p => !isExisting(p));
+          const hasBothColumns = existingOnes.length > 0 && newOnes.length > 0;
+
+          const renderCard = (prop: any, idx: number, isAlreadyIncluded: boolean) => {
+            const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
+            const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
+            return (
+              <label key={idx} style={{
+                display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
+                border: isAlreadyIncluded ? '1px solid #cbd5e1' : prop._selected ? '2px solid #10b981' : '1px solid #e2e8f0',
+                borderRadius: '8px', cursor: isAlreadyIncluded ? 'default' : 'pointer',
+                background: isAlreadyIncluded ? '#f8fafc' : prop._selected ? '#f0fdf4' : '#fff',
+                transition: 'all 0.2s'
+              }}>
+                {!isAlreadyIncluded && (
+                  <input
+                    type="checkbox"
+                    checked={prop._selected}
+                    onChange={(e) => {
+                      const newProps = [...aiSinonimosProposal];
+                      const realIdx = aiSinonimosProposal.indexOf(prop);
+                      newProps[realIdx]._selected = e.target.checked;
+                      setAiSinonimosProposal(newProps);
+                    }}
+                    style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
+                  />
+                )}
+                {isAlreadyIncluded && (
+                  <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isAlreadyIncluded ? '#64748b' : '#1e293b' }}>
+                    {prop.especiessinonimosnombre}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.82rem', color: '#64748b', flexWrap: 'wrap' }}>
+                    {idioma && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🗣️ {idioma.idiomasnombre}</span>}
+                    {pais && <span style={{ background: '#ecfdf5', color: '#065f46', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🌍 {pais.paisesnombre}</span>}
+                  </div>
+                  {prop.especiessinonimosnotas && (
+                    <div style={{ marginTop: '5px', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
+                      {prop.especiessinonimosnotas}
+                    </div>
+                  )}
+                </div>
+              </label>
+            );
+          };
+
+          return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
                onClick={() => setShowSinonimosAiModal(false)}>
-            <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: hasBothColumns ? '950px' : '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
                  onClick={e => e.stopPropagation()}>
               <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
                 <span>✨ Sinónimos Propuestos por la IA</span>
                 <button type="button" onClick={() => setShowSinonimosAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
               </h2>
-              
-              <p style={{ color: '#475569', marginBottom: '20px' }}>
-                Revisa la lista y desmarca los sinónimos que no desees incorporar a la base de datos de Verdantia.
-              </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                {aiSinonimosProposal.map((prop, idx) => {
-                  const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
-                  const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
-                  
-                  return (
-                    <label key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', padding: '16px', border: prop._selected ? '2px solid #10b981' : '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: prop._selected ? '#f0fdf4' : '#f8fafc', transition: 'all 0.2s' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={prop._selected}
-                        onChange={(e) => {
-                          const newProps = [...aiSinonimosProposal];
-                          newProps[idx]._selected = e.target.checked;
-                          setAiSinonimosProposal(newProps);
-                        }}
-                        style={{ marginTop: '4px', width: '22px', height: '22px', accentColor: '#10b981' }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: prop._selected ? '#065f46' : '#64748b' }}>{prop.especiessinonimosnombre}</div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '0.9rem', color: '#64748b' }}>
-                          {idioma && <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>🗣️ {idioma.idiomasnombre}</span>}
-                          {pais && <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>🌍 {pais.paisesnombre}</span>}
-                          {!pais && <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px', fontStyle: 'italic' }}>🌍 Término General Mundial</span>}
-                        </div>
-                        {prop.especiessinonimosnotas && (
-                          <div style={{ marginTop: '8px', fontSize: '0.95rem', color: '#475569' }}>
-                            "{prop.especiessinonimosnotas}"
-                          </div>
-                        )}
+              {hasBothColumns ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                  {/* Columna Izquierda: Ya incorporados */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px', borderLeft: '4px solid #94a3b8' }}>
+                      <span style={{ fontSize: '1.1rem' }}>✅</span>
+                      <span style={{ fontWeight: 'bold', color: '#475569', fontSize: '0.95rem' }}>Ya incorporados ({existingOnes.length})</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {existingOnes.map((prop, idx) => renderCard(prop, idx, true))}
+                    </div>
+                  </div>
+
+                  {/* Columna Derecha: Disponibles para incorporar */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                      <span style={{ fontSize: '1.1rem' }}>🆕</span>
+                      <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.95rem' }}>Disponibles para incorporar ({newOnes.length})</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {newOnes.map((prop, idx) => renderCard(prop, idx, false))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginBottom: '24px' }}>
+                  {existingOnes.length > 0 && newOnes.length === 0 && (
+                    <div style={{ padding: '24px', textAlign: 'center', background: '#f0fdf4', borderRadius: '12px', border: '2px solid #bbf7d0', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>🎉</span>
+                      <p style={{ color: '#065f46', fontWeight: 'bold', fontSize: '1.1rem', margin: '0 0 4px' }}>¡Todos los sinónimos ya están incluidos!</p>
+                      <p style={{ color: '#15803d', margin: 0, fontSize: '0.95rem' }}>La base de datos de Verdantia ya contiene todos los sinónimos que la IA ha encontrado.</p>
+                    </div>
+                  )}
+                  {newOnes.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                        <span style={{ fontSize: '1.1rem' }}>🆕</span>
+                        <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.95rem' }}>Nuevos sinónimos encontrados ({newOnes.length})</span>
                       </div>
-                    </label>
-                  );
-                })}
-              </div>
+                      {newOnes.map((prop, idx) => renderCard(prop, idx, false))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowSinonimosAiModal(false)}>
                   Cancelar
                 </button>
-                <button 
-                  type="button" 
-                  style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}
-                  onClick={() => {
-                    const selected = aiSinonimosProposal.filter(p => p._selected);
-                    // Remove the _selected property before merging
-                    const cleanedSelected = selected.map(s => {
-                      const copy = { ...s };
-                      delete copy._selected;
-                      return copy;
-                    });
-                    setSinonimos(prev => [...prev, ...cleanedSelected]);
-                    setSinonimosDirty(true);
-                    setShowSinonimosAiModal(false);
-                  }}
-                >
-                  Incorporar Seleccionados ({aiSinonimosProposal.filter(p => p._selected).length})
-                </button>
+                {newOnes.filter(p => p._selected).length > 0 && (
+                  <button
+                    type="button"
+                    style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}
+                    onClick={async () => {
+                      const selected = newOnes.filter(p => p._selected);
+                      const cleanedSelected = selected.map(s => {
+                        const copy = { ...s };
+                        delete copy._selected;
+                        return copy;
+                      });
+                      if (cleanedSelected.length > 0) {
+                        const merged = [...sinonimos, ...cleanedSelected];
+                        setSinonimos(merged);
+                        setSinonimosDirty(true);
+                        setShowSinonimosAiModal(false);
+                        if (especieId) {
+                          try {
+                            for (const s of cleanedSelected) {
+                              await fetch(`/api/admin/especies/${especieId}/sinonimos`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(s)
+                              });
+                            }
+                            await loadSinonimos(especieId);
+                          } catch (err) {
+                            console.error('Error auto-guardando sinónimos:', err);
+                          }
+                        }
+                      } else {
+                        setShowSinonimosAiModal(false);
+                      }
+                    }}
+                  >
+                    Incorporar Seleccionados ({newOnes.filter(p => p._selected).length})
+                  </button>
+                )}
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
       </>
   );
 }

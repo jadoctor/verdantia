@@ -158,6 +158,20 @@ export default function GuiaUsuarioPage() {
           <li><strong>Flujo Transparente:</strong> La imagen se genera en Base64, y al guardarla se inyecta como un archivo estándar (File Blob), pasando por los procesos habituales (compresión, Blurhash, metadatos SEO).</li>
         </ul>
 
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.4. Estándar Unificado de Subida de Fotos (Especies + Usuarios)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para evitar regresiones entre módulos y garantizar que la subida funcione tanto en local como en producción, se fija como norma oficial el patrón ya aplicado y validado en <code>EspecieForm.tsx</code> y <code>perfil/page.tsx</code>.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Inicialización obligatoria de Firebase en Cliente:</strong> Todo componente <code>'use client'</code> que suba fotos debe cargar <code>@/lib/firebase/config</code> desde la cabecera del módulo (import estático), garantizando que <code>initializeApp()</code> ocurra antes de cualquier llamada a Storage.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Subida binaria siempre desde Navegador:</strong> El archivo se envía primero a Firebase Storage desde el cliente, usando <code>import('firebase/storage')</code> de forma dinámica en el momento de la subida.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Normalización previa obligatoria:</strong> Si la imagen viene en HEIC/HEIF se convierte a JPG; después se comprime en cliente (objetivo: máximo 1MB y 2048px) para reducir errores de red y consumo de recursos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Rama A (Especies/Labores con pipeline pesado):</strong> Subir temporalmente a <code>uploads/temp/</code> y enviar <code>rawStoragePath</code> a la API de negocio para que el servidor procese (Sharp, metadatos, SEO, miniaturas) y destruya el temporal.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Rama B (Perfil de Usuario):</strong> Subir a ruta final <code>uploads/usuario/</code> y registrar por API con <code>storagePath</code> + metadatos de encuadre/rostro.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Persistencia única y coherente:</strong> Toda imagen aprobada debe quedar registrada en <code>datosadjuntos</code>, y la UI debe recargar galería/perfil tras respuesta exitosa.</li>
+          <li><strong>Blindaje de Producción:</strong> En rutas de servidor, evitar imports estáticos de binarios o SDKs sensibles a Turbopack (<code>firebase-admin</code>, <code>sharp</code>); usar la estrategia dinámica ya estandarizada para impedir hashes corruptos y errores 500.</li>
+        </ul>
+
       </div>
 
       <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
@@ -777,6 +791,66 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li>Si la aplicación no existe, el error se traga de forma controlada y el flujo continúa hacia la correcta inicialización con <code>admin.initializeApp()</code>, garantizando que nunca se rompa el endpoint.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/05/2026 09:35 – Postmortem de Fotos (Incidencias del 08/05/2026) + Estándar Oficial</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Desalineación entre flujos: en Especies se enviaba <code>rawStoragePath</code> y en ciertos puntos se seguía enviando <code>storagePath</code>, rompiendo la persistencia en la API.</li>
+                  <li style={{ marginBottom: '8px' }}>Inicialización inestable del Admin SDK en producción, provocando errores del tipo <code>The default Firebase app does not exist</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Riesgo de regresión por diferencias de implementación entre Perfil y Especies (orden de imports, estrategia de subida y contrato API).</li>
+                  <li>Subidas pesadas desde móvil con presión de memoria en entorno serverless.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Se documentó formalmente el estándar único de subida en el nuevo bloque <strong>4.4</strong> de esta guía.</li>
+                  <li style={{ marginBottom: '8px' }}>Se fijó como obligatorio el patrón común validado: import estático de <code>@/lib/firebase/config</code> en cliente + subida binaria vía Firebase Storage + persistencia por API.</li>
+                  <li style={{ marginBottom: '8px' }}>Se dejó explícita la bifurcación oficial: <code>uploads/temp/</code> + <code>rawStoragePath</code> para pipelines pesados (Especies/Labores) y <code>uploads/usuario/</code> + <code>storagePath</code> para Perfil.</li>
+                  <li>Se dejó registrada la política anti-regresión para Turbopack en servidor (carga dinámica de módulos sensibles).</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Queda consolidado un único estándar operativo de subida de fotos para todo módulo nuevo.</li>
+                  <li style={{ marginBottom: '8px' }}>Queda trazabilidad explícita de los fallos de ayer (08/05/2026) y su causa raíz técnica.</li>
+                  <li>Se reduce el riesgo de repetir errores de contrato API, inicialización de Firebase y colapsos en producción.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/05/2026 18:14 – Dashboard IA Sinónimos, Anti-Duplicados y Tabla de Países Completa</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>La IA de sinónimos repetía el nombre principal de la especie para cada país (ej. "Ajo" → España, "Ajo" → México, "Ajo" → Colombia), cuando un sinónimo debe ser una palabra DIFERENTE.</li>
+                  <li style={{ marginBottom: '8px' }}>El país "Internacional" se asignaba a idiomas con país natural conocido (ej. Japonés → Internacional en vez de Japón).</li>
+                  <li style={{ marginBottom: '8px' }}>Faltaban países en la tabla (Francia, Italia, Japón, etc.) y los nuevos no tenían código ISO.</li>
+                  <li>La eliminación de sinónimos no se persistía automáticamente en la base de datos.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><code>proponer-sinonimos/route.ts</code>: Prompt reescrito con regla fundamental anti-repetición, mapeo idioma→país obligatorio, instrucciones del usuario dinámicas desde textarea, filtros server-side contra duplicados y nombres iguales al principal.</li>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code>: Nuevo dashboard de configuración IA con radio buttons (General/Cooficiales/Europea) que auto-rellenan un textarea editable. Botones de acción en header con ⏳ giratorio + contador de segundos. Modal de resultados en dos columnas (Ya incorporados / Disponibles). Auto-guardado en BD al incorporar y al eliminar sinónimos.</li>
+                  <li style={{ marginBottom: '8px' }}><code>sinonimos/route.ts</code>: Check anti-duplicados server-side antes de INSERT (mismo nombre + mismo país = skip silencioso).</li>
+                  <li>Base de datos: Añadidos 15 países nuevos (Francia, Italia, Portugal, Brasil, Alemania, China, Japón, Guinea Ecuatorial, Reino Unido, Canadá, Australia, India, Filipinas, Marruecos, Corea del Sur) con sus códigos ISO.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>La IA ahora solo propone nombres genuinamente diferentes al nombre principal, con país coherente para cada idioma.</li>
+                  <li style={{ marginBottom: '8px' }}>El usuario puede configurar el ámbito de búsqueda y personalizar las instrucciones antes de lanzar la IA.</li>
+                  <li>Los sinónimos se auto-guardan al aceptarlos y se auto-borran de la BD al eliminarlos, sin necesidad de botón "Guardar".</li>
                 </ul>
               </div>
             </li>

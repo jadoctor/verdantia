@@ -1007,9 +1007,15 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                                 {p.portada ? (
                                   <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
                                 ) : (
-                                  <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
+                                  <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                    {generatingCoverId === p.id && (
+                                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                                        <span style={{ fontSize: '2rem', animation: 'spin-slow 2s linear infinite' }}>⏳</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#059669', marginTop: '8px' }}>IA Generando...</span>
+                                      </div>
+                                    )}
+                                    <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      🎨 Generar Portada
                                     </button>
                                   </div>
                                 )}
@@ -1451,22 +1457,22 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
               Dile a la Inteligencia Artificial qué tipo de documento necesitas buscar sobre la labor <strong>{formData.laboresnombre}</strong> (ej. <em>"guía de poda"</em>, <em>"manual INTA"</em>, <em>"buenas prácticas"</em>).
             </p>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <input
                 type="text"
                 value={pdfSearchTopic}
                 onChange={e => setPdfSearchTopic(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchPdfs()}
                 placeholder="Ej. manual de poda..."
-                style={{ flex: 1, padding: '12px', border: '2px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none' }}
+                style={{ flex: '1 1 200px', padding: '12px', border: '2px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none', minWidth: 0 }}
               />
               <button
                 type="button"
                 onClick={handleSearchPdfs}
                 disabled={pdfSearchLoading || !pdfSearchTopic}
-                style={{ padding: '0 24px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: pdfSearchLoading ? 'wait' : 'pointer', opacity: (!pdfSearchTopic || pdfSearchLoading) ? 0.6 : 1 }}
+                style={{ flex: '0 0 auto', padding: '0 24px', minHeight: '48px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: pdfSearchLoading ? 'wait' : 'pointer', opacity: (!pdfSearchTopic || pdfSearchLoading) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                {pdfSearchLoading ? '⏳' : 'Buscar'}
+                {pdfSearchLoading ? '⏳...' : 'Buscar'}
               </button>
             </div>
 
@@ -1488,9 +1494,9 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
                     <button
                       type="button"
                       onClick={() => handleAddPdfLink(link.title, link.url, link.summary || '')}
-                      style={{ marginTop: '8px', padding: '8px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'flex-start', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ marginTop: '8px', padding: '10px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'stretch', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}
                     >
-                      <span>📥</span> Adjuntar a {formData.laboresnombre}
+                      <span>📥</span> Adjuntar Documento
                     </button>
                   </div>
                 ))}

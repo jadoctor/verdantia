@@ -66,25 +66,37 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const imagenAbsoluta = blog.blogimagen ? getMediaUrl(blog.blogimagen) : '';
 
     const secret = process.env.NEXTAUTH_SECRET || 'verdantia_secret_salt_123';
+    const { NewPostEmail_Free_HTML, NewPostEmail_Premium_HTML } = await import('@/emails/templates/NewPostEmailStatic');
 
     const emailsToSend = usuariosRows.map((u: any) => {
       const hash = crypto.createHmac('sha256', secret).update(u.usuariosemail).digest('hex');
       const unsubscribeUrl = `${host}/api/unsubscribe?email=${encodeURIComponent(u.usuariosemail)}&hash=${hash}&avisoId=${idAviso}`;
       const planGratuito = u.suscripcion.toLowerCase() === 'gratuito' || u.suscripcion.toLowerCase() === 'básica';
 
+      let template = planGratuito ? NewPostEmail_Free_HTML : NewPostEmail_Premium_HTML;
+
+      // Logic for if blogImagenUrl
+      if (!imagenAbsoluta) {
+        template = template.replace(/\{\{#if blogImagenUrl\}\}[\s\S]*?\{\{\/if\}\}/g, '');
+      } else {
+        template = template.replace(/\{\{#if blogImagenUrl\}\}/g, '').replace(/\{\{\/if\}\}/g, '');
+      }
+
+      const html = template
+        .replace(/\{\{nombre\}\}/g, u.usuariosnombre || 'Lector')
+        .replace(/\{\{blogTitulo\}\}/g, blog.blogtitulo)
+        .replace(/\{\{blogResumen\}\}/g, blog.blogresumen || '')
+        .replace(/\{\{blogUrl\}\}/g, postUrl)
+        .replace(/\{\{blogImagenUrl\}\}/g, imagenAbsoluta)
+        .replace(/\{\{unsubscribeUrl\}\}/g, unsubscribeUrl)
+        .replace(/\{\{loginUrl\}\}/g, `${host}/login?callbackUrl=/dashboard/perfil%23planes`)
+        .replace(/\{\{profileUrl\}\}/g, `${host}/login?callbackUrl=/dashboard/perfil%23comunicaciones`);
+
       return {
         from: 'Verdantia Boletín <admin@verdantia.life>',
         to: u.usuariosemail,
         subject: `🌱 Nuevo artículo: ${blog.blogtitulo}`,
-        react: NewPostEmail({
-          nombre: u.usuariosnombre || 'Lector',
-          blogTitulo: blog.blogtitulo,
-          blogResumen: blog.blogresumen || 'Descubre nuestro nuevo artículo en el blog.',
-          blogUrl: postUrl,
-          blogImagenUrl: imagenAbsoluta || '',
-          unsubscribeUrl,
-          planGratuito
-        })
+        html
       };
     });
 

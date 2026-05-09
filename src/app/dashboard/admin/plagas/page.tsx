@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import PlagaForm from '@/components/admin/PlagaForm';
+import { getMediaUrl } from '@/lib/media-url';
 
 export default function PlagasAdminPage() {
   const router = useRouter();
@@ -132,22 +133,42 @@ export default function PlagasAdminPage() {
             border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
             position: 'relative'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div>
-                <h3 style={{ margin: '0 0 4px 0', color: '#1e293b', fontSize: '1.2rem' }}>{plaga.plagasnombre}</h3>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ width: '80px', height: '110px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {plaga.primary_photo_ruta ? (
+                  <img 
+                    src={getMediaUrl(plaga.primary_photo_ruta)} 
+                    alt={plaga.plagasnombre} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <span style={{ fontSize: '2.5rem' }}>
+                    {plaga.plagastipo === 'hongo' ? '🍄' : 
+                     plaga.plagastipo === 'insecto' ? '🐛' : 
+                     plaga.plagastipo === 'bacteria' ? '🦠' : 
+                     plaga.plagastipo === 'virus' ? '🧬' : 
+                     plaga.plagastipo === 'mamifero' ? '🐁' : '🦟'}
+                  </span>
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: '800' }}>{plaga.plagasnombre}</h3>
+                  <span style={{ 
+                    background: plaga.plagastipo === 'hongo' ? '#fee2e2' : plaga.plagastipo === 'insecto' ? '#dbeafe' : '#f3f4f6', 
+                    color: plaga.plagastipo === 'hongo' ? '#991b1b' : plaga.plagastipo === 'insecto' ? '#1e40af' : '#475569', 
+                    padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase'
+                  }}>
+                    {plaga.plagastipo || 'N/A'}
+                  </span>
+                </div>
                 {plaga.plagasnombrecientifico && (
                   <p style={{ margin: 0, fontStyle: 'italic', color: '#64748b', fontSize: '0.9rem' }}>
                     {plaga.plagasnombrecientifico}
                   </p>
                 )}
               </div>
-              <span style={{ 
-                background: plaga.plagastipo === 'hongo' ? '#fee2e2' : plaga.plagastipo === 'insecto' ? '#dbeafe' : '#f3f4f6', 
-                color: plaga.plagastipo === 'hongo' ? '#991b1b' : plaga.plagastipo === 'insecto' ? '#1e40af' : '#475569', 
-                padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase'
-              }}>
-                {plaga.plagastipo || 'N/A'}
-              </span>
             </div>
 
             <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
