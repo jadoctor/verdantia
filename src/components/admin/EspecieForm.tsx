@@ -5,6 +5,8 @@ import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css';
+import EspecieVariedadesTab from './EspecieVariedadesTab';
+
 
 interface EspecieFormProps {
   especieId: string | null;
@@ -27,7 +29,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const defaultFormData = {
     especiesnombre: '', especiesnombrecientifico: '', especiesfamilia: '',
     especiestipo: [], especiesciclo: [], especiescolor: '', especiestamano: 'mediano',
-    especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '', 
+    especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '',
     especiesdiashastafructificacion: '', especiesdiashastarecoleccion: '',
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
     especiesmarcoplantas: '', especiesmarcofilas: '', especiesprofundidadsiembra: '',
@@ -54,7 +56,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   const isFormDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
   const isDirty = isFormDirty || relacionesDirty;
-  
+
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('taxonomia');
@@ -130,10 +132,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   // -- AI PDF Search State --
   const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
   const [pdfSearchTopic, setPdfSearchTopic] = useState('');
-  const [pdfSearchResults, setPdfSearchResults] = useState<{title: string, url: string, summary?: string, apuntes?: string}[]>([]);
+  const [pdfSearchResults, setPdfSearchResults] = useState<{ title: string, url: string, summary?: string, apuntes?: string }[]>([]);
   const [pdfSearchLoading, setPdfSearchLoading] = useState(false);
   const [pdfSearchError, setPdfSearchError] = useState<string | null>(null);
-  
+
   // -- Blog Generator State --
   const [blogGenPdf, setBlogGenPdf] = useState<any>(null);
   const [blogGenInstructions, setBlogGenInstructions] = useState('Escribe un post de blog para agricultores principiantes, con un tono motivador, consejos prácticos, emojis y una buena estructura de Markdown.');
@@ -322,8 +324,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       if (name === 'especiestipo' || name === 'especiesciclo') {
         setFormData((prev: any) => ({
           ...prev,
-          [name]: checked 
-            ? [...prev[name], value] 
+          [name]: checked
+            ? [...prev[name], value]
             : prev[name].filter((item: string) => item !== value)
         }));
       } else {
@@ -345,7 +347,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const method = especieId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-user-email': userEmail
         },
@@ -354,7 +356,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const data = await res.json();
       if (data.success) {
         setInitialData(formData);
-        
+
         // Guardar relaciones si han cambiado y ya tenemos ID
         const targetId = especieId || data.id;
         if (relacionesDirty && targetId) {
@@ -372,10 +374,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         }
 
         if (!especieId) {
-            router.push(`/dashboard/admin/especies/${data.id}`);
+          router.push(`/dashboard/admin/especies/${data.id}`);
         } else {
-            setSaveStatus('idle');
-            // Remove the alert, it's successful implicitly
+          setSaveStatus('idle');
+          // Remove the alert, it's successful implicitly
         }
       } else {
         alert('Error: ' + data.error);
@@ -398,7 +400,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       const res = await fetch('/api/ai/especie-assistant', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-user-email': userEmail || ''
         },
@@ -726,7 +728,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           body: JSON.stringify(s)
         });
         if (!res.ok) {
-           console.error('Error guardando sinónimo', s);
+          console.error('Error guardando sinónimo', s);
         }
       }
 
@@ -809,7 +811,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
     const files = e.target ? e.target.files : e;
     if (!files || files.length === 0) return;
-    
+
     if (type === 'photos') setUploadingPhotos(true);
     else setUploadingPdfs(true);
 
@@ -870,8 +872,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           const storageRef = ref(clientStorage, storagePath);
           await uploadBytes(storageRef, file);
 
-          const res = await fetch(`/api/admin/especies/${especieId}/photos`, { 
-            method: 'POST', 
+          const res = await fetch(`/api/admin/especies/${especieId}/photos`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
             body: JSON.stringify({
               rawStoragePath: storagePath,
@@ -932,11 +934,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setAiImageResult(null);
     setAiImageDescription('');
     try {
-      const body: any = { 
+      const body: any = {
         especieNombre: formData.especiesnombre,
         especieNombreCientifico: formData.especiesnombrecientifico,
         especieFamilia: formData.especiesfamilia,
-        concept: aiImageConcept 
+        concept: aiImageConcept
       };
       // Si el usuario ha editado manualmente el prompt, enviarlo como customPrompt
       if (aiImagePromptEdited && aiImagePromptPreview.trim()) {
@@ -1057,7 +1059,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-user-email': userEmail || ''
         },
@@ -1092,9 +1094,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       setEditorSeoAlt(initial.seo_alt);
       setEditorInitialState(JSON.stringify(initial));
     } catch {
-      setEditorX(50); setEditorY(50); setEditorZoom(100); 
+      setEditorX(50); setEditorY(50); setEditorZoom(100);
       setEditorBrightness(100); setEditorContrast(100); setEditorStyle(''); setEditorSeoAlt('');
-      setEditorInitialState(JSON.stringify({x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: ''}));
+      setEditorInitialState(JSON.stringify({ x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: '' }));
     }
     setEditingPhoto(photo);
   };
@@ -1115,7 +1117,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       await fetch(`/api/admin/especies/${especieId}/photos`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-user-email': userEmail || ''
         },
@@ -1123,8 +1125,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       });
       setEditingPhoto(null);
       loadAttachments(especieId);
-    } catch { 
-      alert('❌ Error guardando ajustes'); 
+    } catch {
+      alert('❌ Error guardando ajustes');
     } finally {
       setPhotoEditorSaveStatus('idle');
     }
@@ -1134,9 +1136,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const savePdfEdits = async () => {
     if (!editingPdf || !especieId) return;
 
-    const hasChanges = pdfTitle !== (editingPdf.titulo || '') || 
-                       pdfSummary !== (editingPdf.resumen || '') || 
-                       pdfApuntes !== (editingPdf.apuntes || '');
+    const hasChanges = pdfTitle !== (editingPdf.titulo || '') ||
+      pdfSummary !== (editingPdf.resumen || '') ||
+      pdfApuntes !== (editingPdf.apuntes || '');
 
     if (!hasChanges) {
       setPdfEditorSaveStatus('no-changes');
@@ -1151,7 +1153,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     try {
       await fetch(`/api/admin/especies/${especieId}/pdfs`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-user-email': userEmail || ''
         },
@@ -1159,8 +1161,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       });
       setEditingPdf(null);
       loadAttachments(especieId);
-    } catch { 
-      alert('❌ Error guardando PDF'); 
+    } catch {
+      alert('❌ Error guardando PDF');
     } finally {
       setPdfEditorSaveStatus('idle');
     }
@@ -1191,9 +1193,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             base64Cover: `data:image/jpeg;base64,${data.base64}`
           })
         });
-        
+
         await loadAttachments(especieId!);
-        
+
         // Si el editor está abierto, actualizar su previsualización al instante
         setEditingPdf((prev: any) => {
           if (prev && prev.id === pdf.id) {
@@ -1224,7 +1226,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: pdfSearchTopic, especieNombre: formData.especiesnombre })
       });
-      
+
       let data;
       try {
         data = await res.json();
@@ -1320,7 +1322,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         const data = await res.json();
         alert(data.error || 'Error al eliminar blog');
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       alert('Error de conexión al eliminar blog');
     }
@@ -1393,7 +1395,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   let vibrantColor: string | null = null;
   let heroMeta: any = {};
   if (heroPhoto) {
-    try { heroMeta = JSON.parse(heroPhoto.resumen || '{}'); } catch(e){}
+    try { heroMeta = JSON.parse(heroPhoto.resumen || '{}'); } catch (e) { }
     vibrantColor = heroMeta.vibrant_color || null;
   }
 
@@ -1407,13 +1409,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       alert("Selecciona una labor y una fase.");
       return;
     }
-    
+
     try {
       const isEditing = editingPauta !== null;
-      const url = isEditing 
-        ? `/api/admin/especies/${especieId}/pautas/${editingPauta}` 
+      const url = isEditing
+        ? `/api/admin/especies/${especieId}/pautas/${editingPauta}`
         : `/api/admin/especies/${especieId}/pautas`;
-      
+
       const method = isEditing ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -1475,7 +1477,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     setPautasAiLoading(true);
     setPautasAiSeconds(0);
     setAiPautasProposal([]);
-    
+
     if (pautasTimerRef.current) clearInterval(pautasTimerRef.current);
     pautasTimerRef.current = setInterval(() => setPautasAiSeconds(s => s + 1), 1000);
 
@@ -1483,7 +1485,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const res = await fetch('/api/ai/pautas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           especie: formData.especiesnombre,
           labores: masterLabores.map(l => ({ id: l.idlabores, nombre: l.laboresnombre })),
           instruccionesAdicionales: pautasExtraInstructions
@@ -1511,12 +1513,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       alert("Guarda primero la especie para aplicar las pautas.");
       return;
     }
-    
+
     try {
       // Mandar todas las pautas propuestas a la BD una por una
       for (const pauta of aiPautasProposal) {
         if (!pauta.selected) continue;
-        
+
         await fetch(`/api/admin/especies/${especieId}/pautas`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1529,7 +1531,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           })
         });
       }
-      
+
       // Refetch
       const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`);
       if (pautasRes.ok) {
@@ -1580,13 +1582,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       {/* ── Status Bar ── */}
       <div style={{ background: formData.especiesvisibilidadsino ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid ${formData.especiesvisibilidadsino ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
         <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', color: '#334155', margin: 0, fontSize: '1.1rem' }}>
-          <input 
-            type="checkbox" 
-            name="especiesvisibilidadsino" 
-            checked={!!formData.especiesvisibilidadsino} 
-            onChange={handleChange} 
+          <input
+            type="checkbox"
+            name="especiesvisibilidadsino"
+            checked={!!formData.especiesvisibilidadsino}
+            onChange={handleChange}
             style={{ width: '22px', height: '22px', accentColor: '#10b981' }}
-          /> 
+          />
           Especie con Visibilidad Global (Pública)
         </label>
       </div>
@@ -1603,8 +1605,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         {photos.length > 0 ? (
           <div style={{ display: 'flex', gap: 0 }}>
             {/* Hero photo */}
-            <div 
-              style={{ 
+            <div
+              style={{
                 position: 'relative', flexShrink: 0, width: '180px', height: '220px', overflow: 'hidden',
                 border: draggedOverHeroPhotoId === -1 ? '4px dashed #10b981' : 'none',
                 opacity: draggedOverHeroPhotoId === -1 ? 0.8 : 1,
@@ -1612,7 +1614,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               }}
               onDragEnter={(e) => { e.preventDefault(); if (draggedHeroPhotoId !== null) setDraggedOverHeroPhotoId(-1); }}
               onDragOver={(e) => e.preventDefault()}
-              onDragLeave={() => { if(draggedOverHeroPhotoId === -1) setDraggedOverHeroPhotoId(null); }}
+              onDragLeave={() => { if (draggedOverHeroPhotoId === -1) setDraggedOverHeroPhotoId(null); }}
               onDrop={(e) => {
                 e.preventDefault();
                 if (draggedHeroPhotoId !== null && draggedOverHeroPhotoId === -1) {
@@ -1641,12 +1643,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 return (
                   <img key={heroPhoto.id} src={getMediaUrl(heroPhoto.ruta)}
                     alt={heroMeta.seo_alt || formData.especiesnombre}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover',
+                    style={{
+                      width: '100%', height: '100%', objectFit: 'cover',
                       objectPosition: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
                       transformOrigin: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
                       transform: `scale(${(heroMeta.profile_object_zoom ?? 100) / 100})`,
-                      filter: fullFilter, transition: 'opacity 0.3s ease' }}
-                   crossOrigin="anonymous" />
+                      filter: fullFilter, transition: 'opacity 0.3s ease'
+                    }}
+                    crossOrigin="anonymous" />
                 );
               })()}
             </div>
@@ -1659,9 +1663,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   .filter(({ i }) => i !== safeHeroIndex)
                   .map(({ p, i }) => {
                     let tMeta: any = {};
-                    try { tMeta = JSON.parse(p.resumen || '{}'); } catch(e){}
+                    try { tMeta = JSON.parse(p.resumen || '{}'); } catch (e) { }
                     return (
-                      <div key={p.id} 
+                      <div key={p.id}
                         draggable
                         onClick={() => { handleSetPrimaryPhoto(p.id); setHeroIndex(0); }}
                         onDragStart={() => setDraggedHeroPhotoId(p.id)}
@@ -1681,23 +1685,26 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                           setDraggedOverHeroPhotoId(null);
                         }}
                         onDragOver={(e) => e.preventDefault()}
-                        style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', cursor: 'grab', flexShrink: 0,
-                          border: draggedOverHeroPhotoId === p.id ? '2px dashed #10b981' : '2px solid rgba(0,0,0,0.08)', 
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.12)', 
+                        style={{
+                          width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', cursor: 'grab', flexShrink: 0,
+                          border: draggedOverHeroPhotoId === p.id ? '2px dashed #10b981' : '2px solid rgba(0,0,0,0.08)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
                           transition: 'all 0.2s ease',
                           opacity: draggedHeroPhotoId === p.id ? 0.5 : 1,
                           transform: draggedOverHeroPhotoId === p.id ? 'scale(1.05)' : 'scale(1)'
                         }}
-                        onMouseEnter={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1.1)'; }}
-                        onMouseLeave={e => { if(draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1)'; }}
+                        onMouseEnter={e => { if (draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1.1)'; }}
+                        onMouseLeave={e => { if (draggedHeroPhotoId === null) e.currentTarget.style.transform = 'scale(1)'; }}
                       >
                         <img src={getMediaUrl(p.ruta)}
                           draggable={false}
                           alt=""
-                          style={{ width: '100%', height: '100%', objectFit: 'cover',
+                          style={{
+                            width: '100%', height: '100%', objectFit: 'cover',
                             objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
                             transformOrigin: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
-                            transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` }}  crossOrigin="anonymous" />
+                            transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})`
+                          }} crossOrigin="anonymous" />
                       </div>
                     );
                   })}
@@ -1715,1336 +1722,1338 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       </div>
       <div className="especie-form-container">
 
-      <form onSubmit={handleSubmit} className="especie-form-body">
-        
-        <div 
-          className="collapsible-header" 
-          onClick={() => setIsEspecieOpen(!isEspecieOpen)}
-          style={{ padding: '15px 24px', background: '#e2e8f0', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-        >
-          <span>
-            Ficha de Especie
-            {!isEspecieOpen && formData.especiesnombre && (
-              <span style={{ color: '#475569', marginLeft: '10px', fontWeight: 'normal' }}>
-                — {formData.especiesnombre} {formData.especiesnombrecientifico ? `(${formData.especiesnombrecientifico})` : ''}
-              </span>
-            )}
-          </span>
-          <span>{isEspecieOpen ? '▲' : '▼'}</span>
-        </div>
+        <form onSubmit={handleSubmit} className="especie-form-body">
 
-        {isEspecieOpen && (
-          <div className="collapsible-content">
-            
-            <div style={{ padding: '15px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px' }}>
-              <button type="button" onClick={callAI} className="btn-ai" disabled={aiLoading} style={{ margin: 0 }}>
-                {aiLoading ? 'Pensando...' : '✨ Asistente IA'}
-              </button>
-            </div>
+          <div
+            className="collapsible-header"
+            onClick={() => setIsEspecieOpen(!isEspecieOpen)}
+            style={{ padding: '15px 24px', background: '#e2e8f0', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <span>
+              Ficha de Especie
+              {!isEspecieOpen && formData.especiesnombre && (
+                <span style={{ color: '#475569', marginLeft: '10px', fontWeight: 'normal' }}>
+                  — {formData.especiesnombre} {formData.especiesnombrecientifico ? `(${formData.especiesnombrecientifico})` : ''}
+                </span>
+              )}
+            </span>
+            <span>{isEspecieOpen ? '▲' : '▼'}</span>
+          </div>
 
-            <div className="form-tabs">
-              <button type="button" className={activeTab === 'taxonomia' ? 'active' : ''} onClick={() => setActiveTab('taxonomia')}>🧬 Taxonomía</button>
-              <button type="button" className={activeTab === 'fisiologia' ? 'active' : ''} onClick={() => setActiveTab('fisiologia')}>🌱 Fisiología</button>
-              <button type="button" className={activeTab === 'calendarios' ? 'active' : ''} onClick={() => setActiveTab('calendarios')}>📅 Calendarios</button>
-              <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos</button>
-              <button type="button" className={activeTab === 'autosuficiencia' ? 'active' : ''} onClick={() => setActiveTab('autosuficiencia')}>⚖️ Autosuficiencia</button>
-              <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna</button>
-              <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Asociaciones</button>
-              <button type="button" className={activeTab === 'plagas' ? 'active' : ''} onClick={() => setActiveTab('plagas')}>🐛 Plagas</button>
-              <button type="button" className={activeTab === 'sinonimos' ? 'active' : ''} onClick={() => setActiveTab('sinonimos')}>🗣️ Sinónimos</button>
-              <button type="button" className={activeTab === 'adjuntos' ? 'active' : ''} onClick={() => setActiveTab('adjuntos')}>📎 Adjuntos</button>
-              <button type="button" className={activeTab === 'blogs' ? 'active' : ''} onClick={() => setActiveTab('blogs')}>📰 Blogs</button>
-            </div>
+          {isEspecieOpen && (
+            <div className="collapsible-content">
 
-            <div className="form-tab-content">
-              
-              {/* TAXONOMÍA */}
-          {activeTab === 'taxonomia' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <label>Nombre Común *</label>
-                <input type="text" name="especiesnombre" required value={formData.especiesnombre || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Nombre Científico</label>
-                <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Familia</label>
-                <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group full checkbox-group">
-                <label>Tipos</label>
-                <div className="cb-list">
-                  {TIPOS.map(t => (
-                    <label key={t}><input type="checkbox" name="especiestipo" value={t} checked={formData.especiestipo.includes(t)} onChange={handleChange} /> {t}</label>
-                  ))}
-                </div>
-              </div>
-              <div className="form-group full checkbox-group">
-                <label>Ciclo</label>
-                <div className="cb-list">
-                  {CICLOS.map(c => (
-                    <label key={c}><input type="checkbox" name="especiesciclo" value={c} checked={formData.especiesciclo.includes(c)} onChange={handleChange} /> {c}</label>
-                  ))}
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Color Fenotípico</label>
-                <input type="text" name="especiescolor" value={formData.especiescolor || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Tamaño</label>
-                <select name="especiestamano" value={formData.especiestamano || 'mediano'} onChange={handleChange}>
-                  <option value="pequeno">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Dificultad</label>
-                <select name="especiesdificultad" value={formData.especiesdificultad || ''} onChange={handleChange}>
-                  <option value="">--</option>
-                  <option value="baja">Baja</option>
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Luz Solar</label>
-                <select name="especiesluzsolar" value={formData.especiesluzsolar || ''} onChange={handleChange}>
-                  <option value="">--</option>
-                  <option value="pleno_sol">Pleno Sol</option>
-                  <option value="semisombra">Semisombra</option>
-                  <option value="sombra">Sombra</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Necesidad de Riego</label>
-                <select name="especiesnecesidadriego" value={formData.especiesnecesidadriego || ''} onChange={handleChange}>
-                  <option value="">--</option>
-                  <option value="baja">Baja</option>
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Volumen Maceta (L)</label>
-                <input type="number" name="especiesvolumenmaceta" value={formData.especiesvolumenmaceta || ''} onChange={handleChange} />
-              </div>
-            </div>
-          )}
-
-          {/* FISIOLOGÍA */}
-          {activeTab === 'fisiologia' && (
-            <div className="grid-form">
-              {/* BLOQUE PRINCIPAL SUPERIOR */}
-              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra Principal</label>
-                  <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange} style={{ marginTop: '8px' }}>
-                    <option value="">-- Selecciona --</option>
-                    <option value="directa">Directa (En tierra)</option>
-                    <option value="semillero">Semillero (Requiere trasplante)</option>
-                    <option value="ambas">Ambas opciones posibles</option>
-                  </select>
-                </div>
-                
-                <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
-                  <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
-                </div>
+              <div style={{ padding: '15px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px' }}>
+                <button type="button" onClick={callAI} className="btn-ai" disabled={aiLoading} style={{ margin: 0 }}>
+                  {aiLoading ? 'Pensando...' : '✨ Asistente IA'}
+                </button>
               </div>
 
-              {/* CRONOLOGÍA MODULAR */}
-              <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  ⏱️ Cronología Modular (Días de Desarrollo)
-                </h3>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                  {/* BLOQUE 1: DDS */}
-                  <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <h4 style={{ margin: '0 0 10px 0', color: '#3b82f6', borderBottom: '2px solid #bfdbfe', paddingBottom: '8px', fontSize: '1rem' }}>
-                      Bloque 1: Desde la Siembra (DDS)
-                    </h4>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
-                      Estos tiempos se cuentan siempre desde el momento en el que la semilla toca la tierra.
-                    </p>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="form-tabs">
+                <button type="button" className={activeTab === 'taxonomia' ? 'active' : ''} onClick={() => setActiveTab('taxonomia')}>🧬 Taxonomía</button>
+                <button type="button" className={activeTab === 'fisiologia' ? 'active' : ''} onClick={() => setActiveTab('fisiologia')}>🌱 Fisiología</button>
+                <button type="button" className={activeTab === 'calendarios' ? 'active' : ''} onClick={() => setActiveTab('calendarios')}>📅 Calendarios</button>
+                <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos</button>
+                <button type="button" className={activeTab === 'autosuficiencia' ? 'active' : ''} onClick={() => setActiveTab('autosuficiencia')}>⚖️ Autosuficiencia</button>
+                <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna</button>
+                <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Asociaciones</button>
+                <button type="button" className={activeTab === 'plagas' ? 'active' : ''} onClick={() => setActiveTab('plagas')}>🐛 Plagas</button>
+                <button type="button" className={activeTab === 'variedades' ? 'active' : ''} onClick={() => setActiveTab('variedades')}>🌱 Variedades</button>
+                <button type="button" className={activeTab === 'pautas' ? 'active' : ''} onClick={() => setActiveTab('pautas')}>📋 Labores</button>
+                <button type="button" className={activeTab === 'sinonimos' ? 'active' : ''} onClick={() => setActiveTab('sinonimos')}>🗣️ Sinónimos</button>
+                <button type="button" className={activeTab === 'adjuntos' ? 'active' : ''} onClick={() => setActiveTab('adjuntos')}>📎 Adjuntos</button>
+                <button type="button" className={activeTab === 'blogs' ? 'active' : ''} onClick={() => setActiveTab('blogs')}>📰 Blogs</button>
+              </div>
+
+              <div className="form-tab-content">
+
+                {/* TAXONOMÍA */}
+                {activeTab === 'taxonomia' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <label>Nombre Común *</label>
+                      <input type="text" name="especiesnombre" required value={formData.especiesnombre || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Nombre Científico</label>
+                      <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Familia</label>
+                      <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group full checkbox-group">
+                      <label>Tipos</label>
+                      <div className="cb-list">
+                        {TIPOS.map(t => (
+                          <label key={t}><input type="checkbox" name="especiestipo" value={t} checked={formData.especiestipo.includes(t)} onChange={handleChange} /> {t}</label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="form-group full checkbox-group">
+                      <label>Ciclo</label>
+                      <div className="cb-list">
+                        {CICLOS.map(c => (
+                          <label key={c}><input type="checkbox" name="especiesciclo" value={c} checked={formData.especiesciclo.includes(c)} onChange={handleChange} /> {c}</label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Color Fenotípico</label>
+                      <input type="text" name="especiescolor" value={formData.especiescolor || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Tamaño</label>
+                      <select name="especiestamano" value={formData.especiestamano || 'mediano'} onChange={handleChange}>
+                        <option value="pequeno">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Dificultad</label>
+                      <select name="especiesdificultad" value={formData.especiesdificultad || ''} onChange={handleChange}>
+                        <option value="">--</option>
+                        <option value="baja">Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Luz Solar</label>
+                      <select name="especiesluzsolar" value={formData.especiesluzsolar || ''} onChange={handleChange}>
+                        <option value="">--</option>
+                        <option value="pleno_sol">Pleno Sol</option>
+                        <option value="semisombra">Semisombra</option>
+                        <option value="sombra">Sombra</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Necesidad de Riego</label>
+                      <select name="especiesnecesidadriego" value={formData.especiesnecesidadriego || ''} onChange={handleChange}>
+                        <option value="">--</option>
+                        <option value="baja">Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Volumen Maceta (L)</label>
+                      <input type="number" name="especiesvolumenmaceta" value={formData.especiesvolumenmaceta || ''} onChange={handleChange} />
+                    </div>
+                  </div>
+                )}
+
+                {/* FISIOLOGÍA */}
+                {activeTab === 'fisiologia' && (
+                  <div className="grid-form">
+                    {/* BLOQUE PRINCIPAL SUPERIOR */}
+                    <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                      <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra Principal</label>
+                        <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange} style={{ marginTop: '8px' }}>
+                          <option value="">-- Selecciona --</option>
+                          <option value="directa">Directa (En tierra)</option>
+                          <option value="semillero">Semillero (Requiere trasplante)</option>
+                          <option value="ambas">Ambas opciones posibles</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
+                        <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
+                      </div>
+                    </div>
+
+                    {/* CRONOLOGÍA MODULAR */}
+                    <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                      <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        ⏱️ Cronología Modular (Días de Desarrollo)
+                      </h3>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                        {/* BLOQUE 1: DDS */}
+                        <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <h4 style={{ margin: '0 0 10px 0', color: '#3b82f6', borderBottom: '2px solid #bfdbfe', paddingBottom: '8px', fontSize: '1rem' }}>
+                            Bloque 1: Desde la Siembra (DDS)
+                          </h4>
+                          <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
+                            Estos tiempos se cuentan siempre desde el momento en el que la semilla toca la tierra.
+                          </p>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="form-group" style={{ margin: 0 }}>
+                              <label style={{ fontWeight: 'bold' }}>Días hasta Germinación</label>
+                              <input type="number" name="especiesdiasgerminacion" value={formData.especiesdiasgerminacion || ''} onChange={handleChange} />
+                            </div>
+                            <div className="form-group" style={{ margin: 0 }}>
+                              <label style={{ fontWeight: 'bold' }}>Edad del Plantel (Días a Trasplante)</label>
+                              <input type="number" name="especiesdiashastatrasplante" value={formData.especiesdiashastatrasplante || ''} onChange={handleChange} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* BLOQUE 2: DDT */}
+                        <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <h4 style={{ margin: '0 0 10px 0', color: '#10b981', borderBottom: '2px solid #a7f3d0', paddingBottom: '8px', fontSize: '1rem' }}>
+                            Bloque 2: Desde el Trasplante (DDT)
+                          </h4>
+                          <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
+                            Estos tiempos se cuentan después de plantar el plantel. <em>Si es de siembra directa, se contarán desde el Día 0.</em>
+                          </p>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="form-group" style={{ margin: 0 }}>
+                              <label style={{ fontWeight: 'bold' }}>Días hasta Fructificación</label>
+                              <input type="number" name="especiesdiashastafructificacion" value={formData.especiesdiashastafructificacion || ''} onChange={handleChange} />
+                            </div>
+                            <div className="form-group" style={{ margin: 0 }}>
+                              <label style={{ fontWeight: 'bold' }}>Días hasta Recolección / Cosecha</label>
+                              <input type="number" name="especiesdiashastarecoleccion" value={formData.especiesdiashastarecoleccion || ''} onChange={handleChange} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* REQUISITOS TÉRMICOS */}
+                    <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecdd3' }}>
+                      <h3 style={{ margin: '0 0 15px 0', color: '#be123c', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🌡️ Requisitos Térmicos (°C)
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                        <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                          <label style={{ color: '#0369a1' }}>Mínima (Sobrevive)</label>
+                          <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
+                        </div>
+                        <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                          <label style={{ color: '#15803d' }}>Óptima (Desarrollo)</label>
+                          <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
+                        </div>
+                        <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                          <label style={{ color: '#be123c' }}>Máxima (Estrés)</label>
+                          <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PROFUNDIDADES */}
+                    <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                       <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontWeight: 'bold' }}>Días hasta Germinación</label>
-                        <input type="number" name="especiesdiasgerminacion" value={formData.especiesdiasgerminacion || ''} onChange={handleChange} />
+                        <label>Profundidad de Siembra (cm)</label>
+                        <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
                       </div>
                       <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontWeight: 'bold' }}>Edad del Plantel (Días a Trasplante)</label>
-                        <input type="number" name="especiesdiashastatrasplante" value={formData.especiesdiashastatrasplante || ''} onChange={handleChange} />
+                        <label>Profundidad de Trasplante</label>
+                        <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
                       </div>
                     </div>
                   </div>
+                )}
 
-                  {/* BLOQUE 2: DDT */}
-                  <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                    <h4 style={{ margin: '0 0 10px 0', color: '#10b981', borderBottom: '2px solid #a7f3d0', paddingBottom: '8px', fontSize: '1rem' }}>
-                      Bloque 2: Desde el Trasplante (DDT)
-                    </h4>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
-                      Estos tiempos se cuentan después de plantar el plantel. <em>Si es de siembra directa, se contarán desde el Día 0.</em>
-                    </p>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontWeight: 'bold' }}>Días hasta Fructificación</label>
-                        <input type="number" name="especiesdiashastafructificacion" value={formData.especiesdiashastafructificacion || ''} onChange={handleChange} />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontWeight: 'bold' }}>Días hasta Recolección / Cosecha</label>
-                        <input type="number" name="especiesdiashastarecoleccion" value={formData.especiesdiashastarecoleccion || ''} onChange={handleChange} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* REQUISITOS TÉRMICOS */}
-              <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecdd3' }}>
-                <h3 style={{ margin: '0 0 15px 0', color: '#be123c', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  🌡️ Requisitos Térmicos (°C)
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
-                  <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                    <label style={{ color: '#0369a1' }}>Mínima (Sobrevive)</label>
-                    <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
-                  </div>
-                  <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                    <label style={{ color: '#15803d' }}>Óptima (Desarrollo)</label>
-                    <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
-                  </div>
-                  <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                    <label style={{ color: '#be123c' }}>Máxima (Estrés)</label>
-                    <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
-                  </div>
-                </div>
-              </div>
-
-              {/* PROFUNDIDADES */}
-              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label>Profundidad de Siembra (cm)</label>
-                  <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label>Profundidad de Trasplante</label>
-                  <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CALENDARIOS */}
-          {activeTab === 'calendarios' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
-                  {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
-                    const colorMap: Record<string, string> = {
-                      siembradirecta: '#f97316',
-                      semillero: '#3b82f6',
-                      trasplante: '#a855f7',
-                      recoleccion: '#22c55e'
-                    };
-                    const labelMap: Record<string, string> = {
-                      siembradirecta: 'Siembra Directa',
-                      semillero: 'Semillero',
-                      trasplante: 'Trasplante',
-                      recoleccion: 'Recolección'
-                    };
-                    return (
-                      <div key={tipo} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', borderTop: `4px solid ${colorMap[tipo]}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                        <strong style={{ display: 'block', marginBottom: '10px', fontSize: '0.95rem', color: '#334155' }}>{labelMap[tipo]}</strong>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <select 
-                            name={tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`} 
-                            value={formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`] || ''} 
-                            onChange={handleChange} 
-                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                          >
-                            <option value="">Desde (Mes)...</option>
-                            {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                          </select>
-                          <select 
-                            name={tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`} 
-                            value={formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`] || ''} 
-                            onChange={handleChange} 
-                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                          >
-                            <option value="">Hasta (Mes)...</option>
-                            {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="form-group full" style={{ marginTop: '10px' }}>
-                <h3 style={{ fontSize: '1.1rem', color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
-                  📊 Gráfico del Calendario de Cultivo
-                </h3>
-                
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                  {/* Cabecera de meses */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                    <div style={{ padding: '8px 4px', fontWeight: 'bold', color: '#64748b', fontSize: '0.7rem', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>FASE</div>
-                    {MESES.map(m => (
-                      <div key={m.val} style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', color: '#475569', fontSize: '0.7rem', borderRight: m.val < 12 ? '1px solid #e2e8f0' : 'none' }}>
-                        {m.label.charAt(0)}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Filas del gráfico */}
-                  {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map((tipo, idx) => {
-                    const colorMap: Record<string, string> = { siembradirecta: '#f97316', semillero: '#3b82f6', trasplante: '#a855f7', recoleccion: '#22c55e' };
-                    const labelMap: Record<string, string> = { siembradirecta: 'Siembra', semillero: 'Semillero', trasplante: 'Traspl.', recoleccion: 'Recol.' };
-                    
-                    const desde = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`]) || 0;
-                    const hasta = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`]) || 0;
-                    
-                    const isMonthActive = (m: number) => {
-                      if (!desde || !hasta) return false;
-                      if (desde <= hasta) return m >= desde && m <= hasta;
-                      return m >= desde || m <= hasta;
-                    };
-
-                    return (
-                      <div key={tipo} style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', borderBottom: idx < 3 ? '1px solid #e2e8f0' : 'none', background: '#fff' }}>
-                        <div style={{ padding: '8px 4px', fontSize: '0.65rem', fontWeight: 'bold', color: '#334155', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colorMap[tipo], flexShrink: 0 }}></span>
-                          {labelMap[tipo]}
-                        </div>
-                        {MESES.map(m => {
-                          const active = isMonthActive(m.val);
+                {/* CALENDARIOS */}
+                {activeTab === 'calendarios' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                        {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
+                          const colorMap: Record<string, string> = {
+                            siembradirecta: '#f97316',
+                            semillero: '#3b82f6',
+                            trasplante: '#a855f7',
+                            recoleccion: '#22c55e'
+                          };
+                          const labelMap: Record<string, string> = {
+                            siembradirecta: 'Siembra Directa',
+                            semillero: 'Semillero',
+                            trasplante: 'Trasplante',
+                            recoleccion: 'Recolección'
+                          };
                           return (
-                            <div key={m.val} style={{ 
-                              padding: '8px 0', 
-                              borderRight: m.val < 12 ? '1px dashed #e2e8f0' : 'none',
-                              background: active ? `${colorMap[tipo]}20` : 'transparent',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              {active && <div style={{ width: '100%', height: '10px', background: colorMap[tipo], borderRadius: '2px', margin: '0 1px' }}></div>}
+                            <div key={tipo} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', borderTop: `4px solid ${colorMap[tipo]}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                              <strong style={{ display: 'block', marginBottom: '10px', fontSize: '0.95rem', color: '#334155' }}>{labelMap[tipo]}</strong>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <select
+                                  name={tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`}
+                                  value={formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`] || ''}
+                                  onChange={handleChange}
+                                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                >
+                                  <option value="">Desde (Mes)...</option>
+                                  {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                </select>
+                                <select
+                                  name={tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`}
+                                  value={formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`] || ''}
+                                  onChange={handleChange}
+                                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                >
+                                  <option value="">Hasta (Mes)...</option>
+                                  {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                </select>
+                              </div>
                             </div>
                           );
                         })}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TEXTOS */}
-          {activeTab === 'textos' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <label>Historia / Origen</label>
-                <textarea name="especieshistoria" rows={3} value={formData.especieshistoria || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group full">
-                <label>Descripción / Cultivo</label>
-                <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>pH del Suelo</label>
-                <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group full">
-                <label>Características del Suelo</label>
-                <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group full">
-                <label>Fuentes (URLs separadas por comas)</label>
-                <input type="text" name="especiesfuentesinformacion" value={formData.especiesfuentesinformacion || ''} onChange={handleChange} />
-                {formData.especiesfuentesinformacion && typeof formData.especiesfuentesinformacion === 'string' && formData.especiesfuentesinformacion.trim() !== '' && (
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                    {formData.especiesfuentesinformacion.split(',').map((url: string, idx: number) => {
-                      const trimmedUrl = url.trim();
-                      if (!trimmedUrl) return null;
-                      const href = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`;
-                      return (
-                        <a 
-                          key={idx} 
-                          href={href} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{
-                            background: '#e0e7ff',
-                            color: '#4338ca',
-                            padding: '6px 12px',
-                            borderRadius: '16px',
-                            fontSize: '0.8rem',
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            border: '1px solid #c7d2fe',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          🔗 {trimmedUrl.length > 35 ? trimmedUrl.substring(0,35) + '...' : trimmedUrl}
-                        </a>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* LUNA Y BIODINAMICA */}
-          {activeTab === 'biodinamica' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <label>Categoría Biodinámica</label>
-                <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}>
-                  <option value="">— Sin categoría —</option>
-                  <option value="fruto">🍅 Planta de Fruto</option>
-                  <option value="raiz">🥕 Planta de Raíz</option>
-                  <option value="hoja">🥬 Planta de Hoja</option>
-                  <option value="flor">🌸 Planta de Flor</option>
-                </select>
-                {formData.especiesbiodinamicacategoria && (
-                  <p style={{ marginTop: '8px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
-                    {({ fruto: 'Siembra y trasplanta en días Fruto (luna creciente). Recolecta también en días Fruto para mejor sabor.', raiz: 'Siembra en días Raíz con luna creciente. Recolecta en días Raíz con luna menguante para mejor conservación.', hoja: 'Trasplanta en días Hoja con luna creciente. Evita podar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
-                  </p>
-                )}
-              </div>
-              <div className="form-group full">
-                <label>Notas de Calendario Lunar</label>
-                <textarea name="especiesbiodinamicanotas" value={formData.especiesbiodinamicanotas || ''} onChange={handleChange}
-                  rows={4} placeholder="Ej: El tomate responde muy bien al trasplante en días Fruto durante luna creciente. Podar hojas basales preferiblemente en días Hoja..."
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.95rem', resize: 'vertical' }} />
-              </div>
-            </div>
-          )}
-
-          {/* AUTOSUFICIENCIA */}
-          {activeTab === 'autosuficiencia' && (
-            <div className="grid-form">
-              <div className="form-group">
-                <label>Marco Plantas (cm)</label>
-                <input type="number" name="especiesmarcoplantas" value={formData.especiesmarcoplantas || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Marco Filas (cm)</label>
-                <input type="number" name="especiesmarcofilas" value={formData.especiesmarcofilas || ''} onChange={handleChange} />
-              </div>
-
-              {(formData.especiesmarcoplantas || formData.especiesmarcofilas) && (
-                <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', fontWeight: 'bold' }}>Esquema de Plantación a Escala</span>
-                  
-                  {(() => {
-                    let p = parseFloat(formData.especiesmarcoplantas);
-                    let f = parseFloat(formData.especiesmarcofilas);
-                    if (!p || p <= 0) p = 50;
-                    if (!f || f <= 0) f = 50;
-
-                    const maxW = 160;
-                    const maxH = 120;
-                    
-                    let drawW, drawH;
-                    const ratio = p / f;
-                    const maxRatio = maxW / maxH;
-
-                    if (ratio > maxRatio) {
-                      drawW = maxW;
-                      drawH = maxW / ratio;
-                    } else {
-                      drawH = maxH;
-                      drawW = maxH * ratio;
-                    }
-
-                    if (drawW < 40) drawW = 40;
-                    if (drawH < 40) drawH = 40;
-
-                    const cx = 120;
-                    const cy = 90;
-                    const x1 = cx - drawW / 2;
-                    const x2 = cx + drawW / 2;
-                    const y1 = cy - drawH / 2;
-                    const y2 = cy + drawH / 2;
-
-                    return (
-                      <svg width="240" height="180" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
-                        <circle cx={x1} cy={y1} r="8" fill="#22c55e" />
-                        <circle cx={x2} cy={y1} r="8" fill="#22c55e" />
-                        <circle cx={x1} cy={y2} r="8" fill="#22c55e" />
-                        <circle cx={x2} cy={y2} r="8" fill="#22c55e" />
-
-                        {x2 - x1 > 30 && (
-                          <>
-                            <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#94a3b8" strokeWidth="2" />
-                            <polygon points={`${x1+12},${y1-4} ${x1+8},${y1} ${x1+12},${y1+4}`} fill="#94a3b8" />
-                            <polygon points={`${x2-12},${y1-4} ${x2-8},${y1} ${x2-12},${y1+4}`} fill="#94a3b8" />
-                          </>
-                        )}
-                        
-                        <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#f8fafc" rx="4" />
-                        <text x={cx} y={y1 + 4} fontSize="12" fontWeight="bold" fill="#334155" textAnchor="middle">
-                          {formData.especiesmarcoplantas ? `${formData.especiesmarcoplantas} cm` : '? cm'}
-                        </text>
-
-                        {y2 - y1 > 30 && (
-                          <>
-                            <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#94a3b8" strokeWidth="2" />
-                            <polygon points={`${x1-4},${y1+12} ${x1},${y1+8} ${x1+4},${y1+12}`} fill="#94a3b8" />
-                            <polygon points={`${x1-4},${y2-12} ${x1},${y2-8} ${x1+4},${y2-12}`} fill="#94a3b8" />
-                          </>
-                        )}
-                        
-                        <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#f8fafc" rx="4" />
-                        <text x={x1} y={cy + 4} fontSize="12" fontWeight="bold" fill="#334155" textAnchor="middle">
-                          {formData.especiesmarcofilas ? `${formData.especiesmarcofilas} cm` : '? cm'}
-                        </text>
-
-                        <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
-                        <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
-                      </svg>
-                    );
-                  })()}
-
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0', textAlign: 'center' }}>
-                    <strong style={{color:'#64748b'}}>Marco Plantas:</strong> distancia entre plantas de la misma fila.<br/>
-                    <strong style={{color:'#64748b'}}>Marco Filas:</strong> distancia entre las diferentes filas.
-                  </p>
-                </div>
-              )}
-
-              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                <div>
-                  <label>🌱 Parcial (plantas/pers)</label>
-                  <input type="number" step="0.1" name="especiesautosuficienciaparcial" value={formData.especiesautosuficienciaparcial || ''} onChange={handleChange} />
-                </div>
-                <div>
-                  <label>🥬 Completa (plantas/pers)</label>
-                  <input type="number" step="0.1" name="especiesautosuficiencia" value={formData.especiesautosuficiencia || ''} onChange={handleChange} />
-                </div>
-                <div>
-                  <label>🥫 Conserva (plantas/pers)</label>
-                  <input type="number" step="0.1" name="especiesautosuficienciaconserva" value={formData.especiesautosuficienciaconserva || ''} onChange={handleChange} />
-                </div>
-              </div>
-              
-              <div className="form-group full" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '10px' }}>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, textAlign: 'center' }}>
-                  <strong>Nota:</strong> Estos valores indican el número estimado de plantas necesarias para abastecer a <strong>una persona</strong> durante un año.
-                </p>
-              </div>
-
-              {/* CALCULADORA */}
-              {(() => {
-                const pParcial = parseFloat(formData.especiesautosuficienciaparcial) || 0;
-                const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;
-                const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;
-                const totalPParcial = pParcial * calcPersonas;
-                const totalPFresco = pFresco * calcPersonas;
-                const totalPConserva = pConserva * calcPersonas;
-                
-                const marcoP = (parseFloat(formData.especiesmarcoplantas) || 0) / 100;
-                const marcoF = (parseFloat(formData.especiesmarcofilas) || 0) / 100;
-                const areaPlant = marcoP * marcoF;
-                
-                const m2Parcial = totalPParcial * areaPlant;
-                const m2Fresco = totalPFresco * areaPlant;
-                const m2Conserva = totalPConserva * areaPlant;
-
-                return (
-                  <div className="form-group full" style={{ marginTop: '20px', padding: '14px', background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
-                    <h3 style={{ marginTop: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
-                      🧮 Calculadora de Autosuficiencia
-                      <span style={{ fontSize: '0.8rem', fontWeight: 'normal', background: '#dcfce7', padding: '3px 8px', borderRadius: '12px' }}>No se guarda</span>
-                    </h3>
-                    
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-                      <label style={{ fontWeight: 'bold', color: '#15803d' }}>Número de Personas a alimentar:</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        value={calcPersonas} 
-                        onChange={(e) => setCalcPersonas(parseInt(e.target.value) || 1)} 
-                        style={{ width: '80px', padding: '8px', border: '1px solid #86efac', borderRadius: '4px', textAlign: 'center', fontSize: '1.1rem' }}
-                      />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                      <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Parcial</h4>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
-                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPParcial.toFixed(1)}</strong>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
-                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Parcial > 0 ? `${m2Parcial.toFixed(2)} m²` : '--- m²'}</strong>
-                      </div>
+                    <div className="form-group full" style={{ marginTop: '10px' }}>
+                      <h3 style={{ fontSize: '1.1rem', color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
+                        📊 Gráfico del Calendario de Cultivo
+                      </h3>
 
-                      <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥬 Completa</h4>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
-                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
-                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Fresco > 0 ? `${m2Fresco.toFixed(2)} m²` : '--- m²'}</strong>
-                      </div>
-
-                      <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥫 Conserva</h4>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
-                        <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPConserva.toFixed(1)}</strong>
-                        <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
-                        <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Conserva > 0 ? `${m2Conserva.toFixed(2)} m²` : '--- m²'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* ASOCIACIONES */}
-          {activeTab === 'asociaciones' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h4 style={{ margin: 0 }}>Asociaciones Beneficiosas</h4>
-                  {relacionesSaveStatus !== 'idle' && (
-                    <span style={{ 
-                      fontSize: '0.85rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px',
-                      color: relacionesSaveStatus === 'no-changes' ? '#10b981' : '#64748b',
-                      background: relacionesSaveStatus === 'no-changes' ? '#dcfce7' : '#f1f5f9',
-                      transition: 'all 0.3s'
-                    }}>
-                      {relacionesSaveStatus === 'saving' ? '⏳ Guardando...' : '✓ Guardado'}
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                    <option value="">Selecciona especie...</option>
-                    {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
-                  </select>
-                  <input type="text" id="motivoBen" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <button type="button" onClick={() => {
-                    const sel = document.getElementById('selBen') as HTMLSelectElement;
-                    const mot = document.getElementById('motivoBen') as HTMLInputElement;
-                    if (!sel.value) return;
-                    if (relaciones.beneficiosas.some((b: any) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
-                    const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
-                    const updated = {
-                      ...relaciones,
-                      beneficiosas: [...relaciones.beneficiosas, { 
-                        xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
-                        especie_destino_nombre: sp?.especiesnombre,
-                        asociacionesbeneficiosasmotivo: mot.value 
-                      }]
-                    };
-                    setRelaciones(updated);
-                    saveRelacionesNow(updated);
-                    sel.value = ''; mot.value = '';
-                  }} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
-                </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {relaciones.beneficiosas.map((b: any, idx: number) => (
-                    <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
-                      <div><strong>{b.especie_destino_nombre}</strong></div>
-                      <input type="text" value={b.asociacionesbeneficiosasmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
-                        const updatedBen = relaciones.beneficiosas.map((bb: any, i: number) => i === idx ? { ...bb, asociacionesbeneficiosasmotivo: e.target.value } : bb);
-                        setRelaciones({ ...relaciones, beneficiosas: updatedBen });
-                        setRelacionesDirty(true);
-                      }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                      <button type="button" onClick={() => {
-                        const updated = { ...relaciones, beneficiosas: relaciones.beneficiosas.filter((_: any, i: number) => i !== idx) };
-                        setRelaciones(updated);
-                        saveRelacionesNow(updated);
-                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                    </li>
-                  ))}
-                  {relaciones.beneficiosas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones beneficiosas.</p>}
-                </ul>
-              </div>
-
-              <div className="form-group full" style={{ marginTop: '20px' }}>
-                <h4>Asociaciones Perjudiciales</h4>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <select id="selPer" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                    <option value="">Selecciona especie...</option>
-                    {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
-                  </select>
-                  <input type="text" id="motivoPer" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <button type="button" onClick={() => {
-                    const sel = document.getElementById('selPer') as HTMLSelectElement;
-                    const mot = document.getElementById('motivoPer') as HTMLInputElement;
-                    if (!sel.value) return;
-                    if (relaciones.perjudiciales.some((p: any) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
-                    const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
-                    const updated = {
-                      ...relaciones,
-                      perjudiciales: [...relaciones.perjudiciales, { 
-                        xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
-                        especie_destino_nombre: sp?.especiesnombre,
-                        asociacionesperjudicialesmotivo: mot.value 
-                      }]
-                    };
-                    setRelaciones(updated);
-                    saveRelacionesNow(updated);
-                    sel.value = ''; mot.value = '';
-                  }} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
-                </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {relaciones.perjudiciales.map((p: any, idx: number) => (
-                    <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
-                      <div><strong>{p.especie_destino_nombre}</strong></div>
-                      <input type="text" value={p.asociacionesperjudicialesmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
-                        const updatedPer = relaciones.perjudiciales.map((pp: any, i: number) => i === idx ? { ...pp, asociacionesperjudicialesmotivo: e.target.value } : pp);
-                        setRelaciones({ ...relaciones, perjudiciales: updatedPer });
-                        setRelacionesDirty(true);
-                      }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                      <button type="button" onClick={() => {
-                        const updated = { ...relaciones, perjudiciales: relaciones.perjudiciales.filter((_: any, i: number) => i !== idx) };
-                        setRelaciones(updated);
-                        saveRelacionesNow(updated);
-                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                    </li>
-                  ))}
-                  {relaciones.perjudiciales.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones perjudiciales.</p>}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* PLAGAS */}
-          {activeTab === 'plagas' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <h4>Plagas / Enfermedades Asociadas</h4>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                  <select id="selPla" style={{ flex: 1, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                    <option value="">Selecciona plaga o enfermedad...</option>
-                    {masterPlagas.map(p => <option key={p.idplagas} value={p.idplagas}>{p.plagasnombre} ({p.plagastipo})</option>)}
-                  </select>
-                  <select id="riesgoPla" style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                    <option value="baja">Riesgo Bajo</option>
-                    <option value="media">Riesgo Medio</option>
-                    <option value="alta">Riesgo Alto</option>
-                  </select>
-                  <input type="text" id="notasPla" placeholder="Notas (opcional)" style={{ flex: 2, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <button type="button" onClick={() => {
-                    const sel = document.getElementById('selPla') as HTMLSelectElement;
-                    const r = document.getElementById('riesgoPla') as HTMLSelectElement;
-                    const n = document.getElementById('notasPla') as HTMLInputElement;
-                    if (!sel.value) return;
-                    if (relaciones.plagas.some((p: any) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
-                    const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
-                    const updated = {
-                      ...relaciones,
-                      plagas: [...relaciones.plagas, { 
-                        xespeciesplagasidplagas: parseInt(sel.value),
-                        plagasnombre: pla?.plagasnombre,
-                        plagastipo: pla?.plagastipo,
-                        especiesplagasnivelriesgo: r.value,
-                        especiesplagasnotasespecificas: n.value 
-                      }]
-                    };
-                    setRelaciones(updated);
-                    saveRelacionesNow(updated);
-                    sel.value = ''; n.value = ''; r.value = 'media';
-                  }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
-                </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {relaciones.plagas.map((p: any, idx: number) => (
-                    <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '12px', alignItems: 'center' }}>
-                      <div>
-                        <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span>
-                      </div>
-                      <select value={p.especiesplagasnivelriesgo || 'media'} onChange={(e) => {
-                        const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnivelriesgo: e.target.value } : pl);
-                        const updated = { ...relaciones, plagas: updatedPlagas };
-                        setRelaciones(updated);
-                        saveRelacionesNow(updated);
-                      }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
-                        <option value="baja">🟢 Riesgo Bajo</option>
-                        <option value="media">🟡 Riesgo Medio</option>
-                        <option value="alta">🔴 Riesgo Alto</option>
-                      </select>
-                      <input type="text" value={p.especiesplagasnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
-                        const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnotasespecificas: e.target.value } : pl);
-                        setRelaciones({ ...relaciones, plagas: updatedPlagas });
-                        setRelacionesDirty(true);
-                      }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                      <button type="button" onClick={() => {
-                        const updated = { ...relaciones, plagas: relaciones.plagas.filter((_: any, i: number) => i !== idx) };
-                        setRelaciones(updated);
-                        saveRelacionesNow(updated);
-                      }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                    </li>
-                  ))}
-                  {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
-                </ul>
-              </div>
-            </div>
-          )}
-
-
-          {/* SINONIMOS */}
-          {activeTab === 'sinonimos' && (
-            <div className="grid-form">
-              <div className="form-group full" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0 }}>Gestión de Sinónimos y Nombres Locales</h3>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    type="button" 
-                    onClick={openSinonimosConfig}
-                    disabled={sinonimosAiLoading}
-                    style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer' }}
-                  >
-                    {sinonimosAiLoading ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.1rem' }}>⏳</span>
-                        Buscando... {sinonimosAiSeconds}s
-                      </span>
-                    ) : '✨ Proponer Sinónimos (IA)'}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setSinonimos([...sinonimos, { idespeciessinonimos: null, especiessinonimosnombre: '', xespeciessinonimosididiomas: '', xespeciessinonimosidpaises: '', especiessinonimosnotas: '' }]);
-                      setSinonimosDirty(true);
-                    }}
-                    style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-                  >
-                    + Añadir Manualmente
-                  </button>
-                  {sinonimosDirty && (
-                    <button 
-                      type="button" 
-                      onClick={saveSinonimosNow}
-                      style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(16,185,129,0.4)' }}
-                    >
-                      💾 Guardar Cambios
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-group full">
-                {sinonimos.length === 0 && !sinonimosAiLoading ? (
-                  <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
-                    <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay sinónimos registrados.</p>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "Proponer Sinónimos" para que la Inteligencia Artificial busque por ti.</p>
-                  </div>
-                ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-                    <thead>
-                      <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                        <th style={{ padding: '12px', textAlign: 'left', width: '30%' }}>Nombre / Sinónimo</th>
-                        <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Idioma</th>
-                        <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>País / Región</th>
-                        <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Notas</th>
-                        <th style={{ padding: '12px', textAlign: 'center', width: '10%' }}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sinonimos.map((s, index) => (
-                        <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: s.idespeciessinonimos === null ? '#fefce8' : 'transparent' }}>
-                          <td style={{ padding: '8px' }}>
-                            <input 
-                              type="text" 
-                              value={s.especiessinonimosnombre} 
-                              onChange={e => {
-                                const newSin = [...sinonimos];
-                                newSin[index].especiessinonimosnombre = e.target.value;
-                                setSinonimos(newSin);
-                                setSinonimosDirty(true);
-                              }}
-                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                              placeholder="Ej. Palta"
-                            />
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <select 
-                              value={s.xespeciessinonimosididiomas || ''} 
-                              onChange={e => {
-                                const newSin = [...sinonimos];
-                                newSin[index].xespeciessinonimosididiomas = e.target.value;
-                                setSinonimos(newSin);
-                                setSinonimosDirty(true);
-                              }}
-                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                            >
-                              <option value="">-- Sin especificar --</option>
-                              {masterIdiomas.map(i => (
-                                <option key={i.ididiomas} value={i.ididiomas}>{i.idiomasnombre}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <select 
-                              value={s.xespeciessinonimosidpaises || ''} 
-                              onChange={e => {
-                                const newSin = [...sinonimos];
-                                newSin[index].xespeciessinonimosidpaises = e.target.value;
-                                setSinonimos(newSin);
-                                setSinonimosDirty(true);
-                              }}
-                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                            >
-                              <option value="">-- Sin especificar --</option>
-                              {masterPaises.map(p => (
-                                <option key={p.idpaises} value={p.idpaises}>{p.paisesnombre}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <input 
-                              type="text" 
-                              value={s.especiessinonimosnotas || ''} 
-                              onChange={e => {
-                                const newSin = [...sinonimos];
-                                newSin[index].especiessinonimosnotas = e.target.value;
-                                setSinonimos(newSin);
-                                setSinonimosDirty(true);
-                              }}
-                              style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                              placeholder="Notas opcionales"
-                            />
-                          </td>
-                          <td style={{ padding: '8px', textAlign: 'center' }}>
-                            <button 
-                              type="button" 
-                              onClick={async () => {
-                                const sinToDelete = sinonimos[index];
-                                const newSin = [...sinonimos];
-                                newSin.splice(index, 1);
-                                setSinonimos(newSin);
-                                // Auto-borrar de la BD si ya estaba guardado
-                                if (sinToDelete.idespeciessinonimos && especieId) {
-                                  try {
-                                    await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
-                                  } catch (err) {
-                                    console.error('Error borrando sinónimo:', err);
-                                  }
-                                }
-                              }}
-                              style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
-                            >
-                              🗑️
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* BLOGS */}
-          {activeTab === 'blogs' && (
-            <div className="grid-form">
-              <div className="form-group full">
-                <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
-                  <span style={{ margin: 0 }}>Artículos del Blog generados para esta Especie</span>
-                </label>
-                {blogs.length === 0 ? (
-                  <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '30px', textAlign: 'center', borderRadius: '12px', color: '#64748b' }}>
-                    No hay ningún artículo generado para esta especie.<br/><br/>
-                    <button type="button" onClick={() => setActiveTab('adjuntos')} style={{ background: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                      Ir a Adjuntos para generar uno a partir de un PDF
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                    {blogs.map(b => {
-                      const linkedPdf = b.pdfSourceId ? pdfs.find((p: any) => p.id === b.pdfSourceId) : null;
-                      return (
-                      <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', flexDirection: 'column' }}>
-                        {b.hero_imagen ? (
-                          <img src={getMediaUrl(b.hero_imagen)} alt={b.hero_imagen_alt || b.titulo} style={{ width: '100%', height: '140px', objectFit: 'cover' }}  crossOrigin="anonymous" />
-                        ) : (
-                          <div style={{ width: '100%', height: '140px', background: 'linear-gradient(135deg, #0f766e, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3rem' }}>📝</div>
-                        )}
-                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                          <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: '#1e293b', lineHeight: 1.3 }}>{b.titulo}</h3>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px', fontSize: '0.75rem', color: '#64748b' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>✍️ {b.autor}</span>
-                            <span>•</span>
-                            <span>{b.fechaCreacion ? new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Sin fecha'}</span>
-                            <span style={{ marginLeft: 'auto', background: b.estado === 'publicado' ? '#dcfce7' : '#fef3c7', color: b.estado === 'publicado' ? '#166534' : '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase' }}>{b.estado}</span>
-                          </div>
-                          <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
-                            {b.resumen}
-                          </p>
-
-                          {/* PDF asociado */}
-                          <div style={{ marginBottom: '12px', padding: '8px 10px', background: linkedPdf ? '#ecfdf5' : '#f8fafc', border: `1px solid ${linkedPdf ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: '6px', fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {linkedPdf ? (
-                              <a href={getMediaUrl(linkedPdf.ruta)} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#0f766e', fontWeight: 600 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                                📄 {linkedPdf.titulo || linkedPdf.nombreOriginal}
-                              </a>
-                            ) : (
-                              <span style={{ color: '#94a3b8' }}>Sin PDF de origen vinculado</span>
-                            )}
-                          </div>
-
-                          {/* Acciones */}
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ textAlign: 'center', background: '#f1f5f9', color: '#0f766e', textDecoration: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #cbd5e1', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
-                              👁️
-                            </a>
-                            <a href={`/dashboard/admin/blog/${b.id}`} style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', textDecoration: 'none', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #bfdbfe', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'} onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}>
-                              ✏️ Editar
-                            </a>
-                            <button type="button" onClick={async () => {
-                              if (!confirm(`¿Estás seguro de que quieres eliminar el blog "${b.titulo}"? Esta acción no se puede deshacer.`)) return;
-                              try {
-                                const res = await fetch(`/api/admin/blog/${b.id}`, { method: 'DELETE' });
-                                const data = await res.json();
-                                if (data.success) {
-                                  setBlogs(prev => prev.filter(x => x.id !== b.id));
-                                } else {
-                                  alert(data.error || 'Error al eliminar');
-                                }
-                              } catch (e) { alert('Error de red al eliminar blog'); }
-                            }} style={{ padding: '8px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; }}>
-                              🗑️
-                            </button>
-                          </div>
+                      <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                        {/* Cabecera de meses */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                          <div style={{ padding: '8px 4px', fontWeight: 'bold', color: '#64748b', fontSize: '0.7rem', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>FASE</div>
+                          {MESES.map(m => (
+                            <div key={m.val} style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', color: '#475569', fontSize: '0.7rem', borderRight: m.val < 12 ? '1px solid #e2e8f0' : 'none' }}>
+                              {m.label.charAt(0)}
+                            </div>
+                          ))}
                         </div>
+
+                        {/* Filas del gráfico */}
+                        {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map((tipo, idx) => {
+                          const colorMap: Record<string, string> = { siembradirecta: '#f97316', semillero: '#3b82f6', trasplante: '#a855f7', recoleccion: '#22c55e' };
+                          const labelMap: Record<string, string> = { siembradirecta: 'Siembra', semillero: 'Semillero', trasplante: 'Traspl.', recoleccion: 'Recol.' };
+
+                          const desde = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`]) || 0;
+                          const hasta = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`]) || 0;
+
+                          const isMonthActive = (m: number) => {
+                            if (!desde || !hasta) return false;
+                            if (desde <= hasta) return m >= desde && m <= hasta;
+                            return m >= desde || m <= hasta;
+                          };
+
+                          return (
+                            <div key={tipo} style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', borderBottom: idx < 3 ? '1px solid #e2e8f0' : 'none', background: '#fff' }}>
+                              <div style={{ padding: '8px 4px', fontSize: '0.65rem', fontWeight: 'bold', color: '#334155', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colorMap[tipo], flexShrink: 0 }}></span>
+                                {labelMap[tipo]}
+                              </div>
+                              {MESES.map(m => {
+                                const active = isMonthActive(m.val);
+                                return (
+                                  <div key={m.val} style={{
+                                    padding: '8px 0',
+                                    borderRight: m.val < 12 ? '1px dashed #e2e8f0' : 'none',
+                                    background: active ? `${colorMap[tipo]}20` : 'transparent',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}>
+                                    {active && <div style={{ width: '100%', height: '10px', background: colorMap[tipo], borderRadius: '2px', margin: '0 1px' }}></div>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
                       </div>
-                      );
-                    })}
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
 
-          {/* ADJUNTOS */}
-          {activeTab === 'adjuntos' && (
-            <div>
-              {!especieId ? (
-                <p>Guarda la especie primero para subir archivos adjuntos.</p>
-              ) : (
-                <div className="grid-form">
-                  <div className="form-group full">
-                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        Fotos
-                        {photos.length > 1 && (
-                          <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 'normal', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '2px 7px', letterSpacing: '0.01em' }}>
-                            ✥ Arrastra para cambiar el orden
-                          </span>
-                        )}
-                      </span>
-                      <small style={{ color: photos.length >= 4 ? '#ef4444' : '#64748b' }}>
-                        {photos.length} / 4 permitidas
-                      </small>
-                    </label>
-                    <div className="gallery">
-                      {photos.map((p, index) => {
-                        const isLocked = index >= 4;
-                        let meta: any = {};
-                        try { meta = JSON.parse(p.resumen || '{}'); } catch(e){}
-                        
-                        let baseFilter = isLocked ? 'grayscale(100%) blur(2px)' : (meta.profile_style ? STYLE_FILTERS[meta.profile_style] : 'none');
-                        if (!isLocked && (meta.profile_brightness !== undefined || meta.profile_contrast !== undefined)) {
-                          baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
-                        }
-
-                        const imgStyle: any = {
-                          filter: baseFilter,
-                          objectFit: 'cover',
-                          objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
-                          transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
-                          transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
-                        };
-
-                        const isDragging = draggedPhotoIndex === index;
-                        const isDragOver = draggedOverPhotoIndex === index;
-
-                        return (
-                          <div 
-                            key={p.id} 
-                            className={`gallery-item ${p.esPrincipal ? 'is-preferred' : ''}`}
-                            style={{ 
-                              opacity: isDragging ? 0.5 : 1, 
-                              border: isDragOver ? '2px dashed #10b981' : undefined,
-                              transform: isDragOver ? 'scale(1.02)' : 'none',
-                              transition: 'all 0.2s ease',
-                              cursor: 'grab',
-                              backgroundColor: meta.dominant_color || '#f1f5f9',
-                              position: 'relative',
-                              overflow: 'hidden'
-                            }}
-                            draggable
-                            onDragStart={() => setDraggedPhotoIndex(index)}
-                            onDragEnter={() => setDraggedPhotoIndex !== null && setDraggedOverPhotoIndex(index)}
-                            onDragEnd={() => {
-                              if (draggedPhotoIndex !== null && draggedOverPhotoIndex !== null && draggedPhotoIndex !== draggedOverPhotoIndex) {
-                                const newPhotos = [...photos];
-                                const [draggedItem] = newPhotos.splice(draggedPhotoIndex, 1);
-                                newPhotos.splice(draggedOverPhotoIndex, 0, draggedItem);
-                                
-                                // Guardar estado original
-                                const wasAlreadyPrimary = draggedItem.esPrincipal === 1;
-                                
-                                // Si se arrastra a la primera posición, marcarla como principal localmente
-                                if (draggedOverPhotoIndex === 0) {
-                                  newPhotos.forEach(p => p.esPrincipal = (p.id === draggedItem.id ? 1 : 0));
-                                }
-                                
-                                handleReorderPhotos(newPhotos);
-                                
-                                // Si cayó en la primera posición y no era la principal, actualizar en servidor
-                                if (draggedOverPhotoIndex === 0 && !wasAlreadyPrimary) {
-                                  handleSetPrimaryPhoto(draggedItem.id);
-                                }
-                              }
-                              setDraggedPhotoIndex(null);
-                              setDraggedOverPhotoIndex(null);
-                            }}
-                            onDragOver={(e) => e.preventDefault()}
-                          >
-                            {meta.blurhash && (
-                              <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-                                <Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} />
-                              </div>
-                            )}
-                            <img 
-                              src={getMediaUrl(p.ruta)} 
-                              alt={meta.seo_alt || 'foto especie'} 
-                              loading="lazy" 
-                              style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} 
-                              draggable={false} 
-                             crossOrigin="anonymous" />
-                            {meta.exif_data && (
-                              <div style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', cursor: 'help', zIndex: 10 }} title={`Cámara: ${meta.exif_data.make || ''} ${meta.exif_data.model || ''}\nFecha: ${meta.exif_data.date ? new Date(meta.exif_data.date).toLocaleDateString() : 'Desconocida'}`}>
-                                ℹ️
-                              </div>
-                            )}
-                            {isLocked && (
-                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)', zIndex: 10, background: 'rgba(0,0,0,0.4)' }}>
-                                <span style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🔒</span>
-                                <small style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '0.65rem' }}>Excede límite</small>
-                              </div>
-                            )}
-                            <div className="photo-actions" style={{ zIndex: 20 }}>
-                              <button
-                                type="button"
-                                className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`}
-                                onClick={() => handleSetPrimaryPhoto(p.id)}
-                                title={p.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
-                              >{p.esPrincipal ? '★' : '☆'}</button>
-                              <button
-                                type="button"
-                                className="photo-action-btn btn-photo-edit"
-                                onClick={() => openPhotoEditor(p)}
-                                title="Editar foto"
-                              >✏️</button>
-                              <button type="button" className="photo-action-btn btn-photo-delete" onClick={() => handleDeleteFile(p.id, 'photos')} title="Eliminar">✕</button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      
-                      {photos.length >= 4 ? null : (
-                        <div 
-                          className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
-                          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDragOverPhotos(false);
-                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                              handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
-                            }
-                          }}
-                        >
-                          <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
-                          <input type="file" id="upload-camera" accept="image/*" capture="environment" onChange={(e) => handleFileUpload(e, 'photos')} style={{display: 'none'}} disabled={uploadingPhotos} />
-                          
-                          {uploadingPhotos ? (
-                            <div className="drop-zone-content">
-                              <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                              <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Procesando...</span>
-                              <span className="drop-hint" style={{ color: '#059669', fontSize: '0.65rem' }}>IA analizando</span>
-                            </div>
-                          ) : (
-                            <div className="drop-zone-content">
-                              <div className="drop-zone-buttons" style={{ flexDirection: 'column' }}>
-                                <label htmlFor="upload-photos" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                                  <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📁</span> Galería
-                                </label>
-                                <label htmlFor="upload-camera" className="btn-upload secondary mobile-only" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                                  <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📷</span> Cámara
-                                </label>
-                                <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
-                                  <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>✨</span> Generar IA
-                                </button>
-                              </div>
-                              <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br/>aquí</span>
-                            </div>
-                          )}
+                {/* TEXTOS */}
+                {activeTab === 'textos' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <label>Historia / Origen</label>
+                      <textarea name="especieshistoria" rows={3} value={formData.especieshistoria || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group full">
+                      <label>Descripción / Cultivo</label>
+                      <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>pH del Suelo</label>
+                      <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group full">
+                      <label>Características del Suelo</label>
+                      <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group full">
+                      <label>Fuentes (URLs separadas por comas)</label>
+                      <input type="text" name="especiesfuentesinformacion" value={formData.especiesfuentesinformacion || ''} onChange={handleChange} />
+                      {formData.especiesfuentesinformacion && typeof formData.especiesfuentesinformacion === 'string' && formData.especiesfuentesinformacion.trim() !== '' && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+                          {formData.especiesfuentesinformacion.split(',').map((url: string, idx: number) => {
+                            const trimmedUrl = url.trim();
+                            if (!trimmedUrl) return null;
+                            const href = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`;
+                            return (
+                              <a
+                                key={idx}
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  background: '#e0e7ff',
+                                  color: '#4338ca',
+                                  padding: '6px 12px',
+                                  borderRadius: '16px',
+                                  fontSize: '0.8rem',
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  border: '1px solid #c7d2fe',
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                  transition: 'all 0.2s'
+                                }}
+                              >
+                                🔗 {trimmedUrl.length > 35 ? trimmedUrl.substring(0, 35) + '...' : trimmedUrl}
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="form-group full">
-                    <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
-                      <span style={{ margin: 0 }}>Documentos Adicionales (PDF)</span>
-                      <button type="button" onClick={() => setShowPdfSearchModal(true)} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)', margin: 0 }}>
-                        ✨ Buscar PDFs con IA
-                      </button>
-                    </label>
-                    <div className="gallery pdfs">
-                      {pdfs.map(p => (
-                        <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {/* Cuadro de portada — solo la foto */}
-                          <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
-                            {p.portada ? (
-                              <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}  crossOrigin="anonymous" />
-                            ) : (
-                              <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
-                                </button>
-                              </div>
-                            )}
+                )}
 
-                            {/* Botones superpuestos en la foto */}
-                            <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                              <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
-                              {(p.hasBlog || blogs.some(b => b.pdfSourceId == p.id)) ? (
-                                <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
-                              ) : (
-                                <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
-                              )}
-                            </div>
-                          </div>
+                {/* LUNA Y BIODINAMICA */}
+                {activeTab === 'biodinamica' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <label>Categoría Biodinámica</label>
+                      <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}>
+                        <option value="">— Sin categoría —</option>
+                        <option value="fruto">🍅 Planta de Fruto</option>
+                        <option value="raiz">🥕 Planta de Raíz</option>
+                        <option value="hoja">🥬 Planta de Hoja</option>
+                        <option value="flor">🌸 Planta de Flor</option>
+                      </select>
+                      {formData.especiesbiodinamicacategoria && (
+                        <p style={{ marginTop: '8px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
+                          {({ fruto: 'Siembra y trasplanta en días Fruto (luna creciente). Recolecta también en días Fruto para mejor sabor.', raiz: 'Siembra en días Raíz con luna creciente. Recolecta en días Raíz con luna menguante para mejor conservación.', hoja: 'Trasplanta en días Hoja con luna creciente. Evita podar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
+                        </p>
+                      )}
+                    </div>
+                    <div className="form-group full">
+                      <label>Notas de Calendario Lunar</label>
+                      <textarea name="especiesbiodinamicanotas" value={formData.especiesbiodinamicanotas || ''} onChange={handleChange}
+                        rows={4} placeholder="Ej: El tomate responde muy bien al trasplante en días Fruto durante luna creciente. Podar hojas basales preferiblemente en días Hoja..."
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.95rem', resize: 'vertical' }} />
+                    </div>
+                  </div>
+                )}
 
-                          {/* Título como hipervínculo debajo del cuadro */}
-                          <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                            📄 {p.titulo || p.nombreOriginal}
-                          </a>
+                {/* AUTOSUFICIENCIA */}
+                {activeTab === 'autosuficiencia' && (
+                  <div className="grid-form">
+                    <div className="form-group">
+                      <label>Marco Plantas (cm)</label>
+                      <input type="number" name="especiesmarcoplantas" value={formData.especiesmarcoplantas || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Marco Filas (cm)</label>
+                      <input type="number" name="especiesmarcofilas" value={formData.especiesmarcofilas || ''} onChange={handleChange} />
+                    </div>
 
-                          {/* Botón generar blog debajo del título */}
-                          <button type="button" onClick={() => setBlogGenPdf(p)} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', alignSelf: 'center', boxShadow: '0 2px 4px rgba(245,158,11,0.3)' }}>
-                            📝 Generar Blog
-                          </button>
+                    {(formData.especiesmarcoplantas || formData.especiesmarcofilas) && (
+                      <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', fontWeight: 'bold' }}>Esquema de Plantación a Escala</span>
 
-                          {/* Blogs relacionados a este PDF */}
-                          {blogs.filter(b => b.pdfSourceId == p.id).length > 0 && (
-                            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
-                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>Blogs Generados</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {blogs.filter(b => b.pdfSourceId == p.id).map(b => (
-                                  <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
-                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                                      {b.hero_imagen ? (
-                                        <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
-                                          <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
-                                        </div>
-                                      ) : (
-                                        <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
-                                      )}
-                                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                        <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                                          {b.titulo}
-                                        </a>
-                                      </div>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '46px' }}>
-                                      <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
-                                        {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
-                                      </span>
-                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
-                                          {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                                        </span>
-                                        <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
-                                          🗑️
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        {(() => {
+                          let p = parseFloat(formData.especiesmarcoplantas);
+                          let f = parseFloat(formData.especiesmarcofilas);
+                          if (!p || p <= 0) p = 50;
+                          if (!f || f <= 0) f = 50;
 
-                      <div 
-                        className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
-                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
-                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(false); }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDragOverPdfs(false);
-                          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                            handleFileUpload({ target: { files: e.dataTransfer.files } }, 'pdfs');
+                          const maxW = 160;
+                          const maxH = 120;
+
+                          let drawW, drawH;
+                          const ratio = p / f;
+                          const maxRatio = maxW / maxH;
+
+                          if (ratio > maxRatio) {
+                            drawW = maxW;
+                            drawH = maxW / ratio;
+                          } else {
+                            drawH = maxH;
+                            drawW = maxH * ratio;
                           }
-                        }}
-                      >
-                        <input type="file" id="upload-pdfs" multiple accept=".pdf" onChange={(e) => handleFileUpload(e, 'pdfs')} disabled={uploadingPdfs} />
-                        
-                        {uploadingPdfs ? (
-                          <div className="drop-zone-content">
-                            <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                            <span style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Subiendo...</span>
+
+                          if (drawW < 40) drawW = 40;
+                          if (drawH < 40) drawH = 40;
+
+                          const cx = 120;
+                          const cy = 90;
+                          const x1 = cx - drawW / 2;
+                          const x2 = cx + drawW / 2;
+                          const y1 = cy - drawH / 2;
+                          const y2 = cy + drawH / 2;
+
+                          return (
+                            <svg width="240" height="180" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
+                              <circle cx={x1} cy={y1} r="8" fill="#22c55e" />
+                              <circle cx={x2} cy={y1} r="8" fill="#22c55e" />
+                              <circle cx={x1} cy={y2} r="8" fill="#22c55e" />
+                              <circle cx={x2} cy={y2} r="8" fill="#22c55e" />
+
+                              {x2 - x1 > 30 && (
+                                <>
+                                  <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#94a3b8" strokeWidth="2" />
+                                  <polygon points={`${x1 + 12},${y1 - 4} ${x1 + 8},${y1} ${x1 + 12},${y1 + 4}`} fill="#94a3b8" />
+                                  <polygon points={`${x2 - 12},${y1 - 4} ${x2 - 8},${y1} ${x2 - 12},${y1 + 4}`} fill="#94a3b8" />
+                                </>
+                              )}
+
+                              <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#f8fafc" rx="4" />
+                              <text x={cx} y={y1 + 4} fontSize="12" fontWeight="bold" fill="#334155" textAnchor="middle">
+                                {formData.especiesmarcoplantas ? `${formData.especiesmarcoplantas} cm` : '? cm'}
+                              </text>
+
+                              {y2 - y1 > 30 && (
+                                <>
+                                  <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#94a3b8" strokeWidth="2" />
+                                  <polygon points={`${x1 - 4},${y1 + 12} ${x1},${y1 + 8} ${x1 + 4},${y1 + 12}`} fill="#94a3b8" />
+                                  <polygon points={`${x1 - 4},${y2 - 12} ${x1},${y2 - 8} ${x1 + 4},${y2 - 12}`} fill="#94a3b8" />
+                                </>
+                              )}
+
+                              <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#f8fafc" rx="4" />
+                              <text x={x1} y={cy + 4} fontSize="12" fontWeight="bold" fill="#334155" textAnchor="middle">
+                                {formData.especiesmarcofilas ? `${formData.especiesmarcofilas} cm` : '? cm'}
+                              </text>
+
+                              <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
+                              <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
+                            </svg>
+                          );
+                        })()}
+
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0', textAlign: 'center' }}>
+                          <strong style={{ color: '#64748b' }}>Marco Plantas:</strong> distancia entre plantas de la misma fila.<br />
+                          <strong style={{ color: '#64748b' }}>Marco Filas:</strong> distancia entre las diferentes filas.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                      <div>
+                        <label>🌱 Parcial (plantas/pers)</label>
+                        <input type="number" step="0.1" name="especiesautosuficienciaparcial" value={formData.especiesautosuficienciaparcial || ''} onChange={handleChange} />
+                      </div>
+                      <div>
+                        <label>🥬 Completa (plantas/pers)</label>
+                        <input type="number" step="0.1" name="especiesautosuficiencia" value={formData.especiesautosuficiencia || ''} onChange={handleChange} />
+                      </div>
+                      <div>
+                        <label>🥫 Conserva (plantas/pers)</label>
+                        <input type="number" step="0.1" name="especiesautosuficienciaconserva" value={formData.especiesautosuficienciaconserva || ''} onChange={handleChange} />
+                      </div>
+                    </div>
+
+                    <div className="form-group full" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '10px' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, textAlign: 'center' }}>
+                        <strong>Nota:</strong> Estos valores indican el número estimado de plantas necesarias para abastecer a <strong>una persona</strong> durante un año.
+                      </p>
+                    </div>
+
+                    {/* CALCULADORA */}
+                    {(() => {
+                      const pParcial = parseFloat(formData.especiesautosuficienciaparcial) || 0;
+                      const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;
+                      const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;
+                      const totalPParcial = pParcial * calcPersonas;
+                      const totalPFresco = pFresco * calcPersonas;
+                      const totalPConserva = pConserva * calcPersonas;
+
+                      const marcoP = (parseFloat(formData.especiesmarcoplantas) || 0) / 100;
+                      const marcoF = (parseFloat(formData.especiesmarcofilas) || 0) / 100;
+                      const areaPlant = marcoP * marcoF;
+
+                      const m2Parcial = totalPParcial * areaPlant;
+                      const m2Fresco = totalPFresco * areaPlant;
+                      const m2Conserva = totalPConserva * areaPlant;
+
+                      return (
+                        <div className="form-group full" style={{ marginTop: '20px', padding: '14px', background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
+                          <h3 style={{ marginTop: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
+                            🧮 Calculadora de Autosuficiencia
+                            <span style={{ fontSize: '0.8rem', fontWeight: 'normal', background: '#dcfce7', padding: '3px 8px', borderRadius: '12px' }}>No se guarda</span>
+                          </h3>
+
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                            <label style={{ fontWeight: 'bold', color: '#15803d' }}>Número de Personas a alimentar:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={calcPersonas}
+                              onChange={(e) => setCalcPersonas(parseInt(e.target.value) || 1)}
+                              style={{ width: '80px', padding: '8px', border: '1px solid #86efac', borderRadius: '4px', textAlign: 'center', fontSize: '1.1rem' }}
+                            />
                           </div>
-                        ) : (
-                          <div className="drop-zone-content">
-                            <label htmlFor="upload-pdfs" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                              <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📄</span> Subir PDF
-                            </label>
-                            <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br/>aquí</span>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                            <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Parcial</h4>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                              <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPParcial.toFixed(1)}</strong>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                              <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Parcial > 0 ? `${m2Parcial.toFixed(2)} m²` : '--- m²'}</strong>
+                            </div>
+
+                            <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥬 Completa</h4>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                              <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                              <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Fresco > 0 ? `${m2Fresco.toFixed(2)} m²` : '--- m²'}</strong>
+                            </div>
+
+                            <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥫 Conserva</h4>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                              <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPConserva.toFixed(1)}</strong>
+                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                              <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Conserva > 0 ? `${m2Conserva.toFixed(2)} m²` : '--- m²'}</strong>
+                            </div>
                           </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* ASOCIACIONES */}
+                {activeTab === 'asociaciones' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <h4 style={{ margin: 0 }}>Asociaciones Beneficiosas</h4>
+                        {relacionesSaveStatus !== 'idle' && (
+                          <span style={{
+                            fontSize: '0.85rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px',
+                            color: relacionesSaveStatus === 'no-changes' ? '#10b981' : '#64748b',
+                            background: relacionesSaveStatus === 'no-changes' ? '#dcfce7' : '#f1f5f9',
+                            transition: 'all 0.3s'
+                          }}>
+                            {relacionesSaveStatus === 'saving' ? '⏳ Guardando...' : '✓ Guardado'}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          <option value="">Selecciona especie...</option>
+                          {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                        </select>
+                        <input type="text" id="motivoBen" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                        <button type="button" onClick={() => {
+                          const sel = document.getElementById('selBen') as HTMLSelectElement;
+                          const mot = document.getElementById('motivoBen') as HTMLInputElement;
+                          if (!sel.value) return;
+                          if (relaciones.beneficiosas.some((b: any) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
+                          const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                          const updated = {
+                            ...relaciones,
+                            beneficiosas: [...relaciones.beneficiosas, {
+                              xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
+                              especie_destino_nombre: sp?.especiesnombre,
+                              asociacionesbeneficiosasmotivo: mot.value
+                            }]
+                          };
+                          setRelaciones(updated);
+                          saveRelacionesNow(updated);
+                          sel.value = ''; mot.value = '';
+                        }} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {relaciones.beneficiosas.map((b: any, idx: number) => (
+                          <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                            <div><strong>{b.especie_destino_nombre}</strong></div>
+                            <input type="text" value={b.asociacionesbeneficiosasmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
+                              const updatedBen = relaciones.beneficiosas.map((bb: any, i: number) => i === idx ? { ...bb, asociacionesbeneficiosasmotivo: e.target.value } : bb);
+                              setRelaciones({ ...relaciones, beneficiosas: updatedBen });
+                              setRelacionesDirty(true);
+                            }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                            <button type="button" onClick={() => {
+                              const updated = { ...relaciones, beneficiosas: relaciones.beneficiosas.filter((_: any, i: number) => i !== idx) };
+                              setRelaciones(updated);
+                              saveRelacionesNow(updated);
+                            }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                          </li>
+                        ))}
+                        {relaciones.beneficiosas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones beneficiosas.</p>}
+                      </ul>
+                    </div>
+
+                    <div className="form-group full" style={{ marginTop: '20px' }}>
+                      <h4>Asociaciones Perjudiciales</h4>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <select id="selPer" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          <option value="">Selecciona especie...</option>
+                          {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                        </select>
+                        <input type="text" id="motivoPer" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                        <button type="button" onClick={() => {
+                          const sel = document.getElementById('selPer') as HTMLSelectElement;
+                          const mot = document.getElementById('motivoPer') as HTMLInputElement;
+                          if (!sel.value) return;
+                          if (relaciones.perjudiciales.some((p: any) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
+                          const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                          const updated = {
+                            ...relaciones,
+                            perjudiciales: [...relaciones.perjudiciales, {
+                              xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
+                              especie_destino_nombre: sp?.especiesnombre,
+                              asociacionesperjudicialesmotivo: mot.value
+                            }]
+                          };
+                          setRelaciones(updated);
+                          saveRelacionesNow(updated);
+                          sel.value = ''; mot.value = '';
+                        }} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {relaciones.perjudiciales.map((p: any, idx: number) => (
+                          <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                            <div><strong>{p.especie_destino_nombre}</strong></div>
+                            <input type="text" value={p.asociacionesperjudicialesmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
+                              const updatedPer = relaciones.perjudiciales.map((pp: any, i: number) => i === idx ? { ...pp, asociacionesperjudicialesmotivo: e.target.value } : pp);
+                              setRelaciones({ ...relaciones, perjudiciales: updatedPer });
+                              setRelacionesDirty(true);
+                            }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                            <button type="button" onClick={() => {
+                              const updated = { ...relaciones, perjudiciales: relaciones.perjudiciales.filter((_: any, i: number) => i !== idx) };
+                              setRelaciones(updated);
+                              saveRelacionesNow(updated);
+                            }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                          </li>
+                        ))}
+                        {relaciones.perjudiciales.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones perjudiciales.</p>}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* PLAGAS */}
+                {activeTab === 'plagas' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <h4>Plagas / Enfermedades Asociadas</h4>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                        <select id="selPla" style={{ flex: 1, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          <option value="">Selecciona plaga o enfermedad...</option>
+                          {masterPlagas.map(p => <option key={p.idplagas} value={p.idplagas}>{p.plagasnombre} ({p.plagastipo})</option>)}
+                        </select>
+                        <select id="riesgoPla" style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          <option value="baja">Riesgo Bajo</option>
+                          <option value="media">Riesgo Medio</option>
+                          <option value="alta">Riesgo Alto</option>
+                        </select>
+                        <input type="text" id="notasPla" placeholder="Notas (opcional)" style={{ flex: 2, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                        <button type="button" onClick={() => {
+                          const sel = document.getElementById('selPla') as HTMLSelectElement;
+                          const r = document.getElementById('riesgoPla') as HTMLSelectElement;
+                          const n = document.getElementById('notasPla') as HTMLInputElement;
+                          if (!sel.value) return;
+                          if (relaciones.plagas.some((p: any) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
+                          const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
+                          const updated = {
+                            ...relaciones,
+                            plagas: [...relaciones.plagas, {
+                              xespeciesplagasidplagas: parseInt(sel.value),
+                              plagasnombre: pla?.plagasnombre,
+                              plagastipo: pla?.plagastipo,
+                              especiesplagasnivelriesgo: r.value,
+                              especiesplagasnotasespecificas: n.value
+                            }]
+                          };
+                          setRelaciones(updated);
+                          saveRelacionesNow(updated);
+                          sel.value = ''; n.value = ''; r.value = 'media';
+                        }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {relaciones.plagas.map((p: any, idx: number) => (
+                          <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                            <div>
+                              <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span>
+                            </div>
+                            <select value={p.especiesplagasnivelriesgo || 'media'} onChange={(e) => {
+                              const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnivelriesgo: e.target.value } : pl);
+                              const updated = { ...relaciones, plagas: updatedPlagas };
+                              setRelaciones(updated);
+                              saveRelacionesNow(updated);
+                            }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
+                              <option value="baja">🟢 Riesgo Bajo</option>
+                              <option value="media">🟡 Riesgo Medio</option>
+                              <option value="alta">🔴 Riesgo Alto</option>
+                            </select>
+                            <input type="text" value={p.especiesplagasnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
+                              const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnotasespecificas: e.target.value } : pl);
+                              setRelaciones({ ...relaciones, plagas: updatedPlagas });
+                              setRelacionesDirty(true);
+                            }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                            <button type="button" onClick={() => {
+                              const updated = { ...relaciones, plagas: relaciones.plagas.filter((_: any, i: number) => i !== idx) };
+                              setRelaciones(updated);
+                              saveRelacionesNow(updated);
+                            }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                          </li>
+                        ))}
+                        {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+
+                {/* SINONIMOS */}
+                {activeTab === 'sinonimos' && (
+                  <div className="grid-form">
+                    <div className="form-group full" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h3 style={{ margin: 0 }}>Gestión de Sinónimos y Nombres Locales</h3>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={openSinonimosConfig}
+                          disabled={sinonimosAiLoading}
+                          style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer' }}
+                        >
+                          {sinonimosAiLoading ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.1rem' }}>⏳</span>
+                              Buscando... {sinonimosAiSeconds}s
+                            </span>
+                          ) : '✨ Proponer Sinónimos (IA)'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSinonimos([...sinonimos, { idespeciessinonimos: null, especiessinonimosnombre: '', xespeciessinonimosididiomas: '', xespeciessinonimosidpaises: '', especiessinonimosnotas: '' }]);
+                            setSinonimosDirty(true);
+                          }}
+                          style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          + Añadir Manualmente
+                        </button>
+                        {sinonimosDirty && (
+                          <button
+                            type="button"
+                            onClick={saveSinonimosNow}
+                            style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(16,185,129,0.4)' }}
+                          >
+                            💾 Guardar Cambios
+                          </button>
                         )}
                       </div>
                     </div>
+
+                    <div className="form-group full">
+                      {sinonimos.length === 0 && !sinonimosAiLoading ? (
+                        <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                          <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay sinónimos registrados.</p>
+                          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "Proponer Sinónimos" para que la Inteligencia Artificial busque por ti.</p>
+                        </div>
+                      ) : (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                          <thead>
+                            <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                              <th style={{ padding: '12px', textAlign: 'left', width: '30%' }}>Nombre / Sinónimo</th>
+                              <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Idioma</th>
+                              <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>País / Región</th>
+                              <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Notas</th>
+                              <th style={{ padding: '12px', textAlign: 'center', width: '10%' }}>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sinonimos.map((s, index) => (
+                              <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: s.idespeciessinonimos === null ? '#fefce8' : 'transparent' }}>
+                                <td style={{ padding: '8px' }}>
+                                  <input
+                                    type="text"
+                                    value={s.especiessinonimosnombre}
+                                    onChange={e => {
+                                      const newSin = [...sinonimos];
+                                      newSin[index].especiessinonimosnombre = e.target.value;
+                                      setSinonimos(newSin);
+                                      setSinonimosDirty(true);
+                                    }}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                    placeholder="Ej. Palta"
+                                  />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <select
+                                    value={s.xespeciessinonimosididiomas || ''}
+                                    onChange={e => {
+                                      const newSin = [...sinonimos];
+                                      newSin[index].xespeciessinonimosididiomas = e.target.value;
+                                      setSinonimos(newSin);
+                                      setSinonimosDirty(true);
+                                    }}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                  >
+                                    <option value="">-- Sin especificar --</option>
+                                    {masterIdiomas.map(i => (
+                                      <option key={i.ididiomas} value={i.ididiomas}>{i.idiomasnombre}</option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <select
+                                    value={s.xespeciessinonimosidpaises || ''}
+                                    onChange={e => {
+                                      const newSin = [...sinonimos];
+                                      newSin[index].xespeciessinonimosidpaises = e.target.value;
+                                      setSinonimos(newSin);
+                                      setSinonimosDirty(true);
+                                    }}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                  >
+                                    <option value="">-- Sin especificar --</option>
+                                    {masterPaises.map(p => (
+                                      <option key={p.idpaises} value={p.idpaises}>{p.paisesnombre}</option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <input
+                                    type="text"
+                                    value={s.especiessinonimosnotas || ''}
+                                    onChange={e => {
+                                      const newSin = [...sinonimos];
+                                      newSin[index].especiessinonimosnotas = e.target.value;
+                                      setSinonimos(newSin);
+                                      setSinonimosDirty(true);
+                                    }}
+                                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                    placeholder="Notas opcionales"
+                                  />
+                                </td>
+                                <td style={{ padding: '8px', textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const sinToDelete = sinonimos[index];
+                                      const newSin = [...sinonimos];
+                                      newSin.splice(index, 1);
+                                      setSinonimos(newSin);
+                                      // Auto-borrar de la BD si ya estaba guardado
+                                      if (sinToDelete.idespeciessinonimos && especieId) {
+                                        try {
+                                          await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
+                                        } catch (err) {
+                                          console.error('Error borrando sinónimo:', err);
+                                        }
+                                      }
+                                    }}
+                                    style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                                  >
+                                    🗑️
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* BLOGS */}
+                {activeTab === 'blogs' && (
+                  <div className="grid-form">
+                    <div className="form-group full">
+                      <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
+                        <span style={{ margin: 0 }}>Artículos del Blog generados para esta Especie</span>
+                      </label>
+                      {blogs.length === 0 ? (
+                        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '30px', textAlign: 'center', borderRadius: '12px', color: '#64748b' }}>
+                          No hay ningún artículo generado para esta especie.<br /><br />
+                          <button type="button" onClick={() => setActiveTab('adjuntos')} style={{ background: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                            Ir a Adjuntos para generar uno a partir de un PDF
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                          {blogs.map(b => {
+                            const linkedPdf = b.pdfSourceId ? pdfs.find((p: any) => p.id === b.pdfSourceId) : null;
+                            return (
+                              <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', flexDirection: 'column' }}>
+                                {b.hero_imagen ? (
+                                  <img src={getMediaUrl(b.hero_imagen)} alt={b.hero_imagen_alt || b.titulo} style={{ width: '100%', height: '140px', objectFit: 'cover' }} crossOrigin="anonymous" />
+                                ) : (
+                                  <div style={{ width: '100%', height: '140px', background: 'linear-gradient(135deg, #0f766e, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3rem' }}>📝</div>
+                                )}
+                                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                  <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: '#1e293b', lineHeight: 1.3 }}>{b.titulo}</h3>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px', fontSize: '0.75rem', color: '#64748b' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>✍️ {b.autor}</span>
+                                    <span>•</span>
+                                    <span>{b.fechaCreacion ? new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Sin fecha'}</span>
+                                    <span style={{ marginLeft: 'auto', background: b.estado === 'publicado' ? '#dcfce7' : '#fef3c7', color: b.estado === 'publicado' ? '#166534' : '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase' }}>{b.estado}</span>
+                                  </div>
+                                  <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
+                                    {b.resumen}
+                                  </p>
+
+                                  {/* PDF asociado */}
+                                  <div style={{ marginBottom: '12px', padding: '8px 10px', background: linkedPdf ? '#ecfdf5' : '#f8fafc', border: `1px solid ${linkedPdf ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: '6px', fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {linkedPdf ? (
+                                      <a href={getMediaUrl(linkedPdf.ruta)} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#0f766e', fontWeight: 600 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                                        📄 {linkedPdf.titulo || linkedPdf.nombreOriginal}
+                                      </a>
+                                    ) : (
+                                      <span style={{ color: '#94a3b8' }}>Sin PDF de origen vinculado</span>
+                                    )}
+                                  </div>
+
+                                  {/* Acciones */}
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ textAlign: 'center', background: '#f1f5f9', color: '#0f766e', textDecoration: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #cbd5e1', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
+                                      👁️
+                                    </a>
+                                    <a href={`/dashboard/admin/blog/${b.id}`} style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', textDecoration: 'none', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #bfdbfe', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'} onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}>
+                                      ✏️ Editar
+                                    </a>
+                                    <button type="button" onClick={async () => {
+                                      if (!confirm(`¿Estás seguro de que quieres eliminar el blog "${b.titulo}"? Esta acción no se puede deshacer.`)) return;
+                                      try {
+                                        const res = await fetch(`/api/admin/blog/${b.id}`, { method: 'DELETE' });
+                                        const data = await res.json();
+                                        if (data.success) {
+                                          setBlogs(prev => prev.filter(x => x.id !== b.id));
+                                        } else {
+                                          alert(data.error || 'Error al eliminar');
+                                        }
+                                      } catch (e) { alert('Error de red al eliminar blog'); }
+                                    }} style={{ padding: '8px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; }}>
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ADJUNTOS */}
+                {activeTab === 'adjuntos' && (
+                  <div>
+                    {!especieId ? (
+                      <p>Guarda la especie primero para subir archivos adjuntos.</p>
+                    ) : (
+                      <div className="grid-form">
+                        <div className="form-group full">
+                          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              Fotos
+                              {photos.length > 1 && (
+                                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 'normal', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '2px 7px', letterSpacing: '0.01em' }}>
+                                  ✥ Arrastra para cambiar el orden
+                                </span>
+                              )}
+                            </span>
+                            <small style={{ color: photos.length >= 4 ? '#ef4444' : '#64748b' }}>
+                              {photos.length} / 4 permitidas
+                            </small>
+                          </label>
+                          <div className="gallery">
+                            {photos.map((p, index) => {
+                              const isLocked = index >= 4;
+                              let meta: any = {};
+                              try { meta = JSON.parse(p.resumen || '{}'); } catch (e) { }
+
+                              let baseFilter = isLocked ? 'grayscale(100%) blur(2px)' : (meta.profile_style ? STYLE_FILTERS[meta.profile_style] : 'none');
+                              if (!isLocked && (meta.profile_brightness !== undefined || meta.profile_contrast !== undefined)) {
+                                baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
+                              }
+
+                              const imgStyle: any = {
+                                filter: baseFilter,
+                                objectFit: 'cover',
+                                objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
+                              };
+
+                              const isDragging = draggedPhotoIndex === index;
+                              const isDragOver = draggedOverPhotoIndex === index;
+
+                              return (
+                                <div
+                                  key={p.id}
+                                  className={`gallery-item ${p.esPrincipal ? 'is-preferred' : ''}`}
+                                  style={{
+                                    opacity: isDragging ? 0.5 : 1,
+                                    border: isDragOver ? '2px dashed #10b981' : undefined,
+                                    transform: isDragOver ? 'scale(1.02)' : 'none',
+                                    transition: 'all 0.2s ease',
+                                    cursor: 'grab',
+                                    backgroundColor: meta.dominant_color || '#f1f5f9',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                  }}
+                                  draggable
+                                  onDragStart={() => setDraggedPhotoIndex(index)}
+                                  onDragEnter={() => setDraggedPhotoIndex !== null && setDraggedOverPhotoIndex(index)}
+                                  onDragEnd={() => {
+                                    if (draggedPhotoIndex !== null && draggedOverPhotoIndex !== null && draggedPhotoIndex !== draggedOverPhotoIndex) {
+                                      const newPhotos = [...photos];
+                                      const [draggedItem] = newPhotos.splice(draggedPhotoIndex, 1);
+                                      newPhotos.splice(draggedOverPhotoIndex, 0, draggedItem);
+
+                                      // Guardar estado original
+                                      const wasAlreadyPrimary = draggedItem.esPrincipal === 1;
+
+                                      // Si se arrastra a la primera posición, marcarla como principal localmente
+                                      if (draggedOverPhotoIndex === 0) {
+                                        newPhotos.forEach(p => p.esPrincipal = (p.id === draggedItem.id ? 1 : 0));
+                                      }
+
+                                      handleReorderPhotos(newPhotos);
+
+                                      // Si cayó en la primera posición y no era la principal, actualizar en servidor
+                                      if (draggedOverPhotoIndex === 0 && !wasAlreadyPrimary) {
+                                        handleSetPrimaryPhoto(draggedItem.id);
+                                      }
+                                    }
+                                    setDraggedPhotoIndex(null);
+                                    setDraggedOverPhotoIndex(null);
+                                  }}
+                                  onDragOver={(e) => e.preventDefault()}
+                                >
+                                  {meta.blurhash && (
+                                    <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+                                      <Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} />
+                                    </div>
+                                  )}
+                                  <img
+                                    src={getMediaUrl(p.ruta)}
+                                    alt={meta.seo_alt || 'foto especie'}
+                                    loading="lazy"
+                                    style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}
+                                    draggable={false}
+                                    crossOrigin="anonymous" />
+                                  {meta.exif_data && (
+                                    <div style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', cursor: 'help', zIndex: 10 }} title={`Cámara: ${meta.exif_data.make || ''} ${meta.exif_data.model || ''}\nFecha: ${meta.exif_data.date ? new Date(meta.exif_data.date).toLocaleDateString() : 'Desconocida'}`}>
+                                      ℹ️
+                                    </div>
+                                  )}
+                                  {isLocked && (
+                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)', zIndex: 10, background: 'rgba(0,0,0,0.4)' }}>
+                                      <span style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🔒</span>
+                                      <small style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '0.65rem' }}>Excede límite</small>
+                                    </div>
+                                  )}
+                                  <div className="photo-actions" style={{ zIndex: 20 }}>
+                                    <button
+                                      type="button"
+                                      className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`}
+                                      onClick={() => handleSetPrimaryPhoto(p.id)}
+                                      title={p.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
+                                    >{p.esPrincipal ? '★' : '☆'}</button>
+                                    <button
+                                      type="button"
+                                      className="photo-action-btn btn-photo-edit"
+                                      onClick={() => openPhotoEditor(p)}
+                                      title="Editar foto"
+                                    >✏️</button>
+                                    <button type="button" className="photo-action-btn btn-photo-delete" onClick={() => handleDeleteFile(p.id, 'photos')} title="Eliminar">✕</button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {photos.length >= 4 ? null : (
+                              <div
+                                className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
+                                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverPhotos(false);
+                                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                    handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
+                                  }
+                                }}
+                              >
+                                <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
+                                <input type="file" id="upload-camera" accept="image/*" capture="environment" onChange={(e) => handleFileUpload(e, 'photos')} style={{ display: 'none' }} disabled={uploadingPhotos} />
+
+                                {uploadingPhotos ? (
+                                  <div className="drop-zone-content">
+                                    <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                                    <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Procesando...</span>
+                                    <span className="drop-hint" style={{ color: '#059669', fontSize: '0.65rem' }}>IA analizando</span>
+                                  </div>
+                                ) : (
+                                  <div className="drop-zone-content">
+                                    <div className="drop-zone-buttons" style={{ flexDirection: 'column' }}>
+                                      <label htmlFor="upload-photos" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
+                                        <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📁</span> Galería
+                                      </label>
+                                      <label htmlFor="upload-camera" className="btn-upload secondary mobile-only" style={{ padding: '8px', fontSize: '0.8rem' }}>
+                                        <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📷</span> Cámara
+                                      </label>
+                                      <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
+                                        <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>✨</span> Generar IA
+                                      </button>
+                                    </div>
+                                    <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br />aquí</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="form-group full">
+                          <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ margin: 0 }}>Documentos Adicionales (PDF)</span>
+                            <button type="button" onClick={() => setShowPdfSearchModal(true)} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)', margin: 0 }}>
+                              ✨ Buscar PDFs con IA
+                            </button>
+                          </label>
+                          <div className="gallery pdfs">
+                            {pdfs.map(p => (
+                              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {/* Cuadro de portada — solo la foto */}
+                                <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
+                                  {p.portada ? (
+                                    <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
+                                  ) : (
+                                    <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Botones superpuestos en la foto */}
+                                  <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+                                    <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
+                                    {(p.hasBlog || blogs.some(b => b.pdfSourceId == p.id)) ? (
+                                      <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
+                                    ) : (
+                                      <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Título como hipervínculo debajo del cuadro */}
+                                <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                                  📄 {p.titulo || p.nombreOriginal}
+                                </a>
+
+                                {/* Botón generar blog debajo del título */}
+                                <button type="button" onClick={() => setBlogGenPdf(p)} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', alignSelf: 'center', boxShadow: '0 2px 4px rgba(245,158,11,0.3)' }}>
+                                  📝 Generar Blog
+                                </button>
+
+                                {/* Blogs relacionados a este PDF */}
+                                {blogs.filter(b => b.pdfSourceId == p.id).length > 0 && (
+                                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>Blogs Generados</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {blogs.filter(b => b.pdfSourceId == p.id).map(b => (
+                                        <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
+                                          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                            {b.hero_imagen ? (
+                                              <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
+                                                <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                                              </div>
+                                            ) : (
+                                              <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
+                                            )}
+                                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                              <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                                                {b.titulo}
+                                              </a>
+                                            </div>
+                                          </div>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '46px' }}>
+                                            <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
+                                              {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
+                                            </span>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                              <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
+                                                {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                              </span>
+                                              <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
+                                                🗑️
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+
+                            <div
+                              className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
+                              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
+                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
+                              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(false); }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverPdfs(false);
+                                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                  handleFileUpload({ target: { files: e.dataTransfer.files } }, 'pdfs');
+                                }
+                              }}
+                            >
+                              <input type="file" id="upload-pdfs" multiple accept=".pdf" onChange={(e) => handleFileUpload(e, 'pdfs')} disabled={uploadingPdfs} />
+
+                              {uploadingPdfs ? (
+                                <div className="drop-zone-content">
+                                  <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                                  <span style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Subiendo...</span>
+                                </div>
+                              ) : (
+                                <div className="drop-zone-content">
+                                  <label htmlFor="upload-pdfs" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
+                                    <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📄</span> Subir PDF
+                                  </label>
+                                  <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br />aquí</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
 
+                  </div>
+                )}
+
+              </div>
             </div>
           )}
 
-        </div>
+          <div className="form-footer">
+            {hasChanges && (
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-save"
+              >
+                {loading ? 'Guardando...' : 'Guardar Especie'}
+              </button>
+            )}
           </div>
-        )}
-
-        <div className="form-footer">
-          {hasChanges && (
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="btn-save"
-            >
-              {loading ? 'Guardando...' : 'Guardar Especie'}
-            </button>
-          )}
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
 
       {/* MODAL DE COMPARACIÓN IA */}
       {showAiModal && aiProposal && (
@@ -3054,10 +3063,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               <h2>✨ Revisión de Inteligencia Artificial</h2>
               <button className="btn-close-modal" onClick={() => setShowAiModal(false)}>✖ Cerrar</button>
             </div>
-            
+
             <div className="ai-modal-body">
               <p style={{ marginBottom: '20px', color: '#475569' }}>
-                La IA ha sugerido los siguientes datos. Revisa cada bloque y asimila los cambios propuestos donde estés de acuerdo. 
+                La IA ha sugerido los siguientes datos. Revisa cada bloque y asimila los cambios propuestos donde estés de acuerdo.
                 Los datos que difieren de tu versión actual están resaltados.
               </p>
 
@@ -3071,23 +3080,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 return (
                   <div key={group.id} className="ai-group-section">
                     <div className="ai-group-header">
-                      <h3>{group.title} {hasDifferences && <span style={{fontSize:'0.8rem', background:'#fef08a', color: '#854d0e', padding:'2px 8px', borderRadius:'12px', marginLeft:'10px'}}>Cambios detectados</span>}</h3>
+                      <h3>{group.title} {hasDifferences && <span style={{ fontSize: '0.8rem', background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', marginLeft: '10px' }}>Cambios detectados</span>}</h3>
                       <button type="button" className="btn-assimilate-group" onClick={() => assimilateGroup(group.keys)}>
                         ✨ Asimilar este bloque
                       </button>
                     </div>
-                    
+
                     <div className="ai-comparison-grid header">
                       <div>Campo</div>
                       <div>Valor Actual</div>
                       <div>Propuesta IA</div>
                     </div>
-                    
+
                     {group.keys.map(k => {
                       const currentVal = formData[k] != null ? String(formData[k]) : '';
                       const aiVal = aiProposal[k] != null ? String(aiProposal[k]) : '';
                       if (!aiVal) return null;
-                      
+
                       const isDifferent = currentVal !== aiVal;
                       const displayCurrent = Array.isArray(formData[k]) ? formData[k].join(', ') : currentVal;
                       const displayAi = Array.isArray(aiProposal[k]) ? aiProposal[k].join(', ') : aiVal;
@@ -3095,7 +3104,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       return (
                         <div key={k} className={`ai-comparison-grid ${isDifferent ? 'ai-row-diff' : 'ai-row-same'}`}>
                           <div style={{ fontWeight: '600', color: '#475569' }}>{(group.labels as any)[k]}</div>
-                          <div style={{ color: '#64748b' }}>{displayCurrent || <em style={{opacity:0.5}}>Vacío</em>}</div>
+                          <div style={{ color: '#64748b' }}>{displayCurrent || <em style={{ opacity: 0.5 }}>Vacío</em>}</div>
                           <div>
                             <span className={isDifferent ? 'ai-value-changed' : ''}>
                               {displayAi} {isDifferent && ' ✨'}
@@ -3130,18 +3139,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
                                 <input type="checkbox" checked={isChecked} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({...p, ben: [...p.ben, item]}));
-                                  else setSelectedRels(p => ({...p, ben: p.ben.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name)}));
+                                  if (e.target.checked) setSelectedRels(p => ({ ...p, ben: [...p.ben, item] }));
+                                  else setSelectedRels(p => ({ ...p, ben: p.ben.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
                                 }} style={{ width: '16px', height: '16px', accentColor: '#10b981', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <div><span style={{fontWeight: 'bold'}}>{name}</span>{motivo ? <span style={{color: '#64748b', fontSize: '0.85rem'}}> — {motivo}</span> : ''} {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}</div>
+                                <div><span style={{ fontWeight: 'bold' }}>{name}</span>{motivo ? <span style={{ color: '#64748b', fontSize: '0.85rem' }}> — {motivo}</span> : ''} {exists ? <small style={{ color: '#64748b' }}>(Existente)</small> : <small style={{ color: '#f59e0b' }}>(Se creará inactiva)</small>}</div>
                               </li>
                             );
                           })}
                         </ul>
                       </div>
                     )}
-                    
+
                     {aiProposal.asociaciones_perjudiciales?.length > 0 && (
                       <div style={{ marginBottom: '15px' }}>
                         <h4 style={{ color: '#ef4444', marginBottom: '5px' }}>Perjudiciales</h4>
@@ -3155,11 +3164,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
                                 <input type="checkbox" checked={isChecked} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({...p, per: [...p.per, item]}));
-                                  else setSelectedRels(p => ({...p, per: p.per.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name)}));
+                                  if (e.target.checked) setSelectedRels(p => ({ ...p, per: [...p.per, item] }));
+                                  else setSelectedRels(p => ({ ...p, per: p.per.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
                                 }} style={{ width: '16px', height: '16px', accentColor: '#ef4444', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <div><span style={{fontWeight: 'bold'}}>{name}</span>{motivo ? <span style={{color: '#64748b', fontSize: '0.85rem'}}> — {motivo}</span> : ''} {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}</div>
+                                <div><span style={{ fontWeight: 'bold' }}>{name}</span>{motivo ? <span style={{ color: '#64748b', fontSize: '0.85rem' }}> — {motivo}</span> : ''} {exists ? <small style={{ color: '#64748b' }}>(Existente)</small> : <small style={{ color: '#f59e0b' }}>(Se creará inactiva)</small>}</div>
                               </li>
                             );
                           })}
@@ -3180,11 +3189,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
                                 <input type="checkbox" checked={isChecked} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({...p, pla: [...p.pla, item]}));
-                                  else setSelectedRels(p => ({...p, pla: p.pla.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name)}));
+                                  if (e.target.checked) setSelectedRels(p => ({ ...p, pla: [...p.pla, item] }));
+                                  else setSelectedRels(p => ({ ...p, pla: p.pla.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
                                 }} style={{ width: '16px', height: '16px', accentColor: '#f97316', cursor: 'pointer' }} />
                                 <span>{exists ? '✅' : '➕'}</span>
-                                <div><span style={{fontWeight: 'bold'}}>{name}</span>{notas ? <span style={{color: '#64748b', fontSize: '0.85rem'}}> — {notas}</span> : ''} {exists ? <small style={{color: '#64748b'}}>(Existente)</small> : <small style={{color: '#f59e0b'}}>(Se creará inactiva)</small>}</div>
+                                <div><span style={{ fontWeight: 'bold' }}>{name}</span>{notas ? <span style={{ color: '#64748b', fontSize: '0.85rem' }}> — {notas}</span> : ''} {exists ? <small style={{ color: '#64748b' }}>(Existente)</small> : <small style={{ color: '#f59e0b' }}>(Se creará inactiva)</small>}</div>
                               </li>
                             );
                           })}
@@ -3221,9 +3230,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
                   if (currentState !== editorInitialState) {
                     return (
-                      <button 
-                        type="button" 
-                        onClick={savePhotoEdits} 
+                      <button
+                        type="button"
+                        onClick={savePhotoEdits}
                         className={`btn-primary ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
                         style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
                         disabled={photoEditorSaveStatus === 'saving'}
@@ -3239,12 +3248,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
             <div className="photo-editor-body">
               <div className="photo-editor-preview-container"
-                   onMouseDown={onEditorMouseDown}
-                   onTouchStart={onEditorTouchStart}
-                   onTouchMove={onEditorTouchMove}>
+                onMouseDown={onEditorMouseDown}
+                onTouchStart={onEditorTouchStart}
+                onTouchMove={onEditorTouchMove}>
                 <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
-                  <img 
-                    src={getMediaUrl(editingPhoto.ruta)} 
+                  <img
+                    src={getMediaUrl(editingPhoto.ruta)}
                     alt="preview"
                     className="photo-editor-image"
                     draggable="false"
@@ -3254,7 +3263,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       transform: `scale(${editorZoom / 100})`,
                       filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
                     }}
-                   crossOrigin="anonymous" />
+                    crossOrigin="anonymous" />
                 </div>
                 <div className="photo-editor-hint">
                   <span>Arrastra para encuadrar</span>
@@ -3283,10 +3292,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </div>
                   <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
                 </div>
-                
+
                 <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => {
                       setEditorBrightness(110);
                       setEditorContrast(115);
@@ -3310,8 +3319,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   >
                     ✨ Auto Color
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => {
                       setEditorBrightness(100);
                       setEditorContrast(100);
@@ -3337,13 +3346,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     ↺ Reset
                   </button>
                 </div>
-                
+
                 <div className="editor-control-group" style={{ marginBottom: '15px' }}>
                   <label>
                     <span className="control-label">🎨 Estilos y Filtros de IA</span>
                   </label>
-                  <select 
-                    value={editorStyle} 
+                  <select
+                    value={editorStyle}
                     onChange={e => setEditorStyle(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
                   >
@@ -3358,13 +3367,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <option value="watercolor">Acuarela (Suave)</option>
                   </select>
                 </div>
-                
+
                 <div className="editor-control-group">
                   <label><span className="control-label">🏷️ Descripción SEO (Alt Text)</span></label>
-                  <input 
-                    type="text" 
-                    value={editorSeoAlt} 
-                    onChange={e => setEditorSeoAlt(e.target.value)} 
+                  <input
+                    type="text"
+                    value={editorSeoAlt}
+                    onChange={e => setEditorSeoAlt(e.target.value)}
                     placeholder="Ej. Tomates cherry maduros en la planta"
                     style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.9rem' }}
                   />
@@ -3380,101 +3389,101 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         </div>
       )}
       {editingPdf && (() => {
-        const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') || 
-                              pdfSummary !== (editingPdf.resumen || '') || 
-                              pdfApuntes !== (editingPdf.apuntes || '');
+        const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') ||
+          pdfSummary !== (editingPdf.resumen || '') ||
+          pdfApuntes !== (editingPdf.apuntes || '');
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-          onClick={() => setEditingPdf(null)}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-              <div>
-                <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  📄 Editar Metadatos del PDF
-                </h3>
-                <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  🌱 Especie: {formData.especiesnombre || 'Sin nombre'}
-                </span>
-              </div>
-              <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
-              {/* Columna Izquierda: Portada */}
-              <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {editingPdf.portada ? (
-                    <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
-                  ) : (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
-                      <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>
-                      <p style={{ margin: 0, fontSize: '0.9rem' }}>Sin portada generada</p>
-                    </div>
-                  )}
+            onClick={() => setEditingPdf(null)}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📄 Editar Metadatos del PDF
+                  </h3>
+                  <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                    🌱 Especie: {formData.especiesnombre || 'Sin nombre'}
+                  </span>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    generatePdfCover({ ...editingPdf, titulo: pdfTitle, resumen: pdfSummary }); 
-                  }} 
-                  disabled={generatingCoverId === editingPdf.id}
-                  style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: generatingCoverId === editingPdf.id ? 'wait' : 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
-                >
-                  {generatingCoverId === editingPdf.id ? '⏳ Generando...' : (editingPdf.portada ? '✨ Regenerar Portada IA' : '✨ Generar Portada IA')}
-                </button>
+                <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
               </div>
 
-              {/* Columna Derecha: Formulario */}
-              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
-                  <input 
-                    type="text" 
-                    value={pdfTitle} 
-                    onChange={e => setPdfTitle(e.target.value)} 
-                    placeholder={editingPdf.nombreOriginal}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
-                  />
+              <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
+                {/* Columna Izquierda: Portada */}
+                <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {editingPdf.portada ? (
+                      <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                    ) : (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+                        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>
+                        <p style={{ margin: 0, fontSize: '0.9rem' }}>Sin portada generada</p>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      generatePdfCover({ ...editingPdf, titulo: pdfTitle, resumen: pdfSummary });
+                    }}
+                    disabled={generatingCoverId === editingPdf.id}
+                    style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: generatingCoverId === editingPdf.id ? 'wait' : 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                  >
+                    {generatingCoverId === editingPdf.id ? '⏳ Generando...' : (editingPdf.portada ? '✨ Regenerar Portada IA' : '✨ Generar Portada IA')}
+                  </button>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
-                  <textarea 
-                    value={pdfSummary} 
-                    onChange={e => setPdfSummary(e.target.value)} 
-                    placeholder="Describe brevemente el documento (1-2 líneas)..."
-                    rows={3}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
-                  />
-                </div>
-                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🎓 Apuntes (Modo Estudiante)
-                  </label>
-                  <textarea 
-                    value={pdfApuntes} 
-                    onChange={e => setPdfApuntes(e.target.value)} 
-                    placeholder="Apuntes técnicos detallados extraídos del PDF..."
-                    style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', flexGrow: 1, minHeight: '120px' }}
-                  />
+
+                {/* Columna Derecha: Formulario */}
+                <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
+                    <input
+                      type="text"
+                      value={pdfTitle}
+                      onChange={e => setPdfTitle(e.target.value)}
+                      placeholder={editingPdf.nombreOriginal}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
+                    <textarea
+                      value={pdfSummary}
+                      onChange={e => setPdfSummary(e.target.value)}
+                      placeholder="Describe brevemente el documento (1-2 líneas)..."
+                      rows={3}
+                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
+                    />
+                  </div>
+                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🎓 Apuntes (Modo Estudiante)
+                    </label>
+                    <textarea
+                      value={pdfApuntes}
+                      onChange={e => setPdfApuntes(e.target.value)}
+                      placeholder="Apuntes técnicos detallados extraídos del PDF..."
+                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', flexGrow: 1, minHeight: '120px' }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-              <button type="button" onClick={() => setEditingPdf(null)}
-                style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
-                Cancelar
-              </button>
-              {hasPdfChanges && (
-                <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
-                  style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Metadatos'}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                <button type="button" onClick={() => setEditingPdf(null)}
+                  style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  Cancelar
                 </button>
-              )}
+                {hasPdfChanges && (
+                  <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
+                    style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Metadatos'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         );
       })()}
       {showPdfSearchModal && (
@@ -3490,23 +3499,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             </div>
 
 
-          {/* SINÓNIMOS (Inteligencia Artificial) */}
+            {/* SINÓNIMOS (Inteligencia Artificial) */}
             <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569' }}>
               Dile a la Inteligencia Artificial qué tipo de documento necesitas buscar sobre <strong>{formData.especiesnombre}</strong> (ej. <em>"poda"</em>, <em>"plagas INTA"</em>, <em>"guía de cultivo"</em>).
             </p>
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" 
-                value={pdfSearchTopic} 
-                onChange={e => setPdfSearchTopic(e.target.value)} 
+              <input
+                type="text"
+                value={pdfSearchTopic}
+                onChange={e => setPdfSearchTopic(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchPdfs()}
                 placeholder="Ej. enfermedades comunes..."
                 style={{ flex: 1, padding: '12px', border: '2px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none' }}
               />
-              <button 
-                type="button" 
-                onClick={handleSearchPdfs} 
+              <button
+                type="button"
+                onClick={handleSearchPdfs}
                 disabled={pdfSearchLoading || !pdfSearchTopic}
                 style={{ padding: '0 20px', borderRadius: '8px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: pdfSearchLoading ? 'wait' : 'pointer', transition: 'all 0.2s', opacity: (pdfSearchLoading || !pdfSearchTopic) ? 0.7 : 1 }}
               >
@@ -3577,10 +3586,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#92400e', wordBreak: 'break-word' }}>{blogGenPdf.titulo || blogGenPdf.nombreOriginal}</div>
                 </div>
               </div>
-              
+
               <div className="form-group full">
                 <label>Instrucciones de estilo y enfoque (Prompt)</label>
-                <textarea 
+                <textarea
                   value={blogGenInstructions}
                   onChange={(e) => setBlogGenInstructions(e.target.value)}
                   style={{ width: '100%', minHeight: '100px', padding: '12px', border: '2px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem', resize: 'vertical' }}
@@ -3630,9 +3639,9 @@ JSON de salida obligatorio:
                   <style>{`@keyframes progress { 0% { width: 0%; } 100% { width: 95%; } }`}</style>
                 </div>
               ) : (
-                <button 
-                  type="button" 
-                  onClick={submitBlogGen} 
+                <button
+                  type="button"
+                  onClick={submitBlogGen}
                   style={{ padding: '12px', borderRadius: '8px', border: 'none', background: '#f59e0b', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '10px' }}
                 >
                   🚀 ¡Crear Artículo Ahora!
@@ -3646,8 +3655,8 @@ JSON de salida obligatorio:
       {/* ── SECCIÓN: PAUTAS DE LABORES ── */}
       <div className="especie-form-container" style={{ marginTop: '24px' }}>
         <div className="especie-form-body">
-          <div 
-            className="collapsible-header" 
+          <div
+            className="collapsible-header"
             onClick={() => setIsPautasOpen(!isPautasOpen)}
             style={{ padding: '15px 24px', background: '#e2e8f0', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
@@ -3659,8 +3668,8 @@ JSON de salida obligatorio:
             <div className="collapsible-content">
               <div style={{ background: '#f8fafc', padding: '24px', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '20px' }}>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => {
                       setShowPautasConfig(true);
                       setPautasConfigPromptOpen(false);
@@ -3688,9 +3697,9 @@ JSON de salida obligatorio:
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px', marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Labor *</label>
-                        <select 
-                          value={pautaForm.xlaborespautaidlabores} 
-                          onChange={e => setPautaForm({...pautaForm, xlaborespautaidlabores: e.target.value})}
+                        <select
+                          value={pautaForm.xlaborespautaidlabores}
+                          onChange={e => setPautaForm({ ...pautaForm, xlaborespautaidlabores: e.target.value })}
                           style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                         >
                           <option value="">Selecciona labor...</option>
@@ -3701,9 +3710,9 @@ JSON de salida obligatorio:
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Fase de la Planta *</label>
-                        <select 
-                          value={pautaForm.laborespautafase} 
-                          onChange={e => setPautaForm({...pautaForm, laborespautafase: e.target.value})}
+                        <select
+                          value={pautaForm.laborespautafase}
+                          onChange={e => setPautaForm({ ...pautaForm, laborespautafase: e.target.value })}
                           style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                         >
                           <option value="siembra">1. Siembra a Germinación</option>
@@ -3719,39 +3728,39 @@ JSON de salida obligatorio:
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Frecuencia (días)</label>
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           min="1"
                           placeholder="Ej: 3"
-                          value={pautaForm.laborespautafrecuenciadias} 
-                          onChange={e => setPautaForm({...pautaForm, laborespautafrecuenciadias: e.target.value})}
+                          value={pautaForm.laborespautafrecuenciadias}
+                          onChange={e => setPautaForm({ ...pautaForm, laborespautafrecuenciadias: e.target.value })}
                           style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                         />
                       </div>
                       <div style={{ gridColumn: '1 / -1' }}>
                         <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Notas de la IA / Instrucciones</label>
-                        <textarea 
+                        <textarea
                           rows={2}
                           placeholder="Ej: Mantener humedad constante sin encharcar..."
-                          value={pautaForm.laborespautanotasia} 
-                          onChange={e => setPautaForm({...pautaForm, laborespautanotasia: e.target.value})}
+                          value={pautaForm.laborespautanotasia}
+                          onChange={e => setPautaForm({ ...pautaForm, laborespautanotasia: e.target.value })}
                           style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                         />
                       </div>
                       <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}>
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={pautaForm.laborespautaactivosino === 1}
-                            onChange={e => setPautaForm({...pautaForm, laborespautaactivosino: e.target.checked ? 1 : 0})}
+                            onChange={e => setPautaForm({ ...pautaForm, laborespautaactivosino: e.target.checked ? 1 : 0 })}
                           />
                           Pauta Activa
                         </label>
 
                         <div style={{ display: 'flex', gap: '10px' }}>
                           {editingPauta && (
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => {
                                 setEditingPauta(null);
                                 setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1 });
@@ -3761,8 +3770,8 @@ JSON de salida obligatorio:
                               Cancelar
                             </button>
                           )}
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={handleSavePauta}
                             style={{ padding: '8px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
                           >
@@ -3806,7 +3815,7 @@ JSON de salida obligatorio:
                                       laborespautaactivosino: p.laborespautaactivosino
                                     });
                                   }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', marginRight: '8px' }}>✏️</button>
-                                  
+
                                   {pautaDeleteConfirm === p.idlaborespauta ? (
                                     <>
                                       <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px', marginRight: '4px' }}>✓</button>
@@ -3869,7 +3878,7 @@ JSON de salida obligatorio:
               </div>
               <button onClick={() => setShowAiImageModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
             </div>
-            
+
             <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {!aiImageResult ? (
                 <>
@@ -3877,8 +3886,8 @@ JSON de salida obligatorio:
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
                       Contexto de la foto deseada
                     </label>
-                    <textarea 
-                      value={aiImageConcept} 
+                    <textarea
+                      value={aiImageConcept}
                       onChange={e => { setAiImageConcept(e.target.value); if (!aiImagePromptEdited) setAiImagePromptPreview(buildPromptPreview()); }}
                       placeholder="Ej. Fotografía macro de las hojas con rocío de la mañana..."
                       rows={3}
@@ -3897,7 +3906,7 @@ JSON de salida obligatorio:
                         "En la tabla de cocina preparándolo para crear un plato",
                         "Como plato precocinado"
                       ].map(preset => (
-                        <button 
+                        <button
                           key={preset}
                           type="button"
                           onClick={() => { setAiImageConcept(preset); if (!aiImagePromptEdited) setAiImagePromptPreview(buildPromptPreview()); }}
@@ -3939,18 +3948,18 @@ JSON de salida obligatorio:
                     </div>
                   </details>
 
-                  <button 
-                    type="button" 
-                    onClick={generateAiImage} 
+                  <button
+                    type="button"
+                    onClick={generateAiImage}
                     disabled={aiImageLoading}
-                    style={{ 
-                      padding: '14px', 
-                      borderRadius: '12px', 
-                      border: 'none', 
-                      background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
-                      color: 'white', 
-                      fontWeight: 'bold', 
-                      fontSize: '1rem', 
+                    style={{
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '1rem',
                       cursor: aiImageLoading ? 'not-allowed' : 'pointer',
                       opacity: aiImageLoading ? 0.7 : 1,
                       marginTop: '10px'
@@ -3964,18 +3973,18 @@ JSON de salida obligatorio:
                   <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
                     <img src={aiImageResult} alt="Generated by AI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  
+
                   <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => setAiImageResult(null)} 
+                    <button
+                      type="button"
+                      onClick={() => setAiImageResult(null)}
                       style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                       Descartar y Reintentar
                     </button>
-                    <button 
-                      type="button" 
-                      onClick={uploadAiImage} 
+                    <button
+                      type="button"
+                      onClick={uploadAiImage}
                       disabled={uploadingPhotos}
                       style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: uploadingPhotos ? 'not-allowed' : 'pointer', opacity: uploadingPhotos ? 0.7 : 1 }}
                     >
@@ -3989,188 +3998,188 @@ JSON de salida obligatorio:
         </div>
       )}
 
-        {/* SINÓNIMOS AI CONFIG PANEL */}
-        {showSinonimosConfig && (
-          <div className="ai-modal-overlay">
-            <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
-              <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
-                <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>🔍 Buscador de Sinónimos</h2>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                  <button
-                    type="button"
-                    disabled={sinonimosAiLoading || !sinExtraInstructions.trim()}
-                    onClick={proponerSinonimosAI}
-                    style={{ 
-                      padding: '8px 16px', background: sinonimosAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)', 
-                      color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold', 
-                      cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
-                      opacity: !sinExtraInstructions.trim() ? 0.4 : 1,
-                      transition: 'all 0.2s', whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {sinonimosAiLoading ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
-                        {sinonimosAiSeconds}s
-                      </span>
-                    ) : '🚀 Buscar'}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowSinonimosConfig(false)} 
-                    style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-                  >
-                    ✖
-                  </button>
-                </div>
-              </div>
-
-              <div className="ai-modal-body">
-                <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-                  <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
-                    Objetivo: Encontrar nombres alternativos para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
-                  </p>
-                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                    {formData.especiesnombrecientifico && <em>({formData.especiesnombrecientifico}) — </em>}
-                    Selecciona un ámbito para cargar las instrucciones, o escribe las tuyas propias.
-                  </p>
-                </div>
-
-                {/* Prompt colapsable */}
-                <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                  <button 
-                    type="button"
-                    onClick={() => setSinConfigPromptOpen(!sinConfigPromptOpen)}
-                    style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
-                  >
-                    <span>📋 Instrucciones del Prompt (técnico)</span>
-                    <span style={{ transform: sinConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-                  </button>
-                  {sinConfigPromptOpen && (
-                    <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
-                      La IA recibirá la lista de idiomas y países del sistema, los sinónimos existentes, y el texto de instrucciones que escribas abajo. Filtrará automáticamente duplicados y el nombre principal.
-                    </div>
-                  )}
-                </div>
-
-                {/* Ámbitos de búsqueda — Radio buttons */}
-                <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ margin: '0 0 12px', color: '#1e293b', fontSize: '1rem' }}>🌍 Ámbito de Búsqueda</h4>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
-                      { key: 'general', emoji: '🌎', label: 'General' },
-                      { key: 'cooficiales', emoji: '🇪🇸', label: 'Lenguas Cooficiales' },
-                      { key: 'europa', emoji: '🇪🇺', label: 'Europea' },
-                    ].map(scope => (
-                      <label key={scope.key} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', 
-                        border: sinSelectedScope === scope.key ? '2px solid #7c3aed' : '1px solid #e2e8f0',
-                        borderRadius: '8px', cursor: 'pointer',
-                        background: sinSelectedScope === scope.key ? '#f5f3ff' : '#fff',
-                        transition: 'all 0.2s', flex: '1', minWidth: '150px'
-                      }}>
-                        <input 
-                          type="radio"
-                          name="sinScope"
-                          checked={sinSelectedScope === scope.key}
-                          onChange={() => {
-                            setSinSelectedScope(scope.key);
-                            setSinExtraInstructions(sinScopePresets[scope.key]);
-                          }}
-                          style={{ width: '18px', height: '18px', accentColor: '#7c3aed', flexShrink: 0 }}
-                        />
-                        <span style={{ fontWeight: sinSelectedScope === scope.key ? 'bold' : 'normal', color: '#1e293b', fontSize: '0.95rem' }}>{scope.emoji} {scope.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Textarea — Instrucciones que la IA leerá */}
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
-                  <textarea
-                    value={sinExtraInstructions}
-                    onChange={e => setSinExtraInstructions(e.target.value)}
-                    placeholder="Escribe las instrucciones de búsqueda para la IA..."
-                    rows={4}
-                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' }}
-                  />
-                  <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>
-                    Puedes modificar el texto libremente. La IA leerá exactamente lo que esté escrito aquí.
-                  </p>
-                </div>
-
-                {/* Sinónimos actuales */}
-                {sinonimos.length > 0 && (
-                  <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                    <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.9rem' }}>📊 Ya tienes {sinonimos.length} sinónimo{sinonimos.length !== 1 ? 's' : ''} registrado{sinonimos.length !== 1 ? 's' : ''}</span>
-                    <span style={{ color: '#15803d', fontSize: '0.85rem', marginLeft: '8px' }}>— La IA evitará duplicados</span>
-                  </div>
-                )}
+      {/* SINÓNIMOS AI CONFIG PANEL */}
+      {showSinonimosConfig && (
+        <div className="ai-modal-overlay">
+          <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
+              <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>🔍 Buscador de Sinónimos</h2>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  disabled={sinonimosAiLoading || !sinExtraInstructions.trim()}
+                  onClick={proponerSinonimosAI}
+                  style={{
+                    padding: '8px 16px', background: sinonimosAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)',
+                    color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold',
+                    cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
+                    opacity: !sinExtraInstructions.trim() ? 0.4 : 1,
+                    transition: 'all 0.2s', whiteSpace: 'nowrap'
+                  }}
+                >
+                  {sinonimosAiLoading ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
+                      {sinonimosAiSeconds}s
+                    </span>
+                  ) : '🚀 Buscar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSinonimosConfig(false)}
+                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                >
+                  ✖
+                </button>
               </div>
             </div>
-          </div>
-        )}
 
-        {showSinonimosAiModal && (() => {
-          const isExisting = (prop: any) => sinonimos.some(s =>
-            s.especiessinonimosnombre?.toLowerCase().trim() === prop.especiessinonimosnombre?.toLowerCase().trim() &&
-            String(s.xespeciessinonimosidpaises || '') === String(prop.xespeciessinonimosidpaises || '')
-          );
-          const existingOnes = aiSinonimosProposal.filter(isExisting);
-          const newOnes = aiSinonimosProposal.filter(p => !isExisting(p));
-          const hasBothColumns = existingOnes.length > 0 && newOnes.length > 0;
+            <div className="ai-modal-body">
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
+                  Objetivo: Encontrar nombres alternativos para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
+                </p>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                  {formData.especiesnombrecientifico && <em>({formData.especiesnombrecientifico}) — </em>}
+                  Selecciona un ámbito para cargar las instrucciones, o escribe las tuyas propias.
+                </p>
+              </div>
 
-          const renderCard = (prop: any, idx: number, isAlreadyIncluded: boolean) => {
-            const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
-            const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
-            return (
-              <label key={idx} style={{
-                display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
-                border: isAlreadyIncluded ? '1px solid #cbd5e1' : prop._selected ? '2px solid #10b981' : '1px solid #e2e8f0',
-                borderRadius: '8px', cursor: isAlreadyIncluded ? 'default' : 'pointer',
-                background: isAlreadyIncluded ? '#f8fafc' : prop._selected ? '#f0fdf4' : '#fff',
-                transition: 'all 0.2s'
-              }}>
-                {!isAlreadyIncluded && (
-                  <input
-                    type="checkbox"
-                    checked={prop._selected}
-                    onChange={(e) => {
-                      const newProps = [...aiSinonimosProposal];
-                      const realIdx = aiSinonimosProposal.indexOf(prop);
-                      newProps[realIdx]._selected = e.target.checked;
-                      setAiSinonimosProposal(newProps);
-                    }}
-                    style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
-                  />
-                )}
-                {isAlreadyIncluded && (
-                  <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isAlreadyIncluded ? '#64748b' : '#1e293b' }}>
-                    {prop.especiessinonimosnombre}
+              {/* Prompt colapsable */}
+              <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => setSinConfigPromptOpen(!sinConfigPromptOpen)}
+                  style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
+                >
+                  <span>📋 Instrucciones del Prompt (técnico)</span>
+                  <span style={{ transform: sinConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </button>
+                {sinConfigPromptOpen && (
+                  <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
+                    La IA recibirá la lista de idiomas y países del sistema, los sinónimos existentes, y el texto de instrucciones que escribas abajo. Filtrará automáticamente duplicados y el nombre principal.
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.82rem', color: '#64748b', flexWrap: 'wrap' }}>
-                    {idioma && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🗣️ {idioma.idiomasnombre}</span>}
-                    {pais && <span style={{ background: '#ecfdf5', color: '#065f46', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🌍 {pais.paisesnombre}</span>}
-                  </div>
-                  {prop.especiessinonimosnotas && (
-                    <div style={{ marginTop: '5px', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
-                      {prop.especiessinonimosnotas}
-                    </div>
-                  )}
+                )}
+              </div>
+
+              {/* Ámbitos de búsqueda — Radio buttons */}
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ margin: '0 0 12px', color: '#1e293b', fontSize: '1rem' }}>🌍 Ámbito de Búsqueda</h4>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'general', emoji: '🌎', label: 'General' },
+                    { key: 'cooficiales', emoji: '🇪🇸', label: 'Lenguas Cooficiales' },
+                    { key: 'europa', emoji: '🇪🇺', label: 'Europea' },
+                  ].map(scope => (
+                    <label key={scope.key} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
+                      border: sinSelectedScope === scope.key ? '2px solid #7c3aed' : '1px solid #e2e8f0',
+                      borderRadius: '8px', cursor: 'pointer',
+                      background: sinSelectedScope === scope.key ? '#f5f3ff' : '#fff',
+                      transition: 'all 0.2s', flex: '1', minWidth: '150px'
+                    }}>
+                      <input
+                        type="radio"
+                        name="sinScope"
+                        checked={sinSelectedScope === scope.key}
+                        onChange={() => {
+                          setSinSelectedScope(scope.key);
+                          setSinExtraInstructions(sinScopePresets[scope.key]);
+                        }}
+                        style={{ width: '18px', height: '18px', accentColor: '#7c3aed', flexShrink: 0 }}
+                      />
+                      <span style={{ fontWeight: sinSelectedScope === scope.key ? 'bold' : 'normal', color: '#1e293b', fontSize: '0.95rem' }}>{scope.emoji} {scope.label}</span>
+                    </label>
+                  ))}
                 </div>
-              </label>
-            );
-          };
+              </div>
 
+              {/* Textarea — Instrucciones que la IA leerá */}
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
+                <textarea
+                  value={sinExtraInstructions}
+                  onChange={e => setSinExtraInstructions(e.target.value)}
+                  placeholder="Escribe las instrucciones de búsqueda para la IA..."
+                  rows={4}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' }}
+                />
+                <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  Puedes modificar el texto libremente. La IA leerá exactamente lo que esté escrito aquí.
+                </p>
+              </div>
+
+              {/* Sinónimos actuales */}
+              {sinonimos.length > 0 && (
+                <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.9rem' }}>📊 Ya tienes {sinonimos.length} sinónimo{sinonimos.length !== 1 ? 's' : ''} registrado{sinonimos.length !== 1 ? 's' : ''}</span>
+                  <span style={{ color: '#15803d', fontSize: '0.85rem', marginLeft: '8px' }}>— La IA evitará duplicados</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSinonimosAiModal && (() => {
+        const isExisting = (prop: any) => sinonimos.some(s =>
+          s.especiessinonimosnombre?.toLowerCase().trim() === prop.especiessinonimosnombre?.toLowerCase().trim() &&
+          String(s.xespeciessinonimosidpaises || '') === String(prop.xespeciessinonimosidpaises || '')
+        );
+        const existingOnes = aiSinonimosProposal.filter(isExisting);
+        const newOnes = aiSinonimosProposal.filter(p => !isExisting(p));
+        const hasBothColumns = existingOnes.length > 0 && newOnes.length > 0;
+
+        const renderCard = (prop: any, idx: number, isAlreadyIncluded: boolean) => {
+          const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
+          const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
           return (
+            <label key={idx} style={{
+              display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
+              border: isAlreadyIncluded ? '1px solid #cbd5e1' : prop._selected ? '2px solid #10b981' : '1px solid #e2e8f0',
+              borderRadius: '8px', cursor: isAlreadyIncluded ? 'default' : 'pointer',
+              background: isAlreadyIncluded ? '#f8fafc' : prop._selected ? '#f0fdf4' : '#fff',
+              transition: 'all 0.2s'
+            }}>
+              {!isAlreadyIncluded && (
+                <input
+                  type="checkbox"
+                  checked={prop._selected}
+                  onChange={(e) => {
+                    const newProps = [...aiSinonimosProposal];
+                    const realIdx = aiSinonimosProposal.indexOf(prop);
+                    newProps[realIdx]._selected = e.target.checked;
+                    setAiSinonimosProposal(newProps);
+                  }}
+                  style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
+                />
+              )}
+              {isAlreadyIncluded && (
+                <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isAlreadyIncluded ? '#64748b' : '#1e293b' }}>
+                  {prop.especiessinonimosnombre}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.82rem', color: '#64748b', flexWrap: 'wrap' }}>
+                  {idioma && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🗣️ {idioma.idiomasnombre}</span>}
+                  {pais && <span style={{ background: '#ecfdf5', color: '#065f46', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🌍 {pais.paisesnombre}</span>}
+                </div>
+                {prop.especiessinonimosnotas && (
+                  <div style={{ marginTop: '5px', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
+                    {prop.especiessinonimosnotas}
+                  </div>
+                )}
+              </div>
+            </label>
+          );
+        };
+
+        return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-               onClick={() => setShowSinonimosAiModal(false)}>
+            onClick={() => setShowSinonimosAiModal(false)}>
             <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: hasBothColumns ? '950px' : '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
-                 onClick={e => e.stopPropagation()}>
+              onClick={e => e.stopPropagation()}>
               <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
                 <span>✨ Sinónimos Propuestos por la IA</span>
                 <button type="button" onClick={() => setShowSinonimosAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
@@ -4266,183 +4275,183 @@ JSON de salida obligatorio:
               </div>
             </div>
           </div>
-          );
-        })()}
+        );
+      })()}
 
-        {/* ── Pautas AI Config Modal ── */}
-        {showPautasConfig && (
-          <div className="ai-modal-overlay">
-            <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
-              <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem' }}>🌱 Asistente IA de Pautas</h2>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    disabled={pautasAiLoading || !pautasExtraInstructions.trim()}
-                    onClick={startPautasAiSearch}
-                    style={{ 
-                      padding: '8px 16px', background: pautasAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)', 
-                      color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold', 
-                      cursor: pautasAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {pautasAiLoading ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
-                        {pautasAiSeconds}s
-                      </span>
-                    ) : '🚀 Analizar'}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPautasConfig(false)} 
-                    style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
+      {/* ── Pautas AI Config Modal ── */}
+      {showPautasConfig && (
+        <div className="ai-modal-overlay">
+          <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+              <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem' }}>🌱 Asistente IA de Pautas</h2>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  disabled={pautasAiLoading || !pautasExtraInstructions.trim()}
+                  onClick={startPautasAiSearch}
+                  style={{
+                    padding: '8px 16px', background: pautasAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)',
+                    color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold',
+                    cursor: pautasAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {pautasAiLoading ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
+                      {pautasAiSeconds}s
+                    </span>
+                  ) : '🚀 Analizar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPautasConfig(false)}
+                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+            <div className="ai-modal-body">
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
+                  Generar pautas para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
+                </p>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                  La IA analizará el ciclo de vida y propondrá frecuencias para las labores disponibles en el sistema.
+                </p>
               </div>
 
-              <div className="ai-modal-body">
-                <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-                  <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
-                    Generar pautas para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
-                  </p>
-                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                    La IA analizará el ciclo de vida y propondrá frecuencias para las labores disponibles en el sistema.
-                  </p>
-                </div>
-
-                {/* Prompt colapsable */}
-                <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                  <button 
-                    type="button"
-                    onClick={() => setPautasConfigPromptOpen(!pautasConfigPromptOpen)}
-                    style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
-                  >
-                    <span>📋 Instrucciones del Prompt (técnico)</span>
-                    <span style={{ transform: pautasConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-                  </button>
-                  {pautasConfigPromptOpen && (
-                    <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
-                      La IA recibirá la lista de labores registradas en el sistema y el nombre de la especie actual. Su tarea será vincular cada labor pertinente con la fase adecuada del ciclo de vida y proponer una frecuencia en días, además de generar instrucciones breves.
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
-                  <textarea
-                    value={pautasExtraInstructions}
-                    onChange={e => setPautasExtraInstructions(e.target.value)}
-                    placeholder="Instrucciones adicionales para la generación..."
-                    rows={4}
-                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5', marginBottom: '12px' }}
-                  />
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>🎯 Enfocar análisis en una labor específica:</label>
-                    <select
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (!val) {
-                          setPautasExtraInstructions('Analiza el ciclo de vida de esta especie y genera pautas de labores (riego, abonado, poda, etc.) específicas para cada fase, indicando la frecuencia recomendada.');
-                        } else {
-                          const laborName = masterLabores.find(l => String(l.idlabores) === String(val))?.laboresnombre || 'esta labor';
-                          setPautasExtraInstructions(`Concéntrate exclusivamente en analizar y generar las pautas, fases y frecuencias para la labor de "${laborName}". No propongas ninguna otra labor.`);
-                        }
-                      }}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
-                    >
-                      <option value="">-- Búsqueda General (Todas las labores) --</option>
-                      {masterLabores.map(l => (
-                        <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
-                      ))}
-                    </select>
+              {/* Prompt colapsable */}
+              <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => setPautasConfigPromptOpen(!pautasConfigPromptOpen)}
+                  style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
+                >
+                  <span>📋 Instrucciones del Prompt (técnico)</span>
+                  <span style={{ transform: pautasConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </button>
+                {pautasConfigPromptOpen && (
+                  <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
+                    La IA recibirá la lista de labores registradas en el sistema y el nombre de la especie actual. Su tarea será vincular cada labor pertinente con la fase adecuada del ciclo de vida y proponer una frecuencia en días, además de generar instrucciones breves.
                   </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
+                <textarea
+                  value={pautasExtraInstructions}
+                  onChange={e => setPautasExtraInstructions(e.target.value)}
+                  placeholder="Instrucciones adicionales para la generación..."
+                  rows={4}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5', marginBottom: '12px' }}
+                />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>🎯 Enfocar análisis en una labor específica:</label>
+                  <select
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) {
+                        setPautasExtraInstructions('Analiza el ciclo de vida de esta especie y genera pautas de labores (riego, abonado, poda, etc.) específicas para cada fase, indicando la frecuencia recomendada.');
+                      } else {
+                        const laborName = masterLabores.find(l => String(l.idlabores) === String(val))?.laboresnombre || 'esta labor';
+                        setPautasExtraInstructions(`Concéntrate exclusivamente en analizar y generar las pautas, fases y frecuencias para la labor de "${laborName}". No propongas ninguna otra labor.`);
+                      }
+                    }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                  >
+                    <option value="">-- Búsqueda General (Todas las labores) --</option>
+                    {masterLabores.map(l => (
+                      <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Pautas AI Results Modal ── */}
-        {showPautasAiModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowPautasAiModal(false)}>
-            <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }} onClick={e => e.stopPropagation()}>
-              <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                <span>✨ Pautas Propuestas por la IA</span>
-                <button type="button" onClick={() => setShowPautasAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
-              </h2>
+      {/* ── Pautas AI Results Modal ── */}
+      {showPautasAiModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowPautasAiModal(false)}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>✨ Pautas Propuestas por la IA</span>
+              <button type="button" onClick={() => setShowPautasAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
+            </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                {aiPautasProposal.length === 0 ? (
-                  <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>
-                ) : (
-                  aiPautasProposal.map((prop, idx) => {
-                    const isExisting = pautas.some(p => p.xlaborespautaidlabores == prop.id_labor && p.laborespautafase === prop.fase);
-                    const laborDef = masterLabores.find(l => l.idlabores == prop.id_labor);
-                    
-                    return (
-                      <label key={idx} style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
-                        border: isExisting ? '1px solid #cbd5e1' : prop.selected ? '2px solid #10b981' : '1px solid #e2e8f0',
-                        borderRadius: '8px', cursor: isExisting ? 'default' : 'pointer',
-                        background: isExisting ? '#f8fafc' : prop.selected ? '#f0fdf4' : '#fff',
-                        transition: 'all 0.2s'
-                      }}>
-                        {!isExisting && (
-                          <input
-                            type="checkbox"
-                            checked={prop.selected}
-                            onChange={(e) => {
-                              const newProps = [...aiPautasProposal];
-                              newProps[idx].selected = e.target.checked;
-                              setAiPautasProposal(newProps);
-                            }}
-                            style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
-                          />
-                        )}
-                        {isExisting && <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>}
-                        
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isExisting ? '#64748b' : '#1e293b' }}>
-                            {laborDef ? laborDef.laboresnombre : 'Labor desconocida'} 
-                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>— Fase: {prop.fase}</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.85rem', color: '#64748b' }}>
-                            <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
-                              ⏱️ {prop.frecuencia ? `Cada ${prop.frecuencia} días` : 'Puntual'}
-                            </span>
-                          </div>
-                          {prop.notas_ia && (
-                            <div style={{ marginTop: '8px', fontSize: '0.9rem', color: '#475569', fontStyle: 'italic', background: '#f1f5f9', padding: '8px', borderRadius: '6px' }}>
-                              "{prop.notas_ia}"
-                            </div>
-                          )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              {aiPautasProposal.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>
+              ) : (
+                aiPautasProposal.map((prop, idx) => {
+                  const isExisting = pautas.some(p => p.xlaborespautaidlabores == prop.id_labor && p.laborespautafase === prop.fase);
+                  const laborDef = masterLabores.find(l => l.idlabores == prop.id_labor);
+
+                  return (
+                    <label key={idx} style={{
+                      display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
+                      border: isExisting ? '1px solid #cbd5e1' : prop.selected ? '2px solid #10b981' : '1px solid #e2e8f0',
+                      borderRadius: '8px', cursor: isExisting ? 'default' : 'pointer',
+                      background: isExisting ? '#f8fafc' : prop.selected ? '#f0fdf4' : '#fff',
+                      transition: 'all 0.2s'
+                    }}>
+                      {!isExisting && (
+                        <input
+                          type="checkbox"
+                          checked={prop.selected}
+                          onChange={(e) => {
+                            const newProps = [...aiPautasProposal];
+                            newProps[idx].selected = e.target.checked;
+                            setAiPautasProposal(newProps);
+                          }}
+                          style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
+                        />
+                      )}
+                      {isExisting && <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>}
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isExisting ? '#64748b' : '#1e293b' }}>
+                          {laborDef ? laborDef.laboresnombre : 'Labor desconocida'}
+                          <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>— Fase: {prop.fase}</span>
                         </div>
-                      </label>
-                    );
-                  })
-                )}
-              </div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.85rem', color: '#64748b' }}>
+                          <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                            ⏱️ {prop.frecuencia ? `Cada ${prop.frecuencia} días` : 'Puntual'}
+                          </span>
+                        </div>
+                        {prop.notas_ia && (
+                          <div style={{ marginTop: '8px', fontSize: '0.9rem', color: '#475569', fontStyle: 'italic', background: '#f1f5f9', padding: '8px', borderRadius: '6px' }}>
+                            "{prop.notas_ia}"
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowPautasAiModal(false)} style={{ padding: '10px 24px', background: 'white', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}>Cancelar</button>
-                {aiPautasProposal.filter(p => p.selected).length > 0 && (
-                  <button
-                    type="button"
-                    style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}
-                    onClick={applyAiPautas}
-                  >
-                    Guardar Seleccionadas ({aiPautasProposal.filter(p => p.selected).length})
-                  </button>
-                )}
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
+              <button type="button" className="btn-secondary" onClick={() => setShowPautasAiModal(false)} style={{ padding: '10px 24px', background: 'white', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}>Cancelar</button>
+              {aiPautasProposal.filter(p => p.selected).length > 0 && (
+                <button
+                  type="button"
+                  style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}
+                  onClick={applyAiPautas}
+                >
+                  Guardar Seleccionadas ({aiPautasProposal.filter(p => p.selected).length})
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </>
+        </div>
+      )}
+    </>
   );
 }

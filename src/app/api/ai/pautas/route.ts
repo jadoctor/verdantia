@@ -24,14 +24,22 @@ ${laboresList}
 
 Tu objetivo es proponer las "Pautas de Labores" necesarias para esta especie, especificando cuándo y con qué frecuencia deben realizarse.
 
-Fases válidas permitidas (elige EXTREMADAMENTE SOLO una de estas para cada pauta, son las únicas que nuestro sistema puede calcular):
-- siembra
-- germinacion
-- trasplante
-- crecimiento
-- fructificacion
-- cosecha
-- general
+Fases válidas permitidas (elige SOLO una de estas para cada pauta):
+- presiembra (labores preparatorias ANTES de sembrar. Frecuencia: null si es puntual)
+- siembra (momento puntual de depositar la semilla. Siempre con frecuencia: null)
+- germinacion (desde la siembra hasta que emerge la plántula)
+- trasplante (periodo de plántula ANTES del trasplante: cuidados en semillero/bandeja)
+- crecimiento (DESPUÉS del trasplante: desarrollo vegetativo en ubicación definitiva)
+- floracion (periodo de floración)
+- fructificacion (desarrollo y maduración del fruto)
+- cosecha (periodo de recolección)
+- general (aplicable a todo el ciclo)
+
+IMPORTANTE sobre las fases:
+- "presiembra" = labores de preparación previas a depositar la semilla. Si es para la labor "Abonado", indica en las notas el tipo de abono ideal y cuánto tiempo antes de la siembra debe aplicarse.
+- "siembra" = momento puntual. Su frecuencia DEBE ser null.
+- "trasplante" = periodo PRE-trasplante (la planta aún está en semillero). Las notas deben referirse a cuidados de plántula.
+- "crecimiento" = periodo POST-trasplante (ya en tierra definitiva). Aquí se mencionan los cuidados tras el trasplante.
 
 ${extraText}
 

@@ -881,6 +881,32 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>10/05/2026 23:45 – Consolidación de Tabs Administrativos y Limpieza de Redundancias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Fragmentación de la interfaz en <code>EspecieForm.tsx</code>. Los módulos de "Pautas de Labores" y "Variedades" estaban renderizados fuera del sistema de pestañas centralizado.</li>
+                  <li style={{ marginBottom: '8px' }}>Inestabilidad en el DOM y redundancias visuales causadas por bloques de código duplicados al final del archivo.</li>
+                  <li>Inconsistencia en el flujo de auto-guardado para los módulos externos de administración.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Migración de la lógica de <strong>Variedades</strong> y <strong>Pautas de Labores</strong> al sistema de pestañas condicional unificado.</li>
+                  <li style={{ marginBottom: '8px' }}>Eliminación quirúrgica de las secciones colapsables redundantes al final del archivo <code>EspecieForm.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Sincronización del estado <code>isDirty</code> y triggers de auto-guardado para los nuevos módulos integrados.</li>
+                  <li>Refactorización de la estructura JSX para garantizar estabilidad en el renderizado y eliminar errores de anidamiento.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Interfaz administrativa unificada y 100% estable. Navegación coherente siguiendo el "Gold Standard" de Verdantia. Erradicación de redundancias de código.</li>
+                </ul>
+              </div>
+            </li>
 
           </ol>
         </div>

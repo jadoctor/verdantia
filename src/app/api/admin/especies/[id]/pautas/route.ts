@@ -21,7 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const idespecies = resolvedParams.id;
     // Join with labores table to get labor details
     const query = `
-      SELECT p.*, l.laboresnombre, l.laborestipo, l.laboresdescripcion
+      SELECT p.*, l.laboresnombre
       FROM laborespauta p
       JOIN labores l ON p.xlaborespautaidlabores = l.idlabores
       WHERE p.xlaborespautaidespecies = ?
@@ -41,7 +41,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ pautas: rows });
   } catch (error: any) {
     console.error('Error fetching pautas:', error);
-    return NextResponse.json({ error: 'Error al obtener pautas de labor' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al obtener pautas de labor', detail: error.message }, { status: 500 });
   }
 }
 
@@ -83,5 +83,40 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Ya existe una pauta para esta labor en esta fase.' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Error al crear la pauta' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const user = await authenticateSuperadmin(request);
+  if (!user) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
+  try {
+    const idespecies = resolvedParams.id;
+    const body = await request.json();
+    const { idlaborespauta, xlaborespautaidlabores, laborespautafase, laborespautafrecuenciadias, laborespautanotasia, laborespautaactivosino } = body;
+
+    if (idlaborespauta) {
+      // Update by ID
+      await pool.query(
+        `UPDATE laborespauta SET laborespautafase = COALESCE(?, laborespautafase), laborespautafrecuenciadias = ?, laborespautanotasia = ?, laborespautaactivosino = ? WHERE idlaborespauta = ? AND xlaborespautaidespecies = ?`,
+        [laborespautafase || null, laborespautafrecuenciadias ?? null, laborespautanotasia || null, laborespautaactivosino !== undefined ? laborespautaactivosino : 1, idlaborespauta, idespecies]
+      );
+    } else if (xlaborespautaidlabores && laborespautafase) {
+      // Update by labor+fase combo
+      await pool.query(
+        `UPDATE laborespauta SET laborespautafrecuenciadias = ?, laborespautanotasia = ?, laborespautaactivosino = ? WHERE xlaborespautaidespecies = ? AND xlaborespautaidlabores = ? AND laborespautafase = ?`,
+        [laborespautafrecuenciadias ?? null, laborespautanotasia || null, laborespautaactivosino !== undefined ? laborespautaactivosino : 1, idespecies, xlaborespautaidlabores, laborespautafase]
+      );
+    } else {
+      return NextResponse.json({ error: 'Se requiere idlaborespauta o labor+fase' }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error updating pauta:', error);
+    return NextResponse.json({ error: 'Error al actualizar la pauta', detail: error.message }, { status: 500 });
   }
 }
