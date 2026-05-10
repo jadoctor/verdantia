@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { Resend } from 'resend';
-import { NewPostEmail } from '@/emails/NewPostEmail';
+
 import { getMediaUrl } from '@/lib/media-url';
 import crypto from 'crypto';
 

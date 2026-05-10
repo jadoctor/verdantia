@@ -128,16 +128,41 @@ export default function LaboresAdminPage() {
 
                   return (
                     <tr key={labor.idlabores} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '12px', textAlign: 'center', verticalAlign: 'middle', position: 'sticky', left: 0, zIndex: 1, background: 'white' }}>
-                        {labor.primary_photo_ruta ? (
-                          <img 
-                            src={getMediaUrl(labor.primary_photo_ruta)} 
-                            alt={labor.laboresnombre}
-                            style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'inline-block' }}
-                           crossOrigin="anonymous" />
-                        ) : (
-                          <span style={{ fontSize: '1.5rem' }}>{icono}</span>
-                        )}
+                      <td style={{ padding: '8px', textAlign: 'center', verticalAlign: 'middle', position: 'sticky', left: 0, zIndex: 1, background: 'white', width: '80px', minWidth: '80px' }}>
+                        {(() => {
+                          if (labor.primary_photo_ruta) {
+                            let meta: any = {};
+                            try { meta = JSON.parse(labor.primary_photo_resumen || '{}'); } catch(err){}
+                            const STYLE_FILTERS: Record<string, string> = {
+                              none: 'none', vivid: 'saturate(1.3) contrast(1.1)', warm: 'sepia(0.25) saturate(1.2)',
+                              cool: 'saturate(0.9) hue-rotate(15deg)', bw: 'grayscale(1)', vintage: 'sepia(0.4) contrast(0.9) brightness(1.1)',
+                              dramatic: 'contrast(1.4) saturate(1.2)', soft: 'brightness(1.1) contrast(0.9) saturate(0.9)',
+                            };
+                            let baseFilter = meta.profile_style ? STYLE_FILTERS[meta.profile_style] : 'none';
+                            if (meta.profile_brightness !== undefined || meta.profile_contrast !== undefined) {
+                              baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
+                            }
+                            return (
+                              <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
+                                <img 
+                                  src={getMediaUrl(labor.primary_photo_ruta)} 
+                                  alt={labor.laboresnombre}
+                                  crossOrigin="anonymous"
+                                  loading="lazy"
+                                  style={{ 
+                                    width: '100%', height: '100%', objectFit: 'cover',
+                                    filter: baseFilter,
+                                    objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                    transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                    transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`,
+                                    position: 'absolute', top: 0, left: 0, zIndex: 1
+                                  }} 
+                                />
+                              </div>
+                            );
+                          }
+                          return <span style={{ fontSize: '2rem' }}>{icono}</span>;
+                        })()}
                       </td>
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -855,6 +855,33 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>10/05/2026 11:46 – Refactorización de Cronología Modular y Actualización del Prompt IA</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El cálculo de fechas y recolecciones era inpreciso al estar basado genéricamente en "meses". Se necesitaba aplicar estándares agronómicos estrictos (DDS - Días Después de Siembra y DDT - Días Después de Trasplante).</li>
+                  <li style={{ marginBottom: '8px' }}>La base de datos carecía del campo para la duración post-trasplante de la recolección.</li>
+                  <li style={{ marginBottom: '8px' }}>La IA (Gemini) no tenía instrucciones para rellenar el nuevo campo y la UI del administrador no lo estructuraba de forma comprensible.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Base de datos y API:</strong> Añadido el campo <code>especiesdiashastarecoleccion</code> en la tabla <code>especies</code> y actualizado en las rutas POST y PUT del CRUD.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Refactorización UI:</strong> Reestructurada la pestaña de Fisiología en <code>EspecieForm.tsx</code> con un bloque de <strong>Cronología Modular</strong> separando claramente Bloque 1 (DDS) y Bloque 2 (DDT). Reordenados campos como <em>Tipo de Siembra</em> al top de la pestaña y creados bloques visuales para requisitos térmicos.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Actualización IA:</strong> Modificado <code>api/ai/especie-assistant/route.ts</code> para exigir el nuevo campo a Gemini en base a días post-trasplante o post-siembra. Añadido el campo al mapeo de asimilación del frontend en <code>EspecieForm.tsx</code>.</li>
+                  <li><strong>Prompt de Pautas:</strong> Endurecido el prompt en <code>api/ai/pautas/route.ts</code> para forzar respuestas basadas únicamente en hitos calculables matemáticamente, prohibiendo fases no referenciables como "plantula".</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Implementación del motor cronológico DDS/DDT con soporte completo en la base de datos, en la UI de asimilación y en los asistentes de Inteligencia Artificial. Listos para cálculos matemáticos precisos de cosechas.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>

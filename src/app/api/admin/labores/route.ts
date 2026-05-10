@@ -23,10 +23,15 @@ export async function GET(req: NextRequest) {
              d.datosadjuntosresumen as primary_photo_resumen 
       FROM labores l 
       LEFT JOIN datosadjuntos d 
-        ON l.idlabores = d.xdatosadjuntosidlabores 
-        AND d.datosadjuntostipo = 'imagen' 
-        AND d.datosadjuntosesprincipal = 1 
-        AND d.datosadjuntosactivo = 1 
+        ON d.iddatosadjuntos = (
+          SELECT d2.iddatosadjuntos 
+          FROM datosadjuntos d2 
+          WHERE d2.xdatosadjuntosidlabores = l.idlabores 
+            AND d2.datosadjuntostipo = 'imagen' 
+            AND d2.datosadjuntosactivo = 1 
+          ORDER BY d2.datosadjuntosesprincipal DESC, d2.iddatosadjuntos ASC 
+          LIMIT 1
+        )
       ORDER BY l.idlabores
     `);
     return NextResponse.json({ success: true, labores: rows });

@@ -98,7 +98,8 @@ export async function POST(request: Request) {
       especiesluzsolar,
       especiescaracteristicassuelo,
       especiesdificultad,
-      especiestemperaturamaxima
+      especiestemperaturamaxima,
+      especiesdiashastarecoleccion
     } = body;
 
     if (!especiesnombre) {
@@ -118,8 +119,8 @@ export async function POST(request: Request) {
         especiesbiodinamicacategoria, especiesbiodinamicanotas,
         especiesprofundidadtrasplante, especiesphsuelo, especiesnecesidadriego, especiestiposiembra,
         especiesvolumenmaceta, especiesluzsolar, especiescaracteristicassuelo, especiesdificultad,
-        especiestemperaturamaxima
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        especiestemperaturamaxima, especiesdiashastarecoleccion
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -165,7 +166,8 @@ export async function POST(request: Request) {
       especiesluzsolar || null,
       especiescaracteristicassuelo || null,
       especiesdificultad || null,
-      especiestemperaturamaxima || null
+      especiestemperaturamaxima || null,
+      especiesdiashastarecoleccion || null
     ];
 
     const [result]: any = await pool.query(query, params);

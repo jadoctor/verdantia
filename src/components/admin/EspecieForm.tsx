@@ -27,7 +27,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const defaultFormData = {
     especiesnombre: '', especiesnombrecientifico: '', especiesfamilia: '',
     especiestipo: [], especiesciclo: [], especiescolor: '', especiestamano: 'mediano',
-    especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '', especiesdiashastafructificacion: '',
+    especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '', 
+    especiesdiashastafructificacion: '', especiesdiashastarecoleccion: '',
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
     especiesmarcoplantas: '', especiesmarcofilas: '', especiesprofundidadsiembra: '',
     especiesfechasemillerodesde: '', especiesfechasemillerohasta: '',
@@ -58,6 +59,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('taxonomia');
   const [isEspecieOpen, setIsEspecieOpen] = useState(true);
+  const [isPautasOpen, setIsPautasOpen] = useState(false);
   const [calcPersonas, setCalcPersonas] = useState<number>(1);
   const [aiProposal, setAiProposal] = useState<any>(null);
   const [selectedRels, setSelectedRels] = useState<{ ben: any[], per: any[], pla: any[] }>({ ben: [], per: [], pla: [] });
@@ -139,6 +141,19 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [blogGenProgress, setBlogGenProgress] = useState('Iniciando motor de IA...');
   const [showBlogPrompt, setShowBlogPrompt] = useState(false);
 
+  // -- Pautas Labores State --
+  const [pautas, setPautas] = useState<any[]>([]);
+  const [masterLabores, setMasterLabores] = useState<any[]>([]);
+  const [editingPauta, setEditingPauta] = useState<any>(null);
+  const [pautaForm, setPautaForm] = useState({
+    xlaborespautaidlabores: '',
+    laborespautafase: 'germinacion',
+    laborespautafrecuenciadias: '',
+    laborespautanotasia: '',
+    laborespautaactivosino: 1
+  });
+  const [pautaDeleteConfirm, setPautaDeleteConfirm] = useState<string | null>(null);
+
   const [showAiImageModal, setShowAiImageModal] = useState(false);
   const [aiImageConcept, setAiImageConcept] = useState('');
   const [aiImageLoading, setAiImageLoading] = useState(false);
@@ -147,6 +162,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [aiImagePromptPreview, setAiImagePromptPreview] = useState('');
   const [aiImagePromptEdited, setAiImagePromptEdited] = useState(false);
   const [showPromptDetails, setShowPromptDetails] = useState(false);
+
+  // -- Pautas AI State --
+  const [pautasAiLoading, setPautasAiLoading] = useState(false);
+  const [pautasAiSeconds, setPautasAiSeconds] = useState(0);
+  const pautasTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showPautasAiModal, setShowPautasAiModal] = useState(false);
+  const [aiPautasProposal, setAiPautasProposal] = useState<any[]>([]);
+  const [showPautasConfig, setShowPautasConfig] = useState(false);
+  const [pautasConfigPromptOpen, setPautasConfigPromptOpen] = useState(false);
+  const [pautasExtraInstructions, setPautasExtraInstructions] = useState('Te debes centrar exclusivamente en las labores que tiene el sistema y en esta especie, y comportarte como un experto.');
 
   const STYLE_FILTERS: Record<string, string> = {
     '': 'none',
@@ -172,6 +197,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       fetch('/api/admin/plagas', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterPlagas(data.plagas || []));
+      fetch('/api/admin/labores', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterLabores(data.labores || []));
       fetch('/api/admin/ajustes/idiomas')
         .then(res => res.json())
         .then(data => setMasterIdiomas(Array.isArray(data) ? data : []));
@@ -412,12 +440,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'fisiologia',
       title: '🌱 Fisiología',
-      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiesdiashastafructificacion', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
+      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiesdiashastafructificacion', 'especiesdiashastarecoleccion', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
       labels: {
         especiesdiasgerminacion: 'Días Germinación',
         especiesdiashastatrasplante: 'Días hasta Trasplante',
         especiesviabilidadsemilla: 'Viabilidad Semilla',
         especiesdiashastafructificacion: 'Días a Fruct.',
+        especiesdiashastarecoleccion: 'Días a Recol.',
         especiestemperaturaminima: 'Temp. Mínima',
         especiestemperaturaoptima: 'Temp. Óptima',
         especiestemperaturamaxima: 'Temp. Máxima',
@@ -1368,6 +1397,153 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     vibrantColor = heroMeta.vibrant_color || null;
   }
 
+  // ── Pautas Handlers ──
+  const handleSavePauta = async () => {
+    if (!especieId) {
+      alert("Guarda primero la especie antes de añadir pautas.");
+      return;
+    }
+    if (!pautaForm.xlaborespautaidlabores || !pautaForm.laborespautafase) {
+      alert("Selecciona una labor y una fase.");
+      return;
+    }
+    
+    try {
+      const isEditing = editingPauta !== null;
+      const url = isEditing 
+        ? `/api/admin/especies/${especieId}/pautas/${editingPauta}` 
+        : `/api/admin/especies/${especieId}/pautas`;
+      
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pautaForm)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(errorData.error || "Error al guardar la pauta");
+        return;
+      }
+
+      // Refetch pautas
+      const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`);
+      if (pautasRes.ok) {
+        const { pautas } = await pautasRes.json();
+        setPautas(pautas || []);
+      }
+
+      // Reset form
+      setEditingPauta(null);
+      setPautaForm({
+        xlaborespautaidlabores: '',
+        laborespautafase: 'germinacion',
+        laborespautafrecuenciadias: '',
+        laborespautanotasia: '',
+        laborespautaactivosino: 1
+      });
+
+    } catch (e) {
+      console.error(e);
+      alert("Error inesperado al guardar pauta.");
+    }
+  };
+
+  const handleDeletePauta = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/especies/${especieId}/pautas/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPautas(pautas.filter(p => p.idlaborespauta !== id));
+        setPautaDeleteConfirm(null);
+      } else {
+        alert("Error al eliminar la pauta");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error de red");
+    }
+  };
+
+  // ── AI Pautas Handlers ──
+  const startPautasAiSearch = async () => {
+    if (!formData.especiesnombre) {
+      alert('Debes darle un nombre a la especie primero.');
+      return;
+    }
+    setPautasAiLoading(true);
+    setPautasAiSeconds(0);
+    setAiPautasProposal([]);
+    
+    if (pautasTimerRef.current) clearInterval(pautasTimerRef.current);
+    pautasTimerRef.current = setInterval(() => setPautasAiSeconds(s => s + 1), 1000);
+
+    try {
+      const res = await fetch('/api/ai/pautas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          especie: formData.especiesnombre,
+          labores: masterLabores.map(l => ({ id: l.idlabores, nombre: l.laboresnombre })),
+          instruccionesAdicionales: pautasExtraInstructions
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.pautas) {
+        setAiPautasProposal(data.pautas);
+        setShowPautasAiModal(true);
+        setShowPautasConfig(false);
+      } else {
+        alert(data.error || 'Error al obtener propuesta de la IA');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de red al consultar IA.');
+    } finally {
+      setPautasAiLoading(false);
+      if (pautasTimerRef.current) clearInterval(pautasTimerRef.current);
+    }
+  };
+
+  const applyAiPautas = async () => {
+    if (!especieId) {
+      alert("Guarda primero la especie para aplicar las pautas.");
+      return;
+    }
+    
+    try {
+      // Mandar todas las pautas propuestas a la BD una por una
+      for (const pauta of aiPautasProposal) {
+        if (!pauta.selected) continue;
+        
+        await fetch(`/api/admin/especies/${especieId}/pautas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            xlaborespautaidlabores: pauta.id_labor,
+            laborespautafase: pauta.fase,
+            laborespautafrecuenciadias: pauta.frecuencia || '',
+            laborespautanotasia: pauta.notas_ia || '',
+            laborespautaactivosino: 1
+          })
+        });
+      }
+      
+      // Refetch
+      const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`);
+      if (pautasRes.ok) {
+        const { pautas } = await pautasRes.json();
+        setPautas(pautas || []);
+      }
+      setShowPautasAiModal(false);
+      alert('Pautas aplicadas correctamente.');
+    } catch (e) {
+      console.error(e);
+      alert('Error al aplicar pautas.');
+    }
+  };
+
   return (
     <>
       {/* ── Navegación ── */}
@@ -1660,50 +1836,106 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           {/* FISIOLOGÍA */}
           {activeTab === 'fisiologia' && (
             <div className="grid-form">
-              <div className="form-group">
-                <label>Días Germinación</label>
-                <input type="number" name="especiesdiasgerminacion" value={formData.especiesdiasgerminacion || ''} onChange={handleChange} />
+              {/* BLOQUE PRINCIPAL SUPERIOR */}
+              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra Principal</label>
+                  <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange} style={{ marginTop: '8px' }}>
+                    <option value="">-- Selecciona --</option>
+                    <option value="directa">Directa (En tierra)</option>
+                    <option value="semillero">Semillero (Requiere trasplante)</option>
+                    <option value="ambas">Ambas opciones posibles</option>
+                  </select>
+                </div>
+                
+                <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
+                  <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
+                </div>
               </div>
-              <div className="form-group">
-                <label>Días hasta Trasplante</label>
-                <input type="number" name="especiesdiashastatrasplante" value={formData.especiesdiashastatrasplante || ''} onChange={handleChange} />
+
+              {/* CRONOLOGÍA MODULAR */}
+              <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  ⏱️ Cronología Modular (Días de Desarrollo)
+                </h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                  {/* BLOQUE 1: DDS */}
+                  <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <h4 style={{ margin: '0 0 10px 0', color: '#3b82f6', borderBottom: '2px solid #bfdbfe', paddingBottom: '8px', fontSize: '1rem' }}>
+                      Bloque 1: Desde la Siembra (DDS)
+                    </h4>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
+                      Estos tiempos se cuentan siempre desde el momento en el que la semilla toca la tierra.
+                    </p>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Días hasta Germinación</label>
+                        <input type="number" name="especiesdiasgerminacion" value={formData.especiesdiasgerminacion || ''} onChange={handleChange} />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Edad del Plantel (Días a Trasplante)</label>
+                        <input type="number" name="especiesdiashastatrasplante" value={formData.especiesdiashastatrasplante || ''} onChange={handleChange} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BLOQUE 2: DDT */}
+                  <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <h4 style={{ margin: '0 0 10px 0', color: '#10b981', borderBottom: '2px solid #a7f3d0', paddingBottom: '8px', fontSize: '1rem' }}>
+                      Bloque 2: Desde el Trasplante (DDT)
+                    </h4>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
+                      Estos tiempos se cuentan después de plantar el plantel. <em>Si es de siembra directa, se contarán desde el Día 0.</em>
+                    </p>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Días hasta Fructificación</label>
+                        <input type="number" name="especiesdiashastafructificacion" value={formData.especiesdiashastafructificacion || ''} onChange={handleChange} />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Días hasta Recolección / Cosecha</label>
+                        <input type="number" name="especiesdiashastarecoleccion" value={formData.especiesdiashastarecoleccion || ''} onChange={handleChange} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Viabilidad Semilla (Años)</label>
-                <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} />
+
+              {/* REQUISITOS TÉRMICOS */}
+              <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecdd3' }}>
+                <h3 style={{ margin: '0 0 15px 0', color: '#be123c', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🌡️ Requisitos Térmicos (°C)
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                  <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                    <label style={{ color: '#0369a1' }}>Mínima (Sobrevive)</label>
+                    <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                    <label style={{ color: '#15803d' }}>Óptima (Desarrollo)</label>
+                    <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                    <label style={{ color: '#be123c' }}>Máxima (Estrés)</label>
+                    <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Días a Fructificación</label>
-                <input type="number" name="especiesdiashastafructificacion" value={formData.especiesdiashastafructificacion || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Profundidad Siembra (cm)</label>
-                <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Temp. Mínima (°C)</label>
-                <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Temp. Óptima (°C)</label>
-                <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Temp. Máxima (°C)</label>
-                <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Profundidad Trasplante</label>
-                <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Tipo de Siembra</label>
-                <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange}>
-                  <option value="">--</option>
-                  <option value="directa">Directa</option>
-                  <option value="semillero">Semillero</option>
-                  <option value="ambas">Ambas</option>
-                </select>
+
+              {/* PROFUNDIDADES */}
+              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Profundidad de Siembra (cm)</label>
+                  <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Profundidad de Trasplante</label>
+                  <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
+                </div>
               </div>
             </div>
           )}
@@ -2263,6 +2495,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </div>
             </div>
           )}
+
+
           {/* SINONIMOS */}
           {activeTab === 'sinonimos' && (
             <div className="grid-form">
@@ -3254,7 +3488,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </h3>
               <button type="button" onClick={() => setShowPdfSearchModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
             </div>
-            
+
+
+          {/* SINÓNIMOS (Inteligencia Artificial) */}
             <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569' }}>
               Dile a la Inteligencia Artificial qué tipo de documento necesitas buscar sobre <strong>{formData.especiesnombre}</strong> (ej. <em>"poda"</em>, <em>"plagas INTA"</em>, <em>"guía de cultivo"</em>).
             </p>
@@ -3406,6 +3642,193 @@ JSON de salida obligatorio:
           </div>
         </div>
       )}
+
+      {/* ── SECCIÓN: PAUTAS DE LABORES ── */}
+      <div className="especie-form-container" style={{ marginTop: '24px' }}>
+        <div className="especie-form-body">
+          <div 
+            className="collapsible-header" 
+            onClick={() => setIsPautasOpen(!isPautasOpen)}
+            style={{ padding: '15px 24px', background: '#e2e8f0', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
+            <span>📋 Pautas de Labores</span>
+            <span>{isPautasOpen ? '▲' : '▼'}</span>
+          </div>
+
+          {isPautasOpen && (
+            <div className="collapsible-content">
+              <div style={{ background: '#f8fafc', padding: '24px', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '20px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setShowPautasConfig(true);
+                      setPautasConfigPromptOpen(false);
+                    }}
+                    disabled={pautasAiLoading}
+                    style={{ padding: '6px 14px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: pautasAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    {pautasAiLoading ? (
+                      <>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+                        Analizando... {pautasAiSeconds}s
+                      </>
+                    ) : (
+                      <>✨ Asistente IA</>
+                    )}
+                  </button>
+                </div>
+
+                {!especieId ? (
+                  <div style={{ padding: '20px', background: '#fffbeb', color: '#b45309', borderRadius: '8px', border: '1px solid #fef3c7' }}>
+                    Debes guardar la especie primero antes de poder asignar pautas de labores.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px', marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Labor *</label>
+                        <select 
+                          value={pautaForm.xlaborespautaidlabores} 
+                          onChange={e => setPautaForm({...pautaForm, xlaborespautaidlabores: e.target.value})}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        >
+                          <option value="">Selecciona labor...</option>
+                          {masterLabores.map(l => (
+                            <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre} ({l.laborestipo})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Fase de la Planta *</label>
+                        <select 
+                          value={pautaForm.laborespautafase} 
+                          onChange={e => setPautaForm({...pautaForm, laborespautafase: e.target.value})}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        >
+                          <option value="siembra">1. Siembra a Germinación</option>
+                          <option value="germinacion">2. Germinación a Trasplante</option>
+                          <option value="plantula">3. Plántula (Establecimiento)</option>
+                          <option value="crecimiento">4. Crecimiento Vegetativo</option>
+                          <option value="floracion">5. Floración</option>
+                          <option value="fructificacion">6. Fructificación / Engorde</option>
+                          <option value="cosecha">7. Fase de Cosecha</option>
+                          <option value="fin_ciclo">8. Fin de Ciclo</option>
+                          <option value="general">Constante (Cualquier fase)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Frecuencia (días)</label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          placeholder="Ej: 3"
+                          value={pautaForm.laborespautafrecuenciadias} 
+                          onChange={e => setPautaForm({...pautaForm, laborespautafrecuenciadias: e.target.value})}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Notas de la IA / Instrucciones</label>
+                        <textarea 
+                          rows={2}
+                          placeholder="Ej: Mantener humedad constante sin encharcar..."
+                          value={pautaForm.laborespautanotasia} 
+                          onChange={e => setPautaForm({...pautaForm, laborespautanotasia: e.target.value})}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                        />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={pautaForm.laborespautaactivosino === 1}
+                            onChange={e => setPautaForm({...pautaForm, laborespautaactivosino: e.target.checked ? 1 : 0})}
+                          />
+                          Pauta Activa
+                        </label>
+
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          {editingPauta && (
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                setEditingPauta(null);
+                                setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1 });
+                              }}
+                              style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                          <button 
+                            type="button" 
+                            onClick={handleSavePauta}
+                            style={{ padding: '8px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            {editingPauta ? 'Actualizar Pauta' : '+ Añadir Pauta'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {pautas.length > 0 && (
+                      <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                          <thead style={{ background: '#f1f5f9' }}>
+                            <tr>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Labor</th>
+                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Fase</th>
+                              <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Frecuencia</th>
+                              <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Estado</th>
+                              <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pautas.map((p, i) => (
+                              <tr key={p.idlaborespauta} style={{ background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
+                                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.laboresnombre}</td>
+                                <td style={{ padding: '12px', color: '#64748b' }}>{p.laborespautafase}</td>
+                                <td style={{ padding: '12px', textAlign: 'center' }}>
+                                  {p.laborespautafrecuenciadias ? `Cada ${p.laborespautafrecuenciadias} d` : 'Puntual'}
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'center' }}>
+                                  {p.laborespautaactivosino ? '✅' : '⏸️'}
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'right' }}>
+                                  <button type="button" onClick={() => {
+                                    setEditingPauta(p.idlaborespauta);
+                                    setPautaForm({
+                                      xlaborespautaidlabores: p.xlaborespautaidlabores,
+                                      laborespautafase: p.laborespautafase,
+                                      laborespautafrecuenciadias: p.laborespautafrecuenciadias || '',
+                                      laborespautanotasia: p.laborespautanotasia || '',
+                                      laborespautaactivosino: p.laborespautaactivosino
+                                    });
+                                  }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', marginRight: '8px' }}>✏️</button>
+                                  
+                                  {pautaDeleteConfirm === p.idlaborespauta ? (
+                                    <>
+                                      <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px', marginRight: '4px' }}>✓</button>
+                                      <button type="button" onClick={() => setPautaDeleteConfirm(null)} style={{ background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px' }}>✕</button>
+                                    </>
+                                  ) : (
+                                    <button type="button" onClick={() => setPautaDeleteConfirm(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {deleteConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
@@ -3570,34 +3993,34 @@ JSON de salida obligatorio:
         {showSinonimosConfig && (
           <div className="ai-modal-overlay">
             <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
-              <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ color: 'white', margin: 0, fontSize: '1.15rem' }}>🔍 Asistente IA — Buscador de Sinónimos</h2>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
+                <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>🔍 Buscador de Sinónimos</h2>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                   <button
                     type="button"
                     disabled={sinonimosAiLoading || !sinExtraInstructions.trim()}
                     onClick={proponerSinonimosAI}
                     style={{ 
-                      padding: '8px 20px', background: sinonimosAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)', 
+                      padding: '8px 16px', background: sinonimosAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)', 
                       color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold', 
-                      cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.95rem',
+                      cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
                       opacity: !sinExtraInstructions.trim() ? 0.4 : 1,
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s', whiteSpace: 'nowrap'
                     }}
                   >
                     {sinonimosAiLoading ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.1rem' }}>⏳</span>
-                        Buscando... {sinonimosAiSeconds}s
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
+                        {sinonimosAiSeconds}s
                       </span>
-                    ) : '🚀 Lanzar Búsqueda'}
+                    ) : '🚀 Buscar'}
                   </button>
                   <button 
                     type="button" 
                     onClick={() => setShowSinonimosConfig(false)} 
-                    style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
+                    style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
                   >
-                    ✖ Cerrar
+                    ✖
                   </button>
                 </div>
               </div>
@@ -3845,6 +4268,181 @@ JSON de salida obligatorio:
           </div>
           );
         })()}
+
+        {/* ── Pautas AI Config Modal ── */}
+        {showPautasConfig && (
+          <div className="ai-modal-overlay">
+            <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
+              <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem' }}>🌱 Asistente IA de Pautas</h2>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    disabled={pautasAiLoading || !pautasExtraInstructions.trim()}
+                    onClick={startPautasAiSearch}
+                    style={{ 
+                      padding: '8px 16px', background: pautasAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)', 
+                      color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold', 
+                      cursor: pautasAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {pautasAiLoading ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
+                        {pautasAiSeconds}s
+                      </span>
+                    ) : '🚀 Analizar'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPautasConfig(false)} 
+                    style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+
+              <div className="ai-modal-body">
+                <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                  <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
+                    Generar pautas para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
+                  </p>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                    La IA analizará el ciclo de vida y propondrá frecuencias para las labores disponibles en el sistema.
+                  </p>
+                </div>
+
+                {/* Prompt colapsable */}
+                <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <button 
+                    type="button"
+                    onClick={() => setPautasConfigPromptOpen(!pautasConfigPromptOpen)}
+                    style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
+                  >
+                    <span>📋 Instrucciones del Prompt (técnico)</span>
+                    <span style={{ transform: pautasConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                  </button>
+                  {pautasConfigPromptOpen && (
+                    <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
+                      La IA recibirá la lista de labores registradas en el sistema y el nombre de la especie actual. Su tarea será vincular cada labor pertinente con la fase adecuada del ciclo de vida y proponer una frecuencia en días, además de generar instrucciones breves.
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
+                  <textarea
+                    value={pautasExtraInstructions}
+                    onChange={e => setPautasExtraInstructions(e.target.value)}
+                    placeholder="Instrucciones adicionales para la generación..."
+                    rows={4}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5', marginBottom: '12px' }}
+                  />
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>🎯 Enfocar análisis en una labor específica:</label>
+                    <select
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                          setPautasExtraInstructions('Analiza el ciclo de vida de esta especie y genera pautas de labores (riego, abonado, poda, etc.) específicas para cada fase, indicando la frecuencia recomendada.');
+                        } else {
+                          const laborName = masterLabores.find(l => String(l.idlabores) === String(val))?.laboresnombre || 'esta labor';
+                          setPautasExtraInstructions(`Concéntrate exclusivamente en analizar y generar las pautas, fases y frecuencias para la labor de "${laborName}". No propongas ninguna otra labor.`);
+                        }
+                      }}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                    >
+                      <option value="">-- Búsqueda General (Todas las labores) --</option>
+                      {masterLabores.map(l => (
+                        <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Pautas AI Results Modal ── */}
+        {showPautasAiModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowPautasAiModal(false)}>
+            <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }} onClick={e => e.stopPropagation()}>
+              <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                <span>✨ Pautas Propuestas por la IA</span>
+                <button type="button" onClick={() => setShowPautasAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                {aiPautasProposal.length === 0 ? (
+                  <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>
+                ) : (
+                  aiPautasProposal.map((prop, idx) => {
+                    const isExisting = pautas.some(p => p.xlaborespautaidlabores == prop.id_labor && p.laborespautafase === prop.fase);
+                    const laborDef = masterLabores.find(l => l.idlabores == prop.id_labor);
+                    
+                    return (
+                      <label key={idx} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
+                        border: isExisting ? '1px solid #cbd5e1' : prop.selected ? '2px solid #10b981' : '1px solid #e2e8f0',
+                        borderRadius: '8px', cursor: isExisting ? 'default' : 'pointer',
+                        background: isExisting ? '#f8fafc' : prop.selected ? '#f0fdf4' : '#fff',
+                        transition: 'all 0.2s'
+                      }}>
+                        {!isExisting && (
+                          <input
+                            type="checkbox"
+                            checked={prop.selected}
+                            onChange={(e) => {
+                              const newProps = [...aiPautasProposal];
+                              newProps[idx].selected = e.target.checked;
+                              setAiPautasProposal(newProps);
+                            }}
+                            style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
+                          />
+                        )}
+                        {isExisting && <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>}
+                        
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isExisting ? '#64748b' : '#1e293b' }}>
+                            {laborDef ? laborDef.laboresnombre : 'Labor desconocida'} 
+                            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>— Fase: {prop.fase}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.85rem', color: '#64748b' }}>
+                            <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                              ⏱️ {prop.frecuencia ? `Cada ${prop.frecuencia} días` : 'Puntual'}
+                            </span>
+                          </div>
+                          {prop.notas_ia && (
+                            <div style={{ marginTop: '8px', fontSize: '0.9rem', color: '#475569', fontStyle: 'italic', background: '#f1f5f9', padding: '8px', borderRadius: '6px' }}>
+                              "{prop.notas_ia}"
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowPautasAiModal(false)} style={{ padding: '10px 24px', background: 'white', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}>Cancelar</button>
+                {aiPautasProposal.filter(p => p.selected).length > 0 && (
+                  <button
+                    type="button"
+                    style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}
+                    onClick={applyAiPautas}
+                  >
+                    Guardar Seleccionadas ({aiPautasProposal.filter(p => p.selected).length})
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </>
   );
 }

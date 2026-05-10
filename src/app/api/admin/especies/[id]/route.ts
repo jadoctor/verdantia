@@ -82,7 +82,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesluzsolar,
       especiescaracteristicassuelo,
       especiesdificultad,
-      especiestemperaturamaxima
+      especiestemperaturamaxima,
+      especiesdiashastarecoleccion
     } = body;
 
     if (!especiesnombre) {
@@ -102,7 +103,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         especiesbiodinamicacategoria = ?, especiesbiodinamicanotas = ?,
         especiesprofundidadtrasplante = ?, especiesphsuelo = ?, especiesnecesidadriego = ?, especiestiposiembra = ?,
         especiesvolumenmaceta = ?, especiesluzsolar = ?, especiescaracteristicassuelo = ?, especiesdificultad = ?,
-        especiestemperaturamaxima = ?
+        especiestemperaturamaxima = ?, especiesdiashastarecoleccion = ?
       WHERE idespecies = ?
     `;
 
@@ -150,6 +151,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiescaracteristicassuelo || null,
       especiesdificultad || null,
       especiestemperaturamaxima || null,
+      especiesdiashastarecoleccion || null,
       idespecies
     ];
 

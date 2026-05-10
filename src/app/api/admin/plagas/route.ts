@@ -23,10 +23,15 @@ export async function GET(request: Request) {
              d.datosadjuntosresumen as primary_photo_resumen 
       FROM plagas p
       LEFT JOIN datosadjuntos d 
-        ON p.idplagas = d.xdatosadjuntosidplagas 
-        AND d.datosadjuntostipo = 'imagen' 
-        AND d.datosadjuntosesprincipal = 1 
-        AND d.datosadjuntosactivo = 1
+        ON d.iddatosadjuntos = (
+          SELECT d2.iddatosadjuntos 
+          FROM datosadjuntos d2 
+          WHERE d2.xdatosadjuntosidplagas = p.idplagas 
+            AND d2.datosadjuntostipo = 'imagen' 
+            AND d2.datosadjuntosactivo = 1 
+          ORDER BY d2.datosadjuntosesprincipal DESC, d2.iddatosadjuntos ASC 
+          LIMIT 1
+        )
       ORDER BY p.plagasnombre
     `);
     return NextResponse.json({ plagas: rows });
@@ -54,6 +59,11 @@ export async function POST(request: Request) {
 
     if (!plagasnombre) {
       return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
+    }
+
+    const [existing] = await pool.query<any[]>('SELECT idplagas FROM plagas WHERE plagasnombre = ?', [plagasnombre]);
+    if (existing.length > 0) {
+      return NextResponse.json({ error: 'Ya existe una plaga con ese nombre en el catálogo maestro.' }, { status: 400 });
     }
 
     const query = `

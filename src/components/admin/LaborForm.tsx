@@ -1213,19 +1213,19 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
 
       {/* AI Image Generator Modal */}
       {showAiImageModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(to right, #f8fafc, #f1f5f9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>✨</span> Generador IA (Imagen 4.0)
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', padding: '12px' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', boxSizing: 'border-box' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(to right, #f8fafc, #f1f5f9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.3rem' }}>✨</span> Generador IA (Imagen 4.0)
                 </h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Labor: <strong>{formData.laboresnombre || 'Sin nombre'}</strong></p>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Labor: <strong>{formData.laboresnombre || 'Sin nombre'}</strong></p>
               </div>
-              <button onClick={() => setShowAiImageModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
+              <button onClick={() => setShowAiImageModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer', flexShrink: 0 }}>&times;</button>
             </div>
 
-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ padding: '16px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {!aiImageResult ? (
                 <>
                   <div>
@@ -1442,37 +1442,37 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
         );
       })()}
       {showPdfSearchModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', padding: '12px' }}
           onClick={() => setShowPdfSearchModal(false)}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '600px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '20px' }}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '16px', maxWidth: '600px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', gap: '12px' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                 ✨ Asistente IA de Documentos
               </h3>
-              <button type="button" onClick={() => setShowPdfSearchModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+              <button type="button" onClick={() => setShowPdfSearchModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', flexShrink: 0 }}>✕</button>
             </div>
 
-            <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569' }}>
-              Dile a la Inteligencia Artificial qué tipo de documento necesitas buscar sobre la labor <strong>{formData.laboresnombre}</strong> (ej. <em>"guía de poda"</em>, <em>"manual INTA"</em>, <em>"buenas prácticas"</em>).
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>
+              Dile a la IA qué tipo de documento necesitas buscar sobre <strong>{formData.laboresnombre}</strong> (ej. <em>"guía de poda"</em>, <em>"manual INTA"</em>).
             </p>
 
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
                 value={pdfSearchTopic}
                 onChange={e => setPdfSearchTopic(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchPdfs()}
                 placeholder="Ej. manual de poda..."
-                style={{ flex: '1 1 200px', padding: '12px', border: '2px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none', minWidth: 0 }}
+                style={{ flex: 1, padding: '12px', border: '2px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none', minWidth: 0, boxSizing: 'border-box' }}
               />
               <button
                 type="button"
                 onClick={handleSearchPdfs}
                 disabled={pdfSearchLoading || !pdfSearchTopic}
-                style={{ flex: '0 0 auto', padding: '0 24px', minHeight: '48px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: pdfSearchLoading ? 'wait' : 'pointer', opacity: (!pdfSearchTopic || pdfSearchLoading) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ flexShrink: 0, padding: '0 16px', minHeight: '48px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: pdfSearchLoading ? 'wait' : 'pointer', opacity: (!pdfSearchTopic || pdfSearchLoading) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap' }}
               >
-                {pdfSearchLoading ? '⏳...' : 'Buscar'}
+                {pdfSearchLoading ? '⏳' : '🔍 Buscar'}
               </button>
             </div>
 
@@ -1493,7 +1493,7 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
 
                     <button
                       type="button"
-                      onClick={() => handleAddPdfLink(link.title, link.url, link.summary || '')}
+                      onClick={() => handleAddPdfLink(link.title, link.url, link.summary || '', link.apuntes || '')}
                       style={{ marginTop: '8px', padding: '10px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'stretch', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}
                     >
                       <span>📥</span> Adjuntar Documento

@@ -520,11 +520,13 @@ export default function DashboardLayout({
                     <span>Guía de Usuario</span>
                   </a>
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setAjustesHover(true)} onMouseLeave={() => setAjustesHover(false)}>
-                    <a href="/dashboard/admin/ajustes" className={`nav-item ${pathname.includes('/admin/ajustes') ? 'active' : ''}`} onClick={handleNavClick}>
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/ajustes') ? 'active' : ''}`}
+                      onClick={(e) => { e.preventDefault(); setAjustesHover(h => !h); }}
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">⚙️</span>
                       <span style={{flex: 1}}>Ajustes de Programa</span>
                       <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: ajustesHover || pathname.includes('/admin/ajustes') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                    </a>
+                    </button>
                     <div style={{ display: ajustesHover || pathname.includes('/admin/ajustes') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
                       <a href="/dashboard/admin/ajustes/idiomas" className={`nav-item ${pathname.includes('/admin/ajustes/idiomas') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🗣️ Idiomas</a>
                       <a href="/dashboard/admin/ajustes/paises" className={`nav-item ${pathname.includes('/admin/ajustes/paises') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌎 Países</a>

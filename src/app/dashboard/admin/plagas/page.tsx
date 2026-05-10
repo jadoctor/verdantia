@@ -76,7 +76,36 @@ export default function PlagasAdminPage() {
     p.plagasnombrecientifico?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (authLoading || loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando catálogo...</div>;
+  const getPlagaIcon = (nombre: string, tipo: string) => {
+    const nameLower = (nombre || '').toLowerCase();
+    
+    // Asignación por nombre específico (más preciso)
+    if (nameLower.includes('araña') || nameLower.includes('ácaro')) return '🕷️';
+    if (nameLower.includes('caracol') || nameLower.includes('babosa')) return '🐌';
+    if (nameLower.includes('hormiga')) return '🐜';
+    if (nameLower.includes('mosca') || nameLower.includes('mosquito')) return '🦟';
+    if (nameLower.includes('gusano') || nameLower.includes('oruga') || nameLower.includes('polilla')) return '🐛';
+    if (nameLower.includes('pulgón') || nameLower.includes('cochinilla') || nameLower.includes('chinche')) return '🐞';
+    if (nameLower.includes('nematodo') || nameLower.includes('lombriz')) return '🪱';
+    if (nameLower.includes('pájaro') || nameLower.includes('ave') || nameLower.includes('cuervo')) return '🐦';
+    if (nameLower.includes('ratón') || nameLower.includes('rata') || nameLower.includes('roedor')) return '🐁';
+    if (nameLower.includes('conejo') || nameLower.includes('liebre')) return '🐇';
+    if (nameLower.includes('topo')) return '🦡';
+    if (nameLower.includes('jabalí')) return '🐗';
+    if (nameLower.includes('ciervo') || nameLower.includes('venado')) return '🦌';
+    if (nameLower.includes('mildiu') || nameLower.includes('oídio') || nameLower.includes('roya') || nameLower.includes('botrytis')) return '🌫️';
+
+    // Fallback por tipo general si no coincide el nombre
+    switch (tipo?.toLowerCase()) {
+      case 'hongo': return '🍄';
+      case 'insecto': return '🪲';
+      case 'bacteria': return '🦠';
+      case 'virus': return '🧬';
+      case 'mamifero': return '🐾';
+      case 'ave': return '🪶';
+      default: return '⚠️';
+    }
+  };
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -126,86 +155,101 @@ export default function PlagasAdminPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-        {filteredPlagas.map(plaga => (
-          <div key={plaga.idplagas} style={{
-            background: 'white', borderRadius: '16px', padding: '24px',
-            border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ width: '80px', height: '110px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {plaga.primary_photo_ruta ? (
-                  <img 
-                    src={getMediaUrl(plaga.primary_photo_ruta)} 
-                    alt={plaga.plagasnombre} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                    crossOrigin="anonymous"
-                  />
-                ) : (
-                  <span style={{ fontSize: '2.5rem' }}>
-                    {plaga.plagastipo === 'hongo' ? '🍄' : 
-                     plaga.plagastipo === 'insecto' ? '🐛' : 
-                     plaga.plagastipo === 'bacteria' ? '🦠' : 
-                     plaga.plagastipo === 'virus' ? '🧬' : 
-                     plaga.plagastipo === 'mamifero' ? '🐁' : '🦟'}
-                  </span>
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.25rem', fontWeight: '800' }}>{plaga.plagasnombre}</h3>
-                  <span style={{ 
-                    background: plaga.plagastipo === 'hongo' ? '#fee2e2' : plaga.plagastipo === 'insecto' ? '#dbeafe' : '#f3f4f6', 
-                    color: plaga.plagastipo === 'hongo' ? '#991b1b' : plaga.plagastipo === 'insecto' ? '#1e40af' : '#475569', 
-                    padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase'
-                  }}>
-                    {plaga.plagastipo || 'N/A'}
-                  </span>
-                </div>
-                {plaga.plagasnombrecientifico && (
-                  <p style={{ margin: 0, fontStyle: 'italic', color: '#64748b', fontSize: '0.9rem' }}>
-                    {plaga.plagasnombrecientifico}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <p style={{ margin: '0 0 20px 0', fontSize: '0.9rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {plaga.plagasdescripcion || 'Sin descripción.'}
-            </p>
-
-            <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-              <button 
-                onClick={() => { setEditingPlagaId(plaga.idplagas); setIsModalOpen(true); }}
-                style={{
-                  flex: 1, padding: '8px', background: '#f8fafc', border: '1px solid #cbd5e1', 
-                  borderRadius: '8px', cursor: 'pointer', fontWeight: '600', color: '#334155'
-                }}>
-                Editar
-              </button>
-              
-              {deleteConfirmId === plaga.idplagas ? (
-                <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-                  <button onClick={() => handleDelete(plaga.idplagas)} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✓</button>
-                  <button onClick={() => setDeleteConfirmId(null)} style={{ flex: 1, background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>✕</button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => setDeleteConfirmId(plaga.idplagas)}
-                  style={{
-                    padding: '8px 16px', background: '#fee2e2', border: 'none', 
-                    borderRadius: '8px', cursor: 'pointer', color: '#ef4444'
-                  }}>
-                  🗑️
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredPlagas.length === 0 && (
+      {filteredPlagas.length > 0 ? (
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.05em' }}>
+                <th style={{ padding: '12px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Foto</th>
+                <th style={{ padding: '12px' }}>Nombre</th>
+                <th style={{ padding: '12px' }}>Nombre Científico</th>
+                <th style={{ padding: '12px' }}>Tipo</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPlagas.map((plaga, i) => (
+                <tr key={plaga.idplagas} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
+                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
+                    {(() => {
+                      if (plaga.primary_photo_ruta) {
+                        let meta: any = {};
+                        try { meta = JSON.parse(plaga.primary_photo_resumen || '{}'); } catch(err){}
+                        const STYLE_FILTERS: Record<string, string> = {
+                          none: 'none', vivid: 'saturate(1.3) contrast(1.1)', warm: 'sepia(0.25) saturate(1.2)',
+                          cool: 'saturate(0.9) hue-rotate(15deg)', bw: 'grayscale(1)', vintage: 'sepia(0.4) contrast(0.9) brightness(1.1)',
+                          dramatic: 'contrast(1.4) saturate(1.2)', soft: 'brightness(1.1) contrast(0.9) saturate(0.9)',
+                        };
+                        let baseFilter = meta.profile_style ? STYLE_FILTERS[meta.profile_style] : 'none';
+                        if (meta.profile_brightness !== undefined || meta.profile_contrast !== undefined) {
+                          baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
+                        }
+                        return (
+                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
+                            <img 
+                              src={getMediaUrl(plaga.primary_photo_ruta)} 
+                              alt={plaga.plagasnombre}
+                              crossOrigin="anonymous"
+                              loading="lazy"
+                              style={{ 
+                                width: '100%', height: '100%', objectFit: 'cover',
+                                filter: baseFilter,
+                                objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                                transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`,
+                                position: 'absolute', top: 0, left: 0, zIndex: 1
+                              }} 
+                            />
+                          </div>
+                        );
+                      }
+                      return (
+                        <span style={{ fontSize: '2rem' }}>
+                          {getPlagaIcon(plaga.plagasnombre, plaga.plagastipo)}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#1e293b' }}>
+                    {plaga.plagasnombre}
+                  </td>
+                  <td style={{ padding: '12px', fontStyle: 'italic', color: '#64748b' }}>
+                    {plaga.plagasnombrecientifico || '-'}
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{ 
+                      background: plaga.plagastipo === 'hongo' ? '#fee2e2' : plaga.plagastipo === 'insecto' ? '#dbeafe' : '#f3f4f6', 
+                      color: plaga.plagastipo === 'hongo' ? '#991b1b' : plaga.plagastipo === 'insecto' ? '#1e40af' : '#475569', 
+                      padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase'
+                    }}>
+                      {plaga.plagastipo || 'N/A'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
+                      <button 
+                        onClick={() => { setEditingPlagaId(plaga.idplagas); setIsModalOpen(true); }}
+                        style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold' }}
+                      >
+                        Editor de Plaga
+                      </button>
+                      
+                      {deleteConfirmId === plaga.idplagas ? (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button onClick={() => handleDelete(plaga.idplagas)} style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>✓</button>
+                          <button onClick={() => setDeleteConfirmId(null)} style={{ padding: '4px 8px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(plaga.idplagas)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>🗑️</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
         <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
           <span style={{ fontSize: '3rem' }}>🍃</span>
           <h3 style={{ color: '#475569', marginTop: '16px' }}>No hay plagas registradas</h3>

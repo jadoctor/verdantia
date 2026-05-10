@@ -32,6 +32,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
     }
 
+    const [existing] = await pool.query<any[]>('SELECT idplagas FROM plagas WHERE plagasnombre = ? AND idplagas != ?', [plagasnombre, idplagas]);
+    if (existing.length > 0) {
+      return NextResponse.json({ error: 'Ya existe otra plaga con ese nombre en el catálogo maestro.' }, { status: 400 });
+    }
+
     const query = `
       UPDATE plagas SET
         plagasnombre = ?, plagasnombrecientifico = ?, plagastipo = ?, plagasdescripcion = ?, plagascontrolorganico = ?
