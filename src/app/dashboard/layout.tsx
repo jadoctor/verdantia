@@ -491,10 +491,6 @@ export default function DashboardLayout({
                     <span className="nav-icon">🌍</span>
                     <span>Especies Globales</span>
                   </a>
-                  <a href="/dashboard/admin/variedades" className={`nav-item ${isActive('/dashboard/admin/variedades')}`} onClick={handleNavClick}>
-                    <span className="nav-icon">🏷️</span>
-                    <span>Variedades Globales</span>
-                  </a>
                   <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} onClick={handleNavClick}>
                     <span className="nav-icon">🔧</span>
                     <span>Labores Globales</span>

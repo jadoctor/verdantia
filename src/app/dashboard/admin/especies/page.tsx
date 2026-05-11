@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Blurhash } from 'react-blurhash';
@@ -8,6 +8,8 @@ import { getMediaUrl } from '@/lib/media-url';
 
 export default function EspeciesAdminPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const focusParam = searchParams.get('focus');
   const [especies, setEspecies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState('');
@@ -57,6 +59,17 @@ export default function EspeciesAdminPage() {
       loadEspecies();
     }
   }, [filterTipo, userEmail]);
+
+  useEffect(() => {
+    if (!loading && focusParam) {
+      setTimeout(() => {
+        const element = document.getElementById(`especie-row-${focusParam}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+    }
+  }, [loading, focusParam]);
 
   const handleEdit = (id: string | null) => {
     if (id) {
@@ -152,8 +165,20 @@ export default function EspeciesAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {especies.map((e, i) => (
-                <tr key={e.idespecies} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
+              {especies.map((e, i) => {
+                const isFocused = focusParam && e.idespecies.toString() === focusParam.toString();
+                return (
+                  <tr 
+                    key={e.idespecies} 
+                    id={`especie-row-${e.idespecies}`}
+                    style={{ 
+                      borderBottom: '1px solid #e2e8f0', 
+                      background: isFocused ? '#f0fdf4' : (i % 2 === 0 ? 'white' : '#f8fafc'),
+                      outline: isFocused ? '2px solid #10b981' : 'none',
+                      outlineOffset: '-2px',
+                      transition: 'all 0.5s ease'
+                    }}
+                  >
                   <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
                     {(() => {
                       if (e.primary_photo_ruta) {
@@ -235,7 +260,8 @@ export default function EspeciesAdminPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {especies.length === 0 && (
                 <tr>
                   <td colSpan={10} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No hay especies registradas.</td>

@@ -881,6 +881,35 @@ export default function GuiaUsuarioPage() {
                 </ul>
               </div>
             </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>11/05/2026 17:58 – Modernización UI del Asistente IA de Variedades y Enrutamiento PDF</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El botón "Añadir" del buscador IA de PDFs fallaba silenciosamente en Variedades porque intentaba insertar los documentos usando el ID de la variedad en el endpoint de Especies (<code>/api/admin/especies/[id]/pdfs/link</code>).</li>
+                  <li style={{ marginBottom: '8px' }}>El modal de "Editar Metadatos del PDF" en Variedades no cumplía con el "Gold Standard" visual: era de una sola columna, carecía de botón para regenerar la portada IA, y rompía con la coherencia visual del panel.</li>
+                  <li style={{ marginBottom: '8px' }}>Al cerrar el buscador de PDFs IA a mitad de búsqueda, la petición consumía recursos en segundo plano sin cancelarse.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Creación de un nuevo endpoint backend dedicado: <code>src/app/api/admin/variedades/[id]/pdfs/link/route.ts</code> garantizando la inserción correcta en la columna <code>xdatosadjuntosidvariedades</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Refactorización masiva del modal <code>editingPdf</code> en <code>VariedadMediaManager.tsx</code> aplicando el Patrón Oro de dos columnas (Izquierda: Visualizador y Generador IA de Portadas. Derecha: Título, Resumen, y Apuntes Estudiante).</li>
+                  <li style={{ marginBottom: '8px' }}>Sustitución de iconos de aspa (X) por botones de "Cancelar" explícitos y restrictivos que bloquean cierres accidentales al hacer click fuera del modal.</li>
+                  <li>Implementación de <code>AbortController</code> ligado al botón "Cancelar" para destruir conexiones fetch huérfanas hacia la IA de Gemini si el usuario abandona la espera.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Los PDFs enlazados se guardan sin fallos de Foreign Key en la base de datos de Variedades.</li>
+                  <li style={{ marginBottom: '8px' }}>Reducción de peticiones zombi ahorrando ancho de banda y cuota de IA.</li>
+                  <li>Se ha unificado la experiencia visual de edición de metadatos, brindando coherencia total al sistema de Variedades respecto a la matriz de Especies.</li>
+                </ul>
+              </div>
+            </li>
             <li style={{ marginBottom: '24px' }}>
               <strong>10/05/2026 23:45 – Consolidación de Tabs Administrativos y Limpieza de Redundancias</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>

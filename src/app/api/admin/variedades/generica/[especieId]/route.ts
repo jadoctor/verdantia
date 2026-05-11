@@ -19,8 +19,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ espe
 
   try {
     const [rows]: any = await pool.query(`
-      SELECT * FROM variedades 
-      WHERE xvariedadesidespecies = ? AND variedadesesgenerica = 1
+      SELECT v.*, e.especiesnombre, e.especiesicono 
+      FROM variedades v
+      LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies
+      WHERE v.xvariedadesidespecies = ? AND v.variedadesesgenerica = 1
       LIMIT 1
     `, [resolvedParams.especieId]);
     

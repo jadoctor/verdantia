@@ -101,8 +101,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (idlaborespauta) {
       // Update by ID
       await pool.query(
-        `UPDATE laborespauta SET laborespautafase = COALESCE(?, laborespautafase), laborespautafrecuenciadias = ?, laborespautanotasia = ?, laborespautaactivosino = ? WHERE idlaborespauta = ? AND xlaborespautaidespecies = ?`,
-        [laborespautafase || null, laborespautafrecuenciadias ?? null, laborespautanotasia || null, laborespautaactivosino !== undefined ? laborespautaactivosino : 1, idlaborespauta, idespecies]
+        `UPDATE laborespauta SET 
+          xlaborespautaidlabores = COALESCE(?, xlaborespautaidlabores),
+          laborespautafase = COALESCE(?, laborespautafase), 
+          laborespautafrecuenciadias = ?, 
+          laborespautanotasia = ?, 
+          laborespautaactivosino = ? 
+        WHERE idlaborespauta = ? AND xlaborespautaidespecies = ?`,
+        [
+          xlaborespautaidlabores || null,
+          laborespautafase || null, 
+          laborespautafrecuenciadias ?? null, 
+          laborespautanotasia || null, 
+          laborespautaactivosino !== undefined ? laborespautaactivosino : 1, 
+          idlaborespauta, 
+          idespecies
+        ]
       );
     } else if (xlaborespautaidlabores && laborespautafase) {
       // Update by labor+fase combo

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { topic, especieNombre } = await request.json();
+    const { topic, especieNombre, variedadNombre } = await request.json();
 
     if (!topic || !especieNombre) {
       return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 });
@@ -13,7 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'GEMINI_API_KEY no configurada' }, { status: 500 });
     }
 
-    const prompt = `Actúa como un bibliotecario agrónomo experto. Busca 4 enlaces reales a manuales, guías o documentos PDF (preferiblemente de instituciones agrícolas, universidades o ministerios) sobre el cultivo de "${especieNombre}", específicamente enfocados en el tema: "${topic}". 
+    const contextContext = variedadNombre && variedadNombre !== 'Variedad' && variedadNombre !== 'Sin nombre' 
+      ? `de la especie "${especieNombre}" y variedad "${variedadNombre}"` 
+      : `de la especie "${especieNombre}"`;
+
+    const prompt = `Actúa como un bibliotecario agrónomo experto. Busca 4 enlaces reales a manuales, guías o documentos PDF (preferiblemente de instituciones agrícolas, universidades o ministerios) sobre el cultivo ${contextContext}, específicamente enfocados en el tema: "${topic}". 
 Es IMPRESCINDIBLE que uses tu herramienta de búsqueda en internet para obtener enlaces reales y actualizados.
 Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdown (\`\`\`) ni texto adicional. El JSON debe tener esta estructura exacta:
 [

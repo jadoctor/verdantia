@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
@@ -25,6 +25,9 @@ const CICLOS = ['anual', 'bianual', 'perenne'];
 
 export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const focusParam = searchParams.get('focus');
 
   const defaultFormData = {
     especiesnombre: '', especiesnombrecientifico: '', especiesfamilia: '',
@@ -61,7 +64,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('taxonomia');
   const [isEspecieOpen, setIsEspecieOpen] = useState(true);
-  const [isPautasOpen, setIsPautasOpen] = useState(false);
+
   const [calcPersonas, setCalcPersonas] = useState<number>(1);
   const [aiProposal, setAiProposal] = useState<any>(null);
   const [selectedRels, setSelectedRels] = useState<{ ben: any[], per: any[], pla: any[] }>({ ben: [], per: [], pla: [] });
@@ -98,6 +101,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [aiSinonimosProposal, setAiSinonimosProposal] = useState<any[]>([]);
 
   // -- Synonym AI Config Panel --
+  
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   const [showSinonimosConfig, setShowSinonimosConfig] = useState(false);
   const [sinConfigPromptOpen, setSinConfigPromptOpen] = useState(false);
   const [sinSelectedScope, setSinSelectedScope] = useState<string>('general');
@@ -152,9 +161,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     laborespautafase: 'germinacion',
     laborespautafrecuenciadias: '',
     laborespautanotasia: '',
-    laborespautaactivosino: 1
+    laborespautaactivosino: 1,
+    idlaborespauta: undefined as number | undefined
   });
   const [pautaDeleteConfirm, setPautaDeleteConfirm] = useState<string | null>(null);
+  const [showAddPautaForm, setShowAddPautaForm] = useState(false);
 
   const [showAiImageModal, setShowAiImageModal] = useState(false);
   const [aiImageConcept, setAiImageConcept] = useState('');
@@ -215,6 +226,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       loadAttachments(especieId);
       loadRelaciones(especieId);
       loadSinonimos(especieId);
+      loadPautas(especieId);
     }
   }, [especieId, userEmail]);
 
@@ -315,6 +327,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const bData = await bRes.json();
       setBlogs(bData.data || []);
     } catch (e) { console.error('Error cargando blogs:', e); }
+  };
+
+  const loadPautas = async (id: string) => {
+    if (!userEmail) return;
+    try {
+      const res = await fetch(`/api/admin/especies/${id}/pautas`, {
+        headers: { 'x-user-email': userEmail }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPautas(data.pautas || []);
+      }
+    } catch (e) {
+      console.error('Error cargando pautas:', e);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1420,7 +1447,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail || ''
+        },
         body: JSON.stringify(pautaForm)
       });
 
@@ -1431,7 +1461,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
 
       // Refetch pautas
-      const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`);
+      const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`, {
+        headers: { 'x-user-email': userEmail || '' }
+      });
       if (pautasRes.ok) {
         const { pautas } = await pautasRes.json();
         setPautas(pautas || []);
@@ -1444,9 +1476,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         laborespautafase: 'germinacion',
         laborespautafrecuenciadias: '',
         laborespautanotasia: '',
-        laborespautaactivosino: 1
+        laborespautaactivosino: 1,
+        idlaborespauta: undefined
       });
-
+      setShowAddPautaForm(false);
+      setEditingPauta(null);
     } catch (e) {
       console.error(e);
       alert("Error inesperado al guardar pauta.");
@@ -1455,7 +1489,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   const handleDeletePauta = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/especies/${especieId}/pautas/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/especies/${especieId}/pautas/${id}`, { 
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail || '' }
+      });
       if (res.ok) {
         setPautas(pautas.filter(p => p.idlaborespauta !== id));
         setPautaDeleteConfirm(null);
@@ -1521,7 +1558,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
         await fetch(`/api/admin/especies/${especieId}/pautas`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-user-email': userEmail || ''
+          },
           body: JSON.stringify({
             xlaborespautaidlabores: pauta.id_labor,
             laborespautafase: pauta.fase,
@@ -1533,7 +1573,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
 
       // Refetch
-      const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`);
+      const pautasRes = await fetch(`/api/admin/especies/${especieId}/pautas`, {
+        headers: { 'x-user-email': userEmail || '' }
+      });
       if (pautasRes.ok) {
         const { pautas } = await pautasRes.json();
         setPautas(pautas || []);
@@ -1553,7 +1595,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={() => router.push('/dashboard/admin/especies')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <button onClick={() => router.push(`/dashboard/admin/especies?focus=${especieId}`)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🌍 Volver a Especies Globales
         </button>
       </div>
@@ -1726,7 +1768,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
           <div
             className="collapsible-header"
-            onClick={() => setIsEspecieOpen(!isEspecieOpen)}
+            onClick={() => {
+              const next = !isEspecieOpen;
+              setIsEspecieOpen(next);
+              if (next) setActiveTab('taxonomia');
+            }}
             style={{ padding: '15px 24px', background: '#e2e8f0', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
             <span>
@@ -1781,6 +1827,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <div className="form-group">
                       <label>Familia</label>
                       <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group full">
+                      <label>Descripción / Cultivo</label>
+                      <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
                     </div>
                     <div className="form-group full checkbox-group">
                       <label>Tipos</label>
@@ -2061,10 +2111,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <div className="form-group full">
                       <label>Historia / Origen</label>
                       <textarea name="especieshistoria" rows={3} value={formData.especieshistoria || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group full">
-                      <label>Descripción / Cultivo</label>
-                      <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
                     </div>
                     <div className="form-group">
                       <label>pH del Suelo</label>
@@ -2505,6 +2551,335 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </div>
                 )}
 
+                {/* VARIEDADES */}
+                {activeTab === 'variedades' && (
+                  <EspecieVariedadesTab especieId={especieId} userEmail={userEmail} focusVariedadId={focusParam} />
+                )}
+
+                {/* PAUTAS DE LABORES */}
+                {activeTab === 'pautas' && (
+                  <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPautasConfig(true);
+                          setPautasConfigPromptOpen(false);
+                        }}
+                        disabled={pautasAiLoading}
+                        style={{ 
+                          height: '38px',
+                          padding: '0 16px', 
+                          background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          fontWeight: 'bold', 
+                          cursor: pautasAiLoading ? 'not-allowed' : 'pointer', 
+                          fontSize: '0.9rem', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '8px',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
+                          flexShrink: 0
+                        }}
+                      >
+                        {pautasAiLoading ? (
+                          <>
+                            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+                            Analizando... {pautasAiSeconds}s
+                          </>
+                        ) : (
+                          <>✨ Asistente IA</>
+                        )}
+                      </button>
+
+                      {especieId && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddPautaForm(!showAddPautaForm)}
+                          style={{ 
+                            height: '38px',
+                            padding: '0 16px', 
+                            background: showAddPautaForm ? 'linear-gradient(135deg, #475569, #1e293b)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '8px', 
+                            fontWeight: 'bold', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '8px', 
+                            fontSize: '0.9rem', 
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
+                            flexShrink: 0
+                          }}
+                        >
+                          {showAddPautaForm ? '✕ Cancelar' : '+ Añadir Labor'}
+                        </button>
+                      )}
+                    </div>
+
+                    {!especieId ? (
+                      <div style={{ padding: '20px', background: '#fffbeb', color: '#b45309', borderRadius: '8px', border: '1px solid #fef3c7' }}>
+                        Debes guardar la especie primero antes de poder asignar pautas de labores.
+                      </div>
+                    ) : (
+                      <>
+                        {showAddPautaForm && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px', marginBottom: '24px', background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                            <div style={{ gridColumn: '1 / -1', marginBottom: '8px' }}>
+                              <h4 style={{ margin: 0, color: '#1e293b', fontSize: '1rem' }}>➕ Nueva Pauta de Labor</h4>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Labor *</label>
+                              <select
+                                value={pautaForm.xlaborespautaidlabores}
+                                onChange={e => setPautaForm({ ...pautaForm, xlaborespautaidlabores: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                              >
+                                <option value="">Selecciona labor...</option>
+                                {masterLabores.map(l => (
+                                  <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre} ({l.laborestipo})</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Fase de la Planta *</label>
+                              <select
+                                value={pautaForm.laborespautafase}
+                                onChange={e => setPautaForm({ ...pautaForm, laborespautafase: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                              >
+                                <option value="siembra">1. Siembra a Germinación</option>
+                                <option value="germinacion">2. Germinación a Trasplante</option>
+                                <option value="plantula">3. Plántula (Establecimiento)</option>
+                                <option value="crecimiento">4. Crecimiento Vegetativo</option>
+                                <option value="floracion">5. Floración</option>
+                                <option value="fructificacion">6. Fructificación / Engorde</option>
+                                <option value="cosecha">7. Fase de Cosecha</option>
+                                <option value="fin_ciclo">8. Fin de Ciclo</option>
+                                <option value="general">Constante (Cualquier fase)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Frecuencia (días)</label>
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="Ej: 3"
+                                value={pautaForm.laborespautafrecuenciadias}
+                                onChange={e => setPautaForm({ ...pautaForm, laborespautafrecuenciadias: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                              />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Notas de la IA / Instrucciones</label>
+                              <textarea
+                                rows={2}
+                                placeholder="Ej: Mantener humedad constante sin encharcar..."
+                                value={pautaForm.laborespautanotasia}
+                                onChange={e => setPautaForm({ ...pautaForm, laborespautanotasia: e.target.value })}
+                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                              />
+                            </div>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={pautaForm.laborespautaactivosino === 1}
+                                  onChange={e => setPautaForm({ ...pautaForm, laborespautaactivosino: e.target.checked ? 1 : 0 })}
+                                />
+                                Pauta Activa
+                              </label>
+                              <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowAddPautaForm(false);
+                                    setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1, idlaborespauta: undefined });
+                                  }}
+                                  style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleSavePauta}
+                                  style={{ padding: '8px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                                >
+                                  Guardar Pauta
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {pautas.length > 0 && (
+                          <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                              <thead style={{ background: '#f1f5f9' }}>
+                                <tr>
+                                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Labor</th>
+                                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Fase</th>
+                                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Frecuencia</th>
+                                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Estado</th>
+                                  <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Acciones</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pautas.map((p, i) => {
+                                  const isNotesOpen = editingPauta === p.idlaborespauta;
+                                  
+                                  const updateField = async (field: string, value: any) => {
+                                    // Update local state first for responsiveness
+                                    const updatedPautas = pautas.map(item => 
+                                      item.idlaborespauta === p.idlaborespauta ? { ...item, [field]: value } : item
+                                    );
+                                    setPautas(updatedPautas);
+
+                                    // Auto-save to DB
+                                    try {
+                                      const updatedItem = { ...p, [field]: value };
+                                      await fetch(`/api/admin/especies/${especieId}/pautas/${p.idlaborespauta}`, {
+                                        method: 'PUT',
+                                        headers: { 
+                                          'Content-Type': 'application/json',
+                                          'x-user-email': userEmail || ''
+                                        },
+                                        body: JSON.stringify(updatedItem)
+                                      });
+                                    } catch (e) {
+                                      console.error('Error auto-saving pauta:', e);
+                                    }
+                                  };
+
+                                  return (
+                                    <React.Fragment key={p.idlaborespauta}>
+                                      <tr style={{ 
+                                        background: isNotesOpen ? '#f0f9ff' : (i % 2 === 0 ? 'white' : '#f8fafc'),
+                                        transition: 'all 0.2s',
+                                        borderBottom: '1px solid #e2e8f0'
+                                      }}>
+                                        <td style={{ padding: '8px 12px' }}>
+                                          <select
+                                            value={p.xlaborespautaidlabores}
+                                            onChange={e => updateField('xlaborespautaidlabores', e.target.value)}
+                                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                            onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
+                                            onBlur={e => e.target.style.border = '1px solid transparent'}
+                                          >
+                                            {masterLabores.map(l => (
+                                              <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
+                                            ))}
+                                          </select>
+                                        </td>
+                                        <td style={{ padding: '8px 12px' }}>
+                                          <select
+                                            value={p.laborespautafase}
+                                            onChange={e => updateField('laborespautafase', e.target.value)}
+                                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', fontSize: '0.85rem', color: '#64748b', cursor: 'pointer' }}
+                                            onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
+                                            onBlur={e => e.target.style.border = '1px solid transparent'}
+                                          >
+                                            <option value="siembra">1. Siembra</option>
+                                            <option value="germinacion">2. Germinación</option>
+                                            <option value="plantula">3. Plántula</option>
+                                            <option value="crecimiento">4. Crecimiento</option>
+                                            <option value="floracion">5. Floración</option>
+                                            <option value="fructificacion">6. Fructificación</option>
+                                            <option value="cosecha">7. Cosecha</option>
+                                            <option value="fin_ciclo">8. Fin de Ciclo</option>
+                                            <option value="general">Constante</option>
+                                          </select>
+                                        </td>
+                                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                            <input
+                                              type="number"
+                                              min="1"
+                                              value={p.laborespautafrecuenciadias || ''}
+                                              onChange={e => updateField('laborespautafrecuenciadias', e.target.value)}
+                                              placeholder="--"
+                                              style={{ width: '45px', padding: '4px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', textAlign: 'center', fontSize: '0.85rem' }}
+                                              onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
+                                              onBlur={e => e.target.style.border = '1px solid transparent'}
+                                            />
+                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>d</span>
+                                          </div>
+                                        </td>
+                                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={p.laborespautaactivosino === 1}
+                                            onChange={e => updateField('laborespautaactivosino', e.target.checked ? 1 : 0)}
+                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                          />
+                                        </td>
+                                        <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                            <button 
+                                              type="button" 
+                                              onClick={() => {
+                                                if (isNotesOpen) {
+                                                  setEditingPauta(null);
+                                                } else {
+                                                  setEditingPauta(p.idlaborespauta);
+                                                  setPautaForm({ ...p });
+                                                }
+                                              }} 
+                                              title="Editar notas"
+                                              style={{ background: isNotesOpen ? '#ede9fe' : 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '4px', fontSize: '1rem' }}
+                                            >
+                                              {isNotesOpen ? '📖' : '✏️'}
+                                            </button>
+                                            
+                                            {pautaDeleteConfirm === p.idlaborespauta ? (
+                                              <div style={{ display: 'flex', gap: '2px' }}>
+                                                <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.7rem' }}>✓</button>
+                                                <button type="button" onClick={() => setPautaDeleteConfirm(null)} style={{ background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.7rem' }}>✕</button>
+                                              </div>
+                                            ) : (
+                                              <button type="button" onClick={() => setPautaDeleteConfirm(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', fontSize: '1rem' }} title="Eliminar">🗑️</button>
+                                            )}
+                                          </div>
+                                        </td>
+                                      </tr>
+
+                                      {isNotesOpen && (
+                                        <tr style={{ background: '#f5f3ff' }}>
+                                          <td colSpan={5} style={{ padding: '0 12px 12px 12px' }}>
+                                            <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd6fe', marginTop: '4px' }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#6d28d9' }}>Notas e Instrucciones detalladas</label>
+                                                <span style={{ fontSize: '0.7rem', color: '#a78bfa' }}>Se guarda automáticamente</span>
+                                              </div>
+                                              <textarea
+                                                rows={3}
+                                                value={p.laborespautanotasia || ''}
+                                                onChange={e => updateField('laborespautanotasia', e.target.value)}
+                                                placeholder="Instrucciones específicas para esta labor..."
+                                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', lineHeight: '1.4' }}
+                                              />
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* SINONIMOS */}
                 {activeTab === 'sinonimos' && (
@@ -3652,192 +4027,7 @@ JSON de salida obligatorio:
         </div>
       )}
 
-      {/* ── SECCIÓN: PAUTAS DE LABORES ── */}
-      <div className="especie-form-container" style={{ marginTop: '24px' }}>
-        <div className="especie-form-body">
-          <div
-            className="collapsible-header"
-            onClick={() => setIsPautasOpen(!isPautasOpen)}
-            style={{ padding: '15px 24px', background: '#e2e8f0', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-          >
-            <span>📋 Pautas de Labores</span>
-            <span>{isPautasOpen ? '▲' : '▼'}</span>
-          </div>
 
-          {isPautasOpen && (
-            <div className="collapsible-content">
-              <div style={{ background: '#f8fafc', padding: '24px', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '20px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPautasConfig(true);
-                      setPautasConfigPromptOpen(false);
-                    }}
-                    disabled={pautasAiLoading}
-                    style={{ padding: '6px 14px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: pautasAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    {pautasAiLoading ? (
-                      <>
-                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
-                        Analizando... {pautasAiSeconds}s
-                      </>
-                    ) : (
-                      <>✨ Asistente IA</>
-                    )}
-                  </button>
-                </div>
-
-                {!especieId ? (
-                  <div style={{ padding: '20px', background: '#fffbeb', color: '#b45309', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-                    Debes guardar la especie primero antes de poder asignar pautas de labores.
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px', marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Labor *</label>
-                        <select
-                          value={pautaForm.xlaborespautaidlabores}
-                          onChange={e => setPautaForm({ ...pautaForm, xlaborespautaidlabores: e.target.value })}
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                        >
-                          <option value="">Selecciona labor...</option>
-                          {masterLabores.map(l => (
-                            <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre} ({l.laborestipo})</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Fase de la Planta *</label>
-                        <select
-                          value={pautaForm.laborespautafase}
-                          onChange={e => setPautaForm({ ...pautaForm, laborespautafase: e.target.value })}
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                        >
-                          <option value="siembra">1. Siembra a Germinación</option>
-                          <option value="germinacion">2. Germinación a Trasplante</option>
-                          <option value="plantula">3. Plántula (Establecimiento)</option>
-                          <option value="crecimiento">4. Crecimiento Vegetativo</option>
-                          <option value="floracion">5. Floración</option>
-                          <option value="fructificacion">6. Fructificación / Engorde</option>
-                          <option value="cosecha">7. Fase de Cosecha</option>
-                          <option value="fin_ciclo">8. Fin de Ciclo</option>
-                          <option value="general">Constante (Cualquier fase)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Frecuencia (días)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          placeholder="Ej: 3"
-                          value={pautaForm.laborespautafrecuenciadias}
-                          onChange={e => setPautaForm({ ...pautaForm, laborespautafrecuenciadias: e.target.value })}
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                        />
-                      </div>
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Notas de la IA / Instrucciones</label>
-                        <textarea
-                          rows={2}
-                          placeholder="Ej: Mantener humedad constante sin encharcar..."
-                          value={pautaForm.laborespautanotasia}
-                          onChange={e => setPautaForm({ ...pautaForm, laborespautanotasia: e.target.value })}
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                        />
-                      </div>
-                      <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}>
-                          <input
-                            type="checkbox"
-                            checked={pautaForm.laborespautaactivosino === 1}
-                            onChange={e => setPautaForm({ ...pautaForm, laborespautaactivosino: e.target.checked ? 1 : 0 })}
-                          />
-                          Pauta Activa
-                        </label>
-
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          {editingPauta && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingPauta(null);
-                                setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1 });
-                              }}
-                              style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={handleSavePauta}
-                            style={{ padding: '8px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                          >
-                            {editingPauta ? 'Actualizar Pauta' : '+ Añadir Pauta'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {pautas.length > 0 && (
-                      <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                          <thead style={{ background: '#f1f5f9' }}>
-                            <tr>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Labor</th>
-                              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Fase</th>
-                              <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Frecuencia</th>
-                              <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Estado</th>
-                              <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pautas.map((p, i) => (
-                              <tr key={p.idlaborespauta} style={{ background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
-                                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.laboresnombre}</td>
-                                <td style={{ padding: '12px', color: '#64748b' }}>{p.laborespautafase}</td>
-                                <td style={{ padding: '12px', textAlign: 'center' }}>
-                                  {p.laborespautafrecuenciadias ? `Cada ${p.laborespautafrecuenciadias} d` : 'Puntual'}
-                                </td>
-                                <td style={{ padding: '12px', textAlign: 'center' }}>
-                                  {p.laborespautaactivosino ? '✅' : '⏸️'}
-                                </td>
-                                <td style={{ padding: '12px', textAlign: 'right' }}>
-                                  <button type="button" onClick={() => {
-                                    setEditingPauta(p.idlaborespauta);
-                                    setPautaForm({
-                                      xlaborespautaidlabores: p.xlaborespautaidlabores,
-                                      laborespautafase: p.laborespautafase,
-                                      laborespautafrecuenciadias: p.laborespautafrecuenciadias || '',
-                                      laborespautanotasia: p.laborespautanotasia || '',
-                                      laborespautaactivosino: p.laborespautaactivosino
-                                    });
-                                  }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', marginRight: '8px' }}>✏️</button>
-
-                                  {pautaDeleteConfirm === p.idlaborespauta ? (
-                                    <>
-                                      <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px', marginRight: '4px' }}>✓</button>
-                                      <button type="button" onClick={() => setPautaDeleteConfirm(null)} style={{ background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '2px 6px' }}>✕</button>
-                                    </>
-                                  ) : (
-                                    <button type="button" onClick={() => setPautaDeleteConfirm(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
       {deleteConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
