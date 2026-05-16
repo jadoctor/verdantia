@@ -25,6 +25,7 @@ export interface UserProfile {
   zonaClimatica: string | null;
   tipoCalendario: string;
   passkeysCount?: number;
+  fotosRechazadasCount?: number;
 }
 
 /**
@@ -100,9 +101,17 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       }
     }
 
-    // Obtener foto preferida
+    // Obtener foto preferida (solo aprobadas: validado=1 y no rechazadas)
     const [fotoRows] = await pool.query(
-      `SELECT datosadjuntosruta, datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 AND datosadjuntosesprincipal = 1 LIMIT 1`,
+      `SELECT datosadjuntosruta, datosadjuntosresumen 
+       FROM datosadjuntos 
+       WHERE xdatosadjuntosidusuarios = ? 
+         AND datosadjuntostipo = 'imagen' 
+         AND datosadjuntosactivo = 1 
+         AND datosadjuntosvalidado = 1 
+         AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
+       ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
+       LIMIT 1`,
       [user.idusuarios]
     );
     const fotoPreferida = (fotoRows as any[]).length > 0 ? (fotoRows as any[])[0].datosadjuntosruta : null;
@@ -130,6 +139,20 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     );
     const passkeysCount = (passkeyRows as any[])[0].count;
 
+    // Obtener cantidad de fotos rechazadas activas
+    const [rechazadasRows] = await pool.query(
+      `SELECT COUNT(*) as count 
+       FROM datosadjuntos da
+       LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
+       LEFT JOIN incidencias i ON i.incidenciasreferenciaid = da.iddatosadjuntos AND i.incidenciasreferenciatipo = 'datosadjuntos' AND i.incidenciastipo = 'foto_rechazada'
+       WHERE da.datosadjuntosresultadovalidacion = 'rechazado'
+         AND da.datosadjuntosfechaeliminacion IS NULL
+         AND (i.incidenciasestado IS NULL OR i.incidenciasestado != 'apelada')
+         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesidusuarios = ?)`,
+      [user.idusuarios, user.idusuarios]
+    );
+    const fotosRechazadasCount = (rechazadasRows as any[])[0].count;
+
     return {
       id: user.idusuarios,
       nombre: user.usuariosnombre || '',
@@ -155,6 +178,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       zonaClimatica: user.usuarioszonaclimatica || null,
       tipoCalendario: user.usuariostipocalendario || 'Normal',
       passkeysCount: passkeysCount,
+      fotosRechazadasCount: fotosRechazadasCount,
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);

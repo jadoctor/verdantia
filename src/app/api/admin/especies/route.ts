@@ -23,8 +23,8 @@ export async function GET(request: Request) {
   try {
     let query = `
       SELECT e.*, 
-        (SELECT COUNT(*) FROM variedades v WHERE v.xvariedadesidespecies = e.idespecies) as total_variedades, 
-        (SELECT COUNT(*) FROM semillas s JOIN variedades v2 ON s.xsemillasidvariedad = v2.idvariedades WHERE v2.xvariedadesidespecies = e.idespecies) as total_semillas,
+        (SELECT COUNT(*) FROM variedades v WHERE v.xvariedadesidespecies = e.idespecies AND v.xvariedadesidusuarios IS NULL) as total_variedades, 
+        (SELECT COUNT(*) FROM semillas s JOIN variedades v2 ON s.xsemillasidvariedades = v2.idvariedades WHERE v2.xvariedadesidespecies = e.idespecies) as total_semillas,
         (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_ruta,
         (SELECT datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_resumen
       FROM especies e 
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
       especiesdiasgerminacion,
       especiesdiashastatrasplante,
       especiesviabilidadsemilla,
+      especiespeso1000semillas,
       especiesdiashastafructificacion,
       especiestemperaturaminima,
       especiestemperaturaoptima,
@@ -94,12 +95,18 @@ export async function POST(request: Request) {
       especiesphsuelo,
       especiesnecesidadriego,
       especiestiposiembra,
+      especiestiposiembrapreferente,
       especiesvolumenmaceta,
       especiesluzsolar,
       especiescaracteristicassuelo,
       especiesdificultad,
       especiestemperaturamaxima,
-      especiesdiashastarecoleccion
+      especiesdiashastarecoleccion,
+      especieslunarfasesiembra,
+      especieslunarfasetrasplante,
+      especieslunarobservaciones,
+      especiesbiodinamicafasesiembra,
+      especiesbiodinamicafasetrasplante
     } = body;
 
     if (!especiesnombre) {
@@ -109,7 +116,7 @@ export async function POST(request: Request) {
     const query = `
       INSERT INTO especies (
         especiesnombre, especiesnombrecientifico, especiesfamilia, especiestipo, especiesciclo, 
-        especiesdiasgerminacion, especiesdiashastatrasplante, especiesviabilidadsemilla, especiesdiashastafructificacion, 
+        especiesdiasgerminacion, especiesdiashastatrasplante, especiesviabilidadsemilla, especiespeso1000semillas, especiesdiashastafructificacion, 
         especiestemperaturaminima, especiestemperaturaoptima, especiesmarcoplantas, especiesmarcofilas, 
         especiesprofundidadsiembra, especieshistoria, especiesdescripcion, especiescolor, especiestamano, 
         especiesfechasemillerodesde, especiesfechasemillerohasta, especiesfechasiembradirectadesde, 
@@ -117,10 +124,12 @@ export async function POST(request: Request) {
         especiesfecharecolecciondesde, especiesfecharecoleccionhasta, especiesvisibilidadsino, 
         especiesfuentesinformacion, especiesautosuficiencia, especiesautosuficienciaparcial, especiesautosuficienciaconserva, especiesicono,
         especiesbiodinamicacategoria, especiesbiodinamicanotas,
-        especiesprofundidadtrasplante, especiesphsuelo, especiesnecesidadriego, especiestiposiembra,
+        especiesprofundidadtrasplante, especiesphsuelo, especiesnecesidadriego, especiestiposiembra, especiestiposiembrapreferente,
         especiesvolumenmaceta, especiesluzsolar, especiescaracteristicassuelo, especiesdificultad,
-        especiestemperaturamaxima, especiesdiashastarecoleccion
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        especiestemperaturamaxima, especiesdiashastarecoleccion,
+        especieslunarfasesiembra, especieslunarfasetrasplante, especieslunarobservaciones,
+        especiesbiodinamicafasesiembra, especiesbiodinamicafasetrasplante
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -132,6 +141,7 @@ export async function POST(request: Request) {
       especiesdiasgerminacion || null,
       especiesdiashastatrasplante || null,
       especiesviabilidadsemilla || null,
+      especiespeso1000semillas || null,
       especiesdiashastafructificacion || null,
       especiestemperaturaminima || null,
       especiestemperaturaoptima || null,
@@ -161,13 +171,19 @@ export async function POST(request: Request) {
       especiesprofundidadtrasplante || null,
       especiesphsuelo || null,
       especiesnecesidadriego || null,
-      especiestiposiembra || null,
+      Array.isArray(especiestiposiembra) ? especiestiposiembra.join(',') : (especiestiposiembra || null),
+      Array.isArray(especiestiposiembrapreferente) ? especiestiposiembrapreferente.join(',') : (especiestiposiembrapreferente || null),
       especiesvolumenmaceta || null,
       especiesluzsolar || null,
       especiescaracteristicassuelo || null,
       especiesdificultad || null,
       especiestemperaturamaxima || null,
-      especiesdiashastarecoleccion || null
+      especiesdiashastarecoleccion || null,
+      especieslunarfasesiembra || null,
+      especieslunarfasetrasplante || null,
+      especieslunarobservaciones || null,
+      especiesbiodinamicafasesiembra || null,
+      especiesbiodinamicafasetrasplante || null
     ];
 
     const [result]: any = await pool.query(query, params);

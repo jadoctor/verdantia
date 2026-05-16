@@ -20,9 +20,10 @@ export async function GET(request: Request) {
     let skipped = 0;
 
     const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
-      <text x="290" y="50" text-anchor="end"
-        font-family="Arial, sans-serif" font-size="28" font-weight="bold"
-        fill="white" fill-opacity="0.35" stroke="black" stroke-width="1.5" stroke-opacity="0.25">
+      <rect x="0" y="0" width="300" height="60" fill="black" fill-opacity="0.4" rx="8" />
+      <text x="280" y="40" text-anchor="end"
+        font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold"
+        fill="white" fill-opacity="0.9" letter-spacing="2">
         VERDANTIA
       </text>
     </svg>`);

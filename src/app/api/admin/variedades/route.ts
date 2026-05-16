@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       SELECT v.*, e.especiesnombre, e.especiesicono
       FROM variedades v
       LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies
-      WHERE v.variedadesesgenerica = 0
+      WHERE v.variedadesesgenerica = 0 AND v.xvariedadesidusuarios IS NULL
     `;
     const params: any[] = [];
 
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       variedadestamano,
       variedadesdiasgerminacion,
       variedadesviabilidadsemilla,
+      variedadespeso1000semillas,
       variedadesdiashastafructificacion,
       variedadestemperaturaminima,
       variedadestemperaturaoptima,
@@ -92,7 +93,12 @@ export async function POST(request: Request) {
       variedadesluzsolar,
       variedadescaracteristicassuelo,
       variedadesdificultad,
-      variedadestemperaturamaxima
+      variedadestemperaturamaxima,
+      variedadeslunarfasesiembra,
+      variedadeslunarfasetrasplante,
+      variedadeslunarobservaciones,
+      variedadesbiodinamicafasesiembra,
+      variedadesbiodinamicafasetrasplante
     } = body;
 
     if (!variedadesnombre || !xvariedadesidespecies) {
@@ -102,7 +108,7 @@ export async function POST(request: Request) {
     const query = `
       INSERT INTO variedades (
         variedadesnombre, xvariedadesidespecies, variedadesesgenerica, variedadesdescripcion, variedadescolor,
-        variedadestamano, variedadesdiasgerminacion, variedadesviabilidadsemilla, variedadesdiashastafructificacion,
+        variedadestamano, variedadesdiasgerminacion, variedadesviabilidadsemilla, variedadespeso1000semillas, variedadesdiashastafructificacion,
         variedadestemperaturaminima, variedadestemperaturaoptima, variedadesmarcoplantas, variedadesmarcofilas,
         variedadesprofundidadsiembra, variedadeshistoria, variedadessemillerodesde, variedadessemillerohasta,
         variedadessiembradirectadesde, variedadessiembradirectahasta, variedadestrasplantedesde, variedadestrasplantehasta,
@@ -110,8 +116,10 @@ export async function POST(request: Request) {
         variedadesautosuficienciaconserva, variedadesdiashastatrasplante, variedadesdiashastarecoleccion,
         variedadesautosuficienciaparcial, variedadesicono, variedadesbiodinamicacategoria, variedadesbiodinamicanotas,
         variedadesprofundidadtrasplante, variedadesphsuelo, variedadesnecesidadriego, variedadestiposiembra,
-        variedadesvolumenmaceta, variedadesluzsolar, variedadescaracteristicassuelo, variedadesdificultad, variedadestemperaturamaxima
-      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        variedadesvolumenmaceta, variedadesluzsolar, variedadescaracteristicassuelo, variedadesdificultad, variedadestemperaturamaxima,
+        variedadeslunarfasesiembra, variedadeslunarfasetrasplante, variedadeslunarobservaciones,
+        variedadesbiodinamicafasesiembra, variedadesbiodinamicafasetrasplante
+      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -122,6 +130,7 @@ export async function POST(request: Request) {
       variedadestamano || 'mediano',
       variedadesdiasgerminacion || null,
       variedadesviabilidadsemilla || null,
+      variedadespeso1000semillas || null,
       variedadesdiashastafructificacion || null,
       variedadestemperaturaminima || null,
       variedadestemperaturaoptima || null,
@@ -154,7 +163,12 @@ export async function POST(request: Request) {
       variedadesluzsolar || null,
       variedadescaracteristicassuelo || null,
       variedadesdificultad || null,
-      variedadestemperaturamaxima || null
+      variedadestemperaturamaxima || null,
+      variedadeslunarfasesiembra || null,
+      variedadeslunarfasetrasplante || null,
+      variedadeslunarobservaciones || null,
+      variedadesbiodinamicafasesiembra || null,
+      variedadesbiodinamicafasetrasplante || null
     ];
 
     const [result]: any = await pool.query(query, params);

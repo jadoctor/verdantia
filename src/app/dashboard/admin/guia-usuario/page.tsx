@@ -937,6 +937,31 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>16/05/2026 20:17 – Modernización Masiva (Mis Plantas, Semillas, Contenedores, Watermarking)</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El sistema requería múltiples modernizaciones transversales: falta de paridad visual entre la gestión de usuarios y admin, inconsistencias en el watermarking (marcas de agua visibles en la interfaz en lugar de solo en la descarga), y carencia de gestión granular para los "Contenedores" y "Semillas".</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Refactorización profunda del pipeline de marca de agua: implementación del sistema de doble-archivo (uno limpio para UI, uno protegido para descargas) con enmascarado mediante object-fit.</li>
+                  <li style={{ marginBottom: '8px' }}>Consolidación del dashboard "Mis Plantas": integración de calendarios lunares y biodinámicos usando 3 niveles de herencia.</li>
+                  <li style={{ marginBottom: '8px' }}>Migración y "Gold Standard" de modales y componentes de contenedores, especies, y AI assistant, aplicando el protocolo estricto UI/UX.</li>
+                  <li>Limpieza de incidencias de moderación e integración de visualización de perfiles unificada.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Despliegue y estabilización definitiva de todos los módulos del sprint, logrando paridad estructural total y resolución de cuellos de botella en procesamiento de imágenes y herencia de datos.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>

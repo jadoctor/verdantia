@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getUserByEmail } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/auth/profile?email=xxx
  * Busca el perfil del usuario en Cloud SQL por su email de Firebase.

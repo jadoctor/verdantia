@@ -43,7 +43,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
       .catch(() => setLoading(false));
   }, [id, authReady]);
 
-  const handlePatch = async (field: string, value: string) => {
+  const handlePatch = async (field: string, value: any) => {
     setSaving(true);
     const res = await fetch(`/api/admin/usuarios/${id}`, {
       method: 'PATCH',
@@ -53,7 +53,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
     setSaving(false);
     if (res.ok) {
       showToast('✅ Guardado');
-      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, [field === 'roles' ? 'roles' : field === 'suscripcion' ? 'suscripcion' : 'estado']: value } } : null);
+      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, [field]: field === 'esPrueba' ? Number(value) : value } } : null);
     } else {
       showToast('❌ Error al guardar');
     }
@@ -118,7 +118,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '10px' }}>@{u.nombreUsuario || '—'} · {u.email}</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ background: planCfg.bg, color: planCfg.color, border: `1px solid ${planCfg.border}`, padding: '4px 12px', borderRadius: '20px', fontWeight: 700, fontSize: '0.78rem' }}>
-              {planCfg.icon} {planCfg.label}{u.esPrueba ? ' (Prueba)' : ''}
+              {planCfg.icon} {planCfg.label} {u.suscripcion && u.suscripcion !== 'Gratuito' ? (u.esPrueba ? '(De Regalo 🎁)' : '(De Pago 💳)') : ''}
             </span>
             {(u.roles || '').split(',').map((r: string) => (
               <span key={r} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 600, fontSize: '0.78rem' }}>
@@ -133,7 +133,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
       {/* ── Acciones Rápidas ── */}
       <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
         <h3 style={{ margin: '0 0 16px', color: '#1e293b', fontWeight: 700, fontSize: '1rem' }}>⚡ Acciones Administrativas</h3>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Cambiar Rol</label>
             <select defaultValue={u.roles?.split(',')[0].trim() || 'visitante'}
@@ -166,6 +166,20 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
               <option value="baja">🗑️ Baja solicitada</option>
             </select>
           </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', justifyContent: 'center' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Tipo Suscripción</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', height: '36px', padding: '0 8px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <input 
+                type="checkbox" 
+                defaultChecked={!!u.esPrueba}
+                onChange={e => handlePatch('esPrueba', e.target.checked)}
+                style={{ accentColor: '#2563eb', width: '16px', height: '16px' }}
+              />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>Es de Regalo 🎁</span>
+            </label>
+          </div>
+
           {saving && <div style={{ alignSelf: 'flex-end', padding: '8px 14px', color: '#0056b3', fontWeight: 600, fontSize: '0.85rem' }}>Guardando...</div>}
         </div>
       </div>

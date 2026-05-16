@@ -242,9 +242,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     } catch (e) {}
 
     const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
-      <text x="290" y="50" text-anchor="end"
-        font-family="Arial, sans-serif" font-size="28" font-weight="bold"
-        fill="white" fill-opacity="0.35" stroke="black" stroke-width="1.5" stroke-opacity="0.25">
+      <rect x="0" y="0" width="300" height="60" fill="black" fill-opacity="0.4" rx="8" />
+      <text x="280" y="40" text-anchor="end"
+        font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold"
+        fill="white" fill-opacity="0.9" letter-spacing="2">
         VERDANTIA
       </text>
     </svg>`);
@@ -255,6 +256,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     let mainSharp = sharpInstance
       .clone()
+      .rotate()
       .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true });
 
     if (targetWidth >= 300 && targetHeight >= 60) {

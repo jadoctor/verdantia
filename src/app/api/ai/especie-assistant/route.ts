@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { nombre } = await request.json();
+    const { nombre, customPrompt } = await request.json();
 
     if (!nombre) {
       return NextResponse.json({ error: 'Falta el nombre de la especie' }, { status: 400 });
@@ -30,6 +30,8 @@ export async function POST(request: Request) {
     const prompt = `
 Eres un experto botánico y agrónomo. Necesito que me devuelvas EXCLUSIVAMENTE un objeto JSON válido con los datos de cultivo de la especie "${nombre}". 
 No incluyas markdown, ni comillas invertidas, solo el JSON puro.
+${customPrompt ? `\nINSTRUCCIONES ADICIONALES DEL USUARIO:\n${customPrompt}\n` : ''}
+
 
 Las claves esperadas en el JSON son:
 - especiesnombrecientifico (string, ej: Solanum lycopersicum)
@@ -38,6 +40,7 @@ Las claves esperadas en el JSON son:
 - especiesciclo (array de strings, elige entre: anual, bianual, perenne)
 - especiesdiasgerminacion (entero aproximado, ej: 8)
 - especiesviabilidadsemilla (entero aproximado en años, ej: 4)
+- especiespeso1000semillas (numero, usa punto decimal solo si es necesario, sin ceros extra, ej: 1.5 o 5)
 - especiesdiashastatrasplante (entero aproximado en días desde la siembra, ej: 30)
 - especiesdiashastafructificacion (entero aproximado en días post-trasplante o post-siembra directa, ej: 75)
 - especiesdiashastarecoleccion (entero aproximado en días post-trasplante o post-siembra directa, ej: 90)
@@ -65,10 +68,16 @@ Las claves esperadas en el JSON son:
 - especiesautosuficienciaparcial (entero, plantas estimadas por persona para un consumo PARCIAL/básico, aproximadamente un 30-40% de la demanda, solo para complementar la compra)
 - especiesautosuficienciaconserva (entero, plantas estimadas por persona al año con conserva, incluye fresco + producción extra para conservar)
 - especiesbiodinamicacategoria (string, elige UNO entre: fruto, raiz, hoja, flor — según la parte comestible/ornamental principal)
-- especiesbiodinamicanotas (string, 2-3 frases concisas sobre cómo aprovechar el calendario lunar biodinámico: siembra, trasplante, poda y recolección)
+- especiesbiodinamicafasesiembra (string, elige entre: Ascendente, Descendente — en biodinámica la siembra suele ser Ascendente)
+- especiesbiodinamicafasetrasplante (string, elige entre: Ascendente, Descendente — el trasplante suele ser Descendente)
+- especiesbiodinamicanotas (string, 1-2 frases sobre la relación entre la categoría de la planta y los perigeos/nodos)
+- especieslunarfasesiembra (string, elige entre: Creciente, Menguante, Nueva, Llena — según el calendario lunar tradicional)
+- especieslunarfasetrasplante (string, elige entre: Creciente, Menguante, Nueva, Llena)
+- especieslunarobservaciones (string, 1-2 frases concisas sobre por qué se elige esa fase lunar tradicional, y qué evitar)
 - especiesphsuelo (string, ej: 6.0 - 6.8)
 - especiesnecesidadriego (string, elige entre: baja, media, alta)
-- especiestiposiembra (string, elige entre: directa, semillero, ambas)
+- especiestiposiembra (array de strings, OBLIGATORIO. DEBES SER EXHAUSTIVO e incluir TODAS las formas viables de propagar la planta. Valores permitidos: "directa", "semillero", "planton", "esqueje", "bulbo", "division". Para plantas como el tomate o pimiento DEBES marcar "directa", "semillero", "planton" y también "esqueje" (por los chupones). Si es de semilla incluye casi siempre "directa" y "semillero". Si se vende en viveros incluye "planton". Devuelve un array con TODAS las que apliquen)
+- especiestiposiembrapreferente (array de strings, OBLIGATORIO. De las opciones devueltas en el array anterior, indica cuáles son las formas más habituales, recomendadas o exitosas. Ej: ["semillero", "planton"])
 - especiesvolumenmaceta (numero entero en litros, ej: 10)
 - especiesluzsolar (string, elige entre: pleno_sol, semisombra, sombra)
 - especiescaracteristicassuelo (string, ej: franco-arcilloso, bien drenado)

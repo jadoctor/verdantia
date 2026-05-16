@@ -36,6 +36,13 @@ export const VerificationEmail = ({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
+            <Img
+              src={logoUrl}
+              width="150"
+              height="auto"
+              alt="Verdantia Logo"
+              style={logo}
+            />
             <Heading style={heading}>{saludo}</Heading>
           </Section>
 
@@ -99,6 +106,11 @@ const heading = {
   fontWeight: 'bold',
   margin: '0',
   padding: '0',
+};
+
+const logo = {
+  margin: '0 auto 20px auto',
+  display: 'block',
 };
 
 const bodySection = {

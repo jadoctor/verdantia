@@ -16,12 +16,22 @@ export async function GET(request: Request) {
 
   try {
     const [rows] = await pool.query(
-      `SELECT iddatosadjuntos as id, datosadjuntosruta as ruta, 
-              datosadjuntosesprincipal as esPrincipal, datosadjuntosresumen as resumen,
-              datosadjuntosnombreoriginal as nombreOriginal
-       FROM datosadjuntos 
-       WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 
-       ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC`,
+      `SELECT da.iddatosadjuntos as id, da.datosadjuntosruta as ruta, 
+              da.datosadjuntosesprincipal as esPrincipal, da.datosadjuntosresumen as resumen,
+              da.datosadjuntosnombreoriginal as nombreOriginal,
+              da.datosadjuntosvalidado as validado,
+              da.datosadjuntosresultadovalidacion as resultadoValidacion,
+              inc.incidenciasmotivo as motivoRechazo
+       FROM datosadjuntos da
+       LEFT JOIN incidencias inc ON inc.incidenciasreferenciaid = da.iddatosadjuntos AND inc.incidenciastipo IN ('foto_rechazada', 'foto_sancionada')
+       WHERE da.xdatosadjuntosidusuarios = ? 
+         AND da.datosadjuntostipo = 'imagen' 
+         AND da.datosadjuntosfechaeliminacion IS NULL
+         AND (da.datosadjuntosactivo = 1 OR da.datosadjuntosresultadovalidacion = 'rechazado')
+       ORDER BY 
+         CASE WHEN da.datosadjuntosresultadovalidacion = 'rechazado' THEN 1 ELSE 0 END ASC,
+         da.datosadjuntosesprincipal DESC, 
+         da.datosadjuntosorden ASC`,
       [userId]
     );
     return NextResponse.json({ photos: rows });
@@ -63,8 +73,8 @@ export async function POST(request: Request) {
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
         datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidusuarios,
-        datosadjuntosresumen, datosadjuntospesobytes
-      ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
+        datosadjuntosresumen, datosadjuntospesobytes, datosadjuntosvalidado
+      ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?, 0)`,
       [
         mimeType, nombreOriginal, storagePath, esPrimera,
         total + 1, userId,
@@ -147,11 +157,37 @@ export async function DELETE(request: Request) {
   }
 
   try {
+    const [rows]: any = await pool.query('SELECT datosadjuntosruta FROM datosadjuntos WHERE iddatosadjuntos = ?', [photoId]);
+    const ruta = rows[0]?.datosadjuntosruta;
+
     await pool.query(
       'UPDATE datosadjuntos SET datosadjuntosactivo = 0, datosadjuntosfechaeliminacion = NOW() WHERE iddatosadjuntos = ?',
       [photoId]
     );
-    return NextResponse.json({ success: true, message: 'Foto eliminada' });
+
+    // Si solo queda 1 foto, hacerla principal automáticamente
+    let newPrincipal = null;
+    const [userIdRows]: any = await pool.query('SELECT xdatosadjuntosidusuarios as userId FROM datosadjuntos WHERE iddatosadjuntos = ?', [photoId]);
+    const userId = userIdRows[0]?.userId;
+    if (userId) {
+      const [activePhotos]: any = await pool.query(
+        "SELECT iddatosadjuntos, datosadjuntosesprincipal, datosadjuntosruta as ruta, datosadjuntosresumen as resumen FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = 'imagen' AND xdatosadjuntosidvariedades IS NULL ORDER BY datosadjuntosorden ASC, datosadjuntosfechacreacion DESC",
+        [userId]
+      );
+      if (activePhotos.length > 0) {
+        let principalRow = activePhotos.find((p: any) => p.datosadjuntosesprincipal === 1);
+        if (!principalRow) {
+          await pool.query(
+            "UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE iddatosadjuntos = ?",
+            [activePhotos[0].iddatosadjuntos]
+          );
+          principalRow = activePhotos[0];
+        }
+        newPrincipal = principalRow;
+      }
+    }
+
+    return NextResponse.json({ success: true, message: 'Foto eliminada (soft delete)', newPrincipal });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

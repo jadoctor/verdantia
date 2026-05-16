@@ -63,6 +63,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
     variedadescolor: '',
     variedadesdiasgerminacion: '',
     variedadesviabilidadsemilla: '',
+    variedadespeso1000semillas: '',
     variedadesdiashastafructificacion: '',
     variedadesdiashastatrasplante: '',
     variedadesdiashastarecoleccion: '',
@@ -251,7 +252,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
     if (!genericData) return false;
     const tabFields: Record<string, string[]> = {
       taxonomia: ['variedadesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo', 'variedadescolor', 'variedadestamano', 'variedadesdificultad', 'variedadesluzsolar', 'variedadesnecesidadriego', 'variedadesvolumenmaceta'],
-      fisiologia: ['variedadesdiasgerminacion', 'variedadesdiashastatrasplante', 'variedadesdiashastafructificacion', 'variedadesdiashastarecoleccion', 'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima', 'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra', 'variedadesprofundidadtrasplante'],
+      fisiologia: ['variedadesdiasgerminacion', 'variedadesdiashastatrasplante', 'variedadesviabilidadsemilla', 'variedadespeso1000semillas', 'variedadesdiashastafructificacion', 'variedadesdiashastarecoleccion', 'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima', 'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra', 'variedadesprofundidadtrasplante'],
       calendarios: ['variedadessemillerodesde', 'variedadessemillerohasta', 'variedadessiembradirectadesde', 'variedadessiembradirectahasta', 'variedadestrasplantedesde', 'variedadestrasplantehasta', 'variedadesrecolecciondesde', 'variedadesrecoleccionhasta'],
       autosuficiencia: ['variedadesautosuficiencia', 'variedadesautosuficienciaparcial', 'variedadesautosuficienciaconserva']
     };
@@ -265,7 +266,13 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
         const gArr = typeof g === 'string' ? g.split(',').filter(Boolean) : (Array.isArray(g) ? g : []);
         return vArr.length > 0 && JSON.stringify([...vArr].sort()) !== JSON.stringify([...gArr].sort());
       }
-      return v !== '' && v !== null && v !== undefined && v != g;
+      
+      let parsedV: any = v;
+      let parsedG: any = g;
+      if (typeof v === 'string' && v !== '' && !isNaN(parseFloat(v))) parsedV = parseFloat(v);
+      if (typeof g === 'string' && g !== '' && !isNaN(parseFloat(g))) parsedG = parseFloat(g);
+
+      return v !== '' && v !== null && v !== undefined && parsedV != parsedG;
     });
   };
 
@@ -331,17 +338,32 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
     }
   };
 
-  const FieldCompare = ({ label, field, type = 'text', options = null, isCheckboxGroup = false, hideRevert = false }: { label: string, field: string, type?: string, options?: any[] | null, isCheckboxGroup?: boolean, hideRevert?: boolean }) => {
+  const FieldCompare = ({ label, field, type = 'text', options = null, isCheckboxGroup = false, hideRevert = false, step }: { label: string, field: string, type?: string, options?: any[] | null, isCheckboxGroup?: boolean, hideRevert?: boolean, step?: string }) => {
     const rawStandardValue = genericData ? genericData[field] : (isCheckboxGroup ? [] : '');
-    const standardValue = (isCheckboxGroup && typeof rawStandardValue === 'string') ? rawStandardValue.split(',').filter(Boolean) : (rawStandardValue || (isCheckboxGroup ? [] : ''));
+    let standardValue = (isCheckboxGroup && typeof rawStandardValue === 'string') ? rawStandardValue.split(',').filter(Boolean) : (rawStandardValue || (isCheckboxGroup ? [] : ''));
+
+    // Fix numeric formats (e.g., '3.000' -> '3') to prevent false overrides
+    if (type === 'number' && typeof standardValue === 'string' && standardValue.trim() !== '') {
+      const parsedNum = parseFloat(standardValue);
+      if (!isNaN(parsedNum)) {
+        standardValue = parsedNum.toString();
+      }
+    }
+
+    const currentVal = formData[field];
+    let formattedCurrentVal = currentVal;
+    if (type === 'number' && typeof currentVal === 'string' && currentVal.trim() !== '') {
+      const parsedNum = parseFloat(currentVal);
+      if (!isNaN(parsedNum)) formattedCurrentVal = parsedNum.toString();
+    }
 
     const isOverridden = isCheckboxGroup 
-      ? ((formData[field] || []).length > 0 && JSON.stringify([...(formData[field] || [])].sort()) !== JSON.stringify([...standardValue].sort()))
-      : (formData[field] !== '' && formData[field] !== null && formData[field] !== undefined && formData[field] != standardValue);
+      ? ((currentVal || []).length > 0 && JSON.stringify([...(currentVal || [])].sort()) !== JSON.stringify([...standardValue].sort()))
+      : (formattedCurrentVal !== '' && formattedCurrentVal !== null && formattedCurrentVal !== undefined && formattedCurrentVal != standardValue);
     
     const isInherited = isCheckboxGroup 
-      ? (formData[field] || []).length === 0
-      : !formData[field];
+      ? (currentVal || []).length === 0
+      : !formattedCurrentVal;
 
     return (
       <div style={{ 
@@ -516,6 +538,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
               onChange={handleChange} 
               onBlur={handleBlurSave}
               placeholder={String(standardValue || '--')}
+              step={step}
               style={{ 
                 width: '100%', border: 'none', background: 'transparent', outline: 'none', 
                 fontSize: '0.9rem', 
@@ -808,6 +831,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                         ]} 
                       />
                       <FieldCompare label="Viabilidad de la Semilla (Años)" field="variedadesviabilidadsemilla" type="number" />
+                      <FieldCompare label="Peso de 1.000 Semillas (g)" field="variedadespeso1000semillas" type="number" step="0.001" />
                       <FieldCompare label="Días a Germinación" field="variedadesdiasgerminacion" type="number" />
                       <FieldCompare label="Días a Trasplante" field="variedadesdiashastatrasplante" type="number" />
                       <FieldCompare label="Días a Primer Fruto" field="variedadesdiashastafructificacion" type="number" />

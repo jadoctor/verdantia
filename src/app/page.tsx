@@ -24,10 +24,10 @@ export default function Home() {
           </a>
           <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="text-sm text-green-700 bg-green-100 px-4 py-2 rounded-full font-medium inline-block mb-2 shadow-sm border border-green-200">
-              ✅ <span className="font-bold">Verificado:</span> 11/05/2026 17:58
+              ✅ <span className="font-bold">Verificado:</span> 16/05/2026 20:17
             </div>
             <div className="text-xs text-slate-500 max-w-xl mx-auto italic">
-              "Modernización UI del Asistente IA de Variedades y Enrutamiento PDF"
+              "Modernización Masiva: Mis Plantas, Semillas, Contenedores y Watermarking"
             </div>
           </div>
         </div>

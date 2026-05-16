@@ -40,6 +40,7 @@ export default function PoliticaPrivacidadPage() {
             <li><a href="#derechos">Tus Derechos (ARCO+)</a></li>
             <li><a href="#borrado">Borrado y Cancelación de Cuenta</a></li>
             <li><a href="#anonimizacion">Anonimización de Contenidos</a></li>
+            <li><a href="#galeria-fotos">Galería de Fotos — Funcionalidad Opcional</a></li>
             <li><a href="#periodo-prueba">Periodo de Prueba</a></li>
             <li><a href="#intercambio">Intercambio de Semillas</a></li>
             <li><a href="#gamificacion">Sistemas de Gamificación y Rangos</a></li>
@@ -219,10 +220,10 @@ export default function PoliticaPrivacidadPage() {
 
         {/* 8. Anonimización */}
         <div className="legal-section" id="anonimizacion">
-          <h2><span className="section-icon" style={{ background: 'rgba(139,92,246,0.15)', color: 'var(--accent-purple)' }}>🕵️</span> 8. Anonimización de Contenidos</h2>
-          <p>Cuando tu cuenta es eliminada definitivamente (tras los 30 días de gracia), diferenciamos claramente entre dos categorías de información:</p>
+          <h2><span className="section-icon" style={{ background: 'rgba(139,92,246,0.15)', color: 'var(--accent-purple)' }}>🕵️</span> 8. Anonimización de Contenidos al Eliminar Cuenta</h2>
+          <p>Cuando tu cuenta es eliminada definitivamente (tras los 30 días de gracia), diferenciamos claramente entre dos categorías de información. Al solicitar la cancelación, el sistema te presentará una pantalla de elección activa:</p>
 
-          <h3 style={{ color: 'var(--accent-red)', fontSize: '0.95rem', margin: '18px 0 8px' }}>❌ Se elimina para siempre:</h3>
+          <h3 style={{ color: 'var(--accent-red)', fontSize: '0.95rem', margin: '18px 0 8px' }}>❌ Se elimina siempre (sin excepción):</h3>
           <ul>
             <li>Nombre, apellidos, nombre de usuario y email.</li>
             <li>Contraseña y credenciales de acceso.</li>
@@ -232,18 +233,40 @@ export default function PoliticaPrivacidadPage() {
             <li><strong>Todas tus fotografías de perfil personales.</strong></li>
           </ul>
 
-          <h3 style={{ color: 'var(--accent-green)', fontSize: '0.95rem', margin: '18px 0 8px' }}>👁️‍🗨️ Se anonimiza y se conserva:</h3>
+          <h3 style={{ color: 'var(--accent-amber)', fontSize: '0.95rem', margin: '18px 0 8px' }}>⚙️ A tu elección (opción activa al cancelar):</h3>
+          <p>Al iniciar el proceso de cancelación, podrás elegir qué hacer con tus aportaciones a la comunidad:</p>
           <ul>
-            <li><strong>Fotografías de plantas, huertos y cultivos.</strong></li>
-            <li>Registros de cultivo, observaciones y datos agronómicos.</li>
-            <li>Mensajes en grupos públicos e intercambios de semillas completados.</li>
+            <li><strong>Eliminar todo:</strong> tus fotos de cultivos, mensajes técnicos y registros agronómicos se borran permanentemente.</li>
+            <li><strong>Anonimizar y donar a la comunidad:</strong> el contenido queda vinculado al seudónimo «Usuario Anónimo», sin ningún vínculo que permita identificarte. Las fotos de cultivos conservan la marca de agua de Verdantia. Los mensajes de chat sobre cultivos quedan disponibles para la comunidad de forma anónima.</li>
           </ul>
-          <p>Todo este contenido queda vinculado al seudónimo <strong>«Usuario Anónimo»</strong>, sin ningún vínculo que permita identificar a la persona original. Se rompe por completo la relación entre el contenido y la identidad.</p>
+          <p><strong>La opción por defecto es la eliminación completa.</strong> Si no realizas ninguna acción durante el periodo de gracia de 30 días, tus contenidos serán eliminados.</p>
 
           <div className="highlight-box highlight-blue">
             <span style={{ fontSize: '1.3rem' }}>ℹ️</span>
-            <span>Esta práctica protege tu privacidad al 100% mientras preserva el <strong>conocimiento colectivo</strong> de la comunidad. Al registrarte y aceptar esta política, consientes esta cesión anónima de contenidos de carácter público.</span>
+            <span>La anonimización preserva el <strong>conocimiento colectivo</strong> de la comunidad sobre agricultura sin comprometer tu privacidad. Es una decisión totalmente voluntaria que tú tomas al cerrar tu cuenta.</span>
           </div>
+        </div>
+
+        {/* 8b. Galería de fotos */}
+        <div className="legal-section" id="galeria-fotos">
+          <h2><span className="section-icon" style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)' }}>📸</span> 8b. Galería de Fotos — Funcionalidad Opcional</h2>
+          <p>La subida y gestión de fotografías de cultivos es una <strong>funcionalidad opcional</strong> de Verdantia. Puedes usar la plataforma completamente (huerto virtual, calendario, labores, alertas climáticas) sin necesidad de subir ninguna foto.</p>
+
+          <h3 style={{ color: 'var(--accent-blue)', fontSize: '0.95rem', margin: '18px 0 8px' }}>Consentimiento requerido para activar la galería</h3>
+          <p>Para acceder a la galería de fotos, la primera vez que intentes subir una imagen el sistema te solicitará un consentimiento expreso e informado que incluye:</p>
+          <ul>
+            <li>Tus fotos de cultivos recibirán automáticamente una <strong>marca de agua de Verdantia</strong>.</li>
+            <li>Verdantia podrá usar esas imágenes con <strong>fines educativos y divulgativos sobre agricultura</strong>, siempre que no contengan datos personales visibles (personas, matrículas, domicilios reconocibles, etc.).</li>
+            <li>Puedes <strong>eliminar tus fotos en cualquier momento</strong> desde tu perfil. Al hacerlo, <strong>el archivo físico se destruye permanentemente</strong> de nuestros servidores alojados en Firebase para garantizar tu privacidad. Únicamente se conservará un registro interno en modo texto (sin la imagen) en nuestro historial de moderación, a efectos de auditoría administrativa.</li>
+            <li>Al cancelar tu cuenta, tienes la opción de eliminarlas o donarlas a la comunidad de forma anónima.</li>
+          </ul>
+
+          <div className="highlight-box highlight-amber">
+            <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+            <span><strong>Si no aceptas el consentimiento, la galería de fotos quedará desactivada</strong> en tu cuenta. Podrás reactivarla en cualquier momento desde tu perfil de usuario aceptando las condiciones. El resto de funcionalidades de Verdantia no se verán afectadas.</span>
+          </div>
+
+          <p style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Este consentimiento es independiente del registro en la plataforma y puede revocarse eliminando todas tus fotos y desactivando la galería desde tu perfil.</p>
         </div>
 
         {/* 9. Degradacion progresiva */}
@@ -312,23 +335,76 @@ export default function PoliticaPrivacidadPage() {
 
         {/* 12. Normas de Comunidad */}
         <div className="legal-section" id="normas-comunidad">
-          <h2><span className="section-icon" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)' }}>⚖️</span> 12. Normas de la Comunidad y Denuncias</h2>
-          
-          <h3 style={{ color: 'var(--accent-red)', fontSize: '1rem', margin: '20px 0 10px' }}>A. Normas del Sistema</h3>
-          <p>Para garantizar un entorno seguro, queda terminantemente prohibido:</p>
+          <h2><span className="section-icon" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)' }}>⚖️</span> 12. Normas de la Comunidad y Régimen Sancionador</h2>
+
+          <h3 style={{ color: 'var(--accent-red)', fontSize: '1rem', margin: '20px 0 10px' }}>A. Conductas Prohibidas</h3>
+          <p>Para garantizar un entorno seguro y respetuoso, queda terminantemente prohibido:</p>
           <ul>
             <li>El uso de lenguaje ofensivo, insultos, amenazas o acoso hacia otros usuarios.</li>
             <li>El envío de correo basura (Spam), publicidad no solicitada o enlaces maliciosos.</li>
             <li>La suplantación de identidad o la difusión de información privada de terceros.</li>
-            <li><strong>La subida, difusión o enlace a material pornográfico, contenido de carácter sexual explícito, o contenido relacionado con menores de edad. Estas infracciones implicarán el bloqueo inmediato y serán puestas en conocimiento de las autoridades.</strong></li>
+            <li><strong>La subida, difusión o enlace a material pornográfico, contenido de carácter sexual explícito, o cualquier contenido relacionado con menores de edad. Estas infracciones implicarán la eliminación inmediata del contenido, baja definitiva de la cuenta, y serán puestas en conocimiento de las autoridades competentes.</strong></li>
+            <li>Subir imágenes sin relación con la agricultura, cultivos o huertos que vulneren las normas de contenido.</li>
           </ul>
 
-          <h3 style={{ color: 'var(--accent-blue)', fontSize: '1rem', margin: '25px 0 10px' }}>B. Sistema de Denuncias</h3>
-          <p>Las denuncias son confidenciales. Por seguridad, y solo ante una denuncia activa, los administradores tendrán acceso de solo lectura al historial implicado para auditar la infracción.</p>
+          <h3 style={{ color: 'var(--accent-blue)', fontSize: '1rem', margin: '25px 0 10px' }}>B. Moderación de Contenido Fotográfico</h3>
+          <p>Todas las fotografías subidas por usuarios están sujetas a revisión por parte del equipo de administración de Verdantia. Existen dos tipos de decisión administrativa:</p>
+          <ul>
+            <li><strong>Rechazo:</strong> La foto se oculta del acceso público. El usuario recibe una notificación con el motivo del rechazo y puede ver la imagen marcada en su galería. Puede eliminarla o recurrir la decisión en un plazo de <strong>15 días naturales</strong>. Para garantizar tu derecho de apelación y como prueba ante reclamaciones, <strong>las fotografías rechazadas o sancionadas se conservan temporalmente de forma interna</strong> antes de su destrucción definitiva.</li>
+            <li><strong>Eliminación por contenido inapropiado:</strong> Aplicable a contenido explícito, ofensivo o ilegal. La foto es destruida permanentemente y en su lugar aparece un aviso de incidencia en la galería del usuario. Esta acción activa el régimen sancionador.</li>
+          </ul>
 
-          <h3 style={{ color: 'var(--accent-amber)', fontSize: '1rem', margin: '25px 0 10px' }}>C. Restricciones Disciplinarias</h3>
-          <p>La administración aplicará medidas desde amonestación verbal hasta expulsión definitiva, sin derecho a devolución del dinero pagado. Dispones de 15 días naturales para apelar cualquier decisión.</p>
+          <h3 style={{ color: 'var(--accent-amber)', fontSize: '1rem', margin: '25px 0 10px' }}>C. Régimen Sancionador Progresivo</h3>
+          <p>Verdantia aplica un sistema de sanciones escalonado ante infracciones graves (contenido inapropiado, explícito o prohibido):</p>
+
+          <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
+            <table className="plan-table">
+              <thead>
+                <tr>
+                  <th>Infracción</th>
+                  <th>Sanción</th>
+                  <th>Efecto</th>
+                  <th>Recurso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>⚠️ 1ª infracción grave</td>
+                  <td><strong>Advertencia formal</strong></td>
+                  <td>Foto eliminada. Aviso visible en la galería del usuario.</td>
+                  <td>Sí — 15 días</td>
+                </tr>
+                <tr>
+                  <td>🔒 2ª infracción grave</td>
+                  <td><strong>Suspensión temporal</strong></td>
+                  <td>Cuenta suspendida 7 días. Acceso bloqueado. Foto eliminada.</td>
+                  <td>Sí — 15 días</td>
+                </tr>
+                <tr>
+                  <td>🔴 3ª infracción grave</td>
+                  <td><strong>Baja definitiva</strong></td>
+                  <td>Cuenta eliminada permanentemente. Sin devolución de suscripción.</td>
+                  <td>No</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="highlight-box highlight-red">
+            <span style={{ fontSize: '1.3rem' }}>⛔</span>
+            <span>El contenido de carácter sexual explícito o relacionado con menores de edad implica <strong>baja definitiva inmediata</strong> en la primera infracción, sin advertencia previa, y comunicación a las autoridades.</span>
+          </div>
+
+          <h3 style={{ color: 'var(--accent-blue)', fontSize: '1rem', margin: '25px 0 10px' }}>D. Sistema de Incidencias y Registro</h3>
+          <p>Todas las decisiones de moderación quedan registradas en un sistema interno de incidencias que incluye: tipo de infracción, fecha, contenido afectado y administrador responsable. Este registro es permanente, incluso si el usuario elimina el contenido o cancela su cuenta, y puede ser utilizado como evidencia ante reclamaciones o procedimientos legales.</p>
+
+          <h3 style={{ color: 'var(--accent-green)', fontSize: '1rem', margin: '25px 0 10px' }}>E. Derecho de Recurso</h3>
+          <p>El usuario puede recurrir cualquier decisión de moderación (excepto las de baja definitiva por 3ª infracción) en un plazo de <strong>15 días naturales</strong> desde la notificación, a través del sistema de recursos disponible en su perfil o mediante correo a <strong>superadministrador@verdantia.life</strong>. La administración resolverá en un plazo máximo de 10 días hábiles.</p>
+
+          <h3 style={{ color: 'var(--accent-blue)', fontSize: '1rem', margin: '25px 0 10px' }}>F. Sistema de Denuncias entre Usuarios</h3>
+          <p>Las denuncias entre usuarios son confidenciales. Por seguridad, y solo ante una denuncia activa, los administradores tendrán acceso de solo lectura al historial implicado para auditar la infracción. La identidad del denunciante nunca será revelada al denunciado.</p>
         </div>
+
 
         {/* 13. Restricciones de Edad */}
         <div className="legal-section" id="edad">

@@ -42,11 +42,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     especiesfecharecolecciondesde: '', especiesfecharecoleccionhasta: '',
     especieshistoria: '', especiesdescripcion: '', especiesfuentesinformacion: '',
     especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
-    especiesicono: '',
-    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '',
-    especiesprofundidadtrasplante: '', especiesphsuelo: '', especiesnecesidadriego: '',
-    especiestiposiembra: '', especiesvolumenmaceta: '', especiesluzsolar: '',
-    especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: ''
+    especiesicono: '',    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '', especiesprofundidadtrasplante: '',
+    especiesphsuelo: '', especiesnecesidadriego: '', especiestiposiembra: [], especiestiposiembrapreferente: [],
+    especiesvolumenmaceta: '', especiesluzsolar: '', especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: ''
   };
 
   const [formData, setFormData] = useState<any>(defaultFormData);
@@ -295,7 +293,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           especiesmarcoplantas: especie.especiesmarcoplantas !== null ? parseInt(especie.especiesmarcoplantas, 10).toString() : '',
           especiesmarcofilas: especie.especiesmarcofilas !== null ? parseInt(especie.especiesmarcofilas, 10).toString() : '',
           especiestipo: especie.especiestipo ? especie.especiestipo.split(',') : [],
-          especiesciclo: especie.especiesciclo ? especie.especiesciclo.split(',') : []
+          especiesciclo: especie.especiesciclo ? especie.especiesciclo.split(',') : [],
+          especiestiposiembra: especie.especiestiposiembra ? especie.especiestiposiembra.split(',') : [],
+          especiestiposiembrapreferente: especie.especiestiposiembrapreferente ? especie.especiestiposiembrapreferente.split(',') : [],
+          especiesviabilidadsemilla: especie.especiesviabilidadsemilla !== null ? parseFloat(especie.especiesviabilidadsemilla).toString() : '',
+          especiespeso1000semillas: especie.especiespeso1000semillas !== null ? parseFloat(especie.especiespeso1000semillas).toString() : ''
         };
         setFormData(parsedEspecie);
         setInitialData(parsedEspecie);
@@ -348,7 +350,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
-      if (name === 'especiestipo' || name === 'especiesciclo') {
+      if (name === 'especiestipo' || name === 'especiesciclo' || name === 'especiestiposiembra') {
         setFormData((prev: any) => ({
           ...prev,
           [name]: checked
@@ -469,11 +471,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'fisiologia',
       title: '🌱 Fisiología',
-      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiesdiashastafructificacion', 'especiesdiashastarecoleccion', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
+      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiespeso1000semillas', 'especiesdiashastafructificacion', 'especiesdiashastarecoleccion', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
       labels: {
         especiesdiasgerminacion: 'Días Germinación',
         especiesdiashastatrasplante: 'Días hasta Trasplante',
         especiesviabilidadsemilla: 'Viabilidad Semilla',
+        especiespeso1000semillas: 'Peso de 1.000 Semillas (g)',
         especiesdiashastafructificacion: 'Días a Fruct.',
         especiesdiashastarecoleccion: 'Días a Recol.',
         especiestemperaturaminima: 'Temp. Mínima',
@@ -487,12 +490,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'cultivo',
       title: '🚜 Cultivo y Suelo',
-      keys: ['especiesphsuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 'especiestiposiembra', 'especiesvolumenmaceta', 'especiesdificultad'],
+      keys: ['especiesphsuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 'especiestiposiembra', 'especiestiposiembrapreferente', 'especiesvolumenmaceta', 'especiesdificultad'],
       labels: {
         especiesphsuelo: 'pH Suelo',
         especiescaracteristicassuelo: 'Tipo de Suelo',
         especiesnecesidadriego: 'Nec. Riego',
         especiestiposiembra: 'Tipo Siembra',
+        especiestiposiembrapreferente: 'Siembra Preferida',
         especiesvolumenmaceta: 'Vol. Maceta (L)',
         especiesdificultad: 'Dificultad'
       }
@@ -512,10 +516,23 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'biodinamica',
       title: 'Luna y Biodinámica',
-      keys: ['especiesbiodinamicacategoria', 'especiesbiodinamicanotas'],
+      keys: [
+        'especieslunarfasesiembra', 
+        'especieslunarfasetrasplante', 
+        'especieslunarobservaciones',
+        'especiesbiodinamicacategoria', 
+        'especiesbiodinamicafasesiembra',
+        'especiesbiodinamicafasetrasplante',
+        'especiesbiodinamicanotas'
+      ],
       labels: {
-        especiesbiodinamicacategoria: 'Cat. Biodinámica',
-        especiesbiodinamicanotas: 'Notas Lunares'
+        especieslunarfasesiembra: 'Fase Siembra (Lunar)',
+        especieslunarfasetrasplante: 'Fase Trasplante (Lunar)',
+        especieslunarobservaciones: 'Notas (Lunar)',
+        especiesbiodinamicacategoria: 'Categoría (Biodinámica)',
+        especiesbiodinamicafasesiembra: 'Fase Siembra (Biodinámica)',
+        especiesbiodinamicafasetrasplante: 'Fase Trasplante (Biodinámica)',
+        especiesbiodinamicanotas: 'Notas (Biodinámica)'
       }
     },
     {
@@ -1797,6 +1814,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
               <div className="form-tabs">
                 <button type="button" className={activeTab === 'taxonomia' ? 'active' : ''} onClick={() => setActiveTab('taxonomia')}>🧬 Taxonomía</button>
+                <button type="button" className={activeTab === 'cultivo' ? 'active' : ''} onClick={() => setActiveTab('cultivo')}>🚜 Cultivo</button>
                 <button type="button" className={activeTab === 'fisiologia' ? 'active' : ''} onClick={() => setActiveTab('fisiologia')}>🌱 Fisiología</button>
                 <button type="button" className={activeTab === 'calendarios' ? 'active' : ''} onClick={() => setActiveTab('calendarios')}>📅 Calendarios</button>
                 <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos</button>
@@ -1858,6 +1876,71 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         <option value="pequeno">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
                       </select>
                     </div>
+
+                  </div>
+                )}
+
+                {/* CULTIVO */}
+                {activeTab === 'cultivo' && (
+                  <div className="grid-form">
+                    {/* TIPO DE SIEMBRA */}
+                    <div className="form-group full" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra / Propagación</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                        {[
+                          { val: 'directa', label: 'Semilla: Siembra Directa' },
+                          { val: 'semillero', label: 'Semilla: Semillero / Almácigo' },
+                          { val: 'planton', label: 'Plantón / Plantel' },
+                          { val: 'esqueje', label: 'Esqueje / Chupón / Estolón' },
+                          { val: 'bulbo', label: 'Tubérculo / Bulbo / Rizoma' },
+                          { val: 'division', label: 'División de Mata' }
+                        ].map(t => (
+                          <div key={t.val} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', cursor: 'pointer', color: '#475569', flex: 1 }}>
+                              <input
+                                type="checkbox"
+                                name="especiestiposiembra"
+                                value={t.val}
+                                checked={formData.especiestiposiembra?.includes(t.val)}
+                                onChange={handleChange}
+                              />
+                              {t.label}
+                            </label>
+                            {formData.especiestiposiembra?.includes(t.val) && (
+                              <button
+                                type="button"
+                                title="Marcar como preferente"
+                                onClick={() => {
+                                  const prefs = formData.especiestiposiembrapreferente || [];
+                                  const newPrefs = prefs.includes(t.val) ? prefs.filter((p: string) => p !== t.val) : [...prefs, t.val];
+                                  setFormData({ ...formData, especiestiposiembrapreferente: newPrefs });
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  fontSize: '1.2rem',
+                                  color: formData.especiestiposiembrapreferente?.includes(t.val) ? '#fbbf24' : '#cbd5e1'
+                                }}
+                              >
+                                {formData.especiestiposiembrapreferente?.includes(t.val) ? '⭐' : '☆'}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Profundidad de Siembra (cm)</label>
+                      <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group">
+                      <label>Profundidad de Trasplante</label>
+                      <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
+                    </div>
+
                     <div className="form-group">
                       <label>Dificultad</label>
                       <select name="especiesdificultad" value={formData.especiesdificultad || ''} onChange={handleChange}>
@@ -1889,6 +1972,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <label>Volumen Maceta (L)</label>
                       <input type="number" name="especiesvolumenmaceta" value={formData.especiesvolumenmaceta || ''} onChange={handleChange} />
                     </div>
+
+                    <div className="form-group">
+                      <label>pH del Suelo</label>
+                      <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
+                    </div>
+                    <div className="form-group full">
+                      <label>Características del Suelo</label>
+                      <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
+                    </div>
                   </div>
                 )}
 
@@ -1897,19 +1989,21 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   <div className="grid-form">
                     {/* BLOQUE PRINCIPAL SUPERIOR */}
                     <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                      <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra Principal</label>
-                        <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange} style={{ marginTop: '8px' }}>
-                          <option value="">-- Selecciona --</option>
-                          <option value="directa">Directa (En tierra)</option>
-                          <option value="semillero">Semillero (Requiere trasplante)</option>
-                          <option value="ambas">Ambas opciones posibles</option>
-                        </select>
-                      </div>
+
 
                       <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
                         <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Peso de 1.000 Semillas (g)</label>
+                        <input type="number" step="0.001" name="especiespeso1000semillas" value={formData.especiespeso1000semillas || ''} onChange={handleChange} style={{ marginTop: '8px' }} placeholder="Ej. 1.5" />
+                        {formData.especiespeso1000semillas && Number(formData.especiespeso1000semillas) > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#0f766e', fontWeight: 'bold' }}>
+                            🔄 Equivalencia: {Math.round(1000 / Number(formData.especiespeso1000semillas))} semillas por gramo
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1985,17 +2079,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       </div>
                     </div>
 
-                    {/* PROFUNDIDADES */}
-                    <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label>Profundidad de Siembra (cm)</label>
-                        <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label>Profundidad de Trasplante</label>
-                        <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
-                      </div>
-                    </div>
+
                   </div>
                 )}
 
@@ -2112,14 +2196,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <label>Historia / Origen</label>
                       <textarea name="especieshistoria" rows={3} value={formData.especieshistoria || ''} onChange={handleChange} />
                     </div>
-                    <div className="form-group">
-                      <label>pH del Suelo</label>
-                      <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group full">
-                      <label>Características del Suelo</label>
-                      <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
-                    </div>
+
                     <div className="form-group full">
                       <label>Fuentes (URLs separadas por comas)</label>
                       <input type="text" name="especiesfuentesinformacion" value={formData.especiesfuentesinformacion || ''} onChange={handleChange} />
@@ -2162,29 +2239,88 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
                 {/* LUNA Y BIODINAMICA */}
                 {activeTab === 'biodinamica' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <label>Categoría Biodinámica</label>
-                      <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}>
-                        <option value="">— Sin categoría —</option>
-                        <option value="fruto">🍅 Planta de Fruto</option>
-                        <option value="raiz">🥕 Planta de Raíz</option>
-                        <option value="hoja">🥬 Planta de Hoja</option>
-                        <option value="flor">🌸 Planta de Flor</option>
-                      </select>
-                      {formData.especiesbiodinamicacategoria && (
-                        <p style={{ marginTop: '8px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
-                          {({ fruto: 'Siembra y trasplanta en días Fruto (luna creciente). Recolecta también en días Fruto para mejor sabor.', raiz: 'Siembra en días Raíz con luna creciente. Recolecta en días Raíz con luna menguante para mejor conservación.', hoja: 'Trasplanta en días Hoja con luna creciente. Evita podar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
-                        </p>
-                      )}
+                  <div className="grid-form" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    
+                    {/* SECCIÓN CALENDARIO LUNAR */}
+                    <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <h3 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🌕 Calendario Lunar
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label style={{ fontWeight: 'bold' }}>Fase de Siembra</label>
+                          <select name="especieslunarfasesiembra" value={formData.especieslunarfasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                            <option value="">— Seleccionar Fase —</option>
+                            <option value="Creciente">🌘 Cuarto Creciente (Savia sube)</option>
+                            <option value="Menguante">🌔 Cuarto Menguante (Savia baja)</option>
+                            <option value="Nueva">🌑 Luna Nueva</option>
+                            <option value="Llena">🌕 Luna Llena</option>
+                          </select>
+                        </div>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label style={{ fontWeight: 'bold' }}>Fase de Trasplante</label>
+                          <select name="especieslunarfasetrasplante" value={formData.especieslunarfasetrasplante || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                            <option value="">— Seleccionar Fase —</option>
+                            <option value="Creciente">🌘 Cuarto Creciente</option>
+                            <option value="Menguante">🌔 Cuarto Menguante (Recomendado)</option>
+                            <option value="Nueva">🌑 Luna Nueva</option>
+                            <option value="Llena">🌕 Luna Llena</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-group full" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Observaciones del Calendario Lunar</label>
+                        <textarea name="especieslunarobservaciones" value={formData.especieslunarobservaciones || ''} onChange={handleChange} rows={3} placeholder="Ej: La lechuga es preferible sembrarla en menguante para evitar que espigue rápido..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }} />
+                      </div>
                     </div>
-                    <div className="form-group full">
-                      <label>Notas de Calendario Lunar</label>
-                      <textarea name="especiesbiodinamicanotas" value={formData.especiesbiodinamicanotas || ''} onChange={handleChange}
-                        rows={4} placeholder="Ej: El tomate responde muy bien al trasplante en días Fruto durante luna creciente. Podar hojas basales preferiblemente en días Hoja..."
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.95rem', resize: 'vertical' }} />
+
+                    {/* SECCIÓN CALENDARIO BIODINÁMICO */}
+                    <div style={{ background: '#f0fdfa', padding: '20px', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
+                      <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🌍 Calendario Biodinámico
+                      </h3>
+                      
+                      <div className="form-group full" style={{ marginBottom: '16px' }}>
+                        <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Categoría del Órgano Principal</label>
+                        <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', fontSize: '1rem', background: '#fff' }}>
+                          <option value="">— Sin categoría —</option>
+                          <option value="fruto">🍅 Planta de Fruto (Días de Fuego/Calor)</option>
+                          <option value="raiz">🥕 Planta de Raíz (Días de Tierra/Frío)</option>
+                          <option value="hoja">🥬 Planta de Hoja (Días de Agua/Humedad)</option>
+                          <option value="flor">🌸 Planta de Flor (Días de Aire/Luz)</option>
+                        </select>
+                        {formData.especiesbiodinamicacategoria && (
+                          <p style={{ marginTop: '8px', fontSize: '0.85rem', color: '#0f766e', lineHeight: 1.5 }}>
+                            {({ fruto: 'Siembra y trasplanta en días Fruto. Recolecta también en días Fruto para mejor sabor y conservación.', raiz: 'Siembra en días Raíz. Recolecta en días Raíz para mejor conservación.', hoja: 'Siembra y trasplanta en días Hoja. Evita podar o cosechar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
+                          </p>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Fase de Siembra Biodinámica</label>
+                          <select name="especiesbiodinamicafasesiembra" value={formData.especiesbiodinamicafasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff' }}>
+                            <option value="">— Seleccionar Fase —</option>
+                            <option value="Ascendente">📈 Luna Ascendente (Savia sube)</option>
+                            <option value="Descendente">📉 Luna Descendente (Savia en raíces)</option>
+                          </select>
+                        </div>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Fase de Trasplante Biodinámica</label>
+                          <select name="especiesbiodinamicafasetrasplante" value={formData.especiesbiodinamicafasetrasplante || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff' }}>
+                            <option value="">— Seleccionar Fase —</option>
+                            <option value="Ascendente">📈 Luna Ascendente</option>
+                            <option value="Descendente">📉 Luna Descendente (Recomendado)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-group full" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Notas de Calendario Biodinámico</label>
+                        <textarea name="especiesbiodinamicanotas" value={formData.especiesbiodinamicanotas || ''} onChange={handleChange} rows={3} placeholder="Ej: Además del día de Fruto, evitar perigeos y nodos lunares para la siembra..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff', resize: 'vertical' }} />
+                      </div>
                     </div>
+
                   </div>
                 )}
 
@@ -3447,8 +3583,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
               {aiGroups.map(group => {
                 const hasDifferences = group.keys.some(k => {
-                  const currentVal = formData[k] != null ? String(formData[k]) : '';
-                  const aiVal = aiProposal[k] != null ? String(aiProposal[k]) : '';
+                  let currentVal = formData[k] != null ? formData[k] : '';
+                  let aiVal = aiProposal[k] != null ? aiProposal[k] : '';
+                  
+                  if (Array.isArray(currentVal)) currentVal = [...currentVal].sort().join(',');
+                  else currentVal = String(currentVal);
+                  
+                  if (Array.isArray(aiVal)) aiVal = [...aiVal].sort().join(',');
+                  else aiVal = String(aiVal);
+
                   return aiVal !== '' && currentVal !== aiVal;
                 });
 
@@ -3468,13 +3611,24 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     </div>
 
                     {group.keys.map(k => {
-                      const currentVal = formData[k] != null ? String(formData[k]) : '';
-                      const aiVal = aiProposal[k] != null ? String(aiProposal[k]) : '';
-                      if (!aiVal) return null;
+                      const rawCurrent = formData[k];
+                      const rawAi = aiProposal[k];
+                      
+                      let currentStr = Array.isArray(rawCurrent) ? [...rawCurrent].sort().join(',') : (rawCurrent != null ? String(rawCurrent) : '');
+                      let aiStr = Array.isArray(rawAi) ? [...rawAi].sort().join(',') : (rawAi != null ? String(rawAi) : '');
+                      
+                      if (!Array.isArray(rawCurrent) && !isNaN(Number(rawCurrent)) && rawCurrent !== '' && rawCurrent != null) {
+                        currentStr = parseFloat(String(rawCurrent)).toString();
+                      }
+                      if (!Array.isArray(rawAi) && !isNaN(Number(rawAi)) && rawAi !== '' && rawAi != null) {
+                        aiStr = parseFloat(String(rawAi)).toString();
+                      }
 
-                      const isDifferent = currentVal !== aiVal;
-                      const displayCurrent = Array.isArray(formData[k]) ? formData[k].join(', ') : currentVal;
-                      const displayAi = Array.isArray(aiProposal[k]) ? aiProposal[k].join(', ') : aiVal;
+                      if (!aiStr) return null;
+
+                      const isDifferent = currentStr !== aiStr;
+                      const displayCurrent = Array.isArray(rawCurrent) ? rawCurrent.join(', ') : currentStr;
+                      const displayAi = Array.isArray(rawAi) ? rawAi.join(', ') : aiStr;
 
                       return (
                         <div key={k} className={`ai-comparison-grid ${isDifferent ? 'ai-row-diff' : 'ai-row-same'}`}>

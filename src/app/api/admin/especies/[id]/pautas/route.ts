@@ -24,7 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       SELECT p.*, l.laboresnombre
       FROM laborespauta p
       JOIN labores l ON p.xlaborespautaidlabores = l.idlabores
-      WHERE p.xlaborespautaidespecies = ?
+      WHERE p.xlaborespautaidespecies = ? AND p.xlaborespautaidusuarios IS NULL
       ORDER BY p.xlaborespautaidlabores, 
                CASE p.laborespautafase 
                  WHEN 'siembra' THEN 1 

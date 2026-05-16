@@ -427,8 +427,20 @@ function PerfilContent() {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('✅ Foto subida correctamente');
+        showToast('✅ Foto subida correctamente. Recuerda que debe ser aprobada antes de mostrarse.');
         loadPhotos(profile.id);
+        
+        // Refrescar el perfil real para que el Layout sepa exactamente qué icono debe mostrar (solo aprobadas)
+        const resProfile = await fetch(`/api/auth/profile?email=${encodeURIComponent(profile.email)}`);
+        if (resProfile.ok) {
+          const pData = await resProfile.json();
+          const channel = new BroadcastChannel('verdantia_profile');
+          channel.postMessage({ 
+            fotoPreferida: pData.profile.fotoPreferida,
+            fotoPreferidaMeta: pData.profile.fotoPreferidaMeta
+          });
+          channel.close();
+        }
       } else {
         showToast('❌ Error: ' + data.error);
       }
@@ -562,11 +574,13 @@ function PerfilContent() {
 
       showToast('⭐ Foto preferida actualizada');
       
-      // Notificar al Layout global para actualización inmediata de la foto
-      if (targetPhoto) {
+      // Notificar al Layout global para actualización inmediata (recuperando desde el server para respetar validaciones)
+      const resProfile = await fetch(`/api/auth/profile?email=${encodeURIComponent(profile.email)}`);
+      if (resProfile.ok) {
+        const pData = await resProfile.json();
         const updateData = { 
-          fotoPreferida: targetPhoto.ruta,
-          fotoPreferidaMeta: targetPhoto.resumen,
+          fotoPreferida: pData.profile.fotoPreferida,
+          fotoPreferidaMeta: pData.profile.fotoPreferidaMeta,
           icono: null 
         };
         const channel = new BroadcastChannel('verdantia_profile');
@@ -585,10 +599,31 @@ function PerfilContent() {
   const deletePhoto = async (photoId: number) => {
     if (!confirm('¿Estás seguro de que quieres eliminar esta foto?')) return;
     try {
-      await fetch(`/api/perfil/photos?photoId=${photoId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/perfil/photos?photoId=${photoId}`, { method: 'DELETE' });
+      const data = await res.json();
+      
       showToast('🗑️ Foto eliminada');
-      if (profile) loadPhotos(profile.id);
-    } catch { /* silencioso */ }
+      
+      if (profile) {
+        loadPhotos(profile.id);
+        
+        // Refrescar perfil para Layout
+        const resProfile = await fetch(`/api/auth/profile?email=${encodeURIComponent(profile.email)}`);
+        if (resProfile.ok) {
+          const pData = await resProfile.json();
+          const updateData = { 
+            fotoPreferida: pData.profile.fotoPreferida,
+            fotoPreferidaMeta: pData.profile.fotoPreferidaMeta
+          };
+          const channel = new BroadcastChannel('verdantia_profile');
+          channel.postMessage(updateData);
+          channel.close();
+          window.dispatchEvent(new CustomEvent('profile_updated', { detail: updateData }));
+        }
+      }
+    } catch (err) {
+      showToast('❌ Error eliminando foto');
+    }
   };
 
   // ── Drag & Drop handlers ──
@@ -1213,12 +1248,22 @@ function PerfilContent() {
               return (
               <div
                 key={photo.id}
-                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''} ${isLocked ? 'is-locked' : ''} ${draggingId === photo.id ? 'dragging' : ''}`}
+                className={`photo-item ${photo.esPrincipal ? 'is-preferred' : ''} ${isLocked ? 'is-locked' : ''} ${draggingId === photo.id ? 'dragging' : ''} ${photo.resultadoValidacion === 'rechazado' ? 'is-rejected' : ''}`}
                 style={{ position: 'relative' }}
-                draggable={!isLocked}
-                onDragStart={(e) => handlePhotoDragStart(e, photo.id)}
+                draggable={!isLocked && photo.resultadoValidacion !== 'rechazado'}
+                onDragStart={(e) => {
+                  if (photo.resultadoValidacion !== 'rechazado') {
+                    handlePhotoDragStart(e, photo.id);
+                  } else {
+                    e.preventDefault();
+                  }
+                }}
                 onDragOver={handlePhotoDragOver}
-                onDrop={(e) => handlePhotoDrop(e, photo.id)}
+                onDrop={(e) => {
+                  if (photo.resultadoValidacion !== 'rechazado') {
+                    handlePhotoDrop(e, photo.id);
+                  }
+                }}
               >
                 <img
                   src={getMediaUrl(photo.ruta)}
@@ -1235,6 +1280,22 @@ function PerfilContent() {
                   }}
                 />
 
+                {photo.resultadoValidacion === 'rechazado' ? (
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(220, 38, 38, 0.95)', color: 'white', fontSize: '0.65rem', padding: '6px 4px', textAlign: 'center', zIndex: 10, fontWeight: 'bold' }}>
+                    ❌ Rechazada<br/>
+                    <span style={{ fontSize: '0.55rem', fontWeight: 'normal', opacity: 0.9 }}>
+                      {photo.motivoRechazo || 'Incumple las normas'}
+                    </span>
+                  </div>
+                ) : photo.validado === 0 ? (
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'rgba(245, 158, 11, 0.9)', color: 'white', fontSize: '0.65rem', padding: '6px 4px', textAlign: 'center', zIndex: 10, fontWeight: 'bold' }}>
+                    ⏳ Pendiente de validación<br/>
+                    <span style={{ fontSize: '0.55rem', fontWeight: 'normal', opacity: 0.9 }}>
+                      El equipo revisará esta foto
+                    </span>
+                  </div>
+                ) : null}
+
                 {isLocked && (
                   <div style={{
                     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -1249,18 +1310,22 @@ function PerfilContent() {
                 <div className="photo-actions" style={{ zIndex: 20 }}>
                   {!isLocked && (
                     <>
-                      <button
-                        type="button"
-                        className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
-                        onClick={() => setPhotoPrimary(photo.id)}
-                        title={photo.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
-                      >{photo.esPrincipal ? '★' : '☆'}</button>
-                      <button
-                        type="button"
-                        className="photo-action-btn btn-photo-edit"
-                        onClick={() => openPhotoEditor(photo)}
-                        title="Editar foto"
-                      >✏️</button>
+                      {photo.resultadoValidacion !== 'rechazado' && (
+                        <button
+                          type="button"
+                          className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
+                          onClick={() => setPhotoPrimary(photo.id)}
+                          title={photo.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
+                        >{photo.esPrincipal ? '★' : '☆'}</button>
+                      )}
+                      {photo.resultadoValidacion !== 'rechazado' && (
+                        <button
+                          type="button"
+                          className="photo-action-btn btn-photo-edit"
+                          onClick={() => openPhotoEditor(photo)}
+                          title="Editar foto"
+                        >✏️</button>
+                      )}
                     </>
                   )}
                   <button

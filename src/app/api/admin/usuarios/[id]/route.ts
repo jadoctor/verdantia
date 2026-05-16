@@ -13,21 +13,35 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         u.idusuarios AS id,
         u.usuariosnombre AS nombre,
         u.usuariosapellidos AS apellidos,
-        u.usuariosnombredeusuario AS nombreUsuario,
+        u.usuariosnombreusuario AS nombreUsuario,
         u.usuariosemail AS email,
         u.usuariosroles AS roles,
-        u.usuariossuscripcion AS suscripcion,
-        u.usuariosespruebasuscripcion AS esPrueba,
-        u.usuariosfechacaducidadsuscripcion AS fechaCaducidad,
+        s.suscripcionesnombre AS suscripcion,
+        u.usuariosactivo AS activo,
+        u.usuariosestadocuenta AS estadoCuenta,
+        u.usuariossuspensionfin AS suspensionfin,
+        u.usuariosemailverificado AS emailVerificado,
         u.usuariosicono AS icono,
-        u.usuariosfotoprincipal AS fotoPrincipal,
-        u.usuariosestado AS estado,
+        (SELECT datosadjuntosruta 
+         FROM datosadjuntos 
+         WHERE xdatosadjuntosidusuarios = u.idusuarios 
+           AND datosadjuntostipo = 'imagen' 
+           AND datosadjuntosactivo = 1 
+           AND datosadjuntosvalidado = 1
+           AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
+           AND xdatosadjuntosidvariedades IS NULL
+         ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
+         LIMIT 1) AS fotoPrincipal,
         u.usuarioscodigopostal AS codigoPostal,
         u.usuariospoblacion AS poblacion,
         u.usuariospais AS pais,
         u.usuariosfechadenacimiento AS fechaNacimiento,
-        u.created_at AS fechaRegistro
+        u.usuariosfechacreacion AS fechaRegistro,
+        u.usuariosconsentimientofoto AS consentimientoFoto,
+        u.usuariosespruebasuscripcion AS esPrueba
        FROM usuarios u
+       LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
+       LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
        WHERE u.idusuarios = ?
        LIMIT 1`,
       [id]
@@ -46,7 +60,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const [fotos] = await pool.query(
       `SELECT iddatosadjuntos AS id, datosadjuntosruta AS ruta, datosadjuntosesprincipal AS esPrincipal, datosadjuntosresumen AS resumen 
        FROM datosadjuntos 
-       WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 
+       WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 AND xdatosadjuntosidvariedades IS NULL
        ORDER BY datosadjuntosesprincipal DESC`,
       [id]
     );
@@ -61,16 +75,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { roles, suscripcion, estado, fechaCaducidad, esPrueba } = body;
+    const { roles, estado, esPrueba } = body;
 
     const updates: string[] = [];
     const values: any[] = [];
 
     if (roles !== undefined) { updates.push('usuariosroles = ?'); values.push(roles); }
-    if (suscripcion !== undefined) { updates.push('usuariossuscripcion = ?'); values.push(suscripcion); }
-    if (estado !== undefined) { updates.push('usuariosestado = ?'); values.push(estado); }
-    if (fechaCaducidad !== undefined) { updates.push('usuariosfechacaducidadsuscripcion = ?'); values.push(fechaCaducidad || null); }
-    if (esPrueba !== undefined) { updates.push('usuariosespruebasuscripcion = ?'); values.push(esPrueba ? 1 : 0); }
+    if (estado !== undefined) { updates.push('usuariosestadocuenta = ?'); values.push(estado); }
+    if (esPrueba !== undefined) { updates.push('usuariosespruebasuscripcion = ?'); values.push(esPrueba === true || esPrueba === '1' || esPrueba === 1 ? 1 : 0); }
 
     if (updates.length === 0) return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });
 

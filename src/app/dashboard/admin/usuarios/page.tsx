@@ -202,10 +202,25 @@ export default function UsuariosAdminPage() {
 
                       {/* Avatar */}
                       <td style={{ padding: '10px 14px' }}>
-                        <div style={{ width: '36px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #93c5fd', flexShrink: 0 }}>
+                        <div style={{ width: '36px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #93c5fd', flexShrink: 0, position: 'relative' }}>
                           {u.fotoPrincipal ? (
-                            <img src={getMediaUrl(u.fotoPrincipal)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
-                          ) : u.icono ? (
+                            <>
+                              <img 
+                                src={getMediaUrl(u.fotoPrincipal)} 
+                                alt="" 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}  
+                                crossOrigin="anonymous" 
+                                onError={(e) => { 
+                                  e.currentTarget.style.display = 'none'; 
+                                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'block';
+                                }}
+                              />
+                              <span style={{ fontSize: '1.4rem', display: 'none' }}>
+                                {u.icono && u.icono.length <= 4 ? u.icono : '👤'}
+                              </span>
+                            </>
+                          ) : u.icono && u.icono.length <= 4 ? (
                             <span style={{ fontSize: '1.4rem' }}>{u.icono}</span>
                           ) : (
                             <span style={{ fontSize: '1rem' }}>👤</span>
@@ -250,7 +265,11 @@ export default function UsuariosAdminPage() {
                           <option value="Avanzado">🌿 Avanzado</option>
                           <option value="Premium">🌳 Premium</option>
                         </select>
-                        {u.esPrueba ? <span style={{ display: 'block', fontSize: '0.65rem', color: '#d97706', marginTop: '2px' }}>⏳ Prueba</span> : null}
+                        {u.suscripcion && u.suscripcion !== 'Gratuito' ? (
+                          <span style={{ display: 'block', fontSize: '0.65rem', color: u.esPrueba ? '#059669' : '#d97706', marginTop: '2px', fontWeight: 600 }}>
+                            {u.esPrueba ? '🎁 De Regalo' : '💳 De Pago'}
+                          </span>
+                        ) : null}
                       </td>
 
                       {/* Fecha */}

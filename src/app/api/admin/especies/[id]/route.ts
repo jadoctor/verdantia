@@ -48,6 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesdiasgerminacion,
       especiesdiashastatrasplante,
       especiesviabilidadsemilla,
+      especiespeso1000semillas,
       especiesdiashastafructificacion,
       especiestemperaturaminima,
       especiestemperaturaoptima,
@@ -78,12 +79,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesphsuelo,
       especiesnecesidadriego,
       especiestiposiembra,
+      especiestiposiembrapreferente,
       especiesvolumenmaceta,
       especiesluzsolar,
       especiescaracteristicassuelo,
       especiesdificultad,
       especiestemperaturamaxima,
-      especiesdiashastarecoleccion
+      especiesdiashastarecoleccion,
+      especieslunarfasesiembra,
+      especieslunarfasetrasplante,
+      especieslunarobservaciones,
+      especiesbiodinamicafasesiembra,
+      especiesbiodinamicafasetrasplante
     } = body;
 
     if (!especiesnombre) {
@@ -93,7 +100,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const query = `
       UPDATE especies SET
         especiesnombre = ?, especiesnombrecientifico = ?, especiesfamilia = ?, especiestipo = ?, especiesciclo = ?, 
-        especiesdiasgerminacion = ?, especiesdiashastatrasplante = ?, especiesviabilidadsemilla = ?, especiesdiashastafructificacion = ?, 
+        especiesdiasgerminacion = ?, especiesdiashastatrasplante = ?, especiesviabilidadsemilla = ?, especiespeso1000semillas = ?, especiesdiashastafructificacion = ?, 
         especiestemperaturaminima = ?, especiestemperaturaoptima = ?, especiesmarcoplantas = ?, especiesmarcofilas = ?, 
         especiesprofundidadsiembra = ?, especieshistoria = ?, especiesdescripcion = ?, especiescolor = ?, especiestamano = ?, 
         especiesfechasemillerodesde = ?, especiesfechasemillerohasta = ?, especiesfechasiembradirectadesde = ?, 
@@ -101,9 +108,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         especiesfecharecolecciondesde = ?, especiesfecharecoleccionhasta = ?, especiesvisibilidadsino = ?, 
         especiesfuentesinformacion = ?, especiesautosuficiencia = ?, especiesautosuficienciaparcial = ?, especiesautosuficienciaconserva = ?, especiesicono = ?,
         especiesbiodinamicacategoria = ?, especiesbiodinamicanotas = ?,
-        especiesprofundidadtrasplante = ?, especiesphsuelo = ?, especiesnecesidadriego = ?, especiestiposiembra = ?,
+        especiesprofundidadtrasplante = ?, especiesphsuelo = ?, especiesnecesidadriego = ?, especiestiposiembra = ?, especiestiposiembrapreferente = ?,
         especiesvolumenmaceta = ?, especiesluzsolar = ?, especiescaracteristicassuelo = ?, especiesdificultad = ?,
-        especiestemperaturamaxima = ?, especiesdiashastarecoleccion = ?
+        especiestemperaturamaxima = ?, especiesdiashastarecoleccion = ?,
+        especieslunarfasesiembra = ?, especieslunarfasetrasplante = ?, especieslunarobservaciones = ?,
+        especiesbiodinamicafasesiembra = ?, especiesbiodinamicafasetrasplante = ?
       WHERE idespecies = ?
     `;
 
@@ -116,6 +125,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesdiasgerminacion || null,
       especiesdiashastatrasplante || null,
       especiesviabilidadsemilla || null,
+      especiespeso1000semillas || null,
       especiesdiashastafructificacion || null,
       especiestemperaturaminima || null,
       especiestemperaturaoptima || null,
@@ -145,13 +155,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesprofundidadtrasplante || null,
       especiesphsuelo || null,
       especiesnecesidadriego || null,
-      especiestiposiembra || null,
+      Array.isArray(especiestiposiembra) ? especiestiposiembra.join(',') : (especiestiposiembra || null),
+      Array.isArray(especiestiposiembrapreferente) ? especiestiposiembrapreferente.join(',') : (especiestiposiembrapreferente || null),
       especiesvolumenmaceta || null,
       especiesluzsolar || null,
       especiescaracteristicassuelo || null,
       especiesdificultad || null,
       especiestemperaturamaxima || null,
       especiesdiashastarecoleccion || null,
+      especieslunarfasesiembra || null,
+      especieslunarfasetrasplante || null,
+      especieslunarobservaciones || null,
+      especiesbiodinamicafasesiembra || null,
+      especiesbiodinamicafasetrasplante || null,
       idespecies
     ];
 

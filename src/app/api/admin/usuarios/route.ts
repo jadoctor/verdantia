@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const params: any[] = [];
 
     if (search) {
-      where += ' AND (u.usuariosnombre LIKE ? OR u.usuariosemail LIKE ? OR u.usuariosnombredeusuario LIKE ?)';
+      where += ' AND (u.usuariosnombre LIKE ? OR u.usuariosemail LIKE ? OR u.usuariosnombreusuario LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
     if (rol) {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       params.push(`%${rol}%`);
     }
     if (plan) {
-      where += ' AND u.usuariossuscripcion = ?';
+      where += ' AND s.suscripcionesnombre = ?';
       params.push(plan);
     }
 
@@ -37,25 +37,46 @@ export async function GET(req: NextRequest) {
         u.idusuarios AS id,
         u.usuariosnombre AS nombre,
         u.usuariosapellidos AS apellidos,
-        u.usuariosnombredeusuario AS nombreUsuario,
+        u.usuariosnombreusuario AS nombreUsuario,
         u.usuariosemail AS email,
         u.usuariosroles AS roles,
-        u.usuariossuscripcion AS suscripcion,
+        s.suscripcionesnombre AS suscripcion,
         u.usuariosespruebasuscripcion AS esPrueba,
-        u.usuariosfechacaducidadsuscripcion AS fechaCaducidad,
+        u.usuariosactivo AS activo,
+        u.usuariosestadocuenta AS estadoCuenta,
+        u.usuariossuspensionfin AS suspensionfin,
+        u.usuariosemailverificado AS emailVerificado,
         u.usuariosicono AS icono,
-        u.usuariosfotoprincipal AS fotoPrincipal,
-        u.usuariosestado AS estado,
-        u.created_at AS fechaRegistro
+        (SELECT datosadjuntosruta 
+         FROM datosadjuntos 
+         WHERE xdatosadjuntosidusuarios = u.idusuarios 
+           AND datosadjuntostipo = 'imagen' 
+           AND datosadjuntosactivo = 1 
+           AND datosadjuntosvalidado = 1
+           AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
+           AND xdatosadjuntosidvariedades IS NULL
+         ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
+         LIMIT 1) AS fotoPrincipal,
+        u.usuariosfechacreacion AS fechaRegistro,
+        u.usuariosfechadenacimiento AS fechaNacimiento,
+        u.usuariospais AS pais,
+        u.usuariospoblacion AS poblacion,
+        u.usuariosconsentimientofoto AS consentimientoFoto
        FROM usuarios u
+       LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
+       LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
        ${where}
-       ORDER BY u.created_at DESC
+       ORDER BY u.usuariosfechacreacion DESC
        LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM usuarios u ${where}`,
+      `SELECT COUNT(DISTINCT u.idusuarios) AS total 
+       FROM usuarios u
+       LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
+       LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
+       ${where}`,
       params
     );
     const total = (countRows as any[])[0]?.total || 0;
