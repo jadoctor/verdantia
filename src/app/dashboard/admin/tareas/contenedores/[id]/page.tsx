@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, storage } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -348,13 +348,15 @@ export default function ContenedorForm({ params }: { params: Promise<{ id: strin
     setPhotoEditorSaveStatus('idle');
   };
 
-  const savePhotoEditor = async () => {
+  const closePhotoEditor = () => { setEditingPhoto(null); };
+
+  const handleSavePhotoEditor = async () => {
     const currentState = JSON.stringify({
       x: editorX, y: editorY, z: editorZoom, b: editorBrightness, c: editorContrast, s: editorStyle, seo: editorSeoAlt
     });
     if (currentState === editorInitialState) {
       setPhotoEditorSaveStatus('no-changes');
-      setTimeout(() => setEditingPhoto(null), 800);
+      setTimeout(() => closePhotoEditor(), 800);
       return;
     }
 
@@ -378,7 +380,7 @@ export default function ContenedorForm({ params }: { params: Promise<{ id: strin
         body: JSON.stringify({ photoId: editingPhoto.id, action: 'updateMeta', resumen: JSON.stringify(updatedResumen) })
       });
       await loadAttachments(resolvedParams.id);
-      setEditingPhoto(null);
+      closePhotoEditor();
     } catch (e) {
       console.error(e);
       alert('Error guardando cambios');
@@ -450,6 +452,46 @@ export default function ContenedorForm({ params }: { params: Promise<{ id: strin
       setDragOverPhotos(false);
       if (e.target.value) e.target.value = '';
     }
+  };
+
+  // ── Drag-to-Pan en el editor de fotos ──
+  const editorDragRef = useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
+    dragging: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50
+  });
+
+  const onEditorMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editorDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, startPosX: editorX, startPosY: editorY };
+    const onMove = (ev: MouseEvent) => {
+      if (!editorDragRef.current.dragging) return;
+      const dx = ev.clientX - editorDragRef.current.startX;
+      const dy = ev.clientY - editorDragRef.current.startY;
+      const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+      setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+      setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
+    };
+    const onUp = () => {
+      editorDragRef.current.dragging = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const onEditorTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    editorDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, startPosX: editorX, startPosY: editorY };
+  };
+
+  const onEditorTouchMove = (e: React.TouchEvent) => {
+    if (!editorDragRef.current.dragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - editorDragRef.current.startX;
+    const dy = t.clientY - editorDragRef.current.startY;
+    const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+    setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+    setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
   };
   if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando datos...</div>;
 
@@ -1049,112 +1091,166 @@ export default function ContenedorForm({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       )}
-      {/* Editor de Fotos Modal */}
+      {/* EDITOR DE FOTOS MODAL */}
       {editingPhoto && (
         <div className="photo-editor-overlay">
-          <div className="photo-editor-modal">
-            <div className="photo-editor-header">
-              <h3>🎨 Editor de Foto</h3>
-              <button onClick={() => setEditingPhoto(null)} className="close-editor">×</button>
+          <div className="photo-editor-content" onClick={e => e.stopPropagation()}>
+            <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Ajustar Fotografía y SEO</h3>
+                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
+                  📄 {editingPhoto.ruta.split('/').pop()}
+                </small>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button type="button" onClick={closePhotoEditor} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
+                {(() => {
+                  const currentState = JSON.stringify({ x: editorX, y: editorY, z: editorZoom, b: editorBrightness, c: editorContrast, s: editorStyle, seo: editorSeoAlt });
+                  if (currentState !== editorInitialState) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={handleSavePhotoEditor}
+                        className={`btn-primary ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
+                        style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
+                        disabled={photoEditorSaveStatus === 'saving'}
+                      >
+                        {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Cambios'}
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
             </div>
-            
-            <div className="photo-editor-layout">
-              <div className="photo-preview-container">
-                <div className="photo-preview-main">
-                  <img 
-                    src={getMediaUrl(editingPhoto.ruta)} 
-                    alt="Editor Preview" 
-                    crossOrigin="anonymous"
+
+            <div className="photo-editor-body">
+              <div className="photo-editor-preview-container"
+                onMouseDown={onEditorMouseDown}
+                onTouchStart={onEditorTouchStart}
+                onTouchMove={onEditorTouchMove}>
+                <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
+                  <img
+                    src={getMediaUrl(editingPhoto.ruta)}
+                    alt="preview"
+                    className="photo-editor-image"
+                    draggable="false"
                     style={{
-                      transform: `scale(${editorZoom/100}) translate(${(editorX-50)}%, ${(editorY-50)}%)`,
-                      filter: `${STYLE_FILTERS[editorStyle || 'none']} brightness(${editorBrightness}%) contrast(${editorContrast}%)`
+                      objectPosition: `${editorX}% ${editorY}%`,
+                      transformOrigin: `${editorX}% ${editorY}%`,
+                      transform: `scale(${editorZoom / 100})`,
+                      filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
                     }}
-                  />
-                  <div className="preview-guide">CENTRO DEL OBJETO</div>
+                    crossOrigin="anonymous" />
                 </div>
-                
-                <div className="photo-preview-circular">
-                  <div className="circular-inner">
-                    <img 
-                      src={getMediaUrl(editingPhoto.ruta)} 
-                      alt="Circular Preview" 
-                      crossOrigin="anonymous"
-                      style={{
-                        transform: `scale(${editorZoom/100}) translate(${(editorX-50)}%, ${(editorY-50)}%)`,
-                        filter: `${STYLE_FILTERS[editorStyle || 'none']} brightness(${editorBrightness}%) contrast(${editorContrast}%)`
-                      }}
-                    />
-                  </div>
-                  <span className="circular-label">Vista Circular</span>
+                <div className="photo-editor-hint">
+                  <span>Arrastra para encuadrar</span>
                 </div>
               </div>
 
               <div className="photo-editor-controls">
-                <div className="control-group">
-                  <label>Posición Horizontal ({editorX}%)</label>
-                  <input type="range" min="0" max="100" value={editorX} onChange={(e) => setEditorX(Number(e.target.value))} />
+                <div className="editor-control-group">
+                  <label>
+                    <span className="control-label">🔍 Zoom ({editorZoom}%)</span>
+                    <button type="button" className="reset-btn" onClick={() => setEditorZoom(100)}>↻</button>
+                  </label>
+                  <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(Number(e.target.value))} />
                 </div>
-                <div className="control-group">
-                  <label>Posición Vertical ({editorY}%)</label>
-                  <input type="range" min="0" max="100" value={editorY} onChange={(e) => setEditorY(Number(e.target.value))} />
+                <div className="editor-control-group">
+                  <label>
+                    <span className="control-label">☀️ Brillo ({editorBrightness}%)</span>
+                  </label>
+                  <input type="range" min="50" max="150" value={editorBrightness} onChange={e => setEditorBrightness(Number(e.target.value))} />
                 </div>
-                <div className="control-group">
-                  <label>Zoom ({editorZoom}%)</label>
-                  <input type="range" min="50" max="250" value={editorZoom} onChange={(e) => setEditorZoom(Number(e.target.value))} />
-                </div>
-                
-                <div className="control-divider" />
-
-                <div className="control-group">
-                  <label>Brillo ({editorBrightness}%)</label>
-                  <input type="range" min="50" max="150" value={editorBrightness} onChange={(e) => setEditorBrightness(Number(e.target.value))} />
-                </div>
-                <div className="control-group">
-                  <label>Contraste ({editorContrast}%)</label>
-                  <input type="range" min="50" max="150" value={editorContrast} onChange={(e) => setEditorContrast(Number(e.target.value))} />
-                </div>
-
-                <div className="control-group">
-                  <label>Estilo Visual</label>
-                  <div className="style-grid">
-                    {Object.keys(STYLE_FILTERS).map(s => (
-                      <button 
-                        key={s} 
-                        type="button"
-                        className={`style-btn ${editorStyle === s ? 'active' : ''}`}
-                        onClick={() => setEditorStyle(s)}
-                      >
-                        {s === 'none' ? 'Normal' : s.toUpperCase()}
-                      </button>
-                    ))}
+                <div className="editor-control-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ margin: 0 }}>
+                      <span className="control-label" style={{ margin: 0 }}>🌗 Contraste ({editorContrast}%)</span>
+                    </label>
                   </div>
+                  <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
                 </div>
 
-                <div className="control-divider" />
-
-                <div className="control-group">
-                  <label>Descripción SEO</label>
-                  <textarea 
-                    value={editorSeoAlt} 
-                    onChange={(e) => setEditorSeoAlt(e.target.value)}
-                    placeholder="Texto alternativo para SEO..."
-                    rows={2}
-                  />
-                </div>
-
-                <div className="editor-footer">
-                  <button onClick={() => setEditingPhoto(null)} className="btn-cancel">Cancelar</button>
-                  <button 
-                    onClick={savePhotoEditor} 
-                    className={`btn-save ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
-                    disabled={photoEditorSaveStatus === 'saving'}
+                <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditorBrightness(110);
+                      setEditorContrast(115);
+                      setEditorStyle('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
                   >
-                    {photoEditorSaveStatus === 'saving' ? 'Guardando...' : 
-                     photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : 'Guardar Cambios'}
+                    🪄 Auto-Mejora
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditorX(50); setEditorY(50); setEditorZoom(100);
+                      setEditorBrightness(100); setEditorContrast(100); setEditorStyle('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    ↻ Reset Todo
+                  </button>
+                </div>
+
+                <div className="editor-control-group" style={{ marginBottom: '15px' }}>
+                  <label>
+                    <span className="control-label">🎨 Estilos y Filtros de IA</span>
+                  </label>
+                  <select
+                    value={editorStyle}
+                    onChange={e => setEditorStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
+                  >
+                    <option value="">Sin Filtro (Original)</option>
+                    <option value="vibrant">Saturado (Vibrant)</option>
+                    <option value="vintage">Vintage (Cálido)</option>
+                    <option value="cinematic">Cinemático (Dramatic)</option>
+                    <option value="bnw">Blanco y Negro (Clásico)</option>
+                    <option value="fade">Desaturado (Fade)</option>
+                  </select>
+                </div>
+
+                <div className="editor-control-group">
+                  <label>
+                    <span className="control-label">📝 Texto Alternativo SEO (Alt Tag)</span>
+                  </label>
+                  <textarea
+                    value={editorSeoAlt}
+                    onChange={e => setEditorSeoAlt(e.target.value)}
+                    rows={2}
+                    placeholder="Descripción para SEO e invidentes..."
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', resize: 'vertical' }}
+                  />
+                  <small style={{ color: '#64748b', fontSize: '0.7rem', display: 'block', marginTop: '4px' }}>
+                    * El alt-text es fundamental para que Verdantia aparezca en Google Images.
+                  </small>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       )}

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       LEFT JOIN datosadjuntos d ON d.xdatosadjuntosidcontenedores = c.idcontenedores 
         AND d.datosadjuntostipo = 'imagen' 
         AND d.datosadjuntosesprincipal = 1
-      ORDER BY c.contenedoresnombre ASC
+      ORDER BY CAST(c.contenedoresvolumenalveolocc AS UNSIGNED) ASC
     `);
     return NextResponse.json({ contenedores: rows });
   } catch (error) {

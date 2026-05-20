@@ -612,6 +612,14 @@ export default function MiPlantaDetail() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '1.3rem' }}>📑</span> Ficha de Especie
+              {Object.keys(originalData).length > 0 && (
+                <span 
+                  style={{ fontSize: '0.75rem', background: '#ede9fe', color: '#6d28d9', padding: '4px 10px', borderRadius: '12px', fontWeight: 700, marginLeft: '8px' }}
+                  title={`${Object.keys(originalData).length} dato(s) agronómico(s) modificado(s) por ti frente a la ficha estándar.`}
+                >
+                  ✏️ {Object.keys(originalData).length} modificado{Object.keys(originalData).length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
             <span style={{ transform: fichaOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>
               ▼
@@ -973,6 +981,7 @@ export default function MiPlantaDetail() {
             trasplantehasta: planta.trasplantehasta
           }}
           viabilidadSemilla={planta.viabilidadsemilla}
+          tiposiembra={planta.tiposiembra}
         />
       )}
 

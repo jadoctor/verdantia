@@ -8,7 +8,7 @@ import { getUserByEmail } from '@/lib/auth';
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { email, nombre, apellidos, nombreUsuario, fechaNacimiento, pais, codigoPostal, poblacion, icono, sexo, domicilio, telefono, tipoCalendario } = body;
+    const { email, nombre, apellidos, nombreUsuario, fechaNacimiento, pais, codigoPostal, poblacion, icono, sexo, domicilio, telefono, tipoCalendario, tipoLaboreo } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email requerido' }, { status: 400 });
@@ -64,6 +64,14 @@ export async function PUT(request: Request) {
       }
       fields.push('usuariostipocalendario = ?'); 
       values.push(tipoCalendario);
+    }
+
+    if (tipoLaboreo !== undefined) {
+      if (!['Convencional', 'Mínimo', 'No laboreo'].includes(tipoLaboreo)) {
+        return NextResponse.json({ error: 'Tipo de laboreo no válido' }, { status: 400 });
+      }
+      fields.push('usuariostipolaboreo = ?');
+      values.push(tipoLaboreo);
     }
 
     values.push(email);

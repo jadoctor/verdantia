@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getMediaUrl } from '@/lib/media-url';
 
 export default function BlogPublicIndex() {
   const [articulos, setArticulos] = useState<any[]>([]);
@@ -47,7 +48,7 @@ export default function BlogPublicIndex() {
                 >
                   <div style={{ height: '200px', background: 'linear-gradient(135deg, #10b981, #0ea5e9)', position: 'relative' }}>
                     {art.blogimagen ? (
-                       <img src={art.blogimagen} alt={art.blogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                       <img src={getMediaUrl(art.blogimagen)} alt={art.blogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', color: 'rgba(255,255,255,0.5)' }}>
                          🌱

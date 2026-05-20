@@ -24,6 +24,7 @@ export interface UserProfile {
   telefono: string | null;
   zonaClimatica: string | null;
   tipoCalendario: string;
+  tipoLaboreo: string;
   passkeysCount?: number;
   fotosRechazadasCount?: number;
 }
@@ -52,7 +53,8 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         usuariosdomicilio,
         usuariostelefono,
         usuarioszonaclimatica,
-        usuariostipocalendario
+        usuariostipocalendario,
+        usuariostipolaboreo
        FROM usuarios  
        WHERE usuariosemail = ? 
        LIMIT 1`,
@@ -177,6 +179,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       iconoLogro: iconoLogro,
       zonaClimatica: user.usuarioszonaclimatica || null,
       tipoCalendario: user.usuariostipocalendario || 'Normal',
+      tipoLaboreo: user.usuariostipolaboreo || 'Convencional',
       passkeysCount: passkeysCount,
       fotosRechazadasCount: fotosRechazadasCount,
     };

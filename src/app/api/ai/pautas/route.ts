@@ -26,20 +26,25 @@ Tu objetivo es proponer las "Pautas de Labores" necesarias para esta especie, es
 
 Fases válidas permitidas (elige SOLO una de estas para cada pauta):
 - presiembra (labores preparatorias ANTES de sembrar. Frecuencia: null si es puntual)
-- siembra (momento puntual de depositar la semilla. Siempre con frecuencia: null)
-- germinacion (desde la siembra hasta que emerge la plántula)
-- trasplante (periodo de plántula ANTES del trasplante: cuidados en semillero/bandeja)
-- crecimiento (DESPUÉS del trasplante: desarrollo vegetativo en ubicación definitiva)
-- floracion (periodo de floración)
-- fructificacion (desarrollo y maduración del fruto)
-- cosecha (periodo de recolección)
+- siembra (momento puntual de depositar la semilla o plantón. Siempre con frecuencia: null)
+- pregerminacion (periodo desde la siembra hasta que emerge la plántula)
+- germinacion (momento o etapa inmediatamente posterior a emerger la plántula)
+- crecimiento_inicial (fase temprana tras la germinación o el enraizamiento inicial)
+- trasplante (momento o periodo de trasplante al lugar definitivo)
+- crecimiento (crecimiento firme y desarrollo vegetativo fuerte)
+- fructificacion (periodo de floración y posterior desarrollo/maduración del fruto)
+- recoleccion (periodo de cosecha o recolección)
+- finalizacion (labores de fin de ciclo, como arranque de la planta o limpieza)
 - general (aplicable a todo el ciclo)
 
 IMPORTANTE sobre las fases:
-- "presiembra" = labores de preparación previas a depositar la semilla. Si es para la labor "Abonado", indica en las notas el tipo de abono ideal y cuánto tiempo antes de la siembra debe aplicarse.
+- "presiembra" = labores previas a depositar la semilla.
 - "siembra" = momento puntual. Su frecuencia DEBE ser null.
-- "trasplante" = periodo PRE-trasplante (la planta aún está en semillero). Las notas deben referirse a cuidados de plántula.
-- "crecimiento" = periodo POST-trasplante (ya en tierra definitiva). Aquí se mencionan los cuidados tras el trasplante.
+- "pregerminacion" = labores como riegos frecuentes para mantener la humedad antes de que brote.
+- "germinacion" = acciones puntuales o cuidados justo cuando asoma la planta.
+- "crecimiento_inicial" = cuidados de la plántula antes del crecimiento fuerte.
+- "fructificacion" = engloba tanto la floración como el cuajado y engorde del fruto.
+- "finalizacion" = tareas al terminar el cultivo.
 
 ${extraText}
 
@@ -47,14 +52,15 @@ REGLAS ESTRICTAS:
 1. Responde ÚNICAMENTE con un array JSON. Nada más.
 2. Usa SOLAMENTE las labores (por su ID numérico) que se listan arriba. NO inventes IDs.
 3. Para la "frecuencia", proporciona un número entero (en días). Si es una labor puntual (como la cosecha final), pon null.
-4. Las "notas_ia" deben ser concisas y útiles (máx 150 caracteres).
-5. Agrega el campo "selected": true a todas las pautas.
+4. Para el "offset", proporciona un número entero (en días). Usa valores negativos para adelantar la labor respecto al inicio de su fase teórica (ej: -180 para 6 meses antes de la siembra), valores positivos para retrasarla, o 0 si debe ir en su tiempo normal.
+5. Las "notas_ia" deben ser concisas y útiles (máx 150 caracteres).
+6. Agrega el campo "selected": true a todas las pautas.
 
 Ejemplo de respuesta:
 [
-  { "id_labor": 2, "fase": "germinacion", "frecuencia": 2, "notas_ia": "Riego ligero con pulverizador para no mover las semillas.", "selected": true },
-  { "id_labor": 4, "fase": "crecimiento", "frecuencia": 15, "notas_ia": "Abono rico en nitrógeno para estimular el desarrollo vegetativo.", "selected": true },
-  { "id_labor": 10, "fase": "floracion", "frecuencia": null, "notas_ia": "Poda de chupones para mejorar la ventilación.", "selected": true }
+  { "id_labor": 2, "fase": "germinacion", "frecuencia": 2, "offset": 0, "notas_ia": "Riego ligero con pulverizador para no mover las semillas.", "selected": true },
+  { "id_labor": 4, "fase": "siembra", "frecuencia": null, "offset": -180, "notas_ia": "Abono profundo y preparación del suelo 6 meses antes de la siembra real.", "selected": true },
+  { "id_labor": 10, "fase": "fructificacion", "frecuencia": null, "offset": 10, "notas_ia": "Poda de chupones unos días después de iniciar la floración.", "selected": true }
 ]
 `;
 
@@ -101,6 +107,7 @@ Ejemplo de respuesta:
       ...p,
       selected: true,
       frecuencia: typeof p.frecuencia === 'number' ? p.frecuencia : null,
+      offset: typeof p.offset === 'number' ? p.offset : 0,
       id_labor: Number(p.id_labor) || null,
       fase: p.fase || 'general'
     })).filter((p: any) => p.id_labor !== null);

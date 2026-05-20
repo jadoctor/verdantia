@@ -962,6 +962,31 @@ export default function GuiaUsuarioPage() {
               </div>
             </li>
 
+            <li style={{ marginBottom: '24px' }}>
+              <strong>20/05/2026 23:59 – Estabilización del Editor de Blogs e Integración de Videos</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Pérdida inmediata de foco (focus loss) al teclear:</strong> En el editor dinámico del blog, cada pulsación de tecla provocaba que el cursor saltara fuera del input, interrumpiendo la escritura. Esto ocurría porque los inputs se generaban dinámicamente en bucle mediante un IIFE de React y el componente padre actualizaba su estado global de forma reactiva a nivel `onChange`, forzando el desmontado/remontado constante del DOM de los campos.</li>
+                  <li><strong>Inconsistencias al guardar enlaces de YouTube:</strong> Los enlaces de vídeo no se persistían correctamente en la base de datos dentro del formato JSON dinámico `blogcontenido`.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Implementación de los componentes envolventes de estado local `StableInput` y `StableTextarea` en <code>src/app/dashboard/admin/blog/[id]/page.tsx</code>. Estos componentes retienen el estado intermedio local mientras el usuario escribe y solo sincronizan con el controlador de estado del blog padre al disparar <code>onBlur</code> o pulsar <code>Enter</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Sustitución de todos los inputs nativos del editor de bloques JSON y de la sección legacy en Markdown del blog por los nuevos componentes estables.</li>
+                  <li>Normalización y validación robusta para la persistencia del enlace de YouTube arrastrado o ingresado manualmente en el JSON de contenido del blog.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Redacción y edición del contenido de blogs fluida, intuitiva y 100% estable, libre de pérdida de foco, con persistencia perfecta y correcta de enlaces de vídeos de YouTube drag-and-drop.</li>
+                </ul>
+              </div>
+            </li>
+
           </ol>
         </div>
       </div>

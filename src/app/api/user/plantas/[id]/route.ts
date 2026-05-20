@@ -58,6 +58,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         COALESCE(vu.variedadesbiodinamicacategoria, vg.variedadesbiodinamicacategoria, e.especiesbiodinamicacategoria) AS biodinamicacategoria,
         COALESCE(vu.variedadesbiodinamicanotas, vg.variedadesbiodinamicanotas, e.especiesbiodinamicanotas) AS biodinamicanotas,
         COALESCE(vu.variedadeslunarfasesiembra, vg.variedadeslunarfasesiembra, e.especieslunarfasesiembra) AS lunarfasesiembra,
+        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
         COALESCE(vu.variedadeslunarfasetrasplante, vg.variedadeslunarfasetrasplante, e.especieslunarfasetrasplante) AS lunarfasetrasplante,
         COALESCE(vu.variedadeslunarobservaciones, vg.variedadeslunarobservaciones, e.especieslunarobservaciones) AS lunarobservaciones,
         COALESCE(vu.variedadesbiodinamicafasesiembra, vg.variedadesbiodinamicafasesiembra, e.especiesbiodinamicafasesiembra) AS biodinamicafasesiembra,
@@ -208,6 +209,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     );
     if (ownerCheck.length === 0) {
       return NextResponse.json({ error: 'Planta no encontrada o no te pertenece' }, { status: 404 });
+    }
+
+    // Verificar si tiene cultivos asociados
+    const [cropsCheck]: any = await pool.query(
+      `SELECT idcultivos FROM cultivos WHERE xcultivosidvariedades = ? AND xcultivosidusuarios = ? AND cultivosactivosino = 1 LIMIT 1`,
+      [plantaId, user.id]
+    );
+    if (cropsCheck.length > 0) {
+      return NextResponse.json({ error: 'No se puede eliminar la planta porque tiene cultivos activos. Elimina o finaliza los cultivos primero.' }, { status: 400 });
     }
 
     // Eliminar overrides de pautas del usuario para esta planta

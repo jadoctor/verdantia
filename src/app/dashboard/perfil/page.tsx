@@ -84,6 +84,7 @@ function PerfilContent() {
   const [domicilio, setDomicilio] = useState('');
   const [telefono, setTelefono] = useState('');
   const [tipoCalendario, setTipoCalendario] = useState('Normal');
+  const [tipoLaboreo, setTipoLaboreo] = useState('Convencional');
   const [avisosConfig, setAvisosConfig] = useState<any>(null);
   const [avisosLoading, setAvisosLoading] = useState(false);
 
@@ -262,6 +263,7 @@ function PerfilContent() {
           setDomicilio(data.profile.domicilio || '');
           setTelefono(data.profile.telefono || '');
           setTipoCalendario(data.profile.tipoCalendario || 'Normal');
+          setTipoLaboreo(data.profile.tipoLaboreo || 'Convencional');
           loadPhotos(p.id);
           loadAchievementsHistory(p.id);
           loadAvisos(p.email);
@@ -305,6 +307,21 @@ function PerfilContent() {
       }
     }
   }, [searchParams, profile?.id]);
+
+  // ── Auto-desplazamiento al hash de la URL tras cargar el perfil ──
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash;
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        const timer = setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading]);
 
   // ── Subir foto ──
   const uploadPhoto = async (file: File) => {
@@ -1781,105 +1798,7 @@ function PerfilContent() {
             </div>
           </div>
 
-          {/* ── PREFERENCIAS DE ALERTAS AGRÍCOLAS ── */}
-          <div className="optional-zone" style={{ marginTop: '20px' }}>
-            <div className="optional-zone-header">
-              <h3>🌾 Preferencias de Alertas Agrícolas</h3>
-              <p>Personaliza las notificaciones de siembra y cosecha según tu filosofía de cultivo y suscripción.</p>
-            </div>
-            <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
-                  
-                  {/* Normal */}
-                  <div 
-                    onClick={() => {
-                      setTipoCalendario('Normal');
-                      autoSaveField('tipoCalendario', 'Normal');
-                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoCalendario: 'Normal' } }));
-                    }}
-                    style={{
-                      border: tipoCalendario === 'Normal' ? '2px solid #10b981' : '1px solid #cbd5e1',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      cursor: 'pointer',
-                      background: tipoCalendario === 'Normal' ? '#f0fdf4' : '#ffffff',
-                      transition: 'all 0.2s ease',
-                      position: 'relative'
-                    }}
-                  >
-                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌱</div>
-                    <h4 style={{ margin: '0 0 5px 0', color: '#064e3b' }}>Calendario Normal</h4>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Basado únicamente en las épocas estándar de siembra y cosecha del año.</p>
-                  </div>
 
-                  {/* Lunar */}
-                  <div 
-                    onClick={() => {
-                      // Calendario Lunar: requiere plan Esencial o superior
-                      const p = (profile?.suscripcion || '').toLowerCase();
-                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes(p);
-                      if (!hasAccess) {
-                        showToast('❌ El calendario Lunar requiere un plan Esencial o superior');
-                        return;
-                      }
-                      setTipoCalendario('Lunar');
-                      autoSaveField('tipoCalendario', 'Lunar');
-                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoCalendario: 'Lunar' } }));
-                    }}
-                    style={{
-                      border: tipoCalendario === 'Lunar' ? '2px solid #3b82f6' : '1px solid #cbd5e1',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      cursor: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'pointer' : 'not-allowed',
-                      background: tipoCalendario === 'Lunar' ? '#eff6ff' : (!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
-                      opacity: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 1 : 0.6,
-                      transition: 'all 0.2s ease',
-                      position: 'relative'
-                    }}
-                  >
-                    {!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 10, right: 10, fontSize: '1.2rem' }}>🔒</div>}
-                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌔</div>
-                    <h4 style={{ margin: '0 0 5px 0', color: '#1e3a8a' }}>Calendario Lunar</h4>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Añade la influencia gravitacional y fases de la luna para optimizar la savia.</p>
-                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: '#dbeafe', color: '#1d4ed8', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Esencial</span>
-                  </div>
-
-                  {/* Biodinámico */}
-                  <div 
-                    onClick={() => {
-                      // Calendario Biod.: requiere Premium
-                      const p = (profile?.suscripcion || '').toLowerCase();
-                      if (!['avanzado','pro','premium'].includes(p)) {
-                        showToast('❌ El calendario Biod. requiere un plan Avanzado o Premium');
-                        return;
-                      }
-                      setTipoCalendario('Biodinámico');
-                      autoSaveField('tipoCalendario', 'Biodinámico');
-                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoCalendario: 'Biodinámico' } }));
-                    }}
-                    style={{
-                      border: tipoCalendario === 'Biodinámico' ? '2px solid #8b5cf6' : '1px solid #cbd5e1',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      cursor: !['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'not-allowed' : 'pointer',
-                      background: tipoCalendario === 'Biodinámico' ? '#f5f3ff' : (!['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
-                      opacity: !['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 0.6 : 1,
-                      transition: 'all 0.2s ease',
-                      position: 'relative'
-                    }}
-                  >
-                    {!['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 10, right: 10, fontSize: '1.2rem' }}>🔒</div>}
-                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>✨</div>
-                    <h4 style={{ margin: '0 0 5px 0', color: '#4c1d95' }}>Calendario Biodinámico</h4>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Cosmos, constelaciones y elementos (raíz, hoja, flor, fruto) según Maria Thun.</p>
-                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: '#ede9fe', color: '#6d28d9', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Avanzado o Premium</span>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* ── CENTRO DE COMUNICACIONES ── */}
           <div id="comunicaciones" className="optional-zone" style={{ marginTop: '20px' }}>
@@ -2168,6 +2087,468 @@ function PerfilContent() {
               </div>
             </div>
           </div>
+        </div>
+      </details>
+
+      {/* ═══════════════════════════════════════════ */}
+      {/* 2B. MI FORMA DE CULTIVAR                    */}
+      {/* ═══════════════════════════════════════════ */}
+      <details open>
+        <summary>
+          🌾 Mi forma de cultivar
+          <span className="accordion-preview">({tipoCalendario} • {tipoLaboreo})</span>
+        </summary>
+        <div className="accordion-body" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+          
+          {/* Subapartado 1: Calendario de cultivo */}
+          <div className="optional-zone" style={{ marginTop: '0px' }}>
+            <div className="optional-zone-header" style={{ marginBottom: '15px' }}>
+              <h3>🌾 Calendario de cultivo</h3>
+              <p>Personaliza las notificaciones de siembra y cosecha según tu filosofía de cultivo y suscripción.</p>
+            </div>
+            <div className="form-grid">
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                  
+                  {/* Normal */}
+                  <div 
+                    onClick={() => {
+                      setTipoCalendario('Normal');
+                      autoSaveField('tipoCalendario', 'Normal');
+                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoCalendario: 'Normal' } }));
+                    }}
+                    style={{
+                      border: tipoCalendario === 'Normal' ? '2.5px solid #10b981' : '1px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      background: tipoCalendario === 'Normal' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : '#ffffff',
+                      boxShadow: tipoCalendario === 'Normal' ? '0 8px 24px rgba(16, 185, 129, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transform: tipoCalendario === 'Normal' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = tipoCalendario === 'Normal' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = tipoCalendario === 'Normal' ? '0 12px 28px rgba(16, 185, 129, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
+                      if (tipoCalendario !== 'Normal') e.currentTarget.style.borderColor = '#10b981';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = tipoCalendario === 'Normal' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = tipoCalendario === 'Normal' ? '0 8px 24px rgba(16, 185, 129, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
+                      if (tipoCalendario !== 'Normal') e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    {tipoCalendario === 'Normal' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌱</div>
+                    <h4 style={{ margin: '0 0 5px 0', color: tipoCalendario === 'Normal' ? '#047857' : '#334155', fontWeight: 700 }}>Calendario Normal</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Basado únicamente en las épocas estándar de siembra y cosecha del año.</p>
+                  </div>
+
+                  {/* Lunar */}
+                  <div 
+                    onClick={() => {
+                      // Calendario Lunar: requiere plan Esencial o superior
+                      const p = (profile?.suscripcion || '').toLowerCase();
+                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes(p);
+                      if (!hasAccess) {
+                        showToast('❌ El calendario Lunar requiere un plan Esencial o superior');
+                        return;
+                      }
+                      setTipoCalendario('Lunar');
+                      autoSaveField('tipoCalendario', 'Lunar');
+                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoCalendario: 'Lunar' } }));
+                    }}
+                    style={{
+                      border: tipoCalendario === 'Lunar' ? '2.5px solid #3b82f6' : '1px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      cursor: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'pointer' : 'not-allowed',
+                      background: tipoCalendario === 'Lunar' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : (!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
+                      opacity: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 1 : 0.6,
+                      boxShadow: tipoCalendario === 'Lunar' ? '0 8px 24px rgba(59, 130, 246, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transform: tipoCalendario === 'Lunar' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase());
+                      if (!hasAccess) return;
+                      e.currentTarget.style.transform = tipoCalendario === 'Lunar' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = tipoCalendario === 'Lunar' ? '0 12px 28px rgba(59, 130, 246, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
+                      if (tipoCalendario !== 'Lunar') e.currentTarget.style.borderColor = '#3b82f6';
+                    }}
+                    onMouseLeave={(e) => {
+                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase());
+                      if (!hasAccess) return;
+                      e.currentTarget.style.transform = tipoCalendario === 'Lunar' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = tipoCalendario === 'Lunar' ? '0 8px 24px rgba(59, 130, 246, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
+                      if (tipoCalendario !== 'Lunar') e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    {!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 12, right: 12, fontSize: '1.2rem' }}>🔒</div>}
+                    {tipoCalendario === 'Lunar' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(59, 130, 246, 0.3)'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌔</div>
+                    <h4 style={{ margin: '0 0 5px 0', color: tipoCalendario === 'Lunar' ? '#1d4ed8' : '#334155', fontWeight: 700 }}>Calendario Lunar</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Añade la influencia gravitacional y fases de la luna para optimizar la savia.</p>
+                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: tipoCalendario === 'Lunar' ? '#bfdbfe' : '#dbeafe', color: tipoCalendario === 'Lunar' ? '#1e40af' : '#1d4ed8', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Esencial</span>
+                  </div>
+
+                  {/* Biodinámico */}
+                  <div 
+                    onClick={() => {
+                      // Calendario Biod.: requiere Premium
+                      const p = (profile?.suscripcion || '').toLowerCase();
+                      if (!['avanzado','pro','premium'].includes(p)) {
+                        showToast('❌ El calendario Biod. requiere un plan Avanzado o Premium');
+                        return;
+                      }
+                      setTipoCalendario('Biodinámico');
+                      autoSaveField('tipoCalendario', 'Biodinámico');
+                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoCalendario: 'Biodinámico' } }));
+                    }}
+                    style={{
+                      border: tipoCalendario === 'Biodinámico' ? '2.5px solid #8b5cf6' : '1px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      cursor: !['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'not-allowed' : 'pointer',
+                      background: tipoCalendario === 'Biodinámico' ? 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)' : (!['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
+                      opacity: !['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 0.6 : 1,
+                      boxShadow: tipoCalendario === 'Biodinámico' ? '0 8px 24px rgba(139, 92, 246, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transform: tipoCalendario === 'Biodinámico' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      const hasAccess = ['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase());
+                      if (!hasAccess) return;
+                      e.currentTarget.style.transform = tipoCalendario === 'Biodinámico' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = tipoCalendario === 'Biodinámico' ? '0 12px 28px rgba(139, 92, 246, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
+                      if (tipoCalendario !== 'Biodinámico') e.currentTarget.style.borderColor = '#8b5cf6';
+                    }}
+                    onMouseLeave={(e) => {
+                      const hasAccess = ['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase());
+                      if (!hasAccess) return;
+                      e.currentTarget.style.transform = tipoCalendario === 'Biodinámico' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = tipoCalendario === 'Biodinámico' ? '0 8px 24px rgba(139, 92, 246, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
+                      if (tipoCalendario !== 'Biodinámico') e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    {!['avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 12, right: 12, fontSize: '1.2rem' }}>🔒</div>}
+                    {tipoCalendario === 'Biodinámico' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#8b5cf6',
+                        color: 'white',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(139, 92, 246, 0.3)'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>✨</div>
+                    <h4 style={{ margin: '0 0 5px 0', color: tipoCalendario === 'Biodinámico' ? '#5b21b6' : '#334155', fontWeight: 700 }}>Calendario Biodinámico</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Cosmos, constelaciones y elementos (raíz, hoja, flor, fruto) según Maria Thun.</p>
+                    <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: tipoCalendario === 'Biodinámico' ? '#ddd6fe' : '#ede9fe', color: tipoCalendario === 'Biodinámico' ? '#4c1d95' : '#6d28d9', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Avanzado o Premium</span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subapartado 2: Filosofía de laboreo */}
+          <div id="filosofia-laboreo" className="optional-zone" style={{ marginTop: '0px' }}>
+            <div className="optional-zone-header" style={{ marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3>🚜 Filosofía de laboreo</h3>
+                <p>Elige cómo trabajas la tierra en tus cultivos para adaptar las recomendaciones de preparación de suelo.</p>
+              </div>
+              <a 
+                href="/filosofia-laboreo.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  textDecoration: 'none',
+                  border: '1px solid #e2e8f0',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#e2e8f0';
+                  e.currentTarget.style.color = '#1e293b';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  e.currentTarget.style.color = '#475569';
+                }}
+              >
+                📄 Ver / Imprimir infografía (PDF)
+              </a>
+            </div>
+            <div className="form-grid">
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                  
+                  {/* Convencional */}
+                  <div 
+                    onClick={() => {
+                      setTipoLaboreo('Convencional');
+                      autoSaveField('tipoLaboreo', 'Convencional');
+                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoLaboreo: 'Convencional' } }));
+                    }}
+                    style={{
+                      border: tipoLaboreo === 'Convencional' ? '2.5px solid #d97706' : '1px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      background: tipoLaboreo === 'Convencional' ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' : '#ffffff',
+                      boxShadow: tipoLaboreo === 'Convencional' ? '0 8px 24px rgba(217, 119, 6, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transform: tipoLaboreo === 'Convencional' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = tipoLaboreo === 'Convencional' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = tipoLaboreo === 'Convencional' ? '0 12px 28px rgba(217, 119, 6, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
+                      if (tipoLaboreo !== 'Convencional') e.currentTarget.style.borderColor = '#d97706';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = tipoLaboreo === 'Convencional' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = tipoLaboreo === 'Convencional' ? '0 8px 24px rgba(217, 119, 6, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
+                      if (tipoLaboreo !== 'Convencional') e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    {tipoLaboreo === 'Convencional' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#d97706',
+                        color: 'white',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(217, 119, 6, 0.3)'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🚜</div>
+                    <h4 style={{ margin: '0 0 5px 0', color: tipoLaboreo === 'Convencional' ? '#92400e' : '#334155', fontWeight: 700 }}>Laboreo Convencional</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Remoción profunda y volteo del suelo con herramientas tradicionales.</p>
+                  </div>
+
+                  {/* Mínimo */}
+                  <div 
+                    onClick={() => {
+                      setTipoLaboreo('Mínimo');
+                      autoSaveField('tipoLaboreo', 'Mínimo');
+                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoLaboreo: 'Mínimo' } }));
+                    }}
+                    style={{
+                      border: tipoLaboreo === 'Mínimo' ? '2.5px solid #0d9488' : '1px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      background: tipoLaboreo === 'Mínimo' ? 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)' : '#ffffff',
+                      boxShadow: tipoLaboreo === 'Mínimo' ? '0 8px 24px rgba(13, 148, 136, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transform: tipoLaboreo === 'Mínimo' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = tipoLaboreo === 'Mínimo' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = tipoLaboreo === 'Mínimo' ? '0 12px 28px rgba(13, 148, 136, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
+                      if (tipoLaboreo !== 'Mínimo') e.currentTarget.style.borderColor = '#0d9488';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = tipoLaboreo === 'Mínimo' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = tipoLaboreo === 'Mínimo' ? '0 8px 24px rgba(13, 148, 136, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
+                      if (tipoLaboreo !== 'Mínimo') e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    {tipoLaboreo === 'Mínimo' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#0d9488',
+                        color: 'white',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(13, 148, 136, 0.3)'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔱</div>
+                    <h4 style={{ margin: '0 0 5px 0', color: tipoLaboreo === 'Mínimo' ? '#0f766e' : '#334155', fontWeight: 700 }}>Laboreo Mínimo</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Descompactación vertical sin voltear perfiles, respetando la estructura del suelo.</p>
+                  </div>
+
+                  {/* No Laboreo */}
+                  <div 
+                    onClick={() => {
+                      setTipoLaboreo('No laboreo');
+                      autoSaveField('tipoLaboreo', 'No laboreo');
+                      window.dispatchEvent(new CustomEvent('profile_updated', { detail: { tipoLaboreo: 'No laboreo' } }));
+                    }}
+                    style={{
+                      border: tipoLaboreo === 'No laboreo' ? '2.5px solid #10b981' : '1px solid #cbd5e1',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      cursor: 'pointer',
+                      background: tipoLaboreo === 'No laboreo' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : '#ffffff',
+                      boxShadow: tipoLaboreo === 'No laboreo' ? '0 8px 24px rgba(16, 185, 129, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                      transform: tipoLaboreo === 'No laboreo' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = tipoLaboreo === 'No laboreo' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = tipoLaboreo === 'No laboreo' ? '0 12px 28px rgba(16, 185, 129, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
+                      if (tipoLaboreo !== 'No laboreo') e.currentTarget.style.borderColor = '#10b981';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = tipoLaboreo === 'No laboreo' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = tipoLaboreo === 'No laboreo' ? '0 8px 24px rgba(16, 185, 129, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
+                      if (tipoLaboreo !== 'No laboreo') e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    {tipoLaboreo === 'No laboreo' && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🍂</div>
+                      <h4 style={{ margin: '0 0 5px 0', color: tipoLaboreo === 'No laboreo' ? '#047857' : '#334155', fontWeight: 700 }}>No Laboreo (No-Till)</h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Perturbación física nula del suelo. Siembra directa bajo acolchado permanente.</p>
+                    </div>
+                    <div style={{ marginTop: '12px' }}>
+                      <a 
+                        href="/blog/guia-definitiva-no-laboreo" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          color: '#10b981',
+                          textDecoration: 'none',
+                          borderBottom: '1px dashed #10b981',
+                          paddingBottom: '2px',
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.color = '#059669';
+                          e.currentTarget.style.borderBottomStyle = 'solid';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.color = '#10b981';
+                          e.currentTarget.style.borderBottomStyle = 'dashed';
+                        }}
+                      >
+                        📖 Leer guía en el Blog →
+                      </a>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </details>
 

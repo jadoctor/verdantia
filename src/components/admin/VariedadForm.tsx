@@ -65,6 +65,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
     variedadesviabilidadsemilla: '',
     variedadespeso1000semillas: '',
     variedadesdiashastafructificacion: '',
+    variedadesdiascrecimientofirme: '',
     variedadesdiashastatrasplante: '',
     variedadesdiashastarecoleccion: '',
     variedadestemperaturaminima: '',
@@ -252,7 +253,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
     if (!genericData) return false;
     const tabFields: Record<string, string[]> = {
       taxonomia: ['variedadesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo', 'variedadescolor', 'variedadestamano', 'variedadesdificultad', 'variedadesluzsolar', 'variedadesnecesidadriego', 'variedadesvolumenmaceta'],
-      fisiologia: ['variedadesdiasgerminacion', 'variedadesdiashastatrasplante', 'variedadesviabilidadsemilla', 'variedadespeso1000semillas', 'variedadesdiashastafructificacion', 'variedadesdiashastarecoleccion', 'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima', 'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra', 'variedadesprofundidadtrasplante'],
+      fisiologia: ['variedadesdiasgerminacion', 'variedadesdiashastatrasplante', 'variedadesviabilidadsemilla', 'variedadespeso1000semillas', 'variedadesdiascrecimientofirme', 'variedadesdiashastafructificacion', 'variedadesdiashastarecoleccion', 'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima', 'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra', 'variedadesprofundidadtrasplante'],
       calendarios: ['variedadessemillerodesde', 'variedadessemillerohasta', 'variedadessiembradirectadesde', 'variedadessiembradirectahasta', 'variedadestrasplantedesde', 'variedadestrasplantehasta', 'variedadesrecolecciondesde', 'variedadesrecoleccionhasta'],
       autosuficiencia: ['variedadesautosuficiencia', 'variedadesautosuficienciaparcial', 'variedadesautosuficienciaconserva']
     };
@@ -834,8 +835,10 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                       <FieldCompare label="Peso de 1.000 Semillas (g)" field="variedadespeso1000semillas" type="number" step="0.001" />
                       <FieldCompare label="Días a Germinación" field="variedadesdiasgerminacion" type="number" />
                       <FieldCompare label="Días a Trasplante" field="variedadesdiashastatrasplante" type="number" />
+                      <FieldCompare label="Días a Crecimiento Firme" field="variedadesdiascrecimientofirme" type="number" />
                       <FieldCompare label="Días a Primer Fruto" field="variedadesdiashastafructificacion" type="number" />
                       <FieldCompare label="Días a Recolección Final" field="variedadesdiashastarecoleccion" type="number" />
+                      <FieldCompare label="Duración Total (Fin Ciclo)" field="variedadesduraciontotal" type="number" />
                       <FieldCompare label="Temperatura Mínima (°C)" field="variedadestemperaturaminima" type="number" />
                       <FieldCompare label="Temperatura Óptima (°C)" field="variedadestemperaturaoptima" type="number" />
                       <FieldCompare label="Temperatura Máxima (°C)" field="variedadestemperaturamaxima" type="number" />

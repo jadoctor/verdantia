@@ -4,18 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
-function getMediaUrl(path: string) {
-  if (!path) return '';
-  if (path.startsWith('/api/media')) return path;
-  if (path.startsWith('http')) {
-    if (path.includes('googleapis.com')) {
-      return `/api/media?path=${encodeURIComponent(path)}`;
-    }
-    return path;
-  }
-  return `/api/media?path=${encodeURIComponent(path)}`;
-}
+import { getMediaUrl } from '@/lib/media-url';
+import YoutubePlayer from '@/components/ui/YoutubePlayer';
 
 export default function BlogPublicArticle() {
   const params = useParams();
@@ -53,6 +43,20 @@ export default function BlogPublicArticle() {
     blogData = null;
   }
 
+  // Componente personalizado de Markdown para auto-resolver links de YouTube
+  const markdownComponents = {
+    a: ({ href, children }: any) => {
+      if (href && (href.includes('youtube.com') || href.includes('youtu.be'))) {
+        return <YoutubePlayer url={href} title={String(children || 'Video de YouTube')} />;
+      }
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'underline' }}>
+          {children}
+        </a>
+      );
+    }
+  };
+
   // ── RENDERIZADO LEGACY (Markdown plano) ──
   if (!blogData || !blogData.secciones) {
     return (
@@ -67,7 +71,7 @@ export default function BlogPublicArticle() {
         </div>
         <article style={{ maxWidth: '800px', margin: '0 auto', padding: '60px 20px', background: 'white', borderRadius: '16px', marginTop: '-40px', position: 'relative', zIndex: 10, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)' }}>
           <div className="blog-md" style={{ fontSize: '1.05rem', color: '#334155', lineHeight: 1.8 }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{art.blogcontenido}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{art.blogcontenido}</ReactMarkdown>
           </div>
         </article>
       </div>
@@ -227,7 +231,7 @@ export default function BlogPublicArticle() {
           {/* INTRODUCCIÓN */}
           {blogData.introduccion && (
             <div className="vblog-intro">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{blogData.introduccion}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{blogData.introduccion}</ReactMarkdown>
             </div>
           )}
 
@@ -252,7 +256,12 @@ export default function BlogPublicArticle() {
                       />
                     </div>
                   )}
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{sec.contenido_markdown}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{sec.contenido_markdown}</ReactMarkdown>
+                  {sec.video_youtube_url && (
+                    <div style={{ clear: 'both', width: '100%', marginTop: '16px' }}>
+                      <YoutubePlayer url={sec.video_youtube_url} title={`Video explicativo: ${sec.titulo_h2}`} />
+                    </div>
+                  )}
                 </div>
               </div>
             );

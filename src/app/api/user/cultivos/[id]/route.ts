@@ -20,6 +20,12 @@ export async function GET(
         c.*,
         COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS variedad_nombre,
         e.especiesnombre,
+        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, e.especiesdiasgerminacion) AS dias_germinacion,
+        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, e.especiesdiashastatrasplante) AS dias_trasplante,
+        COALESCE(vu.variedadesdiascrecimientofirme, vg.variedadesdiascrecimientofirme, e.especiesdiascrecimientofirme) AS dias_crecimiento,
+        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, e.especiesdiashastafructificacion) AS dias_fructificacion,
+        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, e.especiesdiashastarecoleccion) AS dias_recoleccion,
+        COALESCE(vu.variedadesduraciontotal, vg.variedadesduraciontotal, e.especiesduraciontotal) AS duracion_total,
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidcultivos = c.idcultivos AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
@@ -37,7 +43,50 @@ export async function GET(
       return NextResponse.json({ error: 'Cultivo no encontrado' }, { status: 404 });
     }
 
-    return NextResponse.json({ cultivo: rows[0] });
+    const cultivo = rows[0];
+
+    // Obtener las pautas de labores aplicables a este cultivo
+    const [pautasRows]: any = await pool.query(`
+      SELECT lp.*, l.laboresnombre, l.laboresicono, l.laborescolor, l.laboresdescripcion
+      FROM laborespauta lp
+      JOIN labores l ON lp.xlaborespautaidlabores = l.idlabores
+      WHERE (
+        lp.xlaborespautaidusuarios = ? OR 
+        lp.xlaborespautaidvariedades = ? OR 
+        lp.xlaborespautaidvariedades = (SELECT xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ?) OR
+        lp.xlaborespautaidespecies = (SELECT xvariedadesidespecies FROM variedades WHERE idvariedades = ?)
+      )
+    `, [user.id, cultivo.xcultivosidvariedades, cultivo.xcultivosidvariedades, cultivo.xcultivosidvariedades]);
+
+    // Lógica básica de herencia: si hay una pauta de usuario para una labor y fase, pisa a las demás
+    const pautasMap = new Map();
+    for (const p of pautasRows) {
+      const key = `${p.xlaborespautaidlabores}-${p.laborespautafase}`;
+      const current = pautasMap.get(key);
+      
+      const priority = p.xlaborespautaidusuarios ? 3 : p.xlaborespautaidvariedades ? 2 : 1;
+      const currentPriority = current ? (current.xlaborespautaidusuarios ? 3 : current.xlaborespautaidvariedades ? 2 : 1) : 0;
+      
+      if (priority > currentPriority) {
+        pautasMap.set(key, p);
+      }
+    }
+
+    const pautas = Array.from(pautasMap.values()); // REMOVED .filter
+
+    let avisosCompletados = [];
+    try {
+      const [avisosRows]: any = await pool.query(`
+        SELECT xcultivosavisosidlaborespauta as idpauta, cultivosavisosfase as fase
+        FROM cultivosavisos
+        WHERE xcultivosavisosidcultivos = ?
+      `, [cultivoId]);
+      avisosCompletados = avisosRows;
+    } catch (err) {
+      console.warn('La tabla cultivosavisos aún no existe o hay un error. Devolviendo array vacío.');
+    }
+
+    return NextResponse.json({ cultivo, pautas, avisosCompletados });
   } catch (error: any) {
     console.error('Error fetching cultivo:', error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
@@ -67,14 +116,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Cultivo no encontrado o no autorizado' }, { status: 404 });
     }
 
-    // Ocultar/desactivar en lugar de borrar físicamente (Soft Delete)
-    await pool.query(
-      'UPDATE cultivos SET cultivosactivosino = 0 WHERE idcultivos = ?',
-      [cultivoId]
-    );
-
-    // TODO: Si un cultivo se elimina, deberíamos considerar qué hacer con sus tareas asociadas,
-    // pero de momento un soft delete es suficiente.
+    // Hard delete (borrado físico). Fallará si tiene semillas generadas (FK constraint)
+    try {
+      await pool.query(
+        'DELETE FROM cultivos WHERE idcultivos = ?',
+        [cultivoId]
+      );
+    } catch (e: any) {
+      if (e.code === 'ER_ROW_IS_REFERENCED_2') {
+        return NextResponse.json({ error: 'No se puede borrar el cultivo porque ha generado semillas o tiene registros asociados.' }, { status: 400 });
+      }
+      throw e;
+    }
 
     return NextResponse.json({ success: true, message: 'Cultivo eliminado correctamente' });
   } catch (error: any) {
@@ -98,7 +151,73 @@ export async function PATCH(
   try {
     const body = await request.json();
     
-    // Verificar que el cultivo pertenezca al usuario
+    // Si la request es para actualizar las alertas ignoradas
+    if (body.action === 'toggle_alert') {
+      const pautaId = body.pautaId;
+      if (!pautaId) return NextResponse.json({ error: 'Falta pautaId' }, { status: 400 });
+
+      // Obtener el estado actual
+      const [rows]: any = await pool.query('SELECT cultivosalertas_ignoradas FROM cultivos WHERE idcultivos = ? AND xcultivosidusuarios = ?', [cultivoId, user.id]);
+      if (rows.length === 0) return NextResponse.json({ error: 'Cultivo no encontrado' }, { status: 404 });
+
+      let ignoradas = [];
+      try {
+        if (rows[0].cultivosalertas_ignoradas) {
+          ignoradas = typeof rows[0].cultivosalertas_ignoradas === 'string' ? JSON.parse(rows[0].cultivosalertas_ignoradas) : rows[0].cultivosalertas_ignoradas;
+        }
+      } catch (e) { ignoradas = []; }
+
+      // Toggle
+      if (ignoradas.includes(pautaId)) {
+        ignoradas = ignoradas.filter((id: number) => id !== pautaId);
+      } else {
+        ignoradas.push(pautaId);
+      }
+
+      await pool.query('UPDATE cultivos SET cultivosalertas_ignoradas = ? WHERE idcultivos = ?', [JSON.stringify(ignoradas), cultivoId]);
+      return NextResponse.json({ success: true, ignoradas });
+    }
+
+    if (body.action === 'toggle_force') {
+      const pautaId = body.pautaId;
+      if (!pautaId) return NextResponse.json({ error: 'Falta pautaId' }, { status: 400 });
+
+      const [rows]: any = await pool.query('SELECT cultivosalertas_forzadas FROM cultivos WHERE idcultivos = ? AND xcultivosidusuarios = ?', [cultivoId, user.id]);
+      if (rows.length === 0) return NextResponse.json({ error: 'Cultivo no encontrado' }, { status: 404 });
+
+      let forzadas = [];
+      try {
+        if (rows[0].cultivosalertas_forzadas) {
+          forzadas = typeof rows[0].cultivosalertas_forzadas === 'string' ? JSON.parse(rows[0].cultivosalertas_forzadas) : rows[0].cultivosalertas_forzadas;
+        }
+      } catch (e) { forzadas = []; }
+
+      // Toggle
+      if (forzadas.includes(pautaId)) {
+        forzadas = forzadas.filter((id: number) => id !== pautaId);
+      } else {
+        forzadas.push(pautaId);
+      }
+
+      await pool.query('UPDATE cultivos SET cultivosalertas_forzadas = ? WHERE idcultivos = ?', [JSON.stringify(forzadas), cultivoId]);
+      return NextResponse.json({ success: true, forzadas });
+    }
+
+    if (body.action === 'reset_alerts') {
+      // 1. Limpiar excepciones locales del cultivo
+      await pool.query('UPDATE cultivos SET cultivosalertas_ignoradas = ?, cultivosalertas_forzadas = ? WHERE idcultivos = ?', ['[]', '[]', cultivoId]);
+      
+      // 2. Eliminar cualquier override global inactivo de esta variedad para este usuario
+      // Obtenemos la variedad del cultivo
+      const [cultivos]: any = await pool.query('SELECT xcultivosidvariedades FROM cultivos WHERE idcultivos = ?', [cultivoId]);
+      if (cultivos.length > 0) {
+        await pool.query('DELETE FROM laborespauta WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedades = ?', [user.id, cultivos[0].xcultivosidvariedades]);
+      }
+      
+      return NextResponse.json({ success: true });
+    }
+    
+    // Verificar que el cultivo pertenezca al usuario para otras actualizaciones
     const [rows]: any = await pool.query(
       'SELECT idcultivos FROM cultivos WHERE idcultivos = ? AND xcultivosidusuarios = ?',
       [cultivoId, user.id]
@@ -118,8 +237,12 @@ export async function PATCH(
       'cultivosfechainicio',
       'cultivosfechagerminacion',
       'cultivosfechatrasplante',
+      'cultivosfechacrecimiento',
+      'cultivosfechafructificacion',
+      'cultivosfecharecoleccion',
       'cultivosfechafinalizacion',
-      'cultivosobservaciones'
+      'cultivosobservaciones',
+      'cultivosmetodo'
     ];
 
     allowedFields.forEach(field => {
@@ -140,6 +263,9 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error actualizando cultivo:', error);
+    // Force turbopack to recompile and clear the stale error
+    console.log("Clearing NextJS cache for this file");
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
+

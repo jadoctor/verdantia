@@ -6,17 +6,7 @@ import '@/components/admin/EspecieForm.css';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 
-function getMediaUrl(path: string) {
-  if (!path) return '';
-  if (path.startsWith('/api/media')) return path;
-  if (path.startsWith('http')) {
-    if (path.includes('googleapis.com')) {
-      return `/api/media?path=${encodeURIComponent(path)}`;
-    }
-    return path;
-  }
-  return `/api/media?path=${encodeURIComponent(path)}`;
-}
+import { getMediaUrl } from '@/lib/media-url';
 
 export default function BlogEditorDashboard() {
   const params = useParams();
@@ -51,6 +41,9 @@ export default function BlogEditorDashboard() {
   const [aiGenLoading, setAiGenLoading] = useState(false);
   const [aiGenNote, setAiGenNote] = useState('');
   const [aiGenShowNote, setAiGenShowNote] = useState(false);
+  
+  // -- YouTube Video Drag and Drop --
+  const [dragOverSecIndex, setDragOverSecIndex] = useState<number | null>(null);
   
   // Drag to pan
   const editorDragRef = React.useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
@@ -269,6 +262,25 @@ export default function BlogEditorDashboard() {
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
   };
+  
+  const handleYoutubeLinkDrop = (e: React.DragEvent, sectionIndex: number, updateContentFn: any) => {
+    e.preventDefault();
+    setDragOverSecIndex(null);
+    
+    // Extract text/URI data
+    const droppedText = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list');
+    if (!droppedText) return;
+
+    // Check if it's a YouTube link
+    if (droppedText.includes('youtube.com') || droppedText.includes('youtu.be') || droppedText.includes('shorts/')) {
+      const cleanUrl = droppedText.trim();
+      updateContentFn((d: any) => {
+        d.secciones[sectionIndex].video_youtube_url = cleanUrl;
+      });
+    } else {
+      alert('⚠️ Por favor, arrastra y suelta un enlace válido de YouTube.');
+    }
+  };
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando...</div>;
   if (!blog) return null;
@@ -464,9 +476,9 @@ export default function BlogEditorDashboard() {
                 {blogData.introduccion && (
                   <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #e2e8f0' }}>
                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'block' }}>Introducción</label>
-                    <textarea 
+                    <StableTextarea 
                       value={blogData.introduccion}
-                      onChange={e => updateContent(d => { d.introduccion = e.target.value; })}
+                      onSave={val => updateContent(d => { d.introduccion = val; })}
                       style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1', fontSize: '1rem', color: '#1e293b', fontWeight: 500, lineHeight: 1.7, minHeight: '80px', resize: 'vertical', background: 'rgba(139,92,246,0.03)', fontFamily: 'inherit' }}
                     />
                   </div>
@@ -479,10 +491,10 @@ export default function BlogEditorDashboard() {
                   return (
                     <div key={i} style={{ marginBottom: '36px', clear: 'both' }}>
                       <label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px', display: 'block' }}>Sección {i + 1}</label>
-                      <input 
+                      <StableInput 
                         type="text"
                         value={sec.titulo_h2}
-                        onChange={e => updateContent(d => { d.secciones[i].titulo_h2 = e.target.value; })}
+                        onSave={val => updateContent(d => { d.secciones[i].titulo_h2 = val; })}
                         style={{ width: '100%', padding: '8px 0', border: 'none', borderBottom: '2px solid #d1fae5', fontSize: '1.25rem', fontWeight: 800, color: '#0f766e', marginBottom: '14px', background: 'transparent', outline: 'none', fontFamily: 'inherit' }}
                       />
                       <div style={{ overflow: 'hidden' }}>
@@ -498,11 +510,56 @@ export default function BlogEditorDashboard() {
                               style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white', padding: '5px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', backdropFilter: 'blur(4px)' }}>✏️</button>
                           </div>
                         )}
-                        <textarea
+                        <StableTextarea
                           value={sec.contenido_markdown}
-                          onChange={e => updateContent(d => { d.secciones[i].contenido_markdown = e.target.value; })}
+                          onSave={val => updateContent(d => { d.secciones[i].contenido_markdown = val; })}
                           style={{ width: '100%', padding: '10px', border: '1px dashed #e2e8f0', borderRadius: '8px', fontSize: '.9rem', lineHeight: 1.65, color: '#334155', minHeight: '120px', resize: 'vertical', background: 'rgba(139,92,246,0.02)', fontFamily: 'inherit' }}
                         />
+                        <div 
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            if (dragOverSecIndex !== i) setDragOverSecIndex(i);
+                          }}
+                          onDragLeave={() => setDragOverSecIndex(null)}
+                          onDrop={(e) => handleYoutubeLinkDrop(e, i, updateContent)}
+                          style={{
+                            marginTop: '14px',
+                            padding: '16px',
+                            border: dragOverSecIndex === i ? '2.5px dashed #10b981' : '1px dashed #cbd5e1',
+                            borderRadius: '12px',
+                            background: dragOverSecIndex === i ? 'linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%)' : '#f8fafc',
+                            boxShadow: dragOverSecIndex === i ? '0 10px 25px -5px rgba(16, 185, 129, 0.15)' : 'none',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            textAlign: dragOverSecIndex === i ? 'center' : 'left',
+                            color: dragOverSecIndex === i ? '#0f766e' : '#475569'
+                          }}
+                        >
+                          {dragOverSecIndex === i ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'copy', padding: '10px 0' }}>
+                              <span style={{ fontSize: '2.5rem', transform: 'scale(1.1)', transition: 'transform 0.2s' }}>📥</span>
+                              <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f766e' }}>¡Suelta el video de YouTube aquí!</span>
+                              <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>Se enlazará automáticamente a la Sección {i + 1}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                📹 Enlace de Video de YouTube (Opcional)
+                              </label>
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <StableInput 
+                                  type="text"
+                                  value={sec.video_youtube_url || ''}
+                                  onSave={val => updateContent(d => { d.secciones[i].video_youtube_url = val; })}
+                                  placeholder="Ej: https://www.youtube.com/watch?v=66i1Y1w0D3g o arrastra un enlace aquí"
+                                  style={{ flex: 1, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', background: '#ffffff', transition: 'border-color 0.2s' }}
+                                />
+                                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                                  ✨ ¡O arrastra el link aquí!
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div style={{ clear: 'both' }} />
                     </div>
@@ -512,19 +569,19 @@ export default function BlogEditorDashboard() {
                 {/* CONSEJOS */}
                 {blogData.consejos && (
                   <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderLeft: '4px solid #f59e0b', borderRadius: '0 14px 14px 0', padding: '20px 24px', marginBottom: '36px', clear: 'both' }}>
-                    <input
+                    <StableInput
                       type="text"
                       value={blogData.consejos.titulo}
-                      onChange={e => updateContent(d => { d.consejos.titulo = e.target.value; })}
+                      onSave={val => updateContent(d => { d.consejos.titulo = val; })}
                       style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.05rem', fontWeight: 700, color: '#92400e', marginBottom: '12px', outline: 'none', fontFamily: 'inherit' }}
                     />
                     <ol style={{ paddingLeft: '18px', margin: 0, color: '#78350f' }}>
                       {blogData.consejos.items.map((item: string, j: number) => (
                         <li key={j} style={{ marginBottom: '8px' }}>
-                          <input
+                          <StableInput
                             type="text"
                             value={item}
-                            onChange={e => updateContent(d => { d.consejos.items[j] = e.target.value; })}
+                            onSave={val => updateContent(d => { d.consejos.items[j] = val; })}
                             style={{ width: '100%', border: 'none', borderBottom: '1px dashed #d97706', background: 'transparent', fontSize: '.88rem', color: '#78350f', padding: '2px 0', outline: 'none', fontFamily: 'inherit' }}
                           />
                         </li>
@@ -536,16 +593,16 @@ export default function BlogEditorDashboard() {
                 {/* CTA */}
                 {blogData.cta && (
                   <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '18px', padding: '36px 28px', textAlign: 'center', color: '#fff', marginBottom: '36px', clear: 'both' }}>
-                    <input
+                    <StableInput
                       type="text"
                       value={blogData.cta.titulo}
-                      onChange={e => updateContent(d => { d.cta.titulo = e.target.value; })}
+                      onSave={val => updateContent(d => { d.cta.titulo = val; })}
                       style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '1.4rem', fontWeight: 800, color: 'white', textAlign: 'center', marginBottom: '6px', outline: 'none', fontFamily: 'inherit' }}
                     />
-                    <input
+                    <StableInput
                       type="text"
                       value={blogData.cta.subtitulo}
-                      onChange={e => updateContent(d => { d.cta.subtitulo = e.target.value; })}
+                      onSave={val => updateContent(d => { d.cta.subtitulo = val; })}
                       style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '.92rem', color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginBottom: '16px', outline: 'none', fontFamily: 'inherit' }}
                     />
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
@@ -571,9 +628,9 @@ export default function BlogEditorDashboard() {
           return (
             <div style={{ background: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '8px' }}>Contenido (Markdown)</label>
-              <textarea 
+              <StableTextarea 
                 value={blog.blogcontenido} 
-                onChange={e => setBlog({...blog, blogcontenido: e.target.value})}
+                onSave={val => setBlog({...blog, blogcontenido: val})}
                 style={{ width: '100%', padding: '15px', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '400px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.95rem', background: '#f8fafc' }}
               />
             </div>
@@ -772,5 +829,70 @@ export default function BlogEditorDashboard() {
       })()}
 
     </div>
+  );
+}
+
+// Helper component for stable input editing to prevent focus loss in React dynamic renders
+interface StableInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  value: string;
+  onSave: (val: string) => void;
+}
+
+const StableInput = ({ value, onSave, ...props }: StableInputProps) => {
+  const [localVal, setLocalVal] = React.useState(value);
+
+  React.useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localVal !== value) {
+      onSave(localVal);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      (e.target as HTMLInputElement).blur();
+    }
+  };
+
+  return (
+    <input
+      {...props}
+      value={localVal}
+      onChange={e => setLocalVal(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+    />
+  );
+};
+
+// Helper component for stable textarea editing to prevent focus loss in React dynamic renders
+interface StableTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  value: string;
+  onSave: (val: string) => void;
+}
+
+const StableTextarea = ({ value, onSave, ...props }: StableTextareaProps) => {
+  const [localVal, setLocalVal] = React.useState(value);
+
+  React.useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localVal !== value) {
+      onSave(localVal);
+    }
+  };
+
+  return (
+    <textarea
+      {...props}
+      value={localVal}
+      onChange={e => setLocalVal(e.target.value)}
+      onBlur={handleBlur}
+    />
   );
 }

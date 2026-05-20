@@ -62,6 +62,8 @@ export async function POST(request: Request) {
       variedadesviabilidadsemilla,
       variedadespeso1000semillas,
       variedadesdiashastafructificacion,
+      variedadesdiascrecimientofirme,
+      variedadesduraciontotal,
       variedadestemperaturaminima,
       variedadestemperaturaoptima,
       variedadesmarcoplantas,
@@ -108,7 +110,8 @@ export async function POST(request: Request) {
     const query = `
       INSERT INTO variedades (
         variedadesnombre, xvariedadesidespecies, variedadesesgenerica, variedadesdescripcion, variedadescolor,
-        variedadestamano, variedadesdiasgerminacion, variedadesviabilidadsemilla, variedadespeso1000semillas, variedadesdiashastafructificacion,
+        variedadestamano, variedadesdiasgerminacion, variedadesviabilidadsemilla, variedadespeso1000semillas, variedadesdiashastafructificacion, variedadesdiascrecimientofirme,
+        variedadesduraciontotal,
         variedadestemperaturaminima, variedadestemperaturaoptima, variedadesmarcoplantas, variedadesmarcofilas,
         variedadesprofundidadsiembra, variedadeshistoria, variedadessemillerodesde, variedadessemillerohasta,
         variedadessiembradirectadesde, variedadessiembradirectahasta, variedadestrasplantedesde, variedadestrasplantehasta,
@@ -119,7 +122,7 @@ export async function POST(request: Request) {
         variedadesvolumenmaceta, variedadesluzsolar, variedadescaracteristicassuelo, variedadesdificultad, variedadestemperaturamaxima,
         variedadeslunarfasesiembra, variedadeslunarfasetrasplante, variedadeslunarobservaciones,
         variedadesbiodinamicafasesiembra, variedadesbiodinamicafasetrasplante
-      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -132,6 +135,8 @@ export async function POST(request: Request) {
       variedadesviabilidadsemilla || null,
       variedadespeso1000semillas || null,
       variedadesdiashastafructificacion || null,
+      variedadesdiascrecimientofirme || null,
+      variedadesduraciontotal || null,
       variedadestemperaturaminima || null,
       variedadestemperaturaoptima || null,
       variedadesmarcoplantas || null,

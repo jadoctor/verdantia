@@ -1,0 +1,889 @@
+<?php
+// Filosofía de laboreo - Documento técnico imprimible
+// Verdantia - Agricultura de Conservación y Regenerativa
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filosofía de Laboreo - Guía Completa y Comparativa | Verdantia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --primary-dark: #064e3b;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      
+      --bg-convencional: #fffbeb;
+      --border-convencional: #f59e0b;
+      --text-convencional: #78350f;
+      
+      --bg-minimo: #f0fdfa;
+      --border-minimo: #0d9488;
+      --text-minimo: #115e59;
+      
+      --bg-nolaboreo: #f0fdf4;
+      --border-nolaboreo: #10b981;
+      --text-nolaboreo: #064e3b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+      background: #f8fafc;
+      margin: 0;
+      padding: 40px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 50px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    /* --- HEADER --- */
+    header {
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 25px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .logo-area h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      margin: 0;
+      color: var(--primary-dark);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary-dark), #15803d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-area p {
+      margin: 5px 0 0 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      font-weight: 600;
+    }
+
+    .print-badge {
+      background: #ede9fe;
+      color: #5b21b6;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(91, 33, 182, 0.08);
+    }
+
+    /* --- INTRODUCTION --- */
+    .doc-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      color: #0f172a;
+      margin-top: 0;
+      margin-bottom: 20px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .intro-box {
+      font-size: 1.05rem;
+      color: #334155;
+      margin-bottom: 45px;
+      background: linear-gradient(to right, #f8fafc, #f1f5f9);
+      padding: 24px;
+      border-radius: 12px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .intro-box p {
+      margin: 0 0 12px 0;
+    }
+    .intro-box p:last-child {
+      margin: 0;
+    }
+
+    /* --- SECTION COMMON --- */
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-top: 50px;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* --- SCHEMAS --- */
+    .schema-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 45px;
+    }
+
+    .schema-card {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .schema-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .schema-card.convencional { border-color: var(--border-convencional); }
+    .schema-card.minimo { border-color: var(--border-minimo); }
+    .schema-card.nolaboreo { border-color: var(--border-nolaboreo); }
+
+    .card-header {
+      text-align: center;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed #e2e8f0;
+      margin-bottom: 18px;
+    }
+
+    .card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .convencional .card-title { color: var(--text-convencional); }
+    .minimo .card-title { color: var(--text-minimo); }
+    .nolaboreo .card-title { color: var(--text-nolaboreo); }
+
+    /* Visual Soil Representation */
+    .soil-visual {
+      height: 160px;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+      border: 1px solid #cbd5e1;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .soil-layer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      padding: 4px 8px;
+      box-sizing: border-box;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Convencional Layers */
+    .soil-conv-top {
+      height: 25%;
+      background: #d97706; /* Suelo desnudo/seco */
+    }
+    .soil-conv-mid {
+      height: 50%;
+      background: #854d0e; /* Capa invertida revuelta */
+      border-top: 1.5px dashed #f59e0b;
+      border-bottom: 1.5px dashed #f59e0b;
+      font-style: italic;
+    }
+    .soil-conv-bot {
+      height: 25%;
+      background: #475569; /* Suela de labor compactada */
+      font-weight: bold;
+    }
+
+    /* Minimo Layers */
+    .soil-min-top {
+      height: 25%;
+      background: #b45309; /* Capa orgánica superficial */
+    }
+    .soil-min-mid {
+      height: 55%;
+      background: #713f12; /* Suelo descompactado verticalmente */
+      background-image: linear-gradient(90deg, transparent 50%, rgba(255,255,255,0.08) 50%);
+      background-size: 16px 100%;
+    }
+    .soil-min-bot {
+      height: 20%;
+      background: #451a03; /* Subsuelo sano */
+    }
+
+    /* No Laboreo Layers */
+    .soil-no-top {
+      height: 35%;
+      background: #15803d; /* Grueso acolchado y compost abundante */
+      font-size: 0.7rem;
+    }
+    .soil-no-mid {
+      height: 45%;
+      background: #3f2305; /* Suelo esponjoso lleno de micorrizas */
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 15%, transparent 16%);
+      background-size: 10px 10px;
+    }
+    .soil-no-bot {
+      height: 20%;
+      background: #271402; /* Subsuelo virgen */
+    }
+
+    .key-points {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.85rem;
+      color: #475569;
+      flex-grow: 1;
+    }
+
+    .key-points li {
+      margin-bottom: 8px;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .key-points li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+      font-size: 1.2rem;
+      line-height: 1;
+      top: -1px;
+    }
+    .convencional .key-points li::before { color: var(--border-convencional); }
+    .minimo .key-points li::before { color: var(--border-minimo); }
+    .nolaboreo .key-points li::before { color: var(--border-nolaboreo); }
+
+    /* --- DETAILED PHILOSOPHIES --- */
+    .philosophy-detail {
+      margin-bottom: 40px;
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    
+    .philosophy-detail.conv { border-left: 5px solid var(--border-convencional); }
+    .philosophy-detail.min { border-left: 5px solid var(--border-minimo); }
+    .philosophy-detail.no { border-left: 5px solid var(--border-nolaboreo); }
+
+    .philosophy-detail h4 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .philosophy-detail.conv h4 { color: var(--text-convencional); }
+    .philosophy-detail.min h4 { color: var(--text-minimo); }
+    .philosophy-detail.no h4 { color: var(--text-nolaboreo); }
+
+    .philosophy-detail p {
+      margin: 0 0 15px 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .philosophy-detail ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 0.9rem;
+      color: #475569;
+    }
+
+    .philosophy-detail li {
+      margin-bottom: 6px;
+    }
+
+    /* --- THE 3 PILLARS OF NO-TILL --- */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .pillar-card {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .pillar-num {
+      background: var(--primary);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .pillar-card h4 {
+      margin: 0 0 8px 0;
+      color: var(--primary-dark);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .pillar-card p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #1e3a2b;
+    }
+
+    /* --- BANCAL NO-DIG STEPPER --- */
+    .stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 40px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+    }
+
+    .step-badge {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+      font-size: 1rem;
+      min-width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cbd5e1;
+      flex-shrink: 0;
+    }
+
+    .step-item.active-step .step-badge {
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #86efac;
+    }
+
+    .step-content h5 {
+      margin: 0 0 5px 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .step-content p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #475569;
+    }
+
+    /* --- TECHNICAL TABLE --- */
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 25px;
+      margin-bottom: 40px;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    .details-table th, .details-table td {
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    .details-table th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    .details-table td {
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .details-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .details-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    .details-table tr:hover td {
+      background: #f1f5f9;
+    }
+
+    /* --- PRINT CONTROLS --- */
+    .print-controls {
+      display: flex;
+      justify-content: center;
+      margin-top: 40px;
+      gap: 15px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 30px;
+    }
+
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+      transform: translateY(-1px);
+    }
+
+    footer {
+      margin-top: 50px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 25px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 768px) {
+      .schema-container, .pillars-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .container {
+        padding: 24px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .print-badge {
+        align-self: flex-start;
+      }
+    }
+
+    /* --- PRINT MEDIA QUERIES --- */
+    @media print {
+      body {
+        background: #ffffff;
+        color: #000000;
+        padding: 0;
+      }
+
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .print-controls {
+        display: none !important;
+      }
+
+      .schema-card, .philosophy-detail, .pillar-card, .step-item, .details-table {
+        page-break-inside: avoid;
+      }
+
+      .section-title {
+        page-break-before: auto;
+      }
+
+      /* Force color printing in browsers */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-area">
+        <h1>Verdantia</h1>
+        <p>Agricultura de Precisión & Regenerativa</p>
+      </div>
+      <div class="print-badge">Manual Técnico de Conservación</div>
+    </header>
+
+    <main>
+      <h2 class="doc-title">Filosofías de Manejo y Preparación del Suelo</h2>
+      
+      <div class="intro-box">
+        <p><strong>El suelo no es un simple soporte físico; es un organismo vivo, dinámico y complejo.</strong></p>
+        <p>La forma en que lo intervenimos mecánicamente determina la salud microbiológica, la capacidad de retención hídrica y la fertilidad a largo plazo de nuestros cultivos. El arado y el volteo tradicional, aunque ablandan la tierra rápidamente a corto plazo, erosionan su estructura orgánica y destruyen el bioma que alimenta las plantas de forma natural.</p>
+        <p>A continuación, detallamos las bases operativas, ventajas y esquemas biológicos de los tres grandes enfoques agronómicos de laboreo.</p>
+      </div>
+
+      <!-- ILLUSTRATION ZONE -->
+      <div class="illustration-container" style="text-align: center; margin: 35px 0; border: 1px solid var(--border); padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #ffffff, #f8fafc); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+        <img src="/soil-layers-diagram.png" alt="Esquema Educativo de Capas de Suelo Saludable y No-Dig" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 12px; border: 1px solid #cbd5e1;" />
+        <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0; font-family: 'Outfit', sans-serif;">Representación visual de un perfil de suelo No-Dig rico en humus, hongos micorrízicos, vida biológica y cobertura constante de compost.</p>
+      </div>
+
+      <!-- SECTION 1: SOIL PROFILES -->
+      <section class="schema-section">
+        <div class="section-title">🚜 Esquema Comparativo del Perfil de Suelo</div>
+        
+        <div class="schema-container">
+          
+          <!-- Card 1: Convencional -->
+          <div class="schema-card convencional">
+            <div class="card-header">
+              <div class="card-icon">🚜</div>
+              <h4 class="card-title">L. Convencional</h4>
+            </div>
+            
+            <div class="soil-visual">
+              <div class="soil-layer soil-conv-top">Capa Desnuda (Erosión)</div>
+              <div class="soil-layer soil-conv-mid">Volteada e Invertida</div>
+              <div class="soil-layer soil-conv-bot">Suela de Labor (Compacta)</div>
+            </div>
+
+            <ul class="key-points">
+              <li>Pérdida drástica de materia orgánica por sobreoxigenación.</li>
+              <li>Estructura pulverizada sensible a la lluvia (costra dura).</li>
+              <li>Suela de labor impermeable que impide el drenaje.</li>
+              <li>Destrucción de hongos y lombrices benéficas.</li>
+            </ul>
+          </div>
+
+          <!-- Card 2: Minimo -->
+          <div class="schema-card minimo">
+            <div class="card-header">
+              <div class="card-icon">🔱</div>
+              <h4 class="card-title">Laboreo Mínimo</h4>
+            </div>
+            
+            <div class="soil-visual">
+              <div class="soil-layer soil-min-top">Acolchado Ligero</div>
+              <div class="soil-layer soil-min-mid">Agrietado Vertical</div>
+              <div class="soil-layer soil-min-bot">Subsuelo Oxigenado</div>
+            </div>
+
+            <ul class="key-points">
+              <li>Descompactación vertical sin voltear perfiles biológicos.</li>
+              <li>Canales de raíces antiguas y fauna parcialmente intactos.</li>
+              <li>Buena tasa de penetración de agua y oxígeno.</li>
+              <li>Recuperación activa de la microbiología nativa.</li>
+            </ul>
+          </div>
+
+          <!-- Card 3: No Laboreo -->
+          <div class="schema-card nolaboreo">
+            <div class="card-header">
+              <div class="card-icon">🍂</div>
+              <h4 class="card-title">No Laboreo (No-Till)</h4>
+            </div>
+            
+            <div class="soil-visual">
+              <div class="soil-layer soil-no-top">Acolchado & Compost 🍂</div>
+              <div class="soil-layer soil-no-mid">Estructura Esponja 🐛</div>
+              <div class="soil-layer soil-no-bot">Sustrato Virgen Saludable</div>
+            </div>
+
+            <ul class="key-points">
+              <li>Cero alteración mecánica: el arado es biológico.</li>
+              <li>Máxima acumulación de humus y carbono en superficie.</li>
+              <li>Redes de micorrizas inalteradas para nutrición natural.</li>
+              <li>Excelente retención hídrica (suelo tipo esponja).</li>
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 2: DEEP DIVE PHILOSOPHIES -->
+      <section class="detail-section">
+        <div class="section-title">📖 Detalle Técnico de los Sistemas de Cultivo</div>
+
+        <!-- Convencional -->
+        <div class="philosophy-detail conv">
+          <h4>🚜 1. Laboreo Convencional (Intensivo o con Volteo)</h4>
+          <p>
+            Es el enfoque agrícola convencional extendido con la industrialización. Se basa en el volteo y remoción sistemática de la capa arable superior (20-30 cm) utilizando arados de vertedera o motoazadas rotativas pesadas.
+          </p>
+          <p><strong>Bases operativas:</strong></p>
+          <ul>
+            <li><strong>Mullido instantáneo:</strong> Esponja el suelo rápidamente facilitando la siembra inmediata.</li>
+            <li><strong>Entierro de restos:</strong> Oculta malas hierbas y restos del cultivo anterior bajo tierra.</li>
+            <li><strong>El gran inconveniente (Suela de Labor):</strong> El peso y arrastre del arado compactan una capa impermeable justo debajo del nivel de trabajo, impidiendo que el agua baje y que las raíces penetren profundamente, provocando charcos en invierno y sequedad extrema en verano.</li>
+          </ul>
+        </div>
+
+        <!-- Minimo -->
+        <div class="philosophy-detail min">
+          <h4>🔱 2. Laboreo Mínimo (Reducido o Vertical)</h4>
+          <p>
+            Una técnica intermedia de transición que funciona como un <strong>puente equilibrado</strong>. Descompacta mecánicamente la tierra pero respetando la disposición natural de sus estratos (la superficie queda arriba y el subsuelo abajo).
+          </p>
+          <p><strong>Bases operativas:</strong></p>
+          <ul>
+            <li><strong>A escala de huerto (Broadfork / Grelinette):</strong> Se utiliza una horca ancha con púas de acero que se clavan verticalmente en la tierra. Al balancearla con el peso corporal, abre grietas y oxigena el suelo sin alterar ni mezclar sus perfiles de microorganismos.</li>
+            <li><strong>A gran escala (Strip-Till / Laboreo en franjas):</strong> Solo se descompacta mecánicamente la delgada línea donde se depositará la semilla, dejando intacto el 80% restante del terreno y manteniendo su cobertura orgánica.</li>
+            <li><strong>Ventaja principal:</strong> Alivia la compactación física inicial rápidamente permitiendo la entrada de aire y agua sin diezmar la comunidad microbiana ni disipar el carbono orgánico.</li>
+          </ul>
+        </div>
+
+        <!-- No laboreo -->
+        <div class="philosophy-detail no">
+          <h4>🍂 3. No Laboreo (Siembra Directa / No-Till / No-Dig)</h4>
+          <p>
+            El estándar de oro de la agricultura regenerativa, la ecología aplicada y la permacultura. El principio fundamental es <strong>cero perturbación física del suelo</strong>, delegando la descompactación a las lombrices de tierra y a las raíces vigorosas de los cultivos.
+          </p>
+          <p><strong>Bases operativas:</strong></p>
+          <ul>
+            <li><strong>Nutrición superficial:</strong> La materia orgánica, el abono y el compost se aplican únicamente sobre la superficie, imitando la caída de las hojas en un bosque natural. La fauna biológica del suelo consume este material y lo introduce gradualmente, arando el suelo de forma natural.</li>
+            <li><strong>Conservación micorrízica:</strong> Al no romper la tierra, los hongos micorrízicos crean una red simbiótica continua con las raíces, permitiendo a los cultivos intercambiar azúcares por minerales y agua a grandes distancias.</li>
+            <li><strong>Resistencia al estrés hídrico:</strong> La cobertura permanente de compost y mantillo evita que el sol evapore el agua, manteniendo el sustrato fresco y húmedo incluso bajo temperaturas extremas.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 3: THE 3 PILLARS -->
+      <section class="pillars-section">
+        <div class="section-title">🛡️ Los 3 Pilares Inquebrantables del No Laboreo</div>
+        <div class="pillars-grid">
+          
+          <div class="pillar-card">
+            <div class="pillar-num">1</div>
+            <h4>Perturbación Mínima</h4>
+            <p>Se prohíbe el volteo físico de la tierra. Si se requiere descompactar por compactación severa extrema, se usa aireación vertical suave con horca de doble mango.</p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-num">2</div>
+            <h4>Cobertura Permanente</h4>
+            <p>La tierra nunca queda desnuda frente al sol y el viento. Se mantiene un acolchado (mulch) constante de paja, restos orgánicos o abono compostado para frenar la erosión.</p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-num">3</div>
+            <h4>Alimentar la Vida</h4>
+            <p>Se deposita el compost en superficie. Los microorganismos procesan los nutrientes y crean galerías naturales estables que actúan como canales de aire y agua.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 4: STEPPER BANCAL -->
+      <section class="stepper-section">
+        <div class="section-title">🌱 Cómo Iniciar un Bancal de No Laboreo (Método No-Dig)</div>
+        <div class="stepper">
+          
+          <div class="step-item active-step">
+            <div class="step-badge">1</div>
+            <div class="step-content">
+              <h5>Segar la vegetación nativa a ras de suelo</h5>
+              <p>No arranques las raíces del pasto o malezas; djalas morir bajo el bancal. Las raíces antiguas se degradarán y formarán canales naturales de porosidad alimentando a los microorganismos.</p>
+            </div>
+          </div>
+
+          <div class="step-item active-step">
+            <div class="step-badge">2</div>
+            <div class="step-content">
+              <h5>Colocar una barrera opaca de cartón biodegradable</h5>
+              <p>Cubre toda la superficie del bancal con cartón marrón corrugado (sin tintas ni cintas plásticas) solapando los bordes unos 10-15 cm. Humedece el cartón profusamente. Esta barrera suprime la luz y elimina las malezas adventicias de forma natural sin herbicidas.</p>
+            </div>
+          </div>
+
+          <div class="step-item active-step">
+            <div class="step-badge">3</div>
+            <div class="step-content">
+              <h5>Añadir una capa fértil de Compost (10 a 15 cm)</h5>
+              <p>Deposita compost de alta calidad directamente sobre el cartón húmedo. Esta capa servirá como el lecho inicial de cultivo limpio, esponjoso, aireado y libre de semillas de malezas latentes.</p>
+            </div>
+          </div>
+
+          <div class="step-item active-step">
+            <div class="step-badge">4</div>
+            <div class="step-content">
+              <h5>Siembra y trasplante directo en la capa de compost</h5>
+              <p>Realiza los trasplantes de tus cultivos directamente abriendo hoyos en el compost. En pocas semanas, el cartón será completamente devorado por las lombrices y las raíces de tus plantas penetrarán el subsuelo original, que estará notablemente suelto y rico en nutrientes.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SECTION 5: TECHNICAL COMPARISON TABLE -->
+      <section class="table-section">
+        <div class="section-title">📊 Matriz Técnica Comparativa de Parámetros</div>
+        
+        <!-- COMPARISON ILLUSTRATION ZONE -->
+        <div class="illustration-container comparison-illustration" style="text-align: center; margin: 25px 0 35px 0; border: 1px solid var(--border); padding: 25px; border-radius: 16px; background: linear-gradient(135deg, #ffffff, #f8fafc); box-shadow: 0 4px 15px rgba(0,0,0,0.02); page-break-inside: avoid;">
+          <img src="/soil-comparison-diagram.png" alt="Esquema Comparativo: Suelo Degradado frente a Suelo Regenerado" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 12px; border: 1px solid #cbd5e1;" />
+          <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0; font-family: 'Outfit', sans-serif;">Infografía de contraste: Laboreo Convencional (izquierda), que provoca compactación y erosión severa, frente al No Laboreo (derecha), que fomenta raíces profundas, galerías de lombrices y drenaje natural hídrico.</p>
+        </div>
+        
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th>Parámetro clave</th>
+              <th>🚜 Laboreo Convencional</th>
+              <th>🔱 Laboreo Mínimo</th>
+              <th>🍂 No Laboreo (No-Dig)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Alteración Física</strong></td>
+              <td>Total (Remoción profunda y volteo de 360°)</td>
+              <td>Parcial (Agrietado vertical sin mezcla de horizontes)</td>
+              <td>Nulo (Siembra y trasplante directo en mantillo)</td>
+            </tr>
+            <tr>
+              <td><strong>Evaporación e Hidratación</strong></td>
+              <td>Muy Alta (Pérdida hídrica crítica, riego frecuente)</td>
+              <td>Moderada (Retención de agua aceptable)</td>
+              <td>Mínima (Evaporación bloqueada, reserva hídrica excelente)</td>
+            </tr>
+            <tr>
+              <td><strong>Actividad Biológica</strong></td>
+              <td>Crítica y baja (Hongos y lombrices destruidos)</td>
+              <td>Media-Alta (Preservación y oxigenación parcial)</td>
+              <td>Máxima (Redes de micorrizas fuertes y suelo colmado de vida)</td>
+            </tr>
+            <tr>
+              <td><strong>Peligro de Erosión</strong></td>
+              <td>Muy Alto (Sensible al viento y a escorrentía por lluvia)</td>
+              <td>Bajo (Controlado por la estructura vertical)</td>
+              <td>Nulo (Protección continua mediante acolchado biológico)</td>
+            </tr>
+            <tr>
+              <td><strong>Suela de Labor</strong></td>
+              <td>Crítico (Formación de capa dura impermeable por peso)</td>
+              <td>Ninguno (Descompactación vertical la disuelve)</td>
+              <td>Inexistente (Suelo virgen e intacto regenerativo)</td>
+            </tr>
+            <tr>
+              <td><strong>Esfuerzo Físico y Coste</strong></td>
+              <td>Alto (Maquinaria pesada, combustible e insumos)</td>
+              <td>Moderado (Uso puntual de broadfork o franjas)</td>
+              <td>Bajísimo a largo plazo (El suelo trabaja para ti)</td>
+            </tr>
+            <tr>
+              <td><strong>Aplicación Recomendada</strong></td>
+              <td>Transición inicial o parcelas extensivas clásicas</td>
+              <td>Suelos arcillosos extremadamente compactados de inicio</td>
+              <td>Huertos orgánicos, permacultura y bancales regenerativos</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2026 Verdantia. Documento técnico de divulgación y consulta para agricultores de conservación.</p>
+      <p>Para imprimir este manual técnico o guardarlo en formato PDF de alta calidad, haz clic en el botón inferior o presiona el atajo de tu navegador (Ctrl+P / Cmd+P).</p>
+    </footer>
+
+    <!-- Print Button and Back to Dashboard -->
+    <div class="print-controls">
+      <button onclick="window.print()" class="btn btn-primary">
+        <span>🖨️ Imprimir Guía / Guardar PDF</span>
+      </button>
+      <a href="/dashboard/perfil#filosofia-laboreo" class="btn btn-secondary">
+        <span>⬅️ Volver al Perfil</span>
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>

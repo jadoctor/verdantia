@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { plantaNombre, calendarType, calendarioSolar } = await request.json();
+    const { plantaNombre, calendarType, calendarioSolar, tiposiembra } = await request.json();
     
     if (!plantaNombre || !calendarType || calendarType === 'Normal') {
       return NextResponse.json({ error: 'Faltan parámetros o calendario no aplicable' }, { status: 400 });
@@ -59,6 +59,9 @@ ${calendarioSolar && (calendarioSolar.semillerodesde || calendarioSolar.siembrad
 OJO: Si el mes actual está dentro del rango de Semillero, de Siembra Directa O de Trasplante, ENTONCES SÍ ES TEMPORADA.
 Si NO es época en absoluto para ninguno de esos métodos, indica que actualmente no es temporada y cuándo será la próxima época ideal, explicando qué fase lunar buscar.
 ` : 'No hay datos restrictivos de calendario solar estacional, asume temporada abierta y aplica las reglas lunares directamente.'}
+
+MÉTODOS DE SIEMBRA PERMITIDOS PARA ESTA PLANTA:
+${tiposiembra ? `El usuario solo puede utilizar estos métodos: ${tiposiembra}. NO recomiendes métodos de siembra que no estén en esta lista.` : 'Todos los métodos son permitidos (Semillero, Siembra Directa, Trasplante).'}
 
 DATOS ASTRONÓMICOS REALES (NO INVENTAR):
 Usa esta lista exacta de fases lunares para los próximos 365 días para dar tu respuesta:

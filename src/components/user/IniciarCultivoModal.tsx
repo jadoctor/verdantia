@@ -112,7 +112,8 @@ export default function IniciarCultivoModal({
   plantaNombre,
   userEmail,
   calendarioSolar,
-  viabilidadSemilla
+  viabilidadSemilla,
+  tiposiembra
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -121,6 +122,7 @@ export default function IniciarCultivoModal({
   userEmail: string;
   calendarioSolar?: any;
   viabilidadSemilla?: number;
+  tiposiembra?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -196,6 +198,8 @@ export default function IniciarCultivoModal({
     return null;
   };
 
+  const calendarioSolarStr = JSON.stringify(calendarioSolar);
+
   useEffect(() => {
     if (isOpen && userEmail) {
       console.log('Fetching profile for calendar type...', userEmail, plantaNombre);
@@ -215,7 +219,7 @@ export default function IniciarCultivoModal({
               fetch('/api/ai/calendar-advice', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plantaNombre, calendarType: calType, calendarioSolar })
+                body: JSON.stringify({ plantaNombre, calendarType: calType, calendarioSolar, tiposiembra })
               })
               .then(async (res) => {
                 if (!res.ok) {
@@ -242,7 +246,7 @@ export default function IniciarCultivoModal({
         })
         .catch(console.error);
     }
-  }, [isOpen, userEmail, plantaNombre, calendarioSolar]);
+  }, [isOpen, userEmail, plantaNombre, calendarioSolarStr]);
 
   if (!isOpen) return null;
 
@@ -335,7 +339,6 @@ END:VCALENDAR`;
           cultivosmetodo: finalData.metodo,
           cultivoscantidad: finalData.cantidad,
           cultivosubicacion: finalData.ubicacion || null,
-          cultivosnumerocoleccion: finalData.numerocoleccion ? parseInt(finalData.numerocoleccion) : null,
           cultivosestado: finalData.fechaInicio > new Date().toISOString().split('T')[0] ? 'en_espera' : (finalData.metodo === 'semillero' ? 'germinacion' : 'crecimiento'),
           cultivosfechainicio: finalData.fechaInicio || new Date().toISOString().split('T')[0]
         })
@@ -515,13 +518,13 @@ END:VCALENDAR`;
               <>
                 <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: '1.1rem' }}>Paso 1: ¿De qué vas a partir?</h3>
                 
-
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
-                  <h4 style={{ margin: '8px 0 0', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Semilla</h4>
-                  <StepCard 
-                    title="Semillero"
-                    rightContent={<MiniCalendarSemillero />}
+                {(!tiposiembra || tiposiembra.includes('semillero') || tiposiembra.includes('siembra_directa')) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+                    <h4 style={{ margin: '8px 0 0', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Semilla</h4>
+                    {(!tiposiembra || tiposiembra.includes('semillero')) && (
+                    <StepCard 
+                      title="Semillero"
+                      rightContent={<MiniCalendarSemillero />}
                     outOfSeason={calendarAdvice && calendarAdvice.periodos && calendarAdvice.periodos.filter((p: any) => isDateValidForMethod(p.fechaIso, 'semillero')).length === 0}
                     inSeason={calendarAdvice && calendarAdvice.periodos && calendarAdvice.periodos.filter((p: any) => isDateValidForMethod(p.fechaIso, 'semillero')).length > 0}
                   >
@@ -567,6 +570,8 @@ END:VCALENDAR`;
                       </button>
                     </div>
                   </StepCard>
+                  )}
+                  {(!tiposiembra || tiposiembra.includes('siembra_directa')) && (
                   <StepCard 
                     title="Siembra Directa"
                     rightContent={<MiniCalendarDirecta />}
@@ -615,20 +620,28 @@ END:VCALENDAR`;
                       </button>
                     </div>
                   </StepCard>
+                  )}
                 </div>
+                )}
 
+                {(!tiposiembra || tiposiembra.includes('planton') || tiposiembra.includes('esqueje')) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <h4 style={{ margin: '8px 0 0', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Planta Viva</h4>
+                  {(!tiposiembra || tiposiembra.includes('planton')) && (
                   <StepCard 
                     icon="🪴" title="Plantel"
                     onClick={() => { setTipoPartida('plantel'); setStep(2); }}
                     rightContent={<MiniCalendarTrasplante />}
                   />
+                  )}
+                  {(!tiposiembra || tiposiembra.includes('esqueje')) && (
                   <StepCard 
                     icon="🌿" title="Esqueje"
                     onClick={() => { setTipoPartida('esqueje'); handleNext({ origen: 'esqueje', metodo: 'trasplante_directo' }); setStep(3); }}
                   />
+                  )}
                 </div>
+                )}
               </>
             )}
 

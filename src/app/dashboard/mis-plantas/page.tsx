@@ -5,6 +5,9 @@ import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { getMediaUrl } from '@/lib/media-url';
+import IniciarCultivoModal from '@/components/user/IniciarCultivoModal';
+import DashboardAlertsWidget from '@/components/user/DashboardAlertsWidget';
+import { processAlertas } from '@/lib/alertas-utils';
 
 interface Planta {
   idvariedades: number;
@@ -18,6 +21,7 @@ interface Planta {
   es_generica: number;
   foto: string | null;
   campos_personalizados: number;
+  cultivos_lista?: any;
 }
 
 interface CatalogoEspecie {
@@ -45,6 +49,7 @@ interface CatalogoVariedad {
 
 export default function MisPlantasPage() {
   const [plantas, setPlantas] = useState<Planta[]>([]);
+  const [alertasHoy, setAlertasHoy] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
@@ -59,6 +64,9 @@ export default function MisPlantasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [acquiring, setAcquiring] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  
+  // State for new crop modal
+  const [modalNuevoCultivoPlanta, setModalNuevoCultivoPlanta] = useState<Planta | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -78,6 +86,11 @@ export default function MisPlantasPage() {
       if (res.ok) {
         const data = await res.json();
         setPlantas(data.plantas || []);
+      }
+      const resAlertas = await fetch('/api/user/cultivos/alertas-hoy', { headers: { 'x-user-email': userEmail! } });
+      if (resAlertas.ok) {
+        const dataAlertas = await resAlertas.json();
+        setAlertasHoy(processAlertas(dataAlertas.cultivos || []));
       }
     } catch (e) { console.error('Error loading plantas:', e); }
     finally { setLoading(false); }
@@ -156,8 +169,29 @@ export default function MisPlantasPage() {
       });
       if (res.ok) {
         setPlantas(prev => prev.filter(p => p.idvariedades !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar la planta');
       }
     } catch (e) { console.error('Error deleting:', e); }
+    finally { setDeleting(null); }
+  };
+
+  const deleteCultivo = async (id: number) => {
+    if (!confirm('¿Seguro que quieres eliminar este cultivo?')) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/user/cultivos/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail! }
+      });
+      if (res.ok) {
+        await loadPlantas();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar el cultivo');
+      }
+    } catch (e) { console.error('Error deleting cultivo:', e); }
     finally { setDeleting(null); }
   };
 
@@ -220,77 +254,228 @@ export default function MisPlantasPage() {
         </div>
       )}
 
-      {/* Grid de plantas */}
+      {/* Grid de plantas agrupado por especies */}
       {plantas.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-          {plantas.map(p => (
-            <div key={p.idvariedades} style={{
-              background: 'var(--bg-card)', borderRadius: '16px',
-              border: '1px solid var(--border-color)', overflow: 'hidden',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'all 0.2s',
-              cursor: 'pointer', position: 'relative'
-            }}
-              onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
-              onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
-              onClick={() => router.push(`/dashboard/mis-plantas/${p.idvariedades}`)}
-            >
-              {/* Header de la tarjeta */}
-              <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '40px' }}>
-                <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
-                  {p.especiesnombre}
-                </span>
-                {!p.es_generica && (
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    🏷️ {p.nombre_gold}
-                  </span>
-                )}
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+          {Array.from(new Set(plantas.map(p => p.especiesnombre))).sort().map(especieNombre => {
+            const plantasDeEspecie = plantas.filter(p => p.especiesnombre === especieNombre);
+            const especieIcono = plantasDeEspecie[0].especiesicono || '🌱';
+            return (
+              <div key={especieNombre}>
+                <h2 style={{ fontSize: '1.4rem', color: '#166534', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #bbf7d0', paddingBottom: '8px' }}>
+                  <span>{especieIcono}</span> {especieNombre}
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                  {plantasDeEspecie.map(p => {
+                    let cultivos: any[] = [];
+                    try {
+                      if (typeof p.cultivos_lista === 'string') cultivos = JSON.parse(p.cultivos_lista);
+                      else if (Array.isArray(p.cultivos_lista)) cultivos = p.cultivos_lista;
+                    } catch (e) {}
+                    const hasCultivos = cultivos.length > 0;
 
-              {/* Foto */}
-              <div style={{ height: 160, background: p.foto ? '#000' : 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
-                {p.foto && (
-                  <img src={getMediaUrl(p.foto)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                )}
-              </div>
-
-              {/* Info */}
-              <div style={{ padding: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{p.nombre}</h3>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {p.campos_personalizados > 0 && (
-                    <span 
-                      style={{ fontSize: '0.7rem', background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}
-                      title={`${p.campos_personalizados} dato(s) agronómico(s) modificado(s) por ti frente a la ficha estándar.`}
+                    return (
+                    <div key={p.idvariedades} style={{
+                      background: 'var(--bg-card)', borderRadius: '16px',
+                      border: '1px solid var(--border-color)', overflow: 'hidden',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'all 0.2s',
+                      cursor: 'pointer', position: 'relative'
+                    }}
+                      onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
+                      onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
+                      onClick={() => router.push(`/dashboard/mis-plantas/${p.idvariedades}`)}
                     >
-                      ✏️ {p.campos_personalizados} dato{p.campos_personalizados > 1 ? 's' : ''} modificado{p.campos_personalizados > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
+                      {/* Header de la tarjeta */}
+                      <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '40px' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
+                          {p.especiesnombre}
+                        </span>
+                        {!p.es_generica && (
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            🏷️ {p.nombre_gold}
+                          </span>
+                        )}
+                      </div>
 
-              {/* Delete button */}
-              <button
-                onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedades); }}
-                disabled={deleting === p.idvariedades}
-                style={{
-                  position: 'absolute', top: 8, right: 8,
-                  background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
-                  width: 28, height: 28, borderRadius: '50%',
-                  cursor: 'pointer', fontSize: '0.75rem', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', opacity: 0.6,
-                  transition: 'opacity 0.2s'
-                }}
-                onMouseOver={e => e.currentTarget.style.opacity = '1'}
-                onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
-                title="Eliminar del huerto"
-              >
-                🗑️
-              </button>
+                      {/* Foto */}
+                      <div style={{ height: 160, background: p.foto ? '#000' : 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+                        {p.foto && (
+                          <img src={getMediaUrl(p.foto)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{p.nombre}</h3>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px' }}>
+                          {hasCultivos ? (
+                            cultivos.map((c: any) => {
+                                let dotColor = '#3b82f6'; // en_espera
+                                let estadoTexto = 'En espera';
+                                if (c.estado === 'perdido') { dotColor = '#ef4444'; estadoTexto = 'Perdido'; }
+                                else if (c.estado === 'finalizado') { dotColor = '#10b981'; estadoTexto = 'Finalizado'; }
+                                else if (c.estado === 'recoleccion') { dotColor = '#f97316'; estadoTexto = 'Recolección'; }
+                                else if (c.estado === 'crecimiento' || c.estado === 'crecimiento_inicial') { dotColor = '#22c55e'; estadoTexto = 'Crecimiento'; }
+                                else if (c.estado === 'germinacion') { dotColor = '#84cc16'; estadoTexto = 'Germinación'; }
+                                
+                                return (
+                                  <div 
+                                    key={c.id} 
+                                    style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', background: 'transparent', padding: '4px', borderRadius: '8px', transition: 'background 0.2s' }}
+                                    onMouseOver={e => e.currentTarget.style.background = '#f8fafc'}
+                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                    onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/cultivos/${c.id}`); }}
+                                    title={`Ir al Cultivo Nº ${c.numero}`}
+                                  >
+                                    <div 
+                                      style={{ 
+                                        fontSize: '0.75rem', background: '#f8fafc', color: '#334155', 
+                                        padding: '4px 10px', borderRadius: '12px', border: '1px solid #cbd5e1',
+                                        display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontWeight: 500,
+                                        width: 'fit-content'
+                                      }}
+                                    >
+                                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: dotColor, display: 'inline-block' }} />
+                                      <span style={{ fontWeight: 700 }}>C. {c.numero}</span> 
+                                      {c.cantidad && (
+                                        <>
+                                          <span style={{ color: '#94a3b8' }}>•</span>
+                                          <span style={{ color: '#64748b' }}>{c.cantidad} ud.</span>
+                                        </>
+                                      )}
+                                      <span style={{ color: '#64748b' }}>|</span> <span style={{ color: dotColor, fontWeight: 600 }}>{estadoTexto}</span>
+                                      
+                                      <div 
+                                        onClick={(e) => { e.stopPropagation(); deleteCultivo(c.id); }}
+                                        title="Eliminar cultivo"
+                                        style={{ 
+                                          marginLeft: '4px',
+                                          width: '20px', height: '20px', borderRadius: '50%', 
+                                          background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', 
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                          fontSize: '0.8rem', opacity: 0.7, transition: 'all 0.2s',
+                                          cursor: deleting === c.id ? 'wait' : 'pointer'
+                                        }}
+                                        onMouseOver={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
+                                        onMouseOut={e => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                                      >
+                                        {deleting === c.id ? '⏳' : '✖'}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Línea vertical y tareas pendientes */}
+                                    {(() => {
+                                      const cropAlerts = alertasHoy.filter((a: any) => a.cultivo.idcultivos === c.id);
+                                      if (cropAlerts.length === 0) return null;
+                                      
+                                      return (
+                                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', marginLeft: '12px', paddingLeft: '16px', marginTop: '4px', gap: '6px' }}>
+                                          {/* Línea vertical principal */}
+                                          <div style={{ position: 'absolute', left: '0', top: '-6px', bottom: '10px', borderLeft: '2px solid #cbd5e1' }} />
+                                          
+                                          {cropAlerts.map((a: any, idx: number) => {
+                                            let icon = a.pauta.laboresicono || '📋';
+                                            if (icon.startsWith('mdi-')) {
+                                              const MDI_TO_EMOJI: Record<string, string> = {
+                                                'mdi-water': '💧', 'mdi-sprout': '🌱', 'mdi-leaf': '🍃', 'mdi-flower': '🌺',
+                                                'mdi-tree': '🌳', 'mdi-scissors-cutting': '✂️', 'mdi-tractor': '🚜',
+                                                'mdi-shovel': '⛏️', 'mdi-shield-bug': '🛡️', 'mdi-spray': '💦',
+                                                'mdi-weather-sunny': '☀️', 'mdi-thermometer': '🌡️', 'mdi-basket': '🧺',
+                                                'mdi-hand-water': '🖐️', 'mdi-format-list-bulleted': '🏷️', 'mdi-bottle-tonic-plus': '🧪'
+                                              };
+                                              icon = MDI_TO_EMOJI[icon] || '🌱';
+                                            }
+                                            return (
+                                              <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#475569' }}>
+                                                {/* Conector horizontal */}
+                                                <div style={{ position: 'absolute', left: '-16px', top: '50%', width: '12px', borderTop: '2px solid #cbd5e1' }} />
+                                                
+                                                <span style={{ fontSize: '0.85rem', position: 'relative', zIndex: 1 }}>{icon}</span>
+                                                <span style={{ fontWeight: 600, color: a.pauta.laborescolor || '#3b82f6' }}>{a.pauta.laboresnombre}</span>
+                                                {a.fechaEmision && (
+                                                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', marginLeft: '4px' }}>({new Date(a.fechaEmision).toLocaleDateString()})</span>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                );
+                            })
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin cultivos activos</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Botón Añadir (arriba a la izquierda del eliminar) */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setModalNuevoCultivoPlanta(p); }}
+                        style={{
+                          position: 'absolute', top: 8, right: 44,
+                          background: 'rgba(16, 185, 129, 0.9)', color: 'white', border: 'none',
+                          padding: '0 12px', height: 28, borderRadius: '14px',
+                          cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', opacity: 0.9,
+                          transition: 'opacity 0.2s, background 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }}
+                        onMouseOver={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = 'rgba(5, 150, 105, 1)'; }}
+                        onMouseOut={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.background = 'rgba(16, 185, 129, 0.9)'; }}
+                        title="Añadir nuevo cultivo de esta planta"
+                      >
+                        + Añadir Cultivo
+                      </button>
+
+                      {/* Delete button */}
+                      {!hasCultivos ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedades); }}
+                          disabled={deleting === p.idvariedades}
+                          style={{
+                            position: 'absolute', top: 8, right: 8,
+                            background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
+                            width: 28, height: 28, borderRadius: '50%',
+                            cursor: 'pointer', fontSize: '0.75rem', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', opacity: 0.6,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                          onMouseOut={e => e.currentTarget.style.opacity = '0.6'}
+                          title="Eliminar del huerto"
+                        >
+                          🗑️
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            alert("No puedes eliminar una planta que tiene cultivos asociados. Elimina los cultivos primero."); 
+                          }}
+                          style={{
+                            position: 'absolute', top: 8, right: 8,
+                            background: 'rgba(0,0,0,0.2)', color: 'white', border: 'none',
+                            width: 28, height: 28, borderRadius: '50%',
+                            cursor: 'not-allowed', fontSize: '0.75rem', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', opacity: 0.4
+                          }}
+                          title="No se puede eliminar (tiene cultivos asociados)"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -501,6 +686,33 @@ export default function MisPlantasPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Añadir Cultivo */}
+      {modalNuevoCultivoPlanta !== null && userEmail && (
+        <IniciarCultivoModal
+          isOpen={true}
+          onClose={() => {
+            setModalNuevoCultivoPlanta(null);
+            loadPlantas(); // Recargar por si se añadió el cultivo
+          }}
+          plantaId={modalNuevoCultivoPlanta.idvariedades}
+          plantaNombre={modalNuevoCultivoPlanta.nombre || modalNuevoCultivoPlanta.especiesnombre || 'Planta'}
+          calendarioSolar={
+            (modalNuevoCultivoPlanta as any).semillerodesde !== undefined 
+              ? {
+                  semillerodesde: (modalNuevoCultivoPlanta as any).semillerodesde,
+                  semillerohasta: (modalNuevoCultivoPlanta as any).semillerohasta,
+                  siembradirectadesde: (modalNuevoCultivoPlanta as any).siembradirectadesde,
+                  siembradirectahasta: (modalNuevoCultivoPlanta as any).siembradirectahasta,
+                  trasplantedesde: (modalNuevoCultivoPlanta as any).trasplantedesde,
+                  trasplantehasta: (modalNuevoCultivoPlanta as any).trasplantehasta,
+                }
+              : undefined
+          }
+          tiposiembra={(modalNuevoCultivoPlanta as any).tiposiembra}
+          userEmail={userEmail}
+        />
       )}
     </div>
   );

@@ -150,6 +150,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     xlaborespautaidlabores: '',
     laborespautafase: 'germinacion',
     laborespautafrecuenciadias: '',
+    laborespautaoffset: 0,
     laborespautanotasia: '',
     laborespautaactivosino: 1
   });
@@ -1478,6 +1479,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         laborespautafase: 'germinacion',
         laborespautafrecuenciadias: '',
         laborespautanotasia: '',
+        laborespautaoffset: 0,
         laborespautaactivosino: 1
       });
 
@@ -1503,6 +1505,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         body: JSON.stringify({
           idlaborespauta: pautaId,
           laborespautafrecuenciadias: field === 'laborespautafrecuenciadias' ? value : pauta.laborespautafrecuenciadias,
+          laborespautaoffset: field === 'laborespautaoffset' ? value : (pauta.laborespautaoffset || 0),
           laborespautanotasia: field === 'laborespautanotasia' ? value : pauta.laborespautanotasia,
           laborespautaactivosino: field === 'laborespautaactivosino' ? value : pauta.laborespautaactivosino,
         })
@@ -1512,12 +1515,17 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     }
   };
 
-  const handleDeletePauta = async (id: string) => {
+  const handleDeletePauta = async (id: number) => {
     try {
       const res = await fetch(`/api/admin/${entityType}/${entityId}/pautas/${id}`, { method: 'DELETE', headers: { 'x-user-email': userEmail || '' } });
       if (res.ok) {
-        setPautas(pautas.filter(p => p.idlaborespauta !== id));
-        setPautaDeleteConfirm(null);
+        const data = await res.json();
+        if (data.message) {
+          setPautas(pautas.map(p => p.idlaborespauta === id ? { ...p, laborespautaactivosino: 0 } : p));
+          alert(data.message);
+        } else {
+          setPautas(pautas.filter(p => p.idlaborespauta !== id));
+        }
       } else {
         alert("Error al eliminar la pauta");
       }
@@ -1601,6 +1609,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
               xlaborespautaidlabores: pauta.id_labor,
               laborespautafase: pauta.fase,
               laborespautafrecuenciadias: pauta.frecuencia != null ? pauta.frecuencia : null,
+              laborespautaoffset: pauta.offset || 0,
               laborespautanotasia: pauta.notas_ia || null,
               laborespautaactivosino: 1
             })
@@ -1615,6 +1624,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
               xlaborespautaidlabores: pauta.id_labor,
               laborespautafase: pauta.fase,
               laborespautafrecuenciadias: pauta.frecuencia != null ? pauta.frecuencia : null,
+              laborespautaoffset: pauta.offset || 0,
               laborespautanotasia: pauta.notas_ia || null,
               laborespautaactivosino: 1
             })
@@ -3835,7 +3845,7 @@ JSON de salida obligatorio:
                       onClick={() => {
                         setShowPautaForm(true);
                         setEditingPauta(null);
-                        setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1 });
+                        setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautaoffset: 0, laborespautanotasia: '', laborespautaactivosino: 1 });
                       }}
                       style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
@@ -3855,7 +3865,7 @@ JSON de salida obligatorio:
                       <div style={{ marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '12px', border: '2px solid #10b981', position: 'relative' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                           <h4 style={{ margin: 0, color: '#1e293b', fontSize: '0.95rem' }}>{editingPauta ? '✏️ Editar Pauta' : '➕ Nueva Pauta'}</h4>
-                          <button type="button" onClick={() => { setShowPautaForm(false); setEditingPauta(null); setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1 }); }} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#94a3b8', padding: '0 4px' }}>&times;</button>
+                          <button type="button" onClick={() => { setShowPautaForm(false); setEditingPauta(null); setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautaoffset: 0, laborespautanotasia: '', laborespautaactivosino: 1 }); }} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#94a3b8', padding: '0 4px' }}>&times;</button>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '12px' }}>
                           <div>
@@ -3880,13 +3890,14 @@ JSON de salida obligatorio:
                             >
                               <option value="presiembra">1. Presiembra</option>
                               <option value="siembra">2. Siembra</option>
-                              <option value="germinacion">3. Germinación</option>
-                              <option value="trasplante">4. Trasplante</option>
-                              <option value="crecimiento">5. Crecimiento</option>
-                              <option value="floracion">6. Floración</option>
-                              <option value="fructificacion">7. Fructificación</option>
-                              <option value="cosecha">8. Cosecha</option>
-                              <option value="fin_ciclo">9. Fin de Ciclo</option>
+                              <option value="pregerminacion">3. Pre-Germinación</option>
+                              <option value="germinacion">4. Germinación</option>
+                              <option value="crecimiento_inicial">5. Crec. Inicial</option>
+                              <option value="trasplante">6. Trasplante</option>
+                              <option value="crecimiento">7. Crec. Firme</option>
+                              <option value="fructificacion">8. Flor. y Fructificación</option>
+                              <option value="recoleccion">9. Recolección</option>
+                              <option value="finalizacion">10. Finalización</option>
                               <option value="general">General</option>
                             </select>
                           </div>
@@ -3899,6 +3910,17 @@ JSON de salida obligatorio:
                               value={pautaForm.laborespautafrecuenciadias} 
                               onChange={e => setPautaForm({...pautaForm, laborespautafrecuenciadias: e.target.value})}
                               style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Offset (días)</label>
+                            <input 
+                              type="number" 
+                              placeholder="Ej: -180"
+                              value={pautaForm.laborespautaoffset} 
+                              onChange={e => setPautaForm({...pautaForm, laborespautaoffset: parseInt(e.target.value) || 0})}
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                              title="Días de anticipación (negativo) o retraso (positivo) respecto al inicio de la fase."
                             />
                           </div>
                           <div style={{ gridColumn: '1 / -1' }}>
@@ -3923,7 +3945,7 @@ JSON de salida obligatorio:
                             <div style={{ display: 'flex', gap: '10px' }}>
                               <button 
                                 type="button" 
-                                onClick={() => { setShowPautaForm(false); setEditingPauta(null); setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1 }); }}
+                                onClick={() => { setShowPautaForm(false); setEditingPauta(null); setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautaoffset: 0, laborespautanotasia: '', laborespautaactivosino: 1 }); }}
                                 style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem' }}
                               >
                                 Cancelar
@@ -3948,7 +3970,7 @@ JSON de salida obligatorio:
                         if (!grouped[key]) grouped[key] = [];
                         grouped[key].push(p);
                       }
-                      const faseOrder: Record<string, number> = { presiembra: 1, siembra: 2, germinacion: 3, trasplante: 4, plantula: 4, crecimiento: 5, floracion: 6, fructificacion: 7, cosecha: 8, fin_ciclo: 9, general: 10 };
+                      const faseOrder: Record<string, number> = { presiembra: 1, siembra: 2, pregerminacion: 3, germinacion: 4, crecimiento_inicial: 5, trasplante: 6, crecimiento: 7, fructificacion: 8, recoleccion: 9, finalizacion: 10, general: 11 };
 
                       const cellStyle: React.CSSProperties = { padding: '6px 8px', fontSize: '0.83rem', borderRadius: '5px', border: '1px solid #e2e8f0', width: '100%', background: '#fff' };
 
@@ -3998,13 +4020,14 @@ JSON de salida obligatorio:
                                             >
                                               <option value="presiembra">1. Presiembra</option>
                                               <option value="siembra">2. Siembra</option>
-                                              <option value="germinacion">3. Germinación</option>
-                                              <option value="trasplante">4. Trasplante</option>
-                                              <option value="crecimiento">5. Crecimiento</option>
-                                              <option value="floracion">6. Floración</option>
-                                              <option value="fructificacion">7. Fructificación</option>
-                                              <option value="cosecha">8. Cosecha</option>
-                                              <option value="fin_ciclo">9. Fin de Ciclo</option>
+                                              <option value="pregerminacion">3. Pre-Germinación</option>
+                                              <option value="germinacion">4. Germinación</option>
+                                              <option value="crecimiento_inicial">5. Crec. Inicial</option>
+                                              <option value="trasplante">6. Trasplante</option>
+                                              <option value="crecimiento">7. Crec. Firme</option>
+                                              <option value="fructificacion">8. Flor. y Fructificación</option>
+                                              <option value="recoleccion">9. Recolección</option>
+                                              <option value="finalizacion">10. Finalización</option>
                                               <option value="general">General</option>
                                             </select>
                                           </td>
@@ -4018,6 +4041,19 @@ JSON de salida obligatorio:
                                                 if (val !== p.laborespautafrecuenciadias) autoSavePautaField(p.idlaborespauta, 'laborespautafrecuenciadias', val);
                                               }}
                                               style={{ ...cellStyle, width: '60px', textAlign: 'center' }}
+                                              title="Frecuencia (días)"
+                                            />
+                                          </td>
+                                          <td style={{ padding: '5px 8px', textAlign: 'center' }}>
+                                            <input
+                                              type="number"
+                                              defaultValue={p.laborespautaoffset || 0}
+                                              onBlur={e => {
+                                                const val = e.target.value ? parseInt(e.target.value) : 0;
+                                                if (val !== (p.laborespautaoffset || 0)) autoSavePautaField(p.idlaborespauta, 'laborespautaoffset', val);
+                                              }}
+                                              style={{ ...cellStyle, width: '60px', textAlign: 'center' }}
+                                              title="Offset (días)"
                                             />
                                           </td>
                                           <td style={{ padding: '5px 8px' }}>
@@ -4031,15 +4067,11 @@ JSON de salida obligatorio:
                                             />
                                           </td>
                                           <td style={{ padding: '5px 4px', textAlign: 'center' }}>
-                                            {pautaDeleteConfirm === p.idlaborespauta ? (
-                                              <div style={{ display: 'flex', gap: '2px' }}>
-                                                <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.75rem', fontWeight: 'bold' }}>✓</button>
-                                                <button type="button" onClick={() => setPautaDeleteConfirm(null)} style={{ background: '#e2e8f0', border: 'none', borderRadius: '3px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.75rem' }}>✕</button>
-                                              </div>
+                                            {p.inUse ? (
+                                              <button type="button" disabled style={{ background: 'none', border: 'none', fontSize: '0.9rem', padding: '2px', opacity: 0.4, cursor: 'not-allowed' }} title="No se puede eliminar porque ya hay cultivos creados con esta especie. Puedes inactivarla.">🗑️</button>
                                             ) : (
-                                              <button type="button" onClick={() => setPautaDeleteConfirm(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '2px' }}>🗑️</button>
-                                            )}
-                                          </td>
+                                              <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '2px', opacity: 0.8 }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Eliminar labor">🗑️</button>
+                                            )}                                          </td>
                                         </tr>
                                       ))}
                                     </tbody>

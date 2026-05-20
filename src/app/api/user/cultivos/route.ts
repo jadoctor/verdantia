@@ -104,6 +104,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'La variedad es obligatoria' }, { status: 400 });
     }
 
+    let nextNumero = cultivosnumerocoleccion;
+    if (!nextNumero) {
+      const [rows]: any = await pool.query(
+        `SELECT cultivosnumerocoleccion 
+         FROM cultivos 
+         WHERE xcultivosidusuarios = ? 
+           AND cultivosnumerocoleccion IS NOT NULL 
+           AND cultivosactivosino = 1
+         ORDER BY cultivosnumerocoleccion ASC`,
+        [user.id]
+      );
+      
+      nextNumero = 1;
+      for (const row of rows) {
+        if (row.cultivosnumerocoleccion === nextNumero) {
+          nextNumero++;
+        } else if (row.cultivosnumerocoleccion > nextNumero) {
+          break; // Encontramos un hueco
+        }
+      }
+    }
+
     const [result]: any = await pool.query(
       `INSERT INTO cultivos (
         xcultivosidusuarios, 
@@ -122,7 +144,7 @@ export async function POST(request: Request) {
         user.id, 
         xcultivosidvariedades, 
         xcultivosidsemillas || null,
-        cultivosnumerocoleccion || null,
+        nextNumero,
         cultivosorigen,
         cultivosmetodo,
         cultivosestado || 'germinacion',

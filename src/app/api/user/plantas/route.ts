@@ -37,7 +37,6 @@ export async function GET(request: Request) {
            WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
         ) AS foto,
-        -- Contar campos personalizados (no nulos y no vacíos)
         (
           (vu.variedadesnombre IS NOT NULL AND vu.variedadesnombre != '') +
           (vu.variedadesdescripcion IS NOT NULL AND vu.variedadesdescripcion != '') +
@@ -46,7 +45,19 @@ export async function GET(request: Request) {
           (vu.variedadestemperaturamaxima IS NOT NULL) +
           (vu.variedadescolor IS NOT NULL AND vu.variedadescolor != '') +
           (vu.variedadestamano IS NOT NULL AND vu.variedadestamano != '')
-        ) AS campos_personalizados
+        ) AS campos_personalizados,
+        COALESCE(vu.variedadessemillerodesde, vg.variedadessemillerodesde, e.especiesfechasemillerodesde) AS semillerodesde,
+        COALESCE(vu.variedadessemillerohasta, vg.variedadessemillerohasta, e.especiesfechasemillerohasta) AS semillerohasta,
+        COALESCE(vu.variedadessiembradirectadesde, vg.variedadessiembradirectadesde, e.especiesfechasiembradirectadesde) AS siembradirectadesde,
+        COALESCE(vu.variedadessiembradirectahasta, vg.variedadessiembradirectahasta, e.especiesfechasiembradirectahasta) AS siembradirectahasta,
+        COALESCE(vu.variedadestrasplantedesde, vg.variedadestrasplantedesde, e.especiestrasplantedesde) AS trasplantedesde,
+        COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS trasplantehasta,
+        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
+        (
+          SELECT JSON_ARRAYAGG(JSON_OBJECT('id', idcultivos, 'numero', COALESCE(cultivosnumerocoleccion, idcultivos), 'estado', cultivosestado, 'cantidad', cultivoscantidad))
+          FROM cultivos 
+          WHERE xcultivosidvariedades = vu.idvariedades AND cultivosactivosino = 1
+        ) AS cultivos_lista
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
