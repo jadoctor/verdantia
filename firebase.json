@@ -9,8 +9,10 @@
     "frameworksBackend": {
       "region": "europe-west1",
       "memory": "2GiB"
+    }
   },
   "storage": {
     "rules": "storage.rules"
   }
 }
+
