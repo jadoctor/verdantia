@@ -29,7 +29,11 @@ export async function GET(request: Request) {
           u.usuariosnombre AS usuarioNombre,
           u.usuariosemail AS usuarioEmail,
           u.idusuarios AS usuarioId,
-          CASE WHEN da.xdatosadjuntosidvariedades IS NOT NULL THEN 'planta' ELSE 'perfil' END AS fotoTipo
+          CASE 
+            WHEN da.xdatosadjuntosidvariedades IS NOT NULL THEN 'planta' 
+            WHEN da.xdatosadjuntosidcultivos IS NOT NULL THEN 'labor'
+            ELSE 'perfil' 
+          END AS fotoTipo
         FROM incidencias i
         JOIN datosadjuntos da ON i.incidenciasreferenciaid = da.iddatosadjuntos
         LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
@@ -57,7 +61,11 @@ export async function GET(request: Request) {
           u.usuariosnombre AS usuarioNombre,
           u.usuariosemail AS usuarioEmail,
           u.idusuarios AS usuarioId,
-          'planta' AS fotoTipo
+          'planta' AS fotoTipo,
+          NULL AS cultivoId,
+          NULL AS avisoId,
+          da.datosadjuntosresumen AS resumen,
+          NULL AS laborNombre
         FROM datosadjuntos da
         LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
         LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
@@ -83,7 +91,11 @@ export async function GET(request: Request) {
           u.usuariosnombre AS usuarioNombre,
           u.usuariosemail AS usuarioEmail,
           u.idusuarios AS usuarioId,
-          'perfil' AS fotoTipo
+          'perfil' AS fotoTipo,
+          NULL AS cultivoId,
+          NULL AS avisoId,
+          da.datosadjuntosresumen AS resumen,
+          NULL AS laborNombre
         FROM datosadjuntos da
         JOIN usuarios u ON da.xdatosadjuntosidusuarios = u.idusuarios
         WHERE da.datosadjuntosvalidado = 0
@@ -91,6 +103,42 @@ export async function GET(request: Request) {
           AND da.datosadjuntostipo = 'imagen'
           AND da.xdatosadjuntosidusuarios IS NOT NULL
           AND da.xdatosadjuntosidvariedades IS NULL
+          AND da.xdatosadjuntosidcultivos IS NULL
+          AND da.xdatosadjuntosidcultivosavisos IS NULL
+
+        UNION ALL
+
+        SELECT
+          da.iddatosadjuntos AS id,
+          da.datosadjuntosruta AS ruta,
+          da.datosadjuntosnombreoriginal AS nombreOriginal,
+          da.datosadjuntosfechacreacion AS fecha,
+          da.datosadjuntospesobytes AS peso,
+          da.datosadjuntosvalidado AS validado,
+          v.idvariedades AS variedadId,
+          v.variedadesnombre AS variedadNombre,
+          e.especiesnombre AS especieNombre,
+          u.usuariosnombre AS usuarioNombre,
+          u.usuariosemail AS usuarioEmail,
+          u.idusuarios AS usuarioId,
+          'labor' AS fotoTipo,
+          da.xdatosadjuntosidcultivos AS cultivoId,
+          da.xdatosadjuntosidcultivosavisos AS avisoId,
+          da.datosadjuntosresumen AS resumen,
+          l.laboresnombre AS laborNombre
+        FROM datosadjuntos da
+        JOIN cultivos c ON da.xdatosadjuntosidcultivos = c.idcultivos
+        LEFT JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades
+        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
+        LEFT JOIN especies e ON (vg.xvariedadesidespecies = e.idespecies OR v.xvariedadesidespecies = e.idespecies)
+        JOIN usuarios u ON da.xdatosadjuntosidusuarios = u.idusuarios
+        LEFT JOIN cultivosavisos ca ON da.xdatosadjuntosidcultivosavisos = ca.idcultivosavisos
+        LEFT JOIN laborespauta lp ON ca.xcultivosavisosidlaborespauta = lp.idlaborespauta
+        LEFT JOIN labores l ON lp.xlaborespautaidlabores = l.idlabores
+        WHERE da.datosadjuntosvalidado = 0
+          AND da.datosadjuntosactivo = 1
+          AND da.datosadjuntostipo = 'imagen'
+          AND da.xdatosadjuntosidcultivos IS NOT NULL
       ) AS pendientes
       ORDER BY fecha DESC
     `);

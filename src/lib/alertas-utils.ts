@@ -124,7 +124,9 @@ export const processAlertas = (cultivos: any[], overrideNow?: number) => {
       // es anterior al momento en que el usuario registró el cultivo (tRegistro),
       // significa que el usuario ha llegado tarde (no cumplió el pre-aviso necesario 
       // o registró una planta ya crecida). Por tanto, la descartamos para no generar "spam".
-      if (pautaTs < tRegistro) {
+      // EXCEPCIÓN CRÍTICA: Si la labor pertenece a la fase actual (o futuras fases), NO se descarta
+      // para que el usuario pueda ver las tareas del estado actual en el que se encuentra.
+      if (pautaTs < tRegistro && !validDbPhases.includes(p.laborespautafase)) {
         continue;
       }
 

@@ -77,7 +77,7 @@ export async function GET(
     let avisosCompletados = [];
     try {
       const [avisosRows]: any = await pool.query(`
-        SELECT xcultivosavisosidlaborespauta as idpauta, cultivosavisosfase as fase
+        SELECT idcultivosavisos as id, xcultivosavisosidlaborespauta as idpauta, cultivosavisosfase as fase, cultivosavisosfechaemision as fechaEmision, cultivosavisosfecharespuesta as fechaRealizacion
         FROM cultivosavisos
         WHERE xcultivosavisosidcultivos = ?
       `, [cultivoId]);
@@ -86,7 +86,19 @@ export async function GET(
       console.warn('La tabla cultivosavisos aún no existe o hay un error. Devolviendo array vacío.');
     }
 
-    return NextResponse.json({ cultivo, pautas, avisosCompletados });
+    let fotosLabores = [];
+    try {
+      const [fotosRows]: any = await pool.query(`
+        SELECT iddatosadjuntos as id, datosadjuntosruta as ruta, xdatosadjuntosidcultivosavisos as idAviso, datosadjuntosresumen as resumen, datosadjuntosesprincipal as esPrincipal
+        FROM datosadjuntos
+        WHERE xdatosadjuntosidcultivos = ? AND datosadjuntosactivo = 1
+      `, [cultivoId]);
+      fotosLabores = fotosRows;
+    } catch (err) {
+      console.warn('Error fetching fotosLabores:', err);
+    }
+
+    return NextResponse.json({ cultivo, pautas, avisosCompletados, fotosLabores });
   } catch (error: any) {
     console.error('Error fetching cultivo:', error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });

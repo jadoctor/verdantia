@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
 import '@/components/admin/EspecieForm.css';
 import { processAlertas } from '@/lib/alertas-utils';
+import InlineLaborPhotos from './InlineLaborPhotos';
 
 export default function CultivoDashboard() {
   const router = useRouter();
@@ -22,9 +23,11 @@ export default function CultivoDashboard() {
   const [forcedPautas, setForcedPautas] = useState<number[]>([]);
   const [showToggleMenu, setShowToggleMenu] = useState<number | null>(null);
   const [expandedPautas, setExpandedPautas] = useState<number[]>([]);
+  const [expandedPhases, setExpandedPhases] = useState<string[]>([]);
   const [showAllAlerts, setShowAllAlerts] = useState<boolean>(true);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'ficha' | 'tareas'>('ficha');
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'ficha' | 'tareas' | 'completadas'>('ficha');
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
   const [avisosCompletados, setAvisosCompletados] = useState<any[]>([]);
 
@@ -40,6 +43,28 @@ export default function CultivoDashboard() {
     return () => unsub();
   }, [router, cultivoId]);
 
+  
+  const handleMarkAsDone = async (idpauta: number, fase: string, fechaEmision: string | null) => {
+    if (isSimulating) return;
+    if (!window.confirm('¿Marcar esta labor como completada?')) return;
+    
+    try {
+      const res = await fetch(`/api/user/cultivos/${cultivoId}/completar-labor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+        body: JSON.stringify({ idpauta, fase, fechaEmision })
+      });
+      if (res.ok) {
+        await loadCultivo(userEmail!, cultivoId);
+      } else {
+        alert('Error al completar labor');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de red');
+    }
+  };
+  
   const loadCultivo = async (email: string, id: string) => {
     try {
       setLoading(true);
@@ -50,6 +75,12 @@ export default function CultivoDashboard() {
       if (res.ok) {
         const data = await res.json();
         const c = data.cultivo;
+        // Attach pautas and avisosCompletados to cultivo for processAlertas
+        c.pautas = data.pautas || [];
+        c.avisosCompletados = data.avisosCompletados || [];
+        // Calculate pending alerts/tasks
+        const alertas = processAlertas([c], isSimulating ? Date.now() + timeOffsetDays * 86400000 : undefined);
+        c.avisos = alertas;
         setCultivo(c);
         setPautas(data.pautas || []);
         setAvisosCompletados(data.avisosCompletados || []);
@@ -370,6 +401,11 @@ export default function CultivoDashboard() {
             onClick={() => setActiveTab('tareas')}
             style={{ padding: '16px 0', borderBottom: activeTab === 'tareas' ? '3px solid #ef4444' : '3px solid transparent', color: activeTab === 'tareas' ? '#ef4444' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
             🔔 Tareas Pendientes
+          </div>
+          <div 
+            onClick={() => setActiveTab('completadas')}
+            style={{ padding: '16px 0', borderBottom: activeTab === 'completadas' ? '3px solid #10b981' : '3px solid transparent', color: activeTab === 'completadas' ? '#10b981' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+            ✅ Labores Realizadas
           </div>
         </div>
 
@@ -1095,168 +1131,282 @@ export default function CultivoDashboard() {
           </div>
         )}
 
-        {activeTab === 'tareas' && (() => {
-          const baseTRegistro = cultivo?.cultivosfechacreacion ? new Date(cultivo.cultivosfechacreacion).getTime() : Date.now();
-          const simulatedNow = isSimulating ? baseTRegistro + (timeOffsetDays * 86400000) : Date.now();
-          
-          const mockCultivo = { ...cultivo, pautas, avisosCompletados };
-          const alertas = processAlertas([mockCultivo], simulatedNow);
-
-          const handleMarkAsDone = async (pautaId: number, fase: string, fechaEmision: string) => {
-            if (isSimulating) {
-              alert('No puedes marcar tareas como completadas mientras estás usando el simulador del futuro.');
-              return;
-            }
-            if (!userEmail) return;
-
-            setAvisosCompletados(prev => [...prev, { idpauta: pautaId, fase }]);
-
-            try {
-              const res = await fetch('/api/user/cultivos/avisos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
-                body: JSON.stringify({ idcultivos: cultivoId, idpauta: pautaId, fase, fechaEmision })
-              });
-              if (!res.ok) {
-                console.error('Error guardando la labor completada');
-              }
-            } catch(e) {
-              console.error(e);
-            }
-          };
-
-          return (
-            <div style={{ padding: '30px' }}>
-              <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  🔔 Labores Pendientes para Hoy
-                </h2>
-                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
-                  {alertas.length === 0 ? 'No hay tareas recomendadas para hoy. ¡Día libre!' : `Tienes ${alertas.length} tareas recomendadas.`}
-                </p>
+        {activeTab === 'tareas' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📋 Tareas Programadas
+              </h2>
+            </div>
+            
+            {((cultivo?.avisos || []).filter((a: any) => !ignoredPautas.includes(a.pauta.idlaborespauta))).length === 0 ? (
+              <div style={{ background: 'white', borderRadius: '16px', padding: '40px 20px', textAlign: 'center', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎉</div>
+                <h3 style={{ margin: '0 0 8px', color: '#334155' }}>¡Todo al día!</h3>
+                <p style={{ margin: 0, color: '#64748b' }}>No tienes tareas pendientes para este cultivo en este momento.</p>
               </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {((cultivo?.avisos || []).filter((a: any) => !ignoredPautas.includes(a.pauta.idlaborespauta))).map((a: any, i: number) => {
+                  let icon = a.pauta.laboresicono || '📋';
+                  if (icon.startsWith('mdi-')) {
+                    const MDI_TO_EMOJI: Record<string, string> = {
+                      'mdi-water': '💧', 'mdi-sprout': '🌱', 'mdi-leaf': '🍃', 'mdi-flower': '🌺',
+                      'mdi-tree': '🌳', 'mdi-scissors-cutting': '✂️', 'mdi-tractor': '🚜',
+                      'mdi-shovel': '⛏️', 'mdi-shield-bug': '🛡️', 'mdi-spray': '💦',
+                      'mdi-weather-sunny': '☀️', 'mdi-thermometer': '🌡️', 'mdi-basket': '🧺',
+                      'mdi-hand-water': '🖐️', 'mdi-format-list-bulleted': '🏷️', 'mdi-bottle-tonic-plus': '🧪'
+                    };
+                    icon = MDI_TO_EMOJI[icon] || '🌱';
+                  }
 
-              {alertas.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {alertas.map((a: any, i: number) => {
-                    let icon = a.pauta.laboresicono || '📋';
-                    if (icon.startsWith('mdi-')) {
-                      const MDI_TO_EMOJI: Record<string, string> = {
-                        'mdi-water': '💧', 'mdi-sprout': '🌱', 'mdi-leaf': '🍃', 'mdi-flower': '🌺',
-                        'mdi-tree': '🌳', 'mdi-scissors-cutting': '✂️', 'mdi-tractor': '🚜',
-                        'mdi-shovel': '⛏️', 'mdi-shield-bug': '🛡️', 'mdi-spray': '💦',
-                        'mdi-weather-sunny': '☀️', 'mdi-thermometer': '🌡️', 'mdi-basket': '🧺',
-                        'mdi-hand-water': '🖐️', 'mdi-format-list-bulleted': '🏷️', 'mdi-bottle-tonic-plus': '🧪'
-                      };
-                      icon = MDI_TO_EMOJI[icon] || '🌱';
-                    }
+                  const isExpanded = expandedPautas.includes(a.pauta.idlaborespauta);
 
-                    return (
-                      <div key={i} style={{ background: 'white', border: '1px solid #e2e8f0', borderLeft: `4px solid ${a.pauta.laborescolor || '#3b82f6'}`, borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div 
-                            style={{ display: 'flex', gap: '16px', alignItems: 'center', cursor: 'pointer', flex: 1 }}
-                            onClick={() => setExpandedPautas(prev => prev.includes(a.pauta.idlaborespauta) ? prev.filter(id => id !== a.pauta.idlaborespauta) : [...prev, a.pauta.idlaborespauta])}
-                            title="Click para ver indicaciones"
-                          >
-                            <div style={{ fontSize: '2rem' }}>{icon}</div>
-                            <div>
-                              <h4 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#1e293b' }}>
-                                {a.pauta.laboresnombre}
-                                <span style={{ fontSize: '0.8rem', marginLeft: '8px', color: '#94a3b8' }}>
-                                  {expandedPautas.includes(a.pauta.idlaborespauta) ? '▲' : '▼'}
-                                </span>
-                              </h4>
-                              <p style={{ margin: 0, fontSize: '0.9rem', color: '#475569' }}>{a.pauta.laboresdescripcion || 'Sin descripción adicional.'}</p>
-                              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                                <div style={{ fontSize: '0.8rem', color: '#64748b', background: '#f1f5f9', display: 'inline-block', padding: '2px 8px', borderRadius: '4px' }}>
-                                  Fase: {a.faseActual}
-                                </div>
-                                {a.fechaEmision && (
-                                  <div style={{ fontSize: '0.8rem', color: '#10b981', background: '#ecfdf5', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', border: '1px solid #d1fae5' }}>
-                                    Emitida: {new Date(a.fechaEmision).toLocaleDateString()}
-                                  </div>
-                                )}
+                  return (
+                    <div key={i} style={{ background: 'white', border: '1px solid #e2e8f0', borderLeft: `4px solid ${a.pauta.laborescolor || '#3b82f6'}`, borderRadius: '12px', padding: '0', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                      
+                      {/* Compact Header */}
+                      <div 
+                        style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isExpanded ? '#f8fafc' : 'white' }}
+                        onClick={() => setExpandedPautas(prev => isExpanded ? prev.filter(id => id !== a.pauta.idlaborespauta) : [...prev, a.pauta.idlaborespauta])}
+                      >
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                          <div style={{ fontSize: '2rem' }}>{icon}</div>
+                          <div>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {a.pauta.laboresnombre}
+                            </h4>
+                            
+                            {!isExpanded && a.pauta.laborespautanotasia && (
+                              <div style={{ margin: '4px 0 0 0', fontSize: '0.9rem', color: '#0f172a', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                — {a.pauta.laborespautanotasia.substring(0, 100)}...
                               </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b', background: '#f1f5f9', display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontWeight: '500' }}>
+                                Fase: {a.faseActual}
+                              </div>
+                              {a.fechaEmision && (
+                                <div style={{ fontSize: '0.75rem', color: '#b45309', background: '#fef3c7', display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontWeight: '500' }}>
+                                  Emitida: {new Date(a.fechaEmision).toLocaleDateString()}
+                                </div>
+                              )}
                             </div>
                           </div>
-                          
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                           <button 
-                            onClick={() => handleMarkAsDone(a.pauta.idlaborespauta, a.faseActual, a.fechaEmision)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsDone(a.pauta.idlaborespauta, a.faseActual, a.fechaEmision);
+                            }}
                             style={{ 
                               background: isSimulating ? '#f1f5f9' : '#10b981', 
                               color: isSimulating ? '#94a3b8' : 'white', 
-                              border: 'none', padding: '10px 16px', borderRadius: '8px', 
+                              border: 'none', padding: '8px 16px', borderRadius: '8px', 
                               fontWeight: 'bold', fontSize: '0.9rem', cursor: isSimulating ? 'not-allowed' : 'pointer',
                               display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
                               boxShadow: isSimulating ? 'none' : '0 2px 4px rgba(16, 185, 129, 0.2)'
                             }}
                             title={isSimulating ? 'Desactiva el simulador para marcar tareas' : 'Marcar labor como completada'}
                           >
-                            ✓ Completado
+                            ✓ Completar
                           </button>
+                          <span style={{ color: '#94a3b8', padding: '4px' }}>
+                            {isExpanded ? '▲' : '▼'}
+                          </span>
                         </div>
-                        
-                        {expandedPautas.includes(a.pauta.idlaborespauta) && a.pauta.laborespautanotasia && (
-                          <div style={{ marginTop: '4px', padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#334155', fontSize: '0.9rem', lineHeight: '1.5', animation: 'fadeIn 0.2s ease-in-out' }}>
-                            <strong style={{ display: 'block', marginBottom: '4px', color: '#1e293b' }}>Indicaciones:</strong>
-                            {a.pauta.laborespautanotasia}
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {avisosCompletados.length > 0 && (
-                <div style={{ marginTop: '32px' }}>
-                  <div style={{ background: '#ecfdf5', padding: '16px', borderRadius: '16px', border: '1px solid #d1fae5', marginBottom: '16px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#065f46', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      ✅ Labores Completadas
-                    </h3>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {avisosCompletados.map((ac: any, i: number) => {
-                      const pautaRef = pautas.find(p => p.idlaborespauta === ac.idpauta);
-                      if (!pautaRef) return null;
                       
-                      let icon = pautaRef.laboresicono || '📋';
-                      if (icon.startsWith('mdi-')) {
-                        const MDI_TO_EMOJI: Record<string, string> = {
-                          'mdi-water': '💧', 'mdi-sprout': '🌱', 'mdi-leaf': '🍃', 'mdi-flower': '🌺',
-                          'mdi-tree': '🌳', 'mdi-scissors-cutting': '✂️', 'mdi-tractor': '🚜',
-                          'mdi-shovel': '⛏️', 'mdi-shield-bug': '🛡️', 'mdi-spray': '💦',
-                          'mdi-weather-sunny': '☀️', 'mdi-thermometer': '🌡️', 'mdi-basket': '🧺',
-                          'mdi-hand-water': '🖐️', 'mdi-format-list-bulleted': '🏷️', 'mdi-bottle-tonic-plus': '🧪'
-                        };
-                        icon = MDI_TO_EMOJI[icon] || '🌱';
-                      }
-
-                      return (
-                        <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', display: 'flex', gap: '16px', alignItems: 'center', opacity: 0.8 }}>
-                          <div style={{ fontSize: '1.5rem', filter: 'grayscale(1)' }}>{icon}</div>
-                          <div style={{ flex: 1 }}>
-                            <h4 style={{ margin: '0 0 2px', fontSize: '1rem', color: '#475569', textDecoration: 'line-through' }}>
-                              {pautaRef.laboresnombre}
-                            </h4>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                              Fase: {ac.fase}
-                            </span>
+                      {/* Expanded Details */}
+                      {isExpanded && (
+                        <div>
+                          <div style={{ padding: '0 16px 16px 16px' }}>
+                            <InlineLaborPhotos 
+                              isPending={true}
+                              idcultivos={cultivoId}
+                              idpauta={a.pauta.idlaborespauta}
+                              fechaEmision={a.fechaEmision}
+                              userEmail={userEmail!}
+                              setLightboxUrl={setLightboxUrl}
+                            />
                           </div>
-                          <div style={{ color: '#10b981', fontWeight: 'bold' }}>
-                            ✓ Hecho
+                          <div style={{ padding: '16px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', color: '#334155', fontSize: '0.95rem' }}>
+                            {a.pauta.laborespautanotasia && (
+                              <div style={{ marginBottom: '12px', color: '#0f172a', fontWeight: '500', lineHeight: '1.6' }}>
+                                {a.pauta.laborespautanotasia}
+                              </div>
+                            )}
+                            <div style={{ fontStyle: 'italic', color: '#64748b', fontSize: '0.9rem' }}>
+                              {a.pauta.laboresdescripcion || 'Sin descripción general.'}
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'completadas' && (() => {
+          const FASE_ORDER = [
+            'Semillero', 'Germinación', 'Desarrollo Inicial', 'Crecimiento Firme',
+            'Pre-floración', 'Floración', 'Desarrollo del Fruto', 'Cosecha Temprana',
+            'Plena Cosecha', 'Cosecha Tardía', 'Senescencia', 'Post-cosecha'
+          ];
+          const FASE_NAMES: Record<string, string> = {
+            'registro': 'Registro', 'siembra': 'Siembra', 'presiembra': 'Pre-Siembra',
+            'pregerminacion': 'Pre-Germinación', 'germinacion': 'Germinación',
+            'semillero': 'Semillero', 'trasplante': 'Trasplante',
+            'desarrollo_inicial': 'Desarrollo Inicial', 'crecimiento_inicial': 'Crecimiento Inicial',
+            'crecimiento': 'Crecimiento Firme', 'pre_floracion': 'Pre-floración', 'floracion': 'Floración',
+            'fructificacion': 'Fructificación', 'desarrollo_fruto': 'Desarrollo del Fruto',
+            'cosecha_temprana': 'Cosecha Temprana', 'recoleccion': 'Recolección',
+            'plena_cosecha': 'Plena Cosecha', 'cosecha_tardia': 'Cosecha Tardía',
+            'senescencia': 'Senescencia', 'post_cosecha': 'Post-cosecha',
+            'mantenimiento': 'Mantenimiento General', 'general': 'General'
+          };
+          
+          const grouped = avisosCompletados.reduce((acc: any, ac: any) => {
+            const phaseStr = ac.fase || 'general';
+            const phaseKey = phaseStr.toLowerCase();
+            const displayName = FASE_NAMES[phaseKey] || phaseStr;
+            if (!acc[displayName]) acc[displayName] = [];
+            acc[displayName].push(ac);
+            return acc;
+          }, {});
+
+          const sortedPhases = Object.keys(grouped).sort((a, b) => {
+            const idxA = FASE_ORDER.indexOf(a);
+            const idxB = FASE_ORDER.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+          });
+
+          return (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <h2 style={{ margin: '0 0 24px', fontSize: '1.5rem', color: '#065f46', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ✅ Labores Realizadas
+            </h2>
+            
+            {sortedPhases.length === 0 ? (
+              <div style={{ background: 'white', borderRadius: '16px', padding: '40px 20px', textAlign: 'center', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🌱</div>
+                <h3 style={{ margin: '0 0 8px', color: '#334155' }}>Aún no hay labores completadas</h3>
+                <p style={{ margin: 0, color: '#64748b' }}>Las tareas que vayas marcando aparecerán organizadas aquí.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {sortedPhases.map(phase => (
+                  <div key={phase} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div 
+                      style={{ padding: '16px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', borderBottom: expandedPhases.includes(phase) ? '1px solid #e2e8f0' : 'none' }}
+                      onClick={() => setExpandedPhases(prev => prev.includes(phase) ? prev.filter(p => p !== phase) : [...prev, phase])}
+                    >
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🌿 {phase}
+                        <span style={{ fontSize: '0.8rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px' }}>
+                          {grouped[phase].length}
+                        </span>
+                      </h3>
+                      <span style={{ color: '#94a3b8' }}>{expandedPhases.includes(phase) ? '▲' : '▼'}</span>
+                    </div>
+
+                    {expandedPhases.includes(phase) && (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {grouped[phase].map((ac: any, i: number) => {
+                          const pautaRef = pautas.find(p => p.idlaborespauta === ac.idpauta);
+                          if (!pautaRef) return null;
+                          
+                          let icon = pautaRef.laboresicono || '📋';
+                          if (icon.startsWith('mdi-')) {
+                            const MDI_TO_EMOJI: Record<string, string> = {
+                              'mdi-water': '💧', 'mdi-sprout': '🌱', 'mdi-leaf': '🍃', 'mdi-flower': '🌺',
+                              'mdi-tree': '🌳', 'mdi-scissors-cutting': '✂️', 'mdi-tractor': '🚜',
+                              'mdi-shovel': '⛏️', 'mdi-shield-bug': '🛡️', 'mdi-spray': '💦',
+                              'mdi-weather-sunny': '☀️', 'mdi-thermometer': '🌡️', 'mdi-basket': '🧺',
+                              'mdi-hand-water': '🖐️', 'mdi-format-list-bulleted': '🏷️', 'mdi-bottle-tonic-plus': '🧪'
+                            };
+                            icon = MDI_TO_EMOJI[icon] || '🌱';
+                          }
+
+                          return (
+                            <div key={i} style={{ padding: '0', borderBottom: i < grouped[phase].length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                              <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                                <div style={{ fontSize: '1.5rem', filter: 'grayscale(1)', opacity: 0.7 }}>{icon}</div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <h4 style={{ margin: '0 0 2px', fontSize: '1.1rem', color: '#475569', textDecoration: 'line-through' }}>
+                                      {pautaRef.laboresnombre}
+                                    </h4>
+                                    <div style={{ color: '#10b981', fontWeight: 'bold' }}>
+                                      ✓ Completado
+                                    </div>
+                                  </div>
+                                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                    Fecha: {ac.fechaRealizacion ? new Date(ac.fechaRealizacion).toLocaleDateString() : 'Registrada'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div style={{ padding: '0 16px 16px 16px' }}>
+                                <InlineLaborPhotos 
+                                  isPending={false}
+                                  idcultivos={cultivoId}
+                                  idpauta={ac.idpauta}
+                                  fechaEmision=""
+                                  idcultivosavisos={ac.id}
+                                  userEmail={userEmail!}
+                                  setLightboxUrl={setLightboxUrl}
+                                />
+                              </div>
+                              
+                              <div style={{ padding: '12px 16px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', fontSize: '0.9rem', color: '#475569' }}>
+                                {pautaRef.laborespautanotasia && (
+                                  <div style={{ marginBottom: '6px', fontWeight: 'bold', color: '#334155' }}>
+                                    {pautaRef.laborespautanotasia}
+                                  </div>
+                                )}
+                                <div style={{ fontStyle: 'italic' }}>
+                                  {pautaRef.laboresdescripcion || 'Sin descripción general.'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
           );
         })()}
-      </div>
+
+
+      {/* Lightbox Global */}
+      {lightboxUrl && (
+        <div 
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 999999, cursor: 'zoom-out'
+          }}
+        >
+          <img src={lightboxUrl} alt="Vista ampliada" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} />
+        </div>
+      )}
+  
+</div>
     </div>
   );
 }

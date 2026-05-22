@@ -27,6 +27,8 @@ export async function GET(request: Request) {
        WHERE da.xdatosadjuntosidusuarios = ? 
          AND da.datosadjuntostipo = 'imagen' 
          AND da.datosadjuntosfechaeliminacion IS NULL
+         AND da.xdatosadjuntosidcultivos IS NULL
+         AND da.xdatosadjuntosidcultivosavisos IS NULL
          AND (da.datosadjuntosactivo = 1 OR da.datosadjuntosresultadovalidacion = 'rechazado')
        ORDER BY 
          CASE WHEN da.datosadjuntosresultadovalidacion = 'rechazado' THEN 1 ELSE 0 END ASC,

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import { auth } from '@/lib/firebase/config';
 
@@ -51,6 +51,60 @@ export default function AsuntosPendientesPage() {
     setToast(msg);
     setTimeout(() => setToast(''), 4000);
   };
+
+  const groupedData = useMemo(() => {
+    const groups: Record<string, any> = {};
+    pendientes.forEach((p: any) => {
+      const userKey = p.usuarioId ? `${p.usuarioId}-${p.usuarioNombre}` : `unknown-${p.usuarioNombre}`;
+      if (!groups[userKey]) {
+        groups[userKey] = {
+          usuarioNombre: p.usuarioNombre || 'Usuario Desconocido',
+          usuarioEmail: p.usuarioEmail || 'Sin email',
+          usuarioId: p.usuarioId,
+          motivos: {}
+        };
+      }
+      
+      let motivoKey = 'Foto de Perfil';
+      if (p.fotoTipo === 'planta' || p.fotoTipo === 'labor') {
+        const especie = p.especieNombre || 'Sin especie';
+        const variedad = p.variedadNombre ? ` - ${p.variedadNombre}` : '';
+        motivoKey = `Cultivo: ${especie}${variedad}`;
+      }
+
+      if (!groups[userKey].motivos[motivoKey]) {
+        groups[userKey].motivos[motivoKey] = {
+          nombre: motivoKey,
+          labores: {}
+        };
+      }
+
+      let laborKey = 'General (Planta/Variedad)';
+      if (p.fotoTipo === 'labor') {
+        if (p.laborNombre) {
+          laborKey = `Labor Realizada: ${p.laborNombre}`;
+        } else {
+          let pendingName = 'Labor Pendiente';
+          try {
+            const resObj = typeof p.resumen === 'string' ? JSON.parse(p.resumen) : (p.resumen || {});
+            if (resObj.pending_fechaEmision) {
+              pendingName += ` (${new Date(resObj.pending_fechaEmision).toLocaleDateString('es-ES')})`;
+            }
+          } catch(e) {}
+          laborKey = pendingName;
+        }
+      } else if (p.fotoTipo === 'perfil') {
+        laborKey = 'Perfil de Usuario';
+      }
+
+      if (!groups[userKey].motivos[motivoKey].labores[laborKey]) {
+        groups[userKey].motivos[motivoKey].labores[laborKey] = [];
+      }
+
+      groups[userKey].motivos[motivoKey].labores[laborKey].push(p);
+    });
+    return Object.values(groups);
+  }, [pendientes]);
 
   const loadPendientes = async () => {
     setLoading(true);
@@ -323,146 +377,97 @@ export default function AsuntosPendientesPage() {
             <span><b>{pendientes.length}</b> {tab === 'pendientes' ? 'foto(s) pendiente(s) de validar' : 'recurso(s) por revisar'}</span>
           </div>
 
-          {pendientes.map((p: any) => (
-            <div key={p.id} style={{
-              background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden',
-              display: 'flex', gap: 0, transition: 'all 0.2s ease',
-              opacity: processing === p.id ? 0.5 : 1
-            }}>
-              {/* Miniatura y Tipo */}
-              <div style={{ display: 'flex', flexDirection: 'column', width: '160px', flexShrink: 0, borderRight: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                <div style={{ width: '160px', height: '160px', position: 'relative', overflow: 'hidden', background: '#f1f5f9' }}>
-                  <img
-                    src={getMediaUrl(p.ruta)}
-                    alt={p.nombreOriginal}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', inset: 0 }}
-                    crossOrigin="anonymous"
-                  />
+          {groupedData.map((user: any, uIdx: number) => (
+            <div key={uIdx} style={{ marginBottom: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+              {/* Header Usuario */}
+              <div style={{ background: '#1e293b', padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', background: '#3b82f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                  👤
                 </div>
-                <div style={{ padding: '8px', fontSize: '0.75rem', color: '#475569', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, borderTop: '1px solid #e2e8f0' }}>
-                  {p.fotoTipo === 'perfil' ? (
-                    <b>👤 Foto de Perfil</b>
-                  ) : (
-                    <>
-                      <b>🌱 {p.especieNombre || 'Sin especie'} {p.variedadNombre ? `- ${p.variedadNombre}` : ''}</b>
-                    </>
-                  )}
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{user.usuarioNombre}</h3>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{user.usuarioEmail}</span>
                 </div>
               </div>
 
-              {/* Info */}
-              <div style={{ flex: 1, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{
-                      background: '#fef3c7', color: '#92400e', padding: '2px 8px',
-                      borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700
-                    }}>
-                      PENDIENTE
-                    </span>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{formatDate(p.fecha)}</span>
-                  </div>
-
-                  <div style={{ fontSize: '0.95rem', color: '#1e293b', marginBottom: '4px' }}>
-                    <b>👤 {p.usuarioNombre || 'Usuario'}</b>
-                    <span style={{ color: '#64748b' }}> ({p.usuarioEmail})</span>
-                  </div>
-
-                  {tab === 'recursos' && (
-                    <div style={{ marginTop: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: '0 0 4px', fontSize: '0.8rem', color: '#ef4444', fontWeight: 600 }}>MOTIVO RECHAZO ORIGINAL:</p>
-                      <p style={{ margin: '0 0 12px', fontSize: '0.9rem', color: '#334155' }}>{p.motivoRechazo}</p>
-                      
-                      <p style={{ margin: '0 0 4px', fontSize: '0.8rem', color: '#8b5cf6', fontWeight: 600 }}>ALEGACIÓN DEL USUARIO:</p>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap', background: 'white', padding: '8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                        {p.motivoRecurso ? p.motivoRecurso : <span style={{color: '#94a3b8', fontStyle: 'italic'}}>No se registró texto de alegación</span>}
-                      </p>
+              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {Object.values(user.motivos).map((motivo: any, mIdx: number) => (
+                  <div key={mIdx} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                    {/* Header Motivo / Cultivo */}
+                    <div style={{ background: '#f1f5f9', padding: '12px 16px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🌱 {motivo.nombre}
                     </div>
-                  )}
 
-                  <div style={{ fontSize: '0.85rem', color: '#475569' }}>
-                    {/* El tipo de foto se movió debajo de la miniatura */}
+                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {Object.entries(motivo.labores).map(([laborName, photos]: [string, any], lIdx: number) => (
+                        <div key={lIdx}>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            📋 {laborName} <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', color: '#475569' }}>{photos.length} fotos</span>
+                          </h4>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                            {photos.map((p: any) => (
+                              <div key={p.id} style={{
+                                border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden',
+                                display: 'flex', flexDirection: 'column', transition: 'all 0.2s',
+                                opacity: processing === p.id ? 0.5 : 1, boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                              }}>
+                                {/* Miniatura */}
+                                <div style={{ height: '220px', background: '#f1f5f9', position: 'relative' }}>
+                                  <img
+                                    src={getMediaUrl(p.ruta)}
+                                    alt={p.nombreOriginal}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    crossOrigin="anonymous"
+                                  />
+                                  <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                    {formatDate(p.fecha)}
+                                  </div>
+                                  {tab === 'pendientes' && (
+                                    <div style={{ position: 'absolute', top: 8, right: 8, background: '#fef3c7', color: '#92400e', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                      PENDIENTE
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Info y Acciones */}
+                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                  {tab === 'recursos' && (
+                                    <div style={{ marginBottom: '12px', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                      <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>MOTIVO RECHAZO ORIGINAL:</p>
+                                      <p style={{ margin: '0 0 8px', fontSize: '0.85rem', color: '#334155' }}>{p.motivoRechazo}</p>
+                                      
+                                      <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#8b5cf6', fontWeight: 600 }}>ALEGACIÓN DEL USUARIO:</p>
+                                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#334155', fontStyle: 'italic' }}>
+                                        {p.motivoRecurso || 'Sin alegación'}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', flexWrap: 'wrap' }}>
+                                    {tab === 'pendientes' ? (
+                                      <>
+                                        <button onClick={() => handleValidar(p.id)} disabled={processing !== null} style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>✅ Validar</button>
+                                        <button onClick={() => abrirModalRechazo(p.id)} disabled={processing !== null} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>❌ Rechazar</button>
+                                        <button onClick={() => abrirModalEliminar(p.id)} disabled={processing !== null} title="Contenido explícito" style={{ background: '#7f1d1d', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>🗑️</button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button onClick={() => handleRestaurar(p.id, p)} disabled={processing !== null} style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>✅ Restaurar</button>
+                                        <button onClick={() => abrirModalRechazoRecurso(p.id, p)} disabled={processing !== null} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>❌ Denegar</button>
+                                      </>
+                                    )}
+                                    <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>🔍</a>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-
-                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>
-                    📁 {p.nombreOriginal} · {formatSize(p.peso)}
-                  </div>
-                </div>
-
-                {/* Acciones */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                  {tab === 'pendientes' ? (
-                    <>
-                      <button
-                        onClick={() => handleValidar(p.id)}
-                        disabled={processing !== null}
-                        style={{
-                          background: '#10b981', color: 'white', border: 'none', borderRadius: '8px',
-                          padding: '8px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                        }}
-                      >
-                        ✅ Validar
-                      </button>
-                      <button
-                        onClick={() => abrirModalRechazo(p.id)}
-                        disabled={processing !== null}
-                        style={{
-                          background: 'white', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '8px',
-                          padding: '8px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                        }}
-                      >
-                        ❌ Rechazar
-                      </button>
-                      <button
-                        onClick={() => abrirModalEliminar(p.id)}
-                        disabled={processing !== null}
-                        title="Contenido explícito o gravemente inapropiado: eliminar y sancionar"
-                        style={{
-                          background: '#7f1d1d', color: 'white', border: 'none', borderRadius: '8px',
-                          padding: '8px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                        }}
-                      >
-                        🗑️ Eliminar
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleRestaurar(p.id, p)}
-                        disabled={processing !== null}
-                        style={{
-                          background: '#10b981', color: 'white', border: 'none', borderRadius: '8px',
-                          padding: '8px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                        }}
-                      >
-                        ✅ Aceptar Recurso (Restaurar)
-                      </button>
-                      <button
-                        onClick={() => abrirModalRechazoRecurso(p.id, p)}
-                        disabled={processing !== null}
-                        style={{
-                          background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px',
-                          padding: '8px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                        }}
-                      >
-                        ❌ Denegar Recurso
-                      </button>
-                    </>
-                  )}
-                  <a
-                    href={getMediaUrl(p.ruta)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px',
-                      padding: '8px 14px', fontWeight: 600, fontSize: '0.82rem',
-                      textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px'
-                    }}
-                  >
-                    🔍 Ver completa
-                  </a>
-                </div>
+                ))}
               </div>
             </div>
           ))}

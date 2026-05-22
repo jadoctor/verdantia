@@ -121,7 +121,19 @@ export default function DashboardAlertsWidget() {
                   <span>({a.cultivo.cultivosubicacion || `Cultivo #${a.cultivo.cultivosnumerocoleccion}`})</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#64748b', background: '#f8fafc', padding: '2px 8px', borderRadius: '4px', display: 'inline-block' }}>
-                  Fase: {a.faseActual}
+                  Fase: {( {
+                    'general': 'General',
+                    'presiembra': 'Pre-siembra',
+                    'siembra': 'Siembra',
+                    'pregerminacion': 'Pre-germinación',
+                    'germinacion': 'Germinación',
+                    'trasplante': 'Trasplante',
+                    'crecimiento_inicial': 'Crecimiento inicial',
+                    'crecimiento': 'Crecimiento',
+                    'fructificacion': 'Fructificación',
+                    'recoleccion': 'Recolección',
+                    'finalizacion': 'Finalización'
+                  } as Record<string, string>)[a.pauta.laborespautafase] || a.pauta.laborespautafase}
                 </div>
               </div>
             </div>
