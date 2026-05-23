@@ -47,6 +47,12 @@ export default function AsuntosPendientesPage() {
   const [eliminandoId, setEliminandoId] = useState<number | null>(null);
   const [eliminandoConfirm, setEliminandoConfirm] = useState(false);
 
+  // Colapsables por usuario
+  const [collapsedUsers, setCollapsedUsers] = useState<Record<number, boolean>>({});
+
+  // Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 4000);
@@ -379,17 +385,27 @@ export default function AsuntosPendientesPage() {
 
           {groupedData.map((user: any, uIdx: number) => (
             <div key={uIdx} style={{ marginBottom: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
-              {/* Header Usuario */}
-              <div style={{ background: '#1e293b', padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Header Usuario - Colapsable */}
+              <div 
+                onClick={() => setCollapsedUsers(prev => ({ ...prev, [uIdx]: !prev[uIdx] }))}
+                style={{ background: '#1e293b', padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}
+              >
                 <div style={{ width: '40px', height: '40px', background: '#3b82f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
                   👤
                 </div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{user.usuarioNombre}</h3>
                   <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{user.usuarioEmail}</span>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+                    {Object.values(user.motivos).reduce((sum: number, m: any) => sum + Object.values(m.labores).reduce((s2: number, photos: any) => s2 + photos.length, 0), 0)} fotos
+                  </span>
+                  <span style={{ fontSize: '1.2rem', transition: 'transform 0.3s', transform: collapsedUsers[uIdx] ? 'rotate(0deg)' : 'rotate(180deg)' }}>▼</span>
+                </div>
               </div>
 
+              {!collapsedUsers[uIdx] && (
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {Object.values(user.motivos).map((motivo: any, mIdx: number) => (
                   <div key={mIdx} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -413,11 +429,11 @@ export default function AsuntosPendientesPage() {
                                 opacity: processing === p.id ? 0.5 : 1, boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                               }}>
                                 {/* Miniatura */}
-                                <div style={{ height: '220px', background: '#f1f5f9', position: 'relative' }}>
+                                <div style={{ height: '220px', background: '#f1f5f9', position: 'relative', cursor: 'pointer' }} onClick={() => setLightboxUrl(getMediaUrl(p.ruta))}>
                                   <img
                                     src={getMediaUrl(p.ruta)}
                                     alt={p.nombreOriginal}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }}
                                     crossOrigin="anonymous"
                                   />
                                   <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -457,7 +473,7 @@ export default function AsuntosPendientesPage() {
                                         <button onClick={() => abrirModalRechazoRecurso(p.id, p)} disabled={processing !== null} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>❌ Denegar</button>
                                       </>
                                     )}
-                                    <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>🔍</a>
+                                    <button onClick={() => setLightboxUrl(getMediaUrl(p.ruta))} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>🔍</button>
                                   </div>
                                 </div>
                               </div>
@@ -469,6 +485,7 @@ export default function AsuntosPendientesPage() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           ))}
         </div>
@@ -719,6 +736,37 @@ export default function AsuntosPendientesPage() {
           </div>
         );
       })()}
+      {/* ── Lightbox Overlay ── */}
+      {lightboxUrl && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 999999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+            backdropFilter: 'blur(4px)'
+          }}
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div style={{ position: 'relative', maxWidth: '95vw', maxHeight: '95vh', display: 'flex', justifyContent: 'center' }}>
+            <img
+              src={lightboxUrl}
+              alt="Vista ampliada"
+              crossOrigin="anonymous"
+              style={{ maxWidth: '100%', maxHeight: '95vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setLightboxUrl(null)}
+              style={{
+                position: 'absolute', top: '-15px', right: '-15px', background: 'white', color: 'black',
+                border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '1.2rem',
+                cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
