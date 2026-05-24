@@ -6,13 +6,13 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
 
 const PLAN_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
-  premium:  { color: '#d97706', bg: '#fffbeb', icon: '🌳', label: 'Premium' },
-  avanzado: { color: '#2563eb', bg: '#eff6ff', icon: '🌿', label: 'Avanzado' },
-  pro:      { color: '#2563eb', bg: '#eff6ff', icon: '🌿', label: 'Pro' },
-  esencial: { color: '#059669', bg: '#f0fdf4', icon: '🌱', label: 'Esencial' },
-  plus:     { color: '#059669', bg: '#f0fdf4', icon: '🌱', label: 'Plus' },
-  gratuito: { color: '#64748b', bg: '#f8fafc', icon: '🌰', label: 'Gratuito' },
-  free:     { color: '#64748b', bg: '#f8fafc', icon: '🌰', label: 'Free' },
+  premium:  { color: '#d97706', bg: '#fffbeb', icon: '👑', label: 'Premium' },
+  avanzado: { color: '#2563eb', bg: '#eff6ff', icon: '🌳', label: 'Avanzado' },
+  pro:      { color: '#2563eb', bg: '#eff6ff', icon: '🌳', label: 'Pro' },
+  esencial: { color: '#059669', bg: '#f0fdf4', icon: '🌿', label: 'Esencial' },
+  plus:     { color: '#059669', bg: '#f0fdf4', icon: '🌿', label: 'Plus' },
+  gratuito: { color: '#64748b', bg: '#f8fafc', icon: '🍃', label: 'Gratuito' },
+  free:     { color: '#64748b', bg: '#f8fafc', icon: '🍃', label: 'Free' },
 };
 
 const ROL_CONFIG: Record<string, { color: string; bg: string }> = {
@@ -110,7 +110,7 @@ export default function UsuariosAdminPage() {
   );
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div>
       {/* Toast */}
       {actionMsg && (
         <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, padding: '12px 20px', background: 'white', border: '1px solid #e2e8f0', borderLeft: '4px solid #0056b3', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontWeight: 600, fontSize: '0.9rem' }}>
@@ -155,10 +155,10 @@ export default function UsuariosAdminPage() {
             <select value={filterPlan} onChange={e => { setFilterPlan(e.target.value); setPage(1); }}
               style={{ padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '0.85rem', background: 'white', color: '#0f172a', fontWeight: 'bold' }}>
               <option value="">Todos los planes</option>
-              <option value="Premium">🌳 Premium</option>
-              <option value="Avanzado">🌿 Avanzado</option>
-              <option value="Esencial">🌱 Esencial</option>
-              <option value="Gratuito">🌰 Gratuito</option>
+              <option value="Premium">👑 Premium</option>
+              <option value="Avanzado">🌳 Avanzado</option>
+              <option value="Esencial">🌿 Esencial</option>
+              <option value="Gratuito">🍃 Gratuito</option>
             </select>
             <button onClick={loadUsuarios} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
               🔄
@@ -182,11 +182,11 @@ export default function UsuariosAdminPage() {
         <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
           {/* Scroll horizontal en móvil */}
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                   {['Avatar', 'Nombre', 'Email', 'Rol', 'Plan', 'Registro', 'Acciones'].map(h => (
-                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -202,7 +202,7 @@ export default function UsuariosAdminPage() {
 
                       {/* Avatar */}
                       <td style={{ padding: '10px 14px' }}>
-                        <div style={{ width: '36px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #93c5fd', flexShrink: 0, position: 'relative' }}>
+                        <div style={{ width: '52px', height: '64px', borderRadius: '10px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #93c5fd', flexShrink: 0, position: 'relative' }}>
                           {u.fotoPrincipal ? (
                             <>
                               <img 
@@ -216,14 +216,14 @@ export default function UsuariosAdminPage() {
                                   if (fallback) fallback.style.display = 'block';
                                 }}
                               />
-                              <span style={{ fontSize: '1.4rem', display: 'none' }}>
+                              <span style={{ display: 'none' }}>
                                 {u.icono && u.icono.length <= 4 ? u.icono : '👤'}
                               </span>
                             </>
                           ) : u.icono && u.icono.length <= 4 ? (
-                            <span style={{ fontSize: '1.4rem' }}>{u.icono}</span>
+                            <span>{u.icono}</span>
                           ) : (
-                            <span style={{ fontSize: '1rem' }}>👤</span>
+                            <span>👤</span>
                           )}
                         </div>
                       </td>
@@ -231,7 +231,7 @@ export default function UsuariosAdminPage() {
                       {/* Nombre */}
                       <td style={{ padding: '10px 14px' }}>
                         <div style={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>{u.nombre || '—'} {u.apellidos || ''}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>@{u.nombreUsuario || '—'}</div>
+                        <div style={{ color: '#94a3b8' }}>@{u.nombreUsuario || '—'}</div>
                       </td>
 
                       {/* Email */}
@@ -244,7 +244,7 @@ export default function UsuariosAdminPage() {
                         <select
                           value={firstRol}
                           onChange={e => handleChangeRol(u.id, e.target.value)}
-                          style={{ padding: '4px 8px', borderRadius: '8px', border: `1.5px solid ${rolCfg.color}40`, background: rolCfg.bg, color: rolCfg.color, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}
+                          style={{ padding: '4px 8px', borderRadius: '8px', border: `1.5px solid ${rolCfg.color}40`, background: rolCfg.bg, color: rolCfg.color, fontWeight: 700, cursor: 'pointer' }}
                         >
                           <option value="visitante">Visitante</option>
                           <option value="usuario">Usuario</option>
@@ -258,33 +258,55 @@ export default function UsuariosAdminPage() {
                         <select
                           value={u.suscripcion || 'Gratuito'}
                           onChange={e => handleChangePlan(u.id, e.target.value)}
-                          style={{ padding: '4px 8px', borderRadius: '8px', border: `1.5px solid ${planCfg.color}40`, background: planCfg.bg, color: planCfg.color, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}
+                          style={{ padding: '4px 8px', borderRadius: '8px', border: `1.5px solid ${planCfg.color}40`, background: planCfg.bg, color: planCfg.color, fontWeight: 700, cursor: 'pointer' }}
                         >
-                          <option value="Gratuito">🌰 Gratuito</option>
-                          <option value="Esencial">🌱 Esencial</option>
-                          <option value="Avanzado">🌿 Avanzado</option>
-                          <option value="Premium">🌳 Premium</option>
+                          <option value="Gratuito">🍃 Gratuito</option>
+                          <option value="Esencial">🌿 Esencial</option>
+                          <option value="Avanzado">🌳 Avanzado</option>
+                          <option value="Premium">👑 Premium</option>
                         </select>
                         {u.suscripcion && u.suscripcion !== 'Gratuito' ? (
-                          <span style={{ display: 'block', fontSize: '0.65rem', color: u.esPrueba ? '#059669' : '#d97706', marginTop: '2px', fontWeight: 600 }}>
+                          <span style={{ display: 'block', color: u.esPrueba ? '#059669' : '#d97706', marginTop: '2px', fontWeight: 600 }}>
                             {u.esPrueba ? '🎁 De Regalo' : '💳 De Pago'}
                           </span>
                         ) : null}
                       </td>
 
                       {/* Fecha */}
-                      <td style={{ padding: '10px 14px', color: '#94a3b8', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '10px 14px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
                         {u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString('es-ES') : '—'}
                       </td>
 
                       {/* Acciones */}
                       <td style={{ padding: '10px 14px' }}>
-                        <button
-                          onClick={() => router.push(`/dashboard/admin/usuarios/${u.id}`)}
-                          style={{ padding: '5px 10px', background: '#0056b3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap' }}
-                        >
-                          👁️ Ver perfil
-                        </button>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            onClick={() => router.push(`/dashboard/admin/usuarios/${u.id}`)}
+                            style={{ padding: '5px 10px', background: '#0056b3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap' }}
+                          >
+                            👁️ Ver perfil
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`⚠️ PURGA TOTAL\n\n¿Eliminar COMPLETAMENTE al usuario "${u.nombre || u.email}" y TODOS sus datos?\n\nEsta acción es IRREVERSIBLE.`)) return;
+                              if (!confirm(`🔴 ÚLTIMA CONFIRMACIÓN\n\nSe borrarán: semillas, siembras, recolecciones, fotos, mensajes, notificaciones y el propio usuario.\n\n¿Continuar?`)) return;
+                              try {
+                                const res = await fetch(`/api/admin/usuarios/${u.id}/purge`, { method: 'DELETE' });
+                                const data = await res.json();
+                                if (res.ok) {
+                                  toast(`☠️ Usuario purgado: ${data.details?.length || 0} tablas limpiadas`);
+                                  loadUsuarios();
+                                } else {
+                                  toast(`❌ ${data.error}`);
+                                }
+                              } catch { toast('❌ Error de conexión'); }
+                            }}
+                            title="⚠️ TEMPORAL: Eliminar usuario y TODOS sus datos"
+                            style={{ padding: '5px 10px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap' }}
+                          >
+                            ☠️ Purgar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

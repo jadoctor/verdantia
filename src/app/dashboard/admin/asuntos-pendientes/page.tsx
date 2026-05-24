@@ -1,16 +1,21 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import { auth } from '@/lib/firebase/config';
+import '@/components/admin/EspecieForm.css';
 
-const MOTIVOS_RECHAZO = [
+const MOTIVOS_RECHAZO_LEVE = [
   'La imagen no está relacionada con cultivos, plantas o huertos',
-  'Contenido inapropiado, ofensivo o que infringe las normas de la comunidad',
-  'La imagen contiene datos personales visibles (personas, matrículas, domicilios)',
   'Imagen de baja calidad, borrosa o ilegible',
   'Imagen duplicada o ya existente en la plataforma',
-  'Contenido con derechos de autor o marca comercial sin autorización',
   'Otro motivo — ver nota adicional',
+];
+
+const MOTIVOS_SANCION_GRAVE = [
+  'Contenido inapropiado, ofensivo, o de carácter sexual',
+  'Contenido violento o incitación al odio',
+  'La imagen contiene datos personales visibles (personas, matrículas, domicilios)',
+  'Contenido con derechos de autor o marca comercial sin autorización',
 ];
 
 interface PendingPhoto {
@@ -31,9 +36,41 @@ interface PendingPhoto {
 export default function AsuntosPendientesPage() {
   const [tab, setTab] = useState<'pendientes' | 'recursos'>('pendientes');
   const [pendientes, setPendientes] = useState<PendingPhoto[]>([]);
+  const [userStats, setUserStats] = useState<Record<number, any>>({});
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<number | null>(null);
   const [toast, setToast] = useState('');
+
+  // Restaurar estado guardado en sessionStorage al montar
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = sessionStorage.getItem('asuntos_tab');
+      if (savedTab) setTab(savedTab as 'pendientes' | 'recursos');
+      const savedCol = sessionStorage.getItem('asuntos_collapsed');
+      if (savedCol) {
+        try { setCollapsedUsers(JSON.parse(savedCol)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  // Restaurar scroll position cuando termine de cargar
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      const savedScroll = sessionStorage.getItem('asuntos_scroll');
+      if (savedScroll) {
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedScroll, 10));
+          sessionStorage.removeItem('asuntos_scroll'); // Limpiar para que no salte en el futuro
+        }, 50);
+      }
+    }
+  }, [loading]);
+
+  const saveStateForReturn = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('asuntos_scroll', window.scrollY.toString());
+    }
+  };
 
   // Modal de rechazo
   const [rechazandoId, setRechazandoId] = useState<number | null>(null);
@@ -43,15 +80,159 @@ export default function AsuntosPendientesPage() {
   const [motivoRechazoRecurso, setMotivoRechazoRecurso] = useState<string>('');
   const [motivoExtra, setMotivoExtra] = useState('');
 
-  // Modal de eliminación por contenido inapropiado
-  const [eliminandoId, setEliminandoId] = useState<number | null>(null);
-  const [eliminandoConfirm, setEliminandoConfirm] = useState(false);
+  // Modal de eliminación unificado en el de rechazo
 
   // Colapsables por usuario
   const [collapsedUsers, setCollapsedUsers] = useState<Record<number, boolean>>({});
 
   // Lightbox
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  // Custom Tooltip
+  const [tooltip, setTooltip] = useState<{ x: number, y: number, text: string } | null>(null);
+
+  const cleanRedundancy = (text: string) => {
+    if (!text) return text;
+    let res = text;
+    // Remueve "Palabra (Palabra " => "Palabra ("
+    res = res.replace(/([A-ZÁÉÍÓÚÑa-záéíóúñ]+)\s*\(\s*\1\s+/gi, '$1 (');
+    // Capitaliza la primera letra después de un paréntesis
+    res = res.replace(/\(\s*([a-záéíóúñ])/gi, (m, l) => '(' + l.toUpperCase());
+    // Limpia dobles paréntesis accidentales "((...))"
+    res = res.replace(/\(\s*\(/g, '(').replace(/\)\s*\)/g, ')');
+    return res;
+  };
+
+  const handleMouseEnterTooltip = (e: React.MouseEvent, text: string) => {
+    if (!text) return;
+    const cleaned = cleanRedundancy(text);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltip({ x: rect.left + rect.width / 2, y: rect.bottom + 10, text: cleaned });
+  };
+  const handleMouseLeaveTooltip = () => setTooltip(null);
+
+  const STYLE_FILTERS: Record<string, string> = {
+    '': '',
+    'vintage': 'sepia(40%) contrast(110%) saturate(120%)',
+    'vivid': 'saturate(150%) contrast(110%)',
+    'dramatic': 'contrast(130%) saturate(80%) brightness(90%)',
+    'cool': 'hue-rotate(15deg) saturate(110%)'
+  };
+
+  const [editingPhoto, setEditingPhoto] = useState<any>(null);
+  const [editorX, setEditorX] = useState(50);
+  const [editorY, setEditorY] = useState(50);
+  const [editorZoom, setEditorZoom] = useState(100);
+  const [editorBrightness, setEditorBrightness] = useState(100);
+  const [editorContrast, setEditorContrast] = useState(100);
+  const [editorStyle, setEditorStyle] = useState('');
+  const [editorSeoAlt, setEditorSeoAlt] = useState('');
+  const [editorInitialState, setEditorInitialState] = useState('');
+  const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
+
+  const editorDragRef = useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
+    dragging: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50
+  });
+
+  const onEditorMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editorDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, startPosX: editorX, startPosY: editorY };
+    const onMove = (ev: MouseEvent) => {
+      if (!editorDragRef.current.dragging) return;
+      const dx = ev.clientX - editorDragRef.current.startX;
+      const dy = ev.clientY - editorDragRef.current.startY;
+      const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+      setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+      setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
+    };
+    const onUp = () => {
+      editorDragRef.current.dragging = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const onEditorTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    editorDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, startPosX: editorX, startPosY: editorY };
+  };
+
+  const onEditorTouchMove = (e: React.TouchEvent) => {
+    if (!editorDragRef.current.dragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - editorDragRef.current.startX;
+    const dy = t.clientY - editorDragRef.current.startY;
+    const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+    setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+    setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
+  };
+
+  const openPhotoEditor = (photo: any) => {
+    try {
+      const meta = typeof photo.resumen === 'string' ? JSON.parse(photo.resumen || '{}') : (photo.resumen || {});
+      const initial = {
+        x: meta.profile_object_x ?? 50,
+        y: meta.profile_object_y ?? 50,
+        zoom: meta.profile_object_zoom ?? 100,
+        brightness: meta.profile_brightness ?? 100,
+        contrast: meta.profile_contrast ?? 100,
+        style: meta.profile_style ?? '',
+        seo_alt: meta.seo_alt ?? ''
+      };
+      setEditorX(initial.x);
+      setEditorY(initial.y);
+      setEditorZoom(initial.zoom);
+      setEditorBrightness(initial.brightness);
+      setEditorContrast(initial.contrast);
+      setEditorStyle(initial.style);
+      setEditorSeoAlt(initial.seo_alt);
+      setEditorInitialState(JSON.stringify(initial));
+    } catch {
+      setEditorX(50); setEditorY(50); setEditorZoom(100);
+      setEditorBrightness(100); setEditorContrast(100); setEditorStyle(''); setEditorSeoAlt('');
+      setEditorInitialState(JSON.stringify({ x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: '' }));
+    }
+    setEditingPhoto(photo);
+    setPhotoEditorSaveStatus('idle');
+  };
+
+  const savePhotoEdits = async () => {
+    if (!editingPhoto) return;
+    const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
+    if (currentState === editorInitialState) {
+      setPhotoEditorSaveStatus('no-changes');
+      setTimeout(() => setPhotoEditorSaveStatus('idle'), 2000);
+      return;
+    }
+
+    setPhotoEditorSaveStatus('saving');
+    const resumen = JSON.stringify({
+      profile_object_x: editorX,
+      profile_object_y: editorY,
+      profile_object_zoom: editorZoom,
+      profile_brightness: editorBrightness,
+      profile_contrast: editorContrast,
+      profile_style: editorStyle,
+      seo_alt: editorSeoAlt
+    });
+    try {
+      const res = await fetch('/api/admin/asuntos-pendientes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoId: editingPhoto.id || editingPhoto.photoId, action: 'updateMeta', resumen })
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      setEditingPhoto(null);
+      loadPendientes(); // Recargar datos
+    } catch (e) {
+      console.error(e);
+      alert('❌ Error guardando ajustes');
+    } finally {
+      setPhotoEditorSaveStatus('idle');
+    }
+  };
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -67,15 +248,28 @@ export default function AsuntosPendientesPage() {
           usuarioNombre: p.usuarioNombre || 'Usuario Desconocido',
           usuarioEmail: p.usuarioEmail || 'Sin email',
           usuarioId: p.usuarioId,
+          usuarioFotoPerfil: p.usuarioFotoPerfil,
           motivos: {}
         };
       }
       
       let motivoKey = 'Foto de Perfil';
-      if (p.fotoTipo === 'planta' || p.fotoTipo === 'labor') {
+      if (p.fotoTipo === 'planta') {
         const especie = p.especieNombre || 'Sin especie';
         const variedad = p.variedadNombre ? ` - ${p.variedadNombre}` : '';
-        motivoKey = `Cultivo: ${especie}${variedad}`;
+        motivoKey = `Variedad: ${especie}${variedad}`;
+      } else if (p.fotoTipo === 'labor') {
+        const especie = p.especieNombre || 'Sin especie';
+        const variedad = p.variedadNombre ? ` - ${p.variedadNombre}` : '';
+        let cultivoInfo = '';
+        if (p.cultivoNumero) {
+          const dateStr = p.cultivoFecha ? new Date(p.cultivoFecha).toLocaleDateString('es-ES') : '';
+          cultivoInfo = `Cultivo Nº${p.cultivoNumero} ${dateStr ? `(${dateStr})` : ''} - `;
+        } else {
+          cultivoInfo = 'Cultivo: ';
+        }
+        motivoKey = `${cultivoInfo}${especie}${variedad}`.trim();
+        if (motivoKey.startsWith('- ')) motivoKey = motivoKey.substring(2);
       }
 
       if (!groups[userKey].motivos[motivoKey]) {
@@ -118,6 +312,7 @@ export default function AsuntosPendientesPage() {
       const res = await fetch(`/api/admin/asuntos-pendientes?tab=${tab}`);
       const data = await res.json();
       setPendientes(data.pendientes || []);
+      setUserStats(data.userStats || {});
     } catch (e) {
       console.error('Error cargando pendientes:', e);
     } finally {
@@ -214,10 +409,11 @@ export default function AsuntosPendientesPage() {
     if (!rechazandoId || !motivoSeleccionado) return;
     setProcessing(rechazandoId);
 
-    const motivoFinal = motivoSeleccionado === MOTIVOS_RECHAZO[MOTIVOS_RECHAZO.length - 1] && motivoExtra.trim()
+    const motivoFinal = motivoSeleccionado === 'Otro motivo — ver nota adicional' && motivoExtra.trim()
       ? `${motivoSeleccionado}: ${motivoExtra.trim()}`
       : motivoSeleccionado;
 
+    const actionType = MOTIVOS_SANCION_GRAVE.includes(motivoSeleccionado) ? 'eliminar_inapropiado' : 'rechazar';
     const adminEmail = auth.currentUser?.email || undefined;
 
     try {
@@ -226,7 +422,7 @@ export default function AsuntosPendientesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           photoId: rechazandoId,
-          action: 'rechazar',
+          action: actionType,
           motivo: motivoFinal,
           adminEmail
         })
@@ -235,10 +431,19 @@ export default function AsuntosPendientesPage() {
       setPendientes(prev => prev.filter(p => p.id !== rechazandoId));
       setRechazandoId(null);
       
-      if (data.emailEnviado) {
-        showToast(`✅ Foto rechazada. Correo enviado a: ${data.emailEnviado}`);
+      if (actionType === 'eliminar_inapropiado') {
+        const msgs: Record<string, string> = {
+          advertencia_1: `⚠️ Foto eliminada y 1ª advertencia enviada.`,
+          advertencia_2: `🔒 Foto eliminada. 2ª infracción: cuenta suspendida 7 días.`,
+          baja: `🔴 Foto eliminada. 3ª infracción: cuenta dada de baja definitivamente.`,
+        };
+        showToast(msgs[data.sancion] || '✅ Foto eliminada y sanción aplicada.');
       } else {
-        showToast('✅ Foto rechazada. El usuario verá el motivo en su galería.');
+        if (data.emailEnviado) {
+          showToast(`✅ Foto rechazada. Correo enviado a: ${data.emailEnviado}`);
+        } else {
+          showToast('✅ Foto rechazada. El usuario verá el motivo en su galería.');
+        }
       }
     } catch (e) {
       console.error('Error:', e);
@@ -247,44 +452,6 @@ export default function AsuntosPendientesPage() {
     }
   };
 
-  const abrirModalEliminar = (photoId: number) => {
-    setEliminandoId(photoId);
-    setEliminandoConfirm(false);
-  };
-
-  const confirmarEliminacion = async () => {
-    if (!eliminandoId) return;
-    setProcessing(eliminandoId);
-    const adminEmail = auth.currentUser?.email || undefined;
-    const foto = pendientes.find(p => p.id === eliminandoId);
-
-    try {
-      const res = await fetch('/api/admin/asuntos-pendientes', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          photoId: eliminandoId,
-          action: 'eliminar_inapropiado',
-          motivo: 'Contenido explícito, pornográfico o gravemente inapropiado',
-          adminEmail
-        })
-      });
-      const data = await res.json();
-      setPendientes(prev => prev.filter(p => p.id !== eliminandoId));
-      setEliminandoId(null);
-
-      const msgs: Record<string, string> = {
-        advertencia_1: `⚠️ Foto eliminada. 1ª advertencia enviada a ${foto?.usuarioEmail}.`,
-        advertencia_2: `🔒 Foto eliminada. 2ª infracción: cuenta suspendida 7 días.`,
-        baja: `🔴 Foto eliminada. 3ª infracción: cuenta dada de baja definitivamente.`,
-      };
-      showToast(msgs[data.sancion] || '✅ Foto eliminada y sanción aplicada.');
-    } catch (e) {
-      console.error('Error:', e);
-    } finally {
-      setProcessing(null);
-    }
-  };
 
   const formatDate = (d: string) => {
     try { return new Date(d).toLocaleString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
@@ -331,7 +498,7 @@ export default function AsuntosPendientesPage() {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         <button
-          onClick={() => setTab('pendientes')}
+          onClick={() => { setTab('pendientes'); sessionStorage.setItem('asuntos_tab', 'pendientes'); }}
           style={{
             flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 700, fontSize: '1rem',
             background: tab === 'pendientes' ? '#3b82f6' : 'white',
@@ -344,7 +511,7 @@ export default function AsuntosPendientesPage() {
           📷 Fotos Nuevas
         </button>
         <button
-          onClick={() => setTab('recursos')}
+          onClick={() => { setTab('recursos'); sessionStorage.setItem('asuntos_tab', 'recursos'); }}
           style={{
             flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 700, fontSize: '1rem',
             background: tab === 'recursos' ? '#8b5cf6' : 'white',
@@ -383,29 +550,140 @@ export default function AsuntosPendientesPage() {
             <span><b>{pendientes.length}</b> {tab === 'pendientes' ? 'foto(s) pendiente(s) de validar' : 'recurso(s) por revisar'}</span>
           </div>
 
-          {groupedData.map((user: any, uIdx: number) => (
+          {groupedData.map((user: any, uIdx: number) => {
+            const stats = userStats[user.usuarioId] || {};
+            const plan = stats.suscripcion_nombre || 'Gratuito';
+            const isPremium = plan === 'Premium';
+            let planLabel = '1 🍃 Gratuito';
+            if (plan === 'Esencial') planLabel = '2 🌿 Esencial';
+            else if (plan === 'Avanzado') planLabel = '3 🌳 Avanzado';
+            else if (plan === 'Premium') planLabel = '4 👑 Premium';
+
+            return (
             <div key={uIdx} style={{ marginBottom: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
               {/* Header Usuario - Colapsable */}
               <div 
-                onClick={() => setCollapsedUsers(prev => ({ ...prev, [uIdx]: !prev[uIdx] }))}
-                style={{ background: '#1e293b', padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => {
+                  setCollapsedUsers(prev => {
+                    const next = { ...prev, [uIdx]: !prev[uIdx] };
+                    sessionStorage.setItem('asuntos_collapsed', JSON.stringify(next));
+                    return next;
+                  });
+                }}
+                style={{ background: 'linear-gradient(135deg, #059669, #10b981)', padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', gap: '20px', cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s', borderBottom: '1px solid rgba(255,255,255,0.2)' }}
+                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
               >
-                <div style={{ width: '40px', height: '40px', background: '#3b82f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                  👤
+                <div style={{ width: '80px', height: '80px', background: user.usuarioFotoPerfil ? 'transparent' : 'rgba(255,255,255,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
+                  {user.usuarioFotoPerfil ? (
+                    <img src={getMediaUrl(user.usuarioFotoPerfil)} alt={user.usuarioNombre} style={{ width: '100%', height: '100%', objectFit: 'contain' }} crossOrigin="anonymous" />
+                  ) : (
+                    '👤'
+                  )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{user.usuarioNombre}</h3>
-                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{user.usuarioEmail}</span>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>{user.usuarioNombre}</h3>
+                  <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>{user.usuarioEmail}</span>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    {user.usuarioId && (
+                      <span style={{ 
+                        background: isPremium ? 'linear-gradient(135deg, #fbbf24, #d97706)' : 'rgba(255,255,255,0.2)',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        color: 'white',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        border: isPremium ? '1px solid #fde68a' : '1px solid rgba(255,255,255,0.3)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {planLabel}
+                      </span>
+                    )}
+
+                    {user.usuarioId && (
+                      <a 
+                        href={`/dashboard/admin/usuarios/${user.usuarioId}?from=asuntos`}
+                        onClick={(e) => { e.stopPropagation(); saveStateForReturn(); }}
+                        style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          background: 'rgba(255,255,255,0.2)', 
+                          padding: '4px 10px', 
+                          borderRadius: '6px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 600, 
+                          color: 'white', 
+                          textDecoration: 'none', 
+                          transition: 'background 0.2s',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                      >
+                        <span>🛠️</span>
+                        <span>Ver Perfil Admin</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
-                    {Object.values(user.motivos).reduce((sum: number, m: any) => sum + Object.values(m.labores).reduce((s2: number, photos: any) => s2 + photos.length, 0), 0)} fotos
+
+                {/* Stats Section - now in the middle */}
+                <div style={{ flex: 1, display: 'flex', gap: '8px', flexWrap: 'wrap', borderLeft: '1px solid rgba(255,255,255,0.3)', paddingLeft: '20px' }}>
+                  {user.usuarioId && (
+                    <>
+                      <div 
+                        onMouseEnter={(e) => handleMouseEnterTooltip(e, stats.variedades_nombres || 'Ninguna variedad asumida')}
+                        onMouseLeave={handleMouseLeaveTooltip}
+                        style={{ background: 'rgba(0,0,0,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'help' }}
+                      >
+                        <span>🌱 Variedades:</span>
+                        <span style={{ background: 'white', color: '#059669', padding: '2px 6px', borderRadius: '4px' }}>{stats.variedades_asumidas || 0}</span>
+                      </div>
+                      <div 
+                        onMouseEnter={(e) => {
+                          let t = '';
+                          if (stats.cultivos_activos_nombres) t += `✅ Activos:\n${stats.cultivos_activos_nombres}\n\n`;
+                          if (stats.cultivos_inactivos_nombres) t += `❌ Inactivos:\n${stats.cultivos_inactivos_nombres}`;
+                          handleMouseEnterTooltip(e, t.trim() || 'Ningún cultivo');
+                        }}
+                        onMouseLeave={handleMouseLeaveTooltip}
+                        style={{ background: 'rgba(0,0,0,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'help' }}
+                      >
+                        <span>🚜 Cultivos:</span>
+                        <span style={{ background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px' }}>{stats.cultivos_activos || 0} act / {stats.cultivos_inactivos || 0} inact</span>
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.15)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📸 Fotos:</span>
+                        <span style={{ background: 'white', color: '#059669', padding: '2px 6px', borderRadius: '4px' }}>{stats.fotos_subidas || 0}</span>
+                      </div>
+                      {(stats.fotos_rechazadas > 0) && (
+                        <div 
+                          onMouseEnter={(e) => handleMouseEnterTooltip(e, stats.motivos_rechazo || 'Sin motivos registrados')}
+                          onMouseLeave={handleMouseLeaveTooltip}
+                          style={{ background: '#ef4444', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)', cursor: 'help' }}
+                        >
+                          <span>⚠️ Rechazadas:</span>
+                          <span style={{ background: 'white', color: '#ef4444', padding: '2px 6px', borderRadius: '4px' }}>{stats.fotos_rechazadas}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                  <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700, boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)' }}>
+                    {Object.values(user.motivos).reduce((sum: number, m: any) => sum + Object.values(m.labores).reduce((s2: number, photos: any) => s2 + photos.length, 0), 0)} fotos pendientes
                   </span>
-                  <span style={{ fontSize: '1.2rem', transition: 'transform 0.3s', transform: collapsedUsers[uIdx] ? 'rotate(0deg)' : 'rotate(180deg)' }}>▼</span>
+                  <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', transition: 'transform 0.3s', transform: collapsedUsers[uIdx] === true ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                 </div>
               </div>
 
-              {!collapsedUsers[uIdx] && (
+              {collapsedUsers[uIdx] === true && (
               <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {Object.values(user.motivos).map((motivo: any, mIdx: number) => (
                   <div key={mIdx} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -464,8 +742,7 @@ export default function AsuntosPendientesPage() {
                                     {tab === 'pendientes' ? (
                                       <>
                                         <button onClick={() => handleValidar(p.id)} disabled={processing !== null} style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>✅ Validar</button>
-                                        <button onClick={() => abrirModalRechazo(p.id)} disabled={processing !== null} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>❌ Rechazar</button>
-                                        <button onClick={() => abrirModalEliminar(p.id)} disabled={processing !== null} title="Contenido explícito" style={{ background: '#7f1d1d', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>🗑️</button>
+                                        <button onClick={() => abrirModalRechazo(p.id)} disabled={processing !== null} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>❌ Denegar</button>
                                       </>
                                     ) : (
                                       <>
@@ -473,7 +750,7 @@ export default function AsuntosPendientesPage() {
                                         <button onClick={() => abrirModalRechazoRecurso(p.id, p)} disabled={processing !== null} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>❌ Denegar</button>
                                       </>
                                     )}
-                                    <button onClick={() => setLightboxUrl(getMediaUrl(p.ruta))} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>🔍</button>
+                                    <button onClick={() => openPhotoEditor(p)} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>✏️</button>
                                   </div>
                                 </div>
                               </div>
@@ -487,7 +764,8 @@ export default function AsuntosPendientesPage() {
               </div>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -502,21 +780,24 @@ export default function AsuntosPendientesPage() {
             boxShadow: '0 24px 60px rgba(0,0,0,0.3)', overflow: 'hidden'
           }}>
             {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', padding: '16px 24px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ background: 'white', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '1.4rem' }}>❌</span>
-                  <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Rechazar foto</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ background: '#fef2f2', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>🚫</span>
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>Denegar o Sancionar Foto</h2>
                 </div>
-                <p style={{ margin: '4px 0 0', opacity: 0.95, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  👤 {fotoRechazo.usuarioNombre} · 🌱 {fotoRechazo.especieNombre || 'Perfil'} {fotoRechazo.variedadNombre ? `- ${fotoRechazo.variedadNombre}` : ''}
+                <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px', fontWeight: 600, color: '#475569' }}>👤 {fotoRechazo.usuarioNombre}</span>
+                  <span style={{ background: '#ecfdf5', padding: '2px 8px', borderRadius: '12px', fontWeight: 600, color: '#047857' }}>🌱 {fotoRechazo.especieNombre || 'Perfil'} {fotoRechazo.variedadNombre ? `- ${fotoRechazo.variedadNombre}` : ''}</span>
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                 <button
                   onClick={() => setRechazandoId(null)}
                   style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.4)', color: 'white',
+                    background: 'white', border: '1px solid #cbd5e1', color: '#475569',
                     padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', transition: 'all 0.2s'
                   }}
                 >
@@ -526,8 +807,8 @@ export default function AsuntosPendientesPage() {
                   onClick={confirmarRechazo}
                   disabled={!motivoSeleccionado || processing !== null}
                   style={{
-                    background: motivoSeleccionado ? 'white' : 'rgba(255,255,255,0.2)',
-                    color: motivoSeleccionado ? '#dc2626' : 'rgba(255,255,255,0.5)', border: 'none',
+                    background: motivoSeleccionado ? '#dc2626' : '#f1f5f9',
+                    color: motivoSeleccionado ? 'white' : '#94a3b8', border: 'none',
                     padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: motivoSeleccionado ? 'pointer' : 'not-allowed',
                     fontSize: '0.85rem', transition: 'all 0.15s'
                   }}
@@ -553,29 +834,58 @@ export default function AsuntosPendientesPage() {
                 Selecciona el motivo del rechazo. El usuario lo verá en su galería y podrá recurrir la decisión.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                {MOTIVOS_RECHAZO.map((motivo, i) => (
-                  <label key={i} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
-                    padding: '10px 12px', borderRadius: '8px', border: `1.5px solid ${motivoSeleccionado === motivo ? '#ef4444' : '#e2e8f0'}`,
-                    background: motivoSeleccionado === motivo ? '#fef2f2' : 'white',
-                    transition: 'all 0.15s'
-                  }}>
-                    <input
-                      type="radio"
-                      name="motivo"
-                      value={motivo}
-                      checked={motivoSeleccionado === motivo}
-                      onChange={() => setMotivoSeleccionado(motivo)}
-                      style={{ marginTop: '2px', accentColor: '#ef4444', flexShrink: 0 }}
-                    />
-                    <span style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.4 }}>{motivo}</span>
-                  </label>
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '0.9rem', color: '#475569', fontWeight: 700 }}>Rechazo Leve (Aviso por email, sin sanción)</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {MOTIVOS_RECHAZO_LEVE.map((motivo, i) => (
+                      <label key={`leve-${i}`} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
+                        padding: '10px 12px', borderRadius: '8px', border: `1.5px solid ${motivoSeleccionado === motivo ? '#ef4444' : '#e2e8f0'}`,
+                        background: motivoSeleccionado === motivo ? '#fef2f2' : 'white',
+                        transition: 'all 0.15s'
+                      }}>
+                        <input
+                          type="radio"
+                          name="motivo"
+                          value={motivo}
+                          checked={motivoSeleccionado === motivo}
+                          onChange={() => setMotivoSeleccionado(motivo)}
+                          style={{ marginTop: '2px', accentColor: '#ef4444', flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.4 }}>{motivo}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '0.9rem', color: '#7f1d1d', fontWeight: 700 }}>⚠️ Infracción Grave (Sanción disciplinaria)</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {MOTIVOS_SANCION_GRAVE.map((motivo, i) => (
+                      <label key={`grave-${i}`} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
+                        padding: '10px 12px', borderRadius: '8px', border: `1.5px solid ${motivoSeleccionado === motivo ? '#7f1d1d' : '#e2e8f0'}`,
+                        background: motivoSeleccionado === motivo ? '#fef2f2' : 'white',
+                        transition: 'all 0.15s'
+                      }}>
+                        <input
+                          type="radio"
+                          name="motivo"
+                          value={motivo}
+                          checked={motivoSeleccionado === motivo}
+                          onChange={() => setMotivoSeleccionado(motivo)}
+                          style={{ marginTop: '2px', accentColor: '#7f1d1d', flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.4 }}>{motivo}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Campo libre si elige "Otro" */}
-              {motivoSeleccionado === MOTIVOS_RECHAZO[MOTIVOS_RECHAZO.length - 1] && (
+              {motivoSeleccionado === 'Otro motivo — ver nota adicional' && (
                 <textarea
                   placeholder="Describe el motivo específico..."
                   value={motivoExtra}
@@ -590,12 +900,21 @@ export default function AsuntosPendientesPage() {
               )}
 
               {/* Nota informativa */}
-              <div style={{
-                background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px',
-                padding: '10px 12px', fontSize: '0.8rem', color: '#9a3412', marginBottom: '0'
-              }}>
-                ℹ️ La foto <strong>no se borra</strong>. El usuario la verá marcada como rechazada en su galería y podrá eliminarla o recurrir la decisión.
-              </div>
+              {MOTIVOS_SANCION_GRAVE.includes(motivoSeleccionado) ? (
+                <div style={{
+                  background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px',
+                  padding: '10px 12px', fontSize: '0.8rem', color: '#991b1b', marginBottom: '0'
+                }}>
+                  ⛔ <strong>Atención:</strong> La foto será eliminada permanentemente y el usuario recibirá una sanción disciplinaria.
+                </div>
+              ) : (
+                <div style={{
+                  background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px',
+                  padding: '10px 12px', fontSize: '0.8rem', color: '#9a3412', marginBottom: '0'
+                }}>
+                  ℹ️ La foto <strong>no se borra</strong>. El usuario la verá marcada como rechazada en su galería y podrá eliminarla o recurrir la decisión.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -647,95 +966,6 @@ export default function AsuntosPendientesPage() {
         </div>
       )}
 
-      {/* ── Modal: Eliminar por contenido inapropiado ── */}
-      {eliminandoId && (() => {
-        const fotoElim = pendientes.find(p => p.id === eliminandoId);
-        return (
-          <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
-            zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-          }}>
-            <div style={{
-              background: 'white', borderRadius: '20px', maxWidth: 480, width: '100%',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.4)', overflow: 'hidden'
-            }}>
-              <div style={{ background: 'linear-gradient(135deg, #7f1d1d, #991b1b)', padding: '16px 24px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.6rem' }}>🗑️</span>
-                    <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Eliminar inaceptable</h2>
-                  </div>
-                  <p style={{ margin: '4px 0 0', opacity: 0.95, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    👤 {fotoElim?.usuarioNombre} · 🌱 {fotoElim?.especieNombre || 'Perfil'} {fotoElim?.variedadNombre ? `- ${fotoElim?.variedadNombre}` : ''}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => setEliminandoId(null)}
-                    style={{
-                      background: 'transparent', border: '1px solid rgba(255,255,255,0.4)', color: 'white',
-                      padding: '8px 16px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', transition: 'all 0.2s'
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={confirmarEliminacion}
-                    disabled={!eliminandoConfirm || processing !== null}
-                    style={{
-                      background: eliminandoConfirm ? 'white' : 'rgba(255,255,255,0.2)',
-                      color: eliminandoConfirm ? '#991b1b' : 'rgba(255,255,255,0.5)', border: 'none',
-                      padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: eliminandoConfirm ? 'pointer' : 'not-allowed',
-                      fontSize: '0.85rem', transition: 'all 0.15s'
-                    }}
-                  >
-                    {processing !== null ? '⏳...' : 'Eliminar'}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ padding: '24px 28px', maxHeight: '70vh', overflowY: 'auto' }}>
-                {/* Visualización de la foto */}
-                {fotoElim && (
-                  <div style={{ width: '100%', height: '200px', marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <img 
-                      src={getMediaUrl(fotoElim.ruta)} 
-                      alt="Foto a eliminar" 
-                      crossOrigin="anonymous"
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
-                    />
-                  </div>
-                )}
-                <div style={{
-                  background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '10px',
-                  padding: '14px 16px', marginBottom: '20px'
-                }}>
-                  <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#7f1d1d', fontSize: '0.9rem' }}>
-                    ⛔ Esta acción es irreversible y activa el régimen sancionador:
-                  </p>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#991b1b', fontSize: '0.85rem', lineHeight: 1.7 }}>
-                    <li>La foto será <strong>eliminada permanentemente</strong> del servidor</li>
-                    <li>En su lugar aparecerá un aviso de sanción en la galería del usuario</li>
-                    <li>Se aplicará la sanción progresiva: <strong>1ª advertencia → 2ª suspensión → 3ª baja definitiva</strong></li>
-                  </ul>
-                </div>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '0' }}>
-                  <input
-                    type="checkbox"
-                    checked={eliminandoConfirm}
-                    onChange={e => setEliminandoConfirm(e.target.checked)}
-                    style={{ width: '18px', height: '18px', accentColor: '#dc2626' }}
-                  />
-                  <span style={{ fontSize: '0.88rem', color: '#374151', fontWeight: 600 }}>
-                    Confirmo que este contenido es explícito o gravemente inapropiado
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
       {/* ── Lightbox Overlay ── */}
       {lightboxUrl && (
         <div
@@ -764,6 +994,214 @@ export default function AsuntosPendientesPage() {
             >
               ✕
             </button>
+          </div>
+        </div>
+      )}
+      {/* EDITOR DE FOTOS MODAL */}
+      {editingPhoto && (
+        <div className="photo-editor-overlay">
+          <div className="photo-editor-content" onClick={e => e.stopPropagation()}>
+            <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Ajustar Fotografía y SEO</h3>
+                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
+                  📄 {editingPhoto.ruta.split('/').pop()}
+                </small>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button type="button" onClick={() => setEditingPhoto(null)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
+                {(() => {
+                  const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
+                  if (currentState !== editorInitialState) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={savePhotoEdits}
+                        className={`btn-primary ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
+                        style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
+                        disabled={photoEditorSaveStatus === 'saving'}
+                      >
+                        {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Cambios'}
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+
+            <div className="photo-editor-body">
+              <div className="photo-editor-preview-container"
+                onMouseDown={onEditorMouseDown}
+                onTouchStart={onEditorTouchStart}
+                onTouchMove={onEditorTouchMove}>
+                <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
+                  <img
+                    src={getMediaUrl(editingPhoto.ruta)}
+                    alt="preview"
+                    className="photo-editor-image"
+                    draggable="false"
+                    style={{
+                      objectPosition: `${editorX}% ${editorY}%`,
+                      transformOrigin: `${editorX}% ${editorY}%`,
+                      transform: `scale(${editorZoom / 100})`,
+                      filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
+                    }}
+                    crossOrigin="anonymous" />
+                </div>
+                <div className="photo-editor-hint">
+                  <span>Arrastra para encuadrar</span>
+                </div>
+              </div>
+
+              <div className="photo-editor-controls">
+                <div className="editor-control-group">
+                  <label>
+                    <span className="control-label">🔍 Zoom ({editorZoom}%)</span>
+                    <button type="button" className="reset-btn" onClick={() => setEditorZoom(100)}>↻</button>
+                  </label>
+                  <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(Number(e.target.value))} />
+                </div>
+                <div className="editor-control-group">
+                  <label>
+                    <span className="control-label">☀️ Brillo ({editorBrightness}%)</span>
+                  </label>
+                  <input type="range" min="50" max="150" value={editorBrightness} onChange={e => setEditorBrightness(Number(e.target.value))} />
+                </div>
+                <div className="editor-control-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ margin: 0 }}>
+                      <span className="control-label" style={{ margin: 0 }}>🌗 Contraste ({editorContrast}%)</span>
+                    </label>
+                  </div>
+                  <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
+                </div>
+
+                <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditorBrightness(110);
+                      setEditorContrast(115);
+                      setEditorStyle('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    ✨ Auto Color
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditorBrightness(100);
+                      setEditorContrast(100);
+                      setEditorStyle('');
+                      setEditorZoom(100);
+                      setEditorX(50);
+                      setEditorY(38);
+                    }}
+                    style={{
+                      padding: '10px 15px',
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ↺ Reset
+                  </button>
+                </div>
+
+                <div className="editor-control-group" style={{ marginBottom: '15px' }}>
+                  <label>
+                    <span className="control-label">🎨 Estilos y Filtros de IA</span>
+                  </label>
+                  <select
+                    value={editorStyle}
+                    onChange={e => setEditorStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
+                  >
+                    <option value="">Sin Filtro (Original)</option>
+                    <option value="vibrant">Saturado (Vibrant)</option>
+                    <option value="vintage">Vintage (Cálido)</option>
+                    <option value="cinematic">Cinemático (Dramatic)</option>
+                    <option value="bnw">Blanco y Negro (Clásico)</option>
+                    <option value="fade">Desaturado (Fade)</option>
+                    <option value="comic">Comic (Vibrante)</option>
+                    <option value="manga">Manga (B/N Intenso)</option>
+                    <option value="watercolor">Acuarela (Suave)</option>
+                  </select>
+                </div>
+
+                <div className="editor-control-group">
+                  <label><span className="control-label">🏷️ Descripción SEO (Alt Text)</span></label>
+                  <input
+                    type="text"
+                    value={editorSeoAlt}
+                    onChange={e => setEditorSeoAlt(e.target.value)}
+                    placeholder="Ej. Tomates cherry maduros en la planta"
+                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.9rem' }}
+                  />
+                  <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Ayuda al posicionamiento en buscadores.</small>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed',
+          top: tooltip.y,
+          left: tooltip.x,
+          transform: 'translateX(-50%)',
+          background: '#1e293b',
+          color: 'white',
+          padding: '8px 14px',
+          borderRadius: '8px',
+          fontSize: '0.85rem',
+          fontWeight: 500,
+          whiteSpace: 'pre-wrap',
+          maxWidth: '300px',
+          textAlign: 'center',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 999999,
+          pointerEvents: 'none'
+        }}>
+          {/* Arrow */}
+          <div style={{
+            position: 'absolute',
+            top: '-4px',
+            left: '50%',
+            transform: 'translateX(-50%) rotate(45deg)',
+            width: '8px',
+            height: '8px',
+            background: '#1e293b'
+          }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {tooltip.text}
           </div>
         </div>
       )}

@@ -29,4 +29,4 @@ async function deleteUser(email: string) {
   process.exit(0);
 }
 
-deleteUser('jomano4256@hilostar.com');
+deleteUser('bc89gvs3se@bwmyga.com');

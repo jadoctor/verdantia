@@ -60,10 +60,21 @@ export async function POST(request: Request) {
       ['usuario', userId]
     );
 
-    // 4. Registrar logro "Campesino Aprendiz"
+    // 4. Registrar logros
+    // A) Cerrar logro "Visitante" asignándole fecha de fin actual
     await pool.query(
-      'INSERT IGNORE INTO usuarios_logros (idusuarios, nombre_logro) VALUES (?, ?)',
-      [userId, 'Campesino Aprendiz']
+      `UPDATE usuarioslogros u
+       JOIN logros l ON u.xusuarioslogrosidlogros = l.idlogros
+       SET u.usuarioslogrosfechafin = NOW()
+       WHERE u.xusuarioslogrosidusuarios = ? AND l.logrosnombre = 'Visitante' AND u.usuarioslogrosfechafin IS NULL`,
+      [userId]
+    );
+
+    // B) Asignar logro "Campesino Aprendiz"
+    await pool.query(
+      `INSERT IGNORE INTO usuarioslogros (xusuarioslogrosidusuarios, xusuarioslogrosidlogros) 
+       SELECT ?, idlogros FROM logros WHERE logrosnombre = 'Campesino Aprendiz' LIMIT 1`,
+      [userId]
     );
 
     // 5. Asignar suscripción Premium de prueba — 30 días (nuevo esquema de 4 planes)

@@ -1,11 +1,70 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import '@/app/dashboard/dashboard.css';
 
 export default function GuiaUsuarioPage() {
   const router = useRouter();
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [logros, setLogros] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/ajustes/logros')
+      .then(res => res.json())
+      .then(data => setLogros(data))
+      .catch(console.error);
+  }, []);
+
+  const toggleSection = (key: string) => {
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const isOpen = (key: string) => !!openSections[key];
+
+  const allKeys = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+  const allOpen = allKeys.every(k => openSections[k]);
+  const toggleAll = () => {
+    if (allOpen) {
+      setOpenSections({});
+    } else {
+      const all: Record<string, boolean> = {};
+      allKeys.forEach(k => all[k] = true);
+      setOpenSections(all);
+    }
+  };
+
+  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
+    <div style={{
+      background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0',
+      boxShadow: isOpen(id) ? '0 10px 25px -5px rgba(0,0,0,0.05)' : '0 2px 6px rgba(0,0,0,0.03)',
+      marginTop: '16px', overflow: 'hidden', transition: 'box-shadow 0.3s',
+    }}>
+      <div
+        onClick={() => toggleSection(id)}
+        style={{
+          padding: '20px 28px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          borderLeft: isOpen(id) ? '4px solid #10b981' : '4px solid transparent',
+          background: isOpen(id) ? '#f0fdf4' : 'white',
+          transition: 'all 0.2s', userSelect: 'none',
+        }}
+        onMouseEnter={e => { if (!isOpen(id)) e.currentTarget.style.background = '#f8fafc'; }}
+        onMouseLeave={e => { if (!isOpen(id)) e.currentTarget.style.background = 'white'; }}
+      >
+        <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: isOpen(id) ? '#065f46' : '#0f172a' }}>{title}</h2>
+        <span style={{
+          fontSize: '1.1rem', transition: 'transform 0.3s', display: 'inline-block',
+          transform: isOpen(id) ? 'rotate(180deg)' : 'rotate(0deg)',
+          color: isOpen(id) ? '#10b981' : '#94a3b8',
+        }}>▼</span>
+      </div>
+      {isOpen(id) && (
+        <div style={{ padding: '28px 32px', borderTop: '1px solid #e2e8f0' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="dashboard-content" style={{ padding: '30px', maxWidth: '900px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
@@ -14,24 +73,32 @@ export default function GuiaUsuarioPage() {
           🏠 Volver al Inicio
         </button>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ margin: 0, color: '#1e293b', fontSize: '2.5rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span>📖</span> Guía de Usuario (La Biblia)
         </h1>
+        <button onClick={toggleAll} style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>
+          {allOpen ? '📕 Colapsar todo' : '📖 Expandir todo'}
+        </button>
       </div>
 
-      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-        
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          1. Visión General de Verdantia
-        </h2>
+      <Section id="s1" title="1. Visión General de Verdantia">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
-          <strong>Verdantia</strong> es una plataforma SaaS integral (Software as a Service) orientada al sector agrícola, biodinámico y de gestión de huertos. La plataforma permite a los usuarios gestionar sus cultivos, llevar un control meteorológico, y registrar actividades bajo un modelo de suscripción escalonada (Básica, Normal, Premium). Todo el ecosistema está soportado por Inteligencia Artificial (Google Imagen 4.0 y modelos de texto avanzados) para automatizar la creación de contenido y recursos visuales.
+          <strong>Verdantia</strong> es una plataforma SaaS integral (Software as a Service) orientada al sector agrícola, biodinámico y de gestión de huertos. La plataforma permite a los usuarios gestionar sus cultivos, llevar un control meteorológico, y registrar actividades bajo un modelo de suscripción escalonada:
+        </p>
+        <ul style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li><strong>1 🍃 Gratuito:</strong> Acceso básico y funcionalidad de inicio.</li>
+          <li><strong>2 🌿 Esencial:</strong> Herramientas ampliadas para huertos personales.</li>
+          <li><strong>3 🌳 Avanzado:</strong> Gestión integral para agricultores experimentados.</li>
+          <li><strong>4 👑 Premium:</strong> Acceso total, IA ilimitada y prioridad máxima.</li>
+        </ul>
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          Todo el ecosistema está soportado por Inteligencia Artificial (Google Imagen 4.0 y modelos de texto avanzados) para automatizar la creación de contenido y recursos visuales.
         </p>
 
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: '40px' }}>
-          2. Los 5 Dashboards del Superadministrador
-        </h2>
+      </Section>
+
+      <Section id="s2" title="2. Los 5 Dashboards del Superadministrador">
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
           El Panel de Administración es el núcleo operativo de Verdantia, segmentado en cinco áreas principales, diseñadas como aplicaciones independientes (Single Page Applications) de pantalla completa:
         </p>
@@ -54,12 +121,9 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>IA Integrada (Generador Imagen 4.0):</strong> Si una especie carece de fotografía, el administrador puede usar el generador integrado que formula un *prompt* contextualizado automáticamente para crear una imagen fotorrealista de la planta.</li>
           <li style={{ marginBottom: '8px' }}><strong>Carrusel Visual (Drag & Drop):</strong> Las fotografías asociadas a la especie se organizan mediante una interfaz táctil/arrastrable donde la primera imagen asume el rol de "Hero Image" (Foto Principal), aplicando filtros de desenfoque y ajuste de encuadre.</li>
         </ul>
-      </div>
+      </Section>
 
-      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          3. Gestión Multimedia y Fotografías (Engine Gráfico)
-        </h2>
+      <Section id="s3" title="3. Gestión Multimedia y Fotografías (Engine Gráfico)">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
           El módulo de procesamiento de imágenes de Verdantia no es un simple sistema de subida de archivos (upload), sino un <strong>Motor de Procesamiento Multimedia (Pipeline) de grado corporativo</strong>. Está diseñado para minimizar el coste de servidores, maximizar las métricas SEO (Core Web Vitals) y ofrecer una experiencia de usuario (UX) inmersiva y sin interrupciones.
         </p>
@@ -100,12 +164,9 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>Tematización Inmersiva (Dominant Color):</strong> El color "Vibrante" extraído de la foto designada como 'Principal' tiñe sutilmente el fondo y los bordes de la cabecera de toda la pantalla de la especie.</li>
           <li style={{ marginBottom: '8px' }}><strong>Reordenación Drag & Drop en Vivo:</strong> Los administradores pueden reorganizar la galería arrastrando miniaturas con el ratón, disparando actualizaciones asíncronas instantáneas sin recargar la página.</li>
         </ul>
+      </Section>
 
-        <div style={{ margin: '50px 0', borderTop: '2px dashed #e2e8f0' }}></div>
-
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          4. Estándar UX/UI del Sistema Fotográfico y Generación IA
-        </h2>
+      <Section id="s4" title="4. Estándar UX/UI del Sistema Fotográfico y Generación IA">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Este documento define la norma general arquitectónica y de interfaz de usuario para la gestión de imágenes en cualquier módulo de Verdantia (Especies, Labores, Usuarios, etc). Todo nuevo módulo que requiera fotos debe adherirse a estas especificaciones.
         </p>
@@ -172,12 +233,9 @@ export default function GuiaUsuarioPage() {
           <li><strong>Blindaje de Producción:</strong> En rutas de servidor, evitar imports estáticos de binarios o SDKs sensibles a Turbopack (<code>firebase-admin</code>, <code>sharp</code>); usar la estrategia dinámica ya estandarizada para impedir hashes corruptos y errores 500.</li>
         </ul>
 
-      </div>
+      </Section>
 
-      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          5. Interfaz de Formularios (Smart Save)
-        </h2>
+      <Section id="s5" title="5. Interfaz de Formularios (Smart Save)">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Con el objetivo de maximizar la claridad visual y evitar que los usuarios guarden datos de forma compulsiva o accidental, Verdantia implementa un patrón de "Guardado Inteligente" (Smart Save) en todos sus formularios y modales de edición.
         </p>
@@ -243,12 +301,9 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>El Editor de Fotos Estándar:</strong> Todos los modales de edición de fotografía en el proyecto (Especies, Labores, etc.) deben seguir estrictamente el patrón de Especies. Esto incluye: soporte drag-to-pan, controles de Zoom, Brillo, Contraste, Estilos IA (Filtros), un campo de Texto Alternativo SEO (Alt Tag) guardado en el JSON de resumen, y botones de Auto-Mejora y Reset.</li>
           <li style={{ marginBottom: '8px' }}><strong>Pestaña de Adjuntos Segmentada:</strong> La pestaña de "Documentos Adjuntos" debe segmentarse siempre en dos secciones distintas: una galería drag-and-drop para <strong>Fotos</strong> con soporte de Generador IA, y una sección inferior separada para <strong>Documentos Adicionales (PDF)</strong>.</li>
         </ul>
-      </div>
+      </Section>
 
-      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          6. Despliegue
-        </h2>
+      <Section id="s6" title="6. Despliegue">
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.1. Protocolo de despliegue</h3>
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
@@ -293,6 +348,32 @@ export default function GuiaUsuarioPage() {
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Despliegues</h3>
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>24/05/2026 22:20 – Estandarización tipográfica y Refactor dinámico de Guía</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Las tablas en el panel de usuarios, el panel de rangos y la guía de usuario usaban fuentes forzadas pequeñas que no seguían el diseño estándar de "Especies Globales".</li>
+                  <li style={{ marginBottom: '8px' }}>El apartado 9 de la Guía no cargaba los datos reales de la BD, quedando en estado de carga infinito por la falta de hidratación asíncrona.</li>
+                  <li>La estructura de la Guía de Usuario generaba fallos críticos de compilación en Turbopack (Next.js) debido a mala gestión del anidamiento de fragments JSX.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Eliminación de tamaños forzados (<code>0.85rem</code>, etc.) en <code>usuarios/page.tsx</code>, <code>ajustes/logros/page.tsx</code> y <code>guia-usuario/page.tsx</code>, implementando el tamaño heredado estándar 1rem.</li>
+                  <li style={{ marginBottom: '8px' }}>Implementación de un <code>useEffect</code> que hace un fetch en vivo a <code>/api/admin/ajustes/logros</code> dentro de la guía para hidratar el sistema de rangos.</li>
+                  <li>Refactorización completa de <code>guia-usuario/page.tsx</code> empleando un componente modular <code>&lt;Section&gt;</code> para gestionar despliegues de contenido y mitigar errores del compilador.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La UI es consistente, la documentación ahora refleja datos exactos en tiempo real y el Build local vuelve a ser exitoso y estable.</li>
+                </ul>
+              </div>
+            </li>
+
             <li style={{ marginBottom: '24px' }}>
               <strong>30/04/2026 20:40 – Corrección de Interfaz y primera subida estable</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
@@ -989,12 +1070,9 @@ export default function GuiaUsuarioPage() {
 
           </ol>
         </div>
-      </div>
+      </Section>
 
-      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px' }}>
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          7. Motor de Suscripciones y Degradación Progresiva
-        </h2>
+      <Section id="s7" title="7. Motor de Suscripciones y Degradación Progresiva">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
           El sistema de monetización y membresías de Verdantia no utiliza un modelo binario (Premium vs Gratis). Hemos implementado un <strong>Motor de Degradación Progresiva Universal</strong> diseñado para evitar el "abismo" (churn cliff) cuando un usuario deja de pagar o finaliza su periodo de prueba.
         </p>
@@ -1016,7 +1094,7 @@ export default function GuiaUsuarioPage() {
             </thead>
             <tbody>
               <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '16px', fontWeight: 'bold', color: '#15803d' }}>🌳 Premium</td>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#15803d' }}>4 👑 Premium</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>9.99€ / mes</td>
                 <td style={{ padding: '16px' }}><strong>Ilimitadas.</strong> Múltiples huertos y control total.</td>
                 <td style={{ padding: '16px' }}>5 fotos de perfil. <strong>Fotos ilimitadas</strong> por galería/labor.</td>
@@ -1024,7 +1102,7 @@ export default function GuiaUsuarioPage() {
                 <td style={{ padding: '16px' }}>Completos (Agrícola, Biodinámico Avanzado e IA).</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                <td style={{ padding: '16px', fontWeight: 'bold', color: '#65a30d' }}>🌿 Avanzado</td>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#65a30d' }}>3 🌳 Avanzado</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>5.99€ / mes</td>
                 <td style={{ padding: '16px' }}>Hasta <strong>50 semillas/especies</strong> activas.</td>
                 <td style={{ padding: '16px' }}>3 fotos de perfil. Hasta 4 fotos por galería.</td>
@@ -1032,7 +1110,7 @@ export default function GuiaUsuarioPage() {
                 <td style={{ padding: '16px' }}>Lunar y Biodinámico Básico.</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '16px', fontWeight: 'bold', color: '#0f766e' }}>🌱 Esencial</td>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#0f766e' }}>2 🌿 Esencial</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>2.99€ / mes</td>
                 <td style={{ padding: '16px' }}>Hasta <strong>20 semillas/especies</strong> activas.</td>
                 <td style={{ padding: '16px' }}>2 fotos de perfil. Hasta 2 fotos por galería.</td>
@@ -1040,7 +1118,7 @@ export default function GuiaUsuarioPage() {
                 <td style={{ padding: '16px' }}>Calendario Lunar Simple.</td>
               </tr>
               <tr>
-                <td style={{ padding: '16px', fontWeight: 'bold', color: '#78350f' }}>🌰 Gratuito</td>
+                <td style={{ padding: '16px', fontWeight: 'bold', color: '#78350f' }}>1 🍃 Gratuito</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>0.00€</td>
                 <td style={{ padding: '16px' }}>Hasta <strong>5 semillas/especies</strong> (huerto básico).</td>
                 <td style={{ padding: '16px' }}>1 foto de perfil. 1 foto por galería.</td>
@@ -1078,12 +1156,9 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>Suscripción Gratuita (Free):</strong> Los usuarios están obligados a recibir el boletín con los blogs publicados. No disponen de opción para anular la suscripción a esta lista de correo (actúa como contrapartida al uso gratuito de la plataforma).</li>
           <li style={{ marginBottom: '8px' }}><strong>Suscripciones de Pago (Esencial, Avanzado, Premium):</strong> Tienen control total sobre sus preferencias de comunicación. Pueden optar por anular la recepción de correos (opt-out) desde su panel de ajustes, garantizando una experiencia libre de interrupciones si así lo desean.</li>
         </ul>
-      </div>
+      </Section>
       
-      <div style={{ background: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginTop: '30px', marginBottom: '30px' }}>
-        <h2 style={{ color: '#0f172a', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px', marginTop: 0 }}>
-          8. Registro Persistente de Fallos y Correcciones
-        </h2>
+      <Section id="s8" title="8. Registro Persistente de Fallos y Correcciones">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Esta sección actúa como un <strong>disco duro externo para el Asistente de IA</strong>, evitando el "olvido" de fallos críticos debido a las limitaciones de memoria de contexto. Antes de resolver nuevos problemas, la IA debe consultar y vaciar esta lista.
         </p>
@@ -1369,7 +1444,166 @@ export default function GuiaUsuarioPage() {
             <li><strong>Resultado:</strong> 🟢 RESUELTO.</li>
           </ul>
         </div>
-      </div>
+      </Section>
+
+      <Section id="s9" title="9. Sistema de Rangos y Gamificación">
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          El sistema de gamificación de Verdantia está diseñado como una <strong>matriz jerárquica de 10 niveles</strong> (del 1 al 10). Para ascender, un usuario debe cumplir <strong>simultáneamente todos los requisitos paramétricos</strong> del nivel objetivo. Los parámetros son editables desde el panel <code>/dashboard/admin/ajustes/logros</code> y <strong>se reflejan automáticamente aquí</strong>.
+        </p>
+
+        {logros.length === 0 ? (
+          <p style={{ color: '#94a3b8', textAlign: 'center', padding: '30px' }}>Cargando datos de rangos...</p>
+        ) : (<>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.3rem' }}>9.1. Los 10 Rangos Maestros</h3>
+        <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                <th style={{ padding: '10px', textAlign: 'center', width: '40px' }}>Nv.</th>
+                <th style={{ padding: '10px', textAlign: 'center', width: '40px' }}></th>
+                <th style={{ padding: '10px' }}>Rango</th>
+                <th style={{ padding: '10px' }}>Descripción</th>
+                <th style={{ padding: '10px' }}>Privilegio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logros.map((l: any) => (
+                <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700 }}>{l.logrosnivel}</td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontSize: '1.3rem' }}>{l.logrosicono}</td>
+                  <td style={{ padding: '8px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>{l.logrosnombre}</td>
+                  <td style={{ padding: '8px', color: '#64748b' }}>{l.logrosdescripcion}</td>
+                  <td style={{ padding: '8px', color: '#0f766e', fontWeight: 600, whiteSpace: 'nowrap' }}>{l.privilegios}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.2. Requisitos de Ascenso (Datos en Tiempo Real)</h3>
+        <div style={{ background: '#eff6ff', borderLeft: '4px solid #3b82f6', padding: '12px 16px', borderRadius: '0 8px 8px 0', marginBottom: '16px' }}>
+          <p style={{ color: '#1e40af', margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
+            <strong>Sincronizado:</strong> Esta tabla se actualiza automáticamente con los valores de <code>/dashboard/admin/ajustes/logros</code>.
+          </p>
+        </div>
+        <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f0fdf4' }}>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Nv.</th>
+                <th style={{ padding: '8px' }}>Rango</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Antigüedad</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Semillas</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Siembras</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Recolec.</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Especies</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Fotos</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Mensajes</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Blogs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logros.map((l: any) => {
+                const fmt = (v: number) => v === 0 ? '—' : String(v);
+                const fmtMeses = (v: number) => v === 0 ? '—' : v === 1 ? '1 mes' : v + ' meses';
+                return (
+                  <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9', background: l.logrosnivel >= 8 ? '#fefce8' : 'white' }}>
+                    <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700 }}>{l.logrosnivel}</td>
+                    <td style={{ padding: '6px 8px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>{l.logrosicono} {l.logrosnombre}</td>
+                    {[fmtMeses(l.req_antiguedad_meses), fmt(l.req_semillas), fmt(l.req_siembras), fmt(l.req_recolecciones), fmt(l.req_especies), fmt(l.req_fotos), fmt(l.req_mensajes), fmt(l.req_blogs)].map((v, i) => (
+                      <td key={i} style={{ padding: '6px 8px', textAlign: 'center', color: v === '—' ? '#cbd5e1' : '#0f172a', fontWeight: v === '—' ? 400 : 600 }}>{v}</td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.3. Descuentos Escalonados en Suscripción PRO</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          El <strong>&quot;Play to Earn&quot;</strong> de Verdantia. Los descuentos solo se aplican al plan <strong>PRO</strong>.
+        </p>
+        <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: '500px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                <th style={{ padding: '10px' }}>Rango</th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>Descuento PRO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logros.map((l: any) => (
+                <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '8px', fontWeight: 600 }}>{l.logrosicono} {l.logrosnombre} ({l.logrosnivel})</td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: l.descuento_pro === 0 ? '#94a3b8' : l.descuento_pro >= 60 ? '#dc2626' : l.descuento_pro >= 25 ? '#d97706' : '#059669' }}>
+                    {l.descuento_pro === 100 ? '100% GRATIS' : l.descuento_pro + '%'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '12px 16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+          <p style={{ color: '#166534', margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
+            <strong>Nota:</strong> El Nivel 10 (👑 Leyenda Verde) recibe la suscripción PRO <strong>100% gratuita</strong> como contraprestación por su labor de moderación global.
+          </p>
+        </div>
+
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.4. Cuota de Mantenimiento Mensual</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          A partir del <strong>Nivel 6</strong>, el sistema exige una cuota mínima de interacciones mensuales.
+        </p>
+        <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: '500px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#fefce8' }}>
+                <th style={{ padding: '10px' }}>Rango</th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>Acciones/mes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logros.filter((l: any) => l.req_mantenimiento_mensual > 0).map((l: any) => (
+                <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '8px', fontWeight: 600 }}>{l.logrosicono} {l.logrosnombre} ({l.logrosnivel})</td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontWeight: 600, color: '#d97706' }}>{l.req_mantenimiento_mensual} acción{l.req_mantenimiento_mensual > 1 ? 'es' : ''}/mes</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.5. Delegación de Poderes (Moderación Comunitaria)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          A partir del nivel 6 los usuarios adquieren <strong>poderes administrativos progresivos</strong>:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.8, paddingLeft: '20px' }}>
+          {logros.filter((l: any) => l.logrosnivel >= 6).map((l: any) => (
+            <li key={l.logrosnivel}><strong>{l.logrosicono} Nivel {l.logrosnivel} ({l.logrosnombre}):</strong> {l.privilegios}.</li>
+          ))}
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.6. Degradación de Rango (Rank Decay Latente)</h3>
+        <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginBottom: '16px' }}>
+          <p style={{ color: '#854d0e', margin: 0, lineHeight: 1.5 }}>
+            <strong>La Regla de Oro:</strong> Si un usuario con cuota de mantenimiento no la cumple, su rango entra en estado <strong>&quot;Latente/Inactivo&quot;</strong>. NO desciende de nivel — el título se preserva — pero pierde temporalmente privilegios y descuentos.
+          </p>
+        </div>
+        <ul style={{ color: '#475569', lineHeight: 1.8, paddingLeft: '20px' }}>
+          <li><strong>Conserva:</strong> Su título histórico y su historial de logros.</li>
+          <li><strong>Pierde temporalmente:</strong> Acceso a descuentos PRO, privilegios de moderación y badge visible.</li>
+          <li><strong>Reactivación:</strong> Automática al cumplir la cuota mensual de nuevo.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.7. Modelo de Rango Activo Único</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Cada usuario tiene un solo rango vigente. Al cumplir los requisitos del nivel superior, asciende automáticamente. La tabla <code>usuarioslogros</code> registra el historial completo con <code>fechainicio</code> y <code>fechafin</code>.
+        </p>
+
+        </>)}
+      </Section>
+
 
     </div>
   );

@@ -11,7 +11,11 @@ export async function GET(request: Request) {
 
   try {
     const [rows] = await pool.query(
-      'SELECT nombre_logro, fecha_desbloqueo FROM usuarios_logros WHERE idusuarios = ? ORDER BY fecha_desbloqueo ASC',
+      `SELECT l.logrosnombre as nombre_logro, u.usuarioslogrosfechainicio as fecha_desbloqueo, u.usuarioslogrosfechafin as fecha_fin 
+       FROM usuarioslogros u
+       JOIN logros l ON u.xusuarioslogrosidlogros = l.idlogros
+       WHERE u.xusuarioslogrosidusuarios = ? 
+       ORDER BY u.usuarioslogrosfechainicio ASC`,
       [userId]
     );
 

@@ -121,10 +121,11 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
 
     // Obtener el icono del último logro
     const [logroRows] = await pool.query(
-      `SELECT nombre_logro 
-       FROM usuarios_logros 
-       WHERE idusuarios = ? 
-       ORDER BY fecha_desbloqueo DESC LIMIT 1`,
+      `SELECT l.logrosnombre as nombre_logro 
+       FROM usuarioslogros u
+       JOIN logros l ON u.xusuarioslogrosidlogros = l.idlogros
+       WHERE u.xusuarioslogrosidusuarios = ?
+       ORDER BY u.usuarioslogrosfechainicio DESC LIMIT 1`,
       [user.idusuarios]
     );
     let iconoLogro = null;

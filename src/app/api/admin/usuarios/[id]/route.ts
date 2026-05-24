@@ -17,6 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         u.usuariosemail AS email,
         u.usuariosroles AS roles,
         s.suscripcionesnombre AS suscripcion,
+        us.usuariossuscripcionesorigen AS suscripcionOrigen,
         u.usuariosactivo AS activo,
         u.usuariosestadocuenta AS estadoCuenta,
         u.usuariossuspensionfin AS suspensionfin,
@@ -52,7 +53,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Logros
     const [logros] = await pool.query(
-      `SELECT nombre_logro, fecha_desbloqueo FROM usuarios_logros WHERE idusuarios = ? ORDER BY fecha_desbloqueo DESC`,
+      `SELECT l.logrosnombre as nombre_logro, u.usuarioslogrosfechainicio as fecha_desbloqueo, u.usuarioslogrosfechafin as fecha_fin 
+       FROM usuarioslogros u
+       JOIN logros l ON u.xusuarioslogrosidlogros = l.idlogros
+       WHERE u.xusuarioslogrosidusuarios = ? 
+       ORDER BY u.usuarioslogrosfechainicio DESC`,
       [id]
     );
 
@@ -65,7 +70,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       [id]
     );
 
-    return NextResponse.json({ usuario, logros, fotos });
+    // Historial Suscripciones
+    const [historialSuscripciones] = await pool.query(
+      `SELECT 
+        us.idusuariossuscripciones AS id,
+        s.suscripcionesnombre AS plan,
+        us.usuariossuscripcionesfechainicio AS fechaInicio,
+        us.usuariossuscripcionesfechafin AS fechaFin,
+        us.usuariossuscripcionesestado AS estado,
+        us.usuariossuscripcionesorigen AS origen
+       FROM usuariossuscripciones us
+       JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
+       WHERE us.xusuariossuscripcionesidusuarios = ?
+       ORDER BY us.idusuariossuscripciones DESC`,
+      [id]
+    );
+
+    return NextResponse.json({ usuario, logros, fotos, historialSuscripciones });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

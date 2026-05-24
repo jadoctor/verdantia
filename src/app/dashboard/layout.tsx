@@ -546,10 +546,7 @@ export default function DashboardLayout({
                     <span className="nav-icon">🌐</span>
                     <span>Meteo Red Global</span>
                   </a>
-                  <a href="/dashboard/admin/guia-usuario" className={`nav-item ${isActive('/dashboard/admin/guia-usuario')}`} onClick={handleNavClick}>
-                    <span className="nav-icon">📖</span>
-                    <span>Guía de Usuario</span>
-                  </a>
+
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setTareasAdministrativasHover(true)} onMouseLeave={() => setTareasAdministrativasHover(false)}>
                     <button type="button" className={`nav-item ${pathname.includes('/admin/asuntos-pendientes') || pathname.includes('/admin/asuntos-realizados') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setTareasAdministrativasHover(h => !h); }}
@@ -575,6 +572,7 @@ export default function DashboardLayout({
                       <a href="/dashboard/admin/ajustes/idiomas" className={`nav-item ${pathname.includes('/admin/ajustes/idiomas') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🗣️ Idiomas</a>
                       <a href="/dashboard/admin/ajustes/paises" className={`nav-item ${pathname.includes('/admin/ajustes/paises') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌎 Países</a>
                       <a href="/dashboard/admin/ajustes/avisos" className={`nav-item ${pathname.includes('/admin/ajustes/avisos') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔔 Avisos y Reglas</a>
+                      <a href="/dashboard/admin/ajustes/logros" className={`nav-item ${pathname.includes('/admin/ajustes/logros') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🏆 Sistema de Rangos</a>
                     </div>
                   </div>
                 </nav>
@@ -655,6 +653,10 @@ export default function DashboardLayout({
                 <a href="/dashboard/meteo" className={`nav-item ${isActive('/dashboard/meteo')}`} onClick={handleNavClick}>
                   <span className="nav-icon">⛅</span>
                   <span>Mi Meteo Local</span>
+                </a>
+                <a href="/dashboard/admin/guia-usuario" className={`nav-item ${isActive('/dashboard/admin/guia-usuario')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">📖</span>
+                  <span>Guía de Usuario</span>
                 </a>
               </nav>
             )}

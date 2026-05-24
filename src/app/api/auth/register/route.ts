@@ -47,11 +47,19 @@ export async function POST(request: Request) {
     );
 
     const insertResult = result as any;
+    const userId = insertResult.insertId;
+
+    // Asignar el logro "Visitante" al usuario recién registrado
+    await pool.query(
+      `INSERT INTO usuarioslogros (xusuarioslogrosidusuarios, xusuarioslogrosidlogros) 
+       SELECT ?, idlogros FROM logros WHERE logrosnombre = 'Visitante' LIMIT 1`,
+      [userId]
+    );
 
     return NextResponse.json({
       success: true,
       message: 'Perfil creado correctamente.',
-      userId: insertResult.insertId
+      userId: userId
     });
 
   } catch (error: any) {

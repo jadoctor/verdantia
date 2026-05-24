@@ -31,7 +31,7 @@ export default function InlineLaborPhotos({
     try {
       setLoading(true);
       const url = isPending 
-        ? `/api/user/cultivos/avisos/pending/photos?idcultivos=${idcultivos}&idpauta=${idpauta}&fechaEmision=${encodeURIComponent(fechaEmision)}`
+        ? `/api/user/cultivos/avisos/pending/photos?idcultivos=${idcultivos}&idpauta=${idpauta}&fechaEmision=${encodeURIComponent(fechaEmision || '')}`
         : `/api/user/cultivos/avisos/${idcultivosavisos}/photos`;
       const res = await fetch(url, {
         headers: { 'x-user-email': userEmail }

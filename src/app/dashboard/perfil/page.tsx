@@ -2633,7 +2633,10 @@ function PerfilContent() {
                       background: 'var(--accent-amber)', borderRadius: '50%', border: '4px solid var(--bg-card)'
                     }}></span>
                     <strong style={{ color: 'var(--accent-amber)', fontSize: '1.05rem', display: 'block' }}>{logro.nombre_logro}</strong>
-                    <small style={{ color: 'var(--text-muted)' }}>Desbloqueado el {new Date(logro.fecha_desbloqueo).toLocaleDateString('es-ES')} a las {new Date(logro.fecha_desbloqueo).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</small>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      <div>Inicio: {new Date(logro.fecha_desbloqueo).toLocaleDateString('es-ES')} a las {new Date(logro.fecha_desbloqueo).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</div>
+                      <div>Fin: {logro.fecha_fin ? `${new Date(logro.fecha_fin).toLocaleDateString('es-ES')} a las ${new Date(logro.fecha_fin).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}` : 'En curso'}</div>
+                    </div>
                   </li>
                 ))}
               </ul>
