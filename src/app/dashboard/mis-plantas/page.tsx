@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getMediaUrl } from '@/lib/media-url';
 import IniciarCultivoModal from '@/components/user/IniciarCultivoModal';
 import DashboardAlertsWidget from '@/components/user/DashboardAlertsWidget';
@@ -53,6 +53,7 @@ export default function MisPlantasPage() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Wizard state
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -77,7 +78,13 @@ export default function MisPlantasPage() {
   }, [router]);
 
   useEffect(() => {
-    if (userEmail) loadPlantas();
+    if (userEmail) {
+      loadPlantas();
+      // Abrir wizard automáticamente si viene de ?wizard=true
+      if (searchParams.get('wizard') === 'true') {
+        openWizard();
+      }
+    }
   }, [userEmail]);
 
   const loadPlantas = async () => {

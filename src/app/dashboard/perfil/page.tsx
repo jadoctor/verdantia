@@ -987,7 +987,6 @@ function PerfilContent() {
 
     // Todos los campos obligatorios deben estar rellenos
     const camposFaltantes: string[] = [];
-    if (!nombre.trim()) camposFaltantes.push('Nombre');
     if (!fechaNacimiento) camposFaltantes.push('Fecha de Nacimiento');
     if (!sexo) camposFaltantes.push('Sexo');
     if (!nombreUsuario.trim()) camposFaltantes.push('Nombre de Usuario');

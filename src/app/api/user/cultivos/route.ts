@@ -26,6 +26,7 @@ export async function GET(request: Request) {
         c.cultivosfechainicio,
         c.cultivosfechagerminacion,
         c.cultivosfechatrasplante,
+        c.cultivosfecharecoleccion,
         c.cultivosfechafinalizacion,
         c.cultivoscantidad,
         c.cultivosubicacion,

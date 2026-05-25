@@ -375,6 +375,35 @@ export default function GuiaUsuarioPage() {
             </li>
 
             <li style={{ marginBottom: '24px' }}>
+              <strong>25/05/2026 19:13 – Dashboard: Logros dinámicos, sistema de rangos y panel de progreso de cultivos</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El dashboard mostraba logros estáticos (maqueta) sin reflejar los logros reales del usuario ni el sistema de rangos de la BD.</li>
+                  <li style={{ marginBottom: '8px' }}>No existía indicación de qué debía hacer el usuario para avanzar al siguiente nivel ni cómo estaban sus cultivos en curso.</li>
+                  <li>El término "siembra" era incorrecto conceptualmente: una siembra es una fase del cultivo, no el cultivo completo.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><code>dashboard/page.tsx</code>: Reescritura completa. Vitrina de logros dinámica vía <code>/api/perfil/logros</code> y <code>/api/admin/ajustes/logros</code>. Logros adquiridos en dorado/verde, pendientes en gris bloqueado.</li>
+                  <li style={{ marginBottom: '8px' }}><code>dashboard/page.tsx</code>: Tarjeta "Siguiente Nivel" con chip de cultivos contextual: blanco (sin cultivos), amarillo (en curso/recolección), verde (completado).</li>
+                  <li style={{ marginBottom: '8px' }}><code>dashboard/page.tsx</code>: Panel expandible bajo el chip mostrando fases completadas con fechas y próximo paso. Formato "Cultivo Nº X: Especie (Variedad)".</li>
+                  <li style={{ marginBottom: '8px' }}><code>api/user/cultivos/route.ts</code>: Añadido <code>cultivosfecharecoleccion</code> al SELECT.</li>
+                  <li style={{ marginBottom: '8px' }}><code>dashboard/mis-plantas/page.tsx</code>: Auto-apertura del wizard con <code>?wizard=true</code>.</li>
+                  <li><code>guia-usuario/page.tsx</code> Sección 9: Renombrado "Siembras" a "Cultivos". Definición oficial de cultivo completado: <code>estado = 'finalizado' AND cultivosfecharecoleccion IS NOT NULL</code>.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Dashboard completamente dinámico y orientado a la acción: el usuario ve su progreso real, qué necesita para subir de rango y el estado de sus cultivos sin salir del panel principal.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
               <strong>30/04/2026 20:40 – Corrección de Interfaz y primera subida estable</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
@@ -1495,7 +1524,7 @@ export default function GuiaUsuarioPage() {
                 <th style={{ padding: '8px' }}>Rango</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Antigüedad</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Semillas</th>
-                <th style={{ padding: '8px', textAlign: 'center' }}>Siembras</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Cultivos ✅</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Recolec.</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Especies</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Fotos</th>
@@ -1519,6 +1548,26 @@ export default function GuiaUsuarioPage() {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* DEFINICIÓN: ¿Qué cuenta como cultivo completado? */}
+        <div style={{ background: '#f0fdf4', border: '1.5px solid #6ee7b7', borderRadius: '12px', padding: '16px 20px', marginTop: '20px' }}>
+          <h4 style={{ color: '#065f46', margin: '0 0 10px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🌱 Definición: ¿Cuándo cuenta un cultivo para el rango?
+          </h4>
+          <p style={{ color: '#047857', margin: '0 0 10px', lineHeight: 1.6, fontSize: '0.95rem' }}>
+            Un cultivo <strong>cuenta como completado</strong> para el requisito de ascenso de rango cuando cumple <strong>simultáneamente estas dos condiciones</strong>:
+          </p>
+          <ul style={{ color: '#065f46', margin: 0, paddingLeft: '20px', lineHeight: 1.8, fontSize: '0.95rem' }}>
+            <li><strong>✅ Ha pasado por la fase de Recolección:</strong> El campo <code>cultivosfecharecoleccion</code> debe tener una fecha registrada (no puede ser null). El usuario ha marcado que llegó a la fase de cosecha.</li>
+            <li><strong>✅ Está marcado como Finalizado:</strong> El campo <code>cultivosestado</code> debe ser <code>&#39;finalizado&#39;</code>. El usuario ha cerrado el cultivo explícitamente.</li>
+          </ul>
+          <div style={{ background: 'white', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '10px 14px', marginTop: '12px', fontSize: '0.85rem', color: '#374151', fontFamily: 'monospace' }}>
+            SQL: <code>cultivosestado = &#39;finalizado&#39; AND cultivosfecharecoleccion IS NOT NULL</code>
+          </div>
+          <p style={{ color: '#6b7280', margin: '10px 0 0', fontSize: '0.82rem', fontStyle: 'italic' }}>
+            ⚠️ Un cultivo marcado como <strong>Perdido</strong> o uno que nunca llegó a recolectar <strong>no cuenta</strong>, aunque esté finalizado.
+          </p>
         </div>
 
         <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.3. Descuentos Escalonados en Suscripción PRO</h3>

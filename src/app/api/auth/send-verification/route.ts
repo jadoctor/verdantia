@@ -19,15 +19,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email es requerido' }, { status: 400 });
     }
 
-    const host = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Usar siempre la URL de producción para el enlace de verificación
+    // (si usamos localhost, el enlace no funciona cuando se abre en otro dispositivo)
+    const host = process.env.NEXT_PUBLIC_SITE_URL || 'https://verdantia-494121.web.app';
     
-    // 1. Generar el enlace mágico de verificación con Firebase Admin, indicando que vuelva al perfil
+    // 1. Generar el enlace mágico de verificación con Firebase Admin, indicando que vuelva al onboarding
     const { getAdminAuth } = await import('@/lib/firebase/admin');
     const adminAuth = getAdminAuth();
     let firebaseVerificationLink: string;
     try {
       const actionCodeSettings = {
-        url: `${host}/dashboard/perfil`,
+        url: `${host}/dashboard/onboarding`,
       };
       firebaseVerificationLink = await adminAuth.generateEmailVerificationLink(email, actionCodeSettings);
     } catch (fbErr: any) {
