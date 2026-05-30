@@ -52,11 +52,19 @@ export async function GET(req: NextRequest) {
          WHERE xdatosadjuntosidusuarios = u.idusuarios 
            AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 
-           AND datosadjuntosvalidado = 1
            AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
            AND xdatosadjuntosidvariedades IS NULL
          ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
          LIMIT 1) AS fotoPrincipal,
+        (SELECT datosadjuntosvalidado 
+         FROM datosadjuntos 
+         WHERE xdatosadjuntosidusuarios = u.idusuarios 
+           AND datosadjuntostipo = 'imagen' 
+           AND datosadjuntosactivo = 1 
+           AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
+           AND xdatosadjuntosidvariedades IS NULL
+         ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
+         LIMIT 1) AS fotoValidada,
         u.usuariosfechacreacion AS fechaRegistro,
         u.usuariosfechadenacimiento AS fechaNacimiento,
         u.usuariospais AS pais,

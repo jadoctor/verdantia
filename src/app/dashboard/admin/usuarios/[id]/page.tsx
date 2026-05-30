@@ -16,6 +16,20 @@ function getPlanCfg(plan?: string) {
   return PLAN_CONFIG[(plan || '').toLowerCase()] || PLAN_CONFIG['gratuito'];
 }
 
+const MOTIVOS_RECHAZO_LEVE = [
+  'La imagen no está relacionada con cultivos, plantas o huertos',
+  'Imagen de baja calidad, borrosa o ilegible',
+  'Imagen duplicada o ya existente en la plataforma',
+  'Otro motivo — ver nota adicional',
+];
+
+const MOTIVOS_SANCION_GRAVE = [
+  'Contenido inapropiado, ofensivo, o de carácter sexual',
+  'Contenido violento o incitación al odio',
+  'La imagen contiene datos personales visibles (personas, matrículas, domicilios)',
+  'Contenido con derechos de autor o marca comercial sin autorización',
+];
+
 export default function UsuarioDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
   const router = useRouter();
@@ -26,6 +40,15 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
   const [toast, setToast] = useState('');
   const [fromAsuntos, setFromAsuntos] = useState(false);
   const [tab, setTab] = useState('perfil');
+  const [activeFotoId, setActiveFotoId] = useState<number | null>(null);
+  const [avisosConfig, setAvisosConfig] = useState<any>(null);
+  const [avisosLoading, setAvisosLoading] = useState(false);
+  const [cultivarLocked, setCultivarLocked] = useState(true);
+  const [comunicacionesLocked, setComunicacionesLocked] = useState(true);
+  const [cultivos, setCultivos] = useState<any[] | null>(null);
+  const [cultivosLoading, setCultivosLoading] = useState(false);
+  const [cultivosFiltro, setCultivosFiltro] = useState<'todos' | 'activos' | 'historial'>('activos');
+  const [cultivosLocked, setCultivosLocked] = useState(true);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -51,7 +74,154 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
       .catch(() => setLoading(false));
   }, [id, authReady]);
 
+  useEffect(() => {
+    if (data?.fotos?.length) {
+      const primary = data.fotos.find(f => f.esPrincipal === 1 || f.esPrincipal) || data.fotos[0];
+      if (primary) {
+        setActiveFotoId(primary.id);
+      }
+    }
+  }, [data]);
+
+  const loadAvisos = async (email: string) => {
+    setAvisosLoading(true);
+    try {
+      const res = await fetch(`/api/perfil/avisos?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const d = await res.json();
+        setAvisosConfig(d);
+      } else {
+        showToast('❌ Error al cargar avisos');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Error al cargar avisos');
+    } finally {
+      setAvisosLoading(false);
+    }
+  };
+
+  const toggleAvisoMaestro = async (avisoId: number, currentVal: number) => {
+    if (comunicacionesLocked) {
+      showToast('⚠️ Edición bloqueada. Haz clic en "Desbloquear Edición" para realizar cambios.');
+      return;
+    }
+    if (!data?.usuario?.email || !avisosConfig) return;
+    const newVal = currentVal === 1 ? 0 : 1;
+    setAvisosConfig((prev: any) => ({ ...prev, userPrefs: { ...prev.userPrefs, [avisoId]: newVal } }));
+    try {
+      const res = await fetch('/api/perfil/avisos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.usuario.email, tipo: 'maestro', avisoId, activo: newVal })
+      });
+      if (res.ok) {
+        showToast('🔔 Preferencias actualizadas');
+      } else {
+        showToast('❌ Error al actualizar');
+        setAvisosConfig((prev: any) => ({ ...prev, userPrefs: { ...prev.userPrefs, [avisoId]: currentVal } }));
+      }
+    } catch {
+      showToast('❌ Error al actualizar');
+      setAvisosConfig((prev: any) => ({ ...prev, userPrefs: { ...prev.userPrefs, [avisoId]: currentVal } }));
+    }
+  };
+
+  const toggleAvisoLabor = async (laborId: number, currentVal: number) => {
+    if (comunicacionesLocked) {
+      showToast('⚠️ Edición bloqueada. Haz clic en "Desbloquear Edición" para realizar cambios.');
+      return;
+    }
+    if (!data?.usuario?.email || !avisosConfig) return;
+    const newVal = currentVal === 1 ? 0 : 1;
+    setAvisosConfig((prev: any) => ({ ...prev, userLaboresPrefs: { ...prev.userLaboresPrefs, [laborId]: newVal } }));
+    try {
+      const res = await fetch('/api/perfil/avisos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.usuario.email, tipo: 'labor', laborId, activo: newVal })
+      });
+      if (res.ok) {
+        showToast('🔔 Labores actualizadas');
+      } else {
+        showToast('❌ Error al actualizar');
+        setAvisosConfig((prev: any) => ({ ...prev, userLaboresPrefs: { ...prev.userLaboresPrefs, [laborId]: currentVal } }));
+      }
+    } catch {
+      showToast('❌ Error al actualizar');
+      setAvisosConfig((prev: any) => ({ ...prev, userLaboresPrefs: { ...prev.userLaboresPrefs, [laborId]: currentVal } }));
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'comunicaciones' && data?.usuario?.email && !avisosConfig) {
+      loadAvisos(data.usuario.email);
+    }
+  }, [tab, data?.usuario?.email, avisosConfig]);
+
+  const loadCultivos = async (email: string) => {
+    setCultivosLoading(true);
+    try {
+      const res = await fetch(`/api/user/cultivos`, {
+        headers: { 'x-user-email': email }
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setCultivos(d.cultivos || []);
+      } else {
+        showToast('❌ Error al cargar cultivos');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('❌ Error al cargar cultivos');
+    } finally {
+      setCultivosLoading(false);
+    }
+  };
+
+  const handleSaveCultivo = async (cultivoId: number, field: string, value: any) => {
+    if (cultivosLocked) {
+      showToast('⚠️ Edición bloqueada. Haz clic en "Desbloquear Edición" para realizar cambios.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/user/cultivos/${cultivoId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': data?.usuario?.email || ''
+        },
+        body: JSON.stringify({ [field]: value })
+      });
+      setSaving(false);
+      if (res.ok) {
+        showToast('✅ Cultivo guardado');
+        setCultivos((prev: any) => {
+          if (!prev) return null;
+          return prev.map((c: any) => c.idcultivos === cultivoId ? { ...c, [field]: value } : c);
+        });
+      } else {
+        showToast('❌ Error al guardar cultivo');
+      }
+    } catch (err) {
+      console.error(err);
+      setSaving(false);
+      showToast('❌ Error al guardar cultivo');
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'cultivos' && data?.usuario?.email && !cultivos) {
+      loadCultivos(data.usuario.email);
+    }
+  }, [tab, data?.usuario?.email, cultivos]);
+
   const handlePatch = async (field: string, value: any) => {
+    if (cultivarLocked && (field === 'tipoCalendario' || field === 'tipoLaboreo')) {
+      showToast('⚠️ Edición bloqueada. Haz clic en "Desbloquear Edición" para realizar cambios.');
+      return;
+    }
     setSaving(true);
     const res = await fetch(`/api/admin/usuarios/${id}`, {
       method: 'PATCH',
@@ -64,6 +234,83 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
       setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, [field]: field === 'esPrueba' ? Number(value) : value } } : null);
     } else {
       showToast('❌ Error al guardar');
+    }
+  };
+
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [motivoSeleccionado, setMotivoSeleccionado] = useState<string>('');
+  const [motivoExtra, setMotivoExtra] = useState<string>('');
+  const [validating, setValidating] = useState(false);
+
+  const handleValidatePhoto = async (action: 'validar' | 'rechazar') => {
+    if (!activeFoto && !fotos?.[0]) return;
+    const targetPhoto = activeFoto || fotos?.[0];
+    if (!targetPhoto) return;
+
+    let actionType = 'validar';
+    let motivoFinal = undefined;
+
+    if (action === 'rechazar') {
+      if (!motivoSeleccionado) {
+        showToast('❌ Selecciona un motivo de rechazo');
+        return;
+      }
+      motivoFinal = motivoSeleccionado === 'Otro motivo — ver nota adicional' && motivoExtra.trim()
+        ? `${motivoSeleccionado}: ${motivoExtra.trim()}`
+        : motivoSeleccionado;
+
+      if (motivoSeleccionado === 'Otro motivo — ver nota adicional' && !motivoExtra.trim()) {
+        showToast('❌ Describe el motivo del rechazo');
+        return;
+      }
+
+      actionType = MOTIVOS_SANCION_GRAVE.includes(motivoSeleccionado) ? 'eliminar_inapropiado' : 'rechazar';
+    }
+
+    setValidating(true);
+    try {
+      const res = await fetch('/api/admin/asuntos-pendientes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photoId: targetPhoto.id,
+          action: actionType,
+          motivo: motivoFinal,
+          adminEmail: auth.currentUser?.email
+        })
+      });
+
+      if (res.ok) {
+        const resData = await res.json();
+        if (actionType === 'eliminar_inapropiado') {
+          const msgs: Record<string, string> = {
+            advertencia_1: `⚠️ Foto eliminada y 1ª advertencia enviada.`,
+            advertencia_2: `🔒 Foto eliminada. Infracción grave: cuenta suspendida 7 días.`,
+            baja: `🔴 Foto eliminada. 3ª infracción: cuenta de baja definitivamente.`,
+          };
+          showToast(msgs[resData.sancion] || '✅ Foto eliminada y sanción aplicada.');
+        } else {
+          showToast(action === 'validar' ? '🟢 Foto aprobada con éxito' : '🔴 Foto rechazada con éxito');
+        }
+        
+        setShowValidationModal(false);
+        setMotivoSeleccionado('');
+        setMotivoExtra('');
+        
+        // Refresh data to reflect the changes instantly in the frontend!
+        const refreshRes = await fetch(`/api/admin/usuarios/${id}`);
+        if (refreshRes.ok) {
+          const freshData = await refreshRes.json();
+          setData(freshData);
+        }
+      } else {
+        const errorData = await res.json();
+        showToast(`❌ Error: ${errorData.error || 'Acción fallida'}`);
+      }
+    } catch (e) {
+      showToast('❌ Error de conexión al validar');
+    } finally {
+      setValidating(false);
     }
   };
 
@@ -85,6 +332,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
 
   const { usuario: u, logros, fotos, historialSuscripciones } = data;
   const planCfg = getPlanCfg(u.suscripcion);
+  const activeFoto = fotos?.find((f: any) => f.id === activeFotoId) || fotos?.find((f: any) => f.esPrincipal) || fotos?.[0];
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -106,47 +354,402 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           </button>
         ) : (
           <button onClick={() => router.push('/dashboard/admin/usuarios')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            👥 Volver a Usuarios Globales
+            👥 Volver a Gestión de Usuarios
           </button>
         )}
       </div>
 
       {/* ── Hero ── */}
-      <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0ea5e9 100%)', borderRadius: '20px', padding: '28px', marginBottom: '24px', color: 'white', display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-        {/* Avatar */}
-        <div style={{ width: '80px', height: '106px', borderRadius: '14px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.4)', background: '#e0f2fe', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {u.fotoPrincipal ? (
-            <img src={getMediaUrl(u.fotoPrincipal)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
-          ) : u.icono ? (
-            <span style={{ fontSize: '2.5rem' }}>{u.icono}</span>
-          ) : (
-            <span style={{ fontSize: '2rem' }}>👤</span>
-          )}
-        </div>
+      <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0ea5e9 100%)', borderRadius: '20px', padding: '0', marginBottom: '24px', color: 'white', overflow: 'hidden' }}>
+        {/* Mobile: foto arriba sticky + info debajo scroll */}
+        {/* Desktop: flex row como antes */}
+        <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
+          {/* Avatar — sticky en móvil */}
+          <div className="user-detail-avatar" style={{ position: 'sticky', top: 0, zIndex: 10, flexShrink: 0, background: 'linear-gradient(135deg, #1e3a8a, #1e40af)' }}>
+            {fotos && fotos.length > 1 ? (
+              <div className="user-detail-carousel-container">
+                {/* Hero photo */}
+                <div className="user-detail-hero-photo-wrapper" style={{ position: 'relative' }}>
+                  {activeFoto ? (
+                    <>
+                      <img
+                        src={getMediaUrl(activeFoto.ruta)}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        crossOrigin="anonymous"
+                      />
+                      {/* Validation trigger button only if not approved */}
+                      {activeFoto.validado !== 1 && (
+                        <button
+                          onClick={() => setShowValidationModal(true)}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'rgba(15, 23, 42, 0.75)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '20px',
+                            padding: '4px 10px',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            backdropFilter: 'blur(4px)',
+                            transition: 'all 0.2s ease',
+                            zIndex: 20
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(15, 23, 42, 0.9)';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(15, 23, 42, 0.75)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          🛡️ Validar
+                        </button>
+                      )}
+                      
+                      {/* Validation Status Badge only if not approved */}
+                      {activeFoto.validado !== 1 && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '8px',
+                          left: '8px',
+                          right: '8px',
+                          background: activeFoto.resultado === 'rechazado' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(245, 158, 11, 0.9)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '8px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          textAlign: 'center',
+                          textTransform: 'uppercase',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                          backdropFilter: 'blur(4px)',
+                          letterSpacing: '0.05em'
+                        }}>
+                          {activeFoto.resultado === 'rechazado' ? '🔴 Rechazada' : ' ⏳ Pendiente'}
+                        </div>
+                      )}
+                    </>
+                  ) : u.fotoPrincipal ? (
+                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                      <img
+                        src={getMediaUrl(u.fotoPrincipal)}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        crossOrigin="anonymous"
+                      />
+                      {!u.fotoValidada && (
+                        <button
+                          onClick={() => setShowValidationModal(true)}
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'rgba(15, 23, 42, 0.75)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '20px',
+                            padding: '4px 10px',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            backdropFilter: 'blur(4px)',
+                            transition: 'all 0.2s ease',
+                            zIndex: 20
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(15, 23, 42, 0.9)';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(15, 23, 42, 0.75)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          🛡️ Validar
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '2.5rem' }}>👤</span>
+                  )}
+                </div>
 
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <h1 style={{ margin: '0 0 4px', fontSize: '1.5rem', fontWeight: 800 }}>
-            {u.nombre || '—'} {u.apellidos || ''}
-          </h1>
-          <div style={{ opacity: 0.8, fontSize: '0.9rem', marginBottom: '10px' }}>@{u.nombreUsuario || '—'} · {u.email}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ background: planCfg.bg, color: planCfg.color, border: `1px solid ${planCfg.border}`, padding: '4px 12px', borderRadius: '20px', fontWeight: 700, fontSize: '0.78rem' }}>
-              {planCfg.icon} {planCfg.label} {u.suscripcion && u.suscripcion !== 'Gratuito' ? (u.esPrueba ? '(De Regalo 🎁)' : '(De Pago 💳)') : ''}
-            </span>
-            {(u.roles || '').split(',').map((r: string) => (
-              <span key={r} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 600, fontSize: '0.78rem' }}>
-                {r.trim()}
+                {/* Thumbnail strip */}
+                <div className="user-detail-thumbnail-strip">
+                  {fotos
+                    .filter((f: any) => f.id !== activeFoto?.id)
+                    .map((f: any) => (
+                      <div
+                        key={f.id}
+                        onClick={() => setActiveFotoId(f.id)}
+                        className="user-detail-thumbnail-wrapper"
+                        style={{
+                          position: 'relative',
+                          border: f.validado === 1 ? '2px solid rgba(16, 185, 129, 0.6)' : f.resultado === 'rechazado' ? '2px solid rgba(239, 68, 68, 0.6)' : '2px solid rgba(245, 158, 11, 0.6)'
+                        }}
+                      >
+                        <img
+                          src={getMediaUrl(f.ruta)}
+                          alt=""
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          crossOrigin="anonymous"
+                          draggable={false}
+                        />
+                        {/* Tiny corner dot for validation status */}
+                        <span style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                          background: f.validado === 1 ? '#10b981' : f.resultado === 'rechazado' ? '#ef4444' : '#f59e0b',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          border: '1px solid white',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ width: '100%', maxWidth: '180px', aspectRatio: '3/4', borderRadius: '14px', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.4)', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', position: 'relative' }}>
+                {u.fotoPrincipal ? (
+                  <>
+                    <img src={getMediaUrl(u.fotoPrincipal)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                    
+                    {/* Validation trigger button only if not approved */}
+                    {(() => {
+                      const singleFoto = fotos?.[0];
+                      const isApproved = singleFoto ? singleFoto.validado === 1 : !!u.fotoValidada;
+                      if (!isApproved) {
+                        return (
+                          <button
+                            onClick={() => setShowValidationModal(true)}
+                            style={{
+                              position: 'absolute',
+                              top: '8px',
+                              right: '8px',
+                              background: 'rgba(15, 23, 42, 0.75)',
+                              color: 'white',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              borderRadius: '20px',
+                              padding: '4px 10px',
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                              backdropFilter: 'blur(4px)',
+                              transition: 'all 0.2s ease',
+                              zIndex: 20
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(15, 23, 42, 0.9)';
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(15, 23, 42, 0.75)';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                          >
+                            🛡️ Validar
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
+                    
+                    {/* Status badge for single photo only if not approved */}
+                    {(() => {
+                      const singleFoto = fotos?.[0];
+                      const isApproved = singleFoto ? singleFoto.validado === 1 : !!u.fotoValidada;
+                      if (!isApproved && (singleFoto || u.fotoPrincipal)) {
+                        const isRejected = singleFoto ? singleFoto.resultado === 'rechazado' : false;
+                        return (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            left: '8px',
+                            right: '8px',
+                            background: isRejected ? 'rgba(239, 68, 68, 0.9)' : 'rgba(245, 158, 11, 0.9)',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            textAlign: 'center',
+                            textTransform: 'uppercase',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                            backdropFilter: 'blur(4px)',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {isRejected ? '🔴 Rechazada' : ' ⏳ Pendiente'}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </>
+                ) : u.icono ? (
+                  <span style={{ fontSize: '3.5rem' }}>{u.icono}</span>
+                ) : (
+                  <span style={{ fontSize: '2.5rem' }}>👤</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: '200px', padding: '24px 28px' }}>
+            <h1 style={{ margin: '0 0 4px', fontSize: '1.5rem', fontWeight: 800 }}>
+              {u.nombre || '—'} {u.apellidos || ''}
+            </h1>
+            <div style={{ fontSize: '0.9rem' }}>@{u.nombreUsuario || '—'} · <span style={{ color: u.emailVerificado ? '#86efac' : '#fca5a5', fontWeight: 600 }}>{u.email}</span></div>
+            <div style={{ marginBottom: '10px', marginTop: '4px' }}>
+              <span style={{ background: u.emailVerificado ? 'rgba(220,252,231,0.95)' : 'rgba(254,242,242,0.95)', color: u.emailVerificado ? '#166534' : '#991b1b', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                {u.emailVerificado ? '✅ Email verificado' : '❌ Email no verificado'}
               </span>
-            ))}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ background: planCfg.bg, color: planCfg.color, border: `1px solid ${planCfg.border}`, padding: '4px 12px', borderRadius: '20px', fontWeight: 700, fontSize: '0.78rem' }}>
+                {planCfg.icon} {planCfg.label} {u.suscripcion && u.suscripcion !== 'Gratuito' ? (u.esPrueba ? 'no pago' : 'pago') : ''}
+              </span>
+              {(u.roles || '').split(',').map((r: string) => (
+                <span key={r} style={{ background: 'rgba(255,255,255,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 600, fontSize: '0.78rem' }}>
+                  {r.trim()}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-
       </div>
 
+      {/* CSS para el carrusel y sticky en móvil */}
+      <style>{`
+        .user-detail-avatar {
+          padding: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .user-detail-carousel-container {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+        .user-detail-hero-photo-wrapper {
+          width: 180px;
+          height: 240px;
+          border-radius: 14px;
+          overflow: hidden;
+          border: 3px solid rgba(255,255,255,0.4);
+          background: #e0f2fe;
+          flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          transition: all 0.3s ease;
+        }
+        .user-detail-thumbnail-strip {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          justify-content: center;
+        }
+        .user-detail-thumbnail-wrapper {
+          width: 60px;
+          height: 60px;
+          border-radius: 8px;
+          overflow: hidden;
+          cursor: pointer;
+          flex-shrink: 0;
+          border: 2px solid rgba(255,255,255,0.3);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+          transition: all 0.2s ease;
+        }
+        .user-detail-thumbnail-wrapper:hover {
+          transform: scale(1.08);
+          border-color: rgba(255,255,255,0.8);
+        }
+        @media (max-width: 640px) {
+          .user-detail-avatar {
+            width: 100%;
+            padding: 16px;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 10 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          }
+          .user-detail-avatar > div {
+            max-width: 120px !important;
+          }
+          .user-detail-avatar > .user-detail-carousel-container {
+            max-width: none !important;
+          }
+          .user-detail-hero-photo-wrapper {
+            width: 120px;
+            height: 160px;
+            border-radius: 10px;
+          }
+          .user-detail-thumbnail-wrapper {
+            width: 45px;
+            height: 45px;
+            border-radius: 6px;
+          }
+          .user-detail-carousel-container {
+            gap: 8px;
+          }
+        }
+        @media (min-width: 641px) {
+          .user-detail-avatar {
+            position: static !important;
+          }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(12px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .cultivo-card-option {
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cultivo-card-option:hover {
+          transform: translateY(-4px) scale(1.015);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08) !important;
+        }
+        .cultivo-card-option-locked {
+          transition: all 0.2s ease;
+        }
+        .labor-checkbox-label {
+          transition: all 0.2s ease;
+        }
+        .labor-checkbox-label:hover {
+          transform: translateY(-1px);
+          border-color: #a7f3d0 !important;
+          box-shadow: 0 4px 10px rgba(16, 185, 129, 0.05);
+        }
+      `}</style>
+
+
       {/* ── Tabs Navigation ── */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '2px solid #e2e8f0', paddingBottom: '0px' }}>
-        {['perfil', 'suscripciones', 'actividad'].map(t => (
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '2px solid #e2e8f0', paddingBottom: '0px', flexWrap: 'wrap' }}>
+        {['perfil', 'suscripciones', 'actividad', 'cultivar', 'comunicaciones', 'cultivos'].map(t => (
           <button 
             key={t}
             onClick={() => setTab(t)}
@@ -163,7 +766,12 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
               transition: 'all 0.2s ease'
             }}
           >
-            {t === 'perfil' ? '👤 Información Personal' : t === 'suscripciones' ? '💳 Suscripciones y Planes' : '📸 Logros y Galería'}
+            {t === 'perfil' ? '👤 Información Personal' : 
+             t === 'suscripciones' ? '💳 Planes' : 
+             t === 'actividad' ? '🏆 Logros' : 
+             t === 'cultivar' ? '🌾 Mi forma de cultivar' : 
+             t === 'comunicaciones' ? '🔔 Centro de Comunicaciones' : 
+             '🌱 Cultivos'}
           </button>
         ))}
       </div>
@@ -236,10 +844,10 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                   <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', background: '#f1f5f9', padding: '4px 10px', borderRadius: '6px' }}>
                     Origen: {
                       u.suscripcionOrigen === 'pago_directo' ? 'Pago Directo' :
-                      u.suscripcionOrigen === 'trial_inicial' ? 'Trial Inicial' :
+                      u.suscripcionOrigen === 'trial_inicial' ? 'Verificación Email' :
                       u.suscripcionOrigen === 'degradacion_trial' ? 'Degradación de Trial' :
                       u.suscripcionOrigen === 'degradacion_pago' ? 'Degradación de Pago' :
-                      u.suscripcionOrigen === 'asignado_admin' ? 'Asignado Manualmente' :
+                      u.suscripcionOrigen === 'asignado_admin' ? (u.suscripcion === 'Gratuito' ? 'Registro' : 'Manual') :
                       (u.suscripcionOrigen || 'Desconocido')
                     }
                   </span>
@@ -270,7 +878,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                       onChange={e => handlePatch('esPrueba', e.target.checked)}
                       style={{ accentColor: '#2563eb', width: '16px', height: '16px' }}
                     />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>Es de Regalo 🎁</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>Es de Regalo 🎁 (No Pago)</span>
                   </label>
                 </div>
                 {saving && <div style={{ padding: '8px', color: '#0056b3', fontWeight: 600, fontSize: '0.85rem' }}>Guardando...</div>}
@@ -302,13 +910,60 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                   {historialSuscripciones && historialSuscripciones.length > 0 ? historialSuscripciones.map((h: any) => (
                     <tr key={h.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '12px 20px', fontWeight: 600, color: '#0f172a' }}>
-                        {getPlanCfg(h.plan).icon} {h.plan}
+                        {getPlanCfg(h.plan).icon} {h.plan} {h.plan !== 'Gratuito' ? (h.origen === 'trial_inicial' || h.origen === 'degradacion_trial' ? 'no pago' : 'pago') : ''}
+                      </td>
+                      <td style={{ padding: '12px 20px', color: '#475569', whiteSpace: 'nowrap' }}>
+                        {new Date(h.fechaInicio).toLocaleDateString('es-ES')} a las {new Date(h.fechaInicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td style={{ padding: '12px 20px', color: '#475569' }}>
-                        {new Date(h.fechaInicio).toLocaleDateString('es-ES')}
-                      </td>
-                      <td style={{ padding: '12px 20px', color: '#475569' }}>
-                        {h.fechaFin ? new Date(h.fechaFin).toLocaleDateString('es-ES') : '—'}
+                        {h.fechaFin ? (
+                          <>
+                            <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
+                              {new Date(h.fechaFin).toLocaleDateString('es-ES')} a las {new Date(h.fechaFin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div style={{ fontSize: '0.74rem', marginTop: '4px', fontWeight: 700, color: h.estado === 'activa' ? '#10b981' : '#64748b' }}>
+                              {(() => {
+                                const start = new Date(h.fechaInicio).getTime();
+                                const end = new Date(h.fechaFin).getTime();
+                                const now = new Date().getTime();
+                                
+                                if (h.estado === 'activa' && end > now) {
+                                  const diffMs = end - now;
+                                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                                  
+                                  if (diffDays > 0) {
+                                    return `⏳ Quedan ${diffDays}d ${diffHours}h`;
+                                  } else if (diffHours > 0) {
+                                    return `⏳ Quedan ${diffHours}h ${diffMinutes}m`;
+                                  } else {
+                                    return `⏳ Quedan ${diffMinutes}m`;
+                                  }
+                                } else {
+                                  // Plan finalizado o caducado
+                                  const durationMs = end - start;
+                                  const durDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+                                  const durHours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                  const durMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                                  const durSeconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+                                  
+                                  if (durDays > 0) {
+                                    return `⏱️ Estuvo ${durDays} día${durDays > 1 ? 's' : ''}`;
+                                  } else if (durHours > 0) {
+                                    return `⏱️ Estuvo ${durHours}h ${durMinutes}m`;
+                                  } else if (durMinutes > 0) {
+                                    return `⏱️ Estuvo ${durMinutes} min`;
+                                  } else {
+                                    return `⏱️ Estuvo ${durSeconds} seg`;
+                                  }
+                                }
+                              })()}
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>— (Sin límite)</div>
+                        )}
                       </td>
                       <td style={{ padding: '12px 20px' }}>
                         <span style={{ 
@@ -322,10 +977,10 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                       <td style={{ padding: '12px 20px', color: '#64748b', fontSize: '0.85rem' }}>
                         {
                           h.origen === 'pago_directo' ? 'Pago Directo' :
-                          h.origen === 'trial_inicial' ? 'Trial Inicial' :
+                          h.origen === 'trial_inicial' ? 'Verificación Email' :
                           h.origen === 'degradacion_trial' ? 'Degradado de Trial' :
                           h.origen === 'degradacion_pago' ? 'Degradado de Pago' :
-                          h.origen === 'asignado_admin' ? 'Manual' : h.origen
+                          h.origen === 'asignado_admin' ? (h.plan === 'Gratuito' ? 'Registro' : 'Manual') : h.origen
                         }
                       </td>
                     </tr>
@@ -357,9 +1012,9 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#fffbeb', borderRadius: '10px', border: '1px solid #fde68a' }}>
                     <span style={{ fontWeight: 600, color: '#92400e' }}>⭐ {l.nombre_logro}</span>
                     <span style={{ fontSize: '0.78rem', color: '#b45309', display: 'flex', gap: '8px' }}>
-                      <span>Inicio: {new Date(l.fecha_desbloqueo).toLocaleDateString('es-ES')}</span>
+                      <span>Inicio: {new Date(l.fecha_desbloqueo).toLocaleDateString('es-ES')} a las {new Date(l.fecha_desbloqueo).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
                       <span>—</span>
-                      <span>Fin: {l.fecha_fin ? new Date(l.fecha_fin).toLocaleDateString('es-ES') : 'En curso'}</span>
+                      <span>Fin: {l.fecha_fin ? `${new Date(l.fecha_fin).toLocaleDateString('es-ES')} a las ${new Date(l.fecha_fin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}` : 'En curso'}</span>
                     </span>
                   </div>
                 ))}
@@ -370,27 +1025,851 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
               Sin logros desbloqueados.
             </div>
           )}
+        </>
+      )}
 
-          {/* Fotos */}
-          {fotos?.length > 0 ? (
-            <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '16px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ padding: '16px 20px', fontWeight: 700, fontSize: '1rem', color: '#1e293b', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                📸 Fotos de Perfil ({fotos.length})
-              </div>
-              <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '12px' }}>
-                {fotos.map((f: any) => (
-                  <div key={f.id} style={{ aspectRatio: '3/4', borderRadius: '10px', overflow: 'hidden', border: f.esPrincipal ? '3px solid #f59e0b' : '2px solid #e2e8f0', boxShadow: f.esPrincipal ? '0 0 0 2px rgba(245,158,11,0.3)' : 'none' }}>
-                    <img src={getMediaUrl(f.ruta)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+      {/* ── TAB: CULTIVAR ── */}
+      {tab === 'cultivar' && (
+        <div style={{ animation: 'fadeIn 0.3s ease' }}>
+          {/* Desbloqueador de Edición */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#f8fafc', padding: '12px 18px', borderRadius: '12px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '10px' }}>
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {cultivarLocked ? '🔒 Los datos de cultivo están bloqueados para evitar modificaciones accidentales.' : '🔓 Edición de cultivo desbloqueada para el administrador.'}
+            </span>
+            <button 
+              onClick={() => setCultivarLocked(!cultivarLocked)}
+              style={{
+                background: cultivarLocked ? '#2563eb' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {cultivarLocked ? '🔑 Desbloquear Edición' : '🔒 Bloquear Edición'}
+            </button>
+          </div>
+
+          {/* Calendario de Cultivo */}
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: cultivarLocked ? 0.85 : 1, transition: 'opacity 0.2s ease' }}>
+            <h3 style={{ margin: '0 0 6px 0', color: '#1e293b', fontWeight: 800, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              📅 Calendario de Cultivo {cultivarLocked && <span style={{ fontSize: '0.8rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Solo Lectura</span>}
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Selecciona el tipo de calendario agrícola que rige los cultivos y pautas del huerto.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              {[
+                {
+                  value: 'Normal',
+                  label: 'Normal',
+                  desc: 'Calendario estándar basado en el año solar tradicional.',
+                  badge: 'Estándar',
+                  badgeBg: '#f1f5f9',
+                  badgeColor: '#475569',
+                  activeBorder: '2px solid #10b981',
+                  activeBg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                  icon: '🍃'
+                },
+                {
+                  value: 'Lunar',
+                  label: 'Lunar',
+                  desc: 'Alineado con las fases lunares para optimizar siembras y cosechas.',
+                  badge: 'Esencial',
+                  badgeBg: '#dbeafe',
+                  badgeColor: '#1e40af',
+                  activeBorder: '2px solid #3b82f6',
+                  activeBg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                  icon: '🌙'
+                },
+                {
+                  value: 'Biodinámico',
+                  label: 'Biodinámico',
+                  desc: 'Máxima conexión astral y ciclos cósmicos (Raíz, Hoja, Flor, Fruto).',
+                  badge: 'Premium',
+                  badgeBg: '#f5f3ff',
+                  badgeColor: '#5b21b6',
+                  activeBorder: '2px solid #8b5cf6',
+                  activeBg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                  icon: '✨'
+                }
+              ].map(opt => {
+                const isActive = (u.tipoCalendario || 'Normal') === opt.value;
+                return (
+                  <div
+                    key={opt.value}
+                    onClick={() => handlePatch('tipoCalendario', opt.value)}
+                    style={{
+                      border: isActive ? opt.activeBorder : '1px solid #cbd5e1',
+                      background: isActive ? opt.activeBg : '#ffffff',
+                      borderRadius: '12px',
+                      padding: '18px',
+                      cursor: cultivarLocked ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.06)' : 'none',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between'
+                    }}
+                    className={cultivarLocked ? 'cultivo-card-option-locked' : 'cultivo-card-option'}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '1.25rem' }}>{opt.icon}</span>
+                        <span style={{ background: opt.badgeBg, color: opt.badgeColor, padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700 }}>
+                          {opt.badge}
+                        </span>
+                      </div>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{opt.label}</h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>{opt.desc}</p>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Filosofía de Laboreo */}
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: cultivarLocked ? 0.85 : 1, transition: 'opacity 0.2s ease' }}>
+            <h3 style={{ margin: '0 0 6px 0', color: '#1e293b', fontWeight: 800, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🚜 Filosofía de Laboreo {cultivarLocked && <span style={{ fontSize: '0.8rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Solo Lectura</span>}
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Establece el método de trabajo de la tierra del huerto (indica cómo se trata la estructura del suelo).
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              {[
+                {
+                  value: 'Convencional',
+                  label: 'Convencional',
+                  desc: 'Arado y volteo tradicional profundo para oxigenar y soltar la tierra.',
+                  icon: '🌾',
+                  activeColor: '#10b981',
+                  activeBg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                },
+                {
+                  value: 'Mínimo',
+                  label: 'Laboreo Mínimo',
+                  desc: 'Intervención superficial leve sin voltear las capas profundas.',
+                  icon: '🌱',
+                  activeColor: '#f59e0b',
+                  activeBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+                },
+                {
+                  value: 'No laboreo',
+                  label: 'No laboreo / No-Till',
+                  desc: 'Filosofía regenerativa: mantener el suelo vivo intacto sin remover.',
+                  icon: '🌳',
+                  activeColor: '#3b82f6',
+                  activeBg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+                }
+              ].map(opt => {
+                const isActive = (u.tipoLaboreo || 'Convencional') === opt.value;
+                return (
+                  <div
+                    key={opt.value}
+                    onClick={() => handlePatch('tipoLaboreo', opt.value)}
+                    style={{
+                      border: isActive ? `2px solid ${opt.activeColor}` : '1px solid #cbd5e1',
+                      background: isActive ? opt.activeBg : '#ffffff',
+                      borderRadius: '12px',
+                      padding: '18px',
+                      cursor: cultivarLocked ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.06)' : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between'
+                    }}
+                    className={cultivarLocked ? 'cultivo-card-option-locked' : 'cultivo-card-option'}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
+                      </div>
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{opt.label}</h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>{opt.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: COMUNICACIONES ── */}
+      {tab === 'comunicaciones' && (
+        <div style={{ animation: 'fadeIn 0.3s ease' }}>
+          {/* Desbloqueador de Edición */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#f8fafc', padding: '12px 18px', borderRadius: '12px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '10px' }}>
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {comunicacionesLocked ? '🔒 Los canales de comunicación están bloqueados para evitar modificaciones accidentales.' : '🔓 Edición de canales desbloqueada para el administrador.'}
+            </span>
+            <button 
+              onClick={() => setComunicacionesLocked(!comunicacionesLocked)}
+              style={{
+                background: comunicacionesLocked ? '#2563eb' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {comunicacionesLocked ? '🔑 Desbloquear Edición' : '🔒 Bloquear Edición'}
+            </button>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: comunicacionesLocked ? 0.85 : 1, transition: 'opacity 0.2s ease' }}>
+            <h3 style={{ margin: '0 0 4px 0', color: '#1e293b', fontWeight: 800, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🔔 Centro de Comunicaciones {comunicacionesLocked && <span style={{ fontSize: '0.8rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Solo Lectura</span>}
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Gestiona los canales por los que Verdantia se comunica con el usuario.
+            </p>
+
+            {avisosLoading || !avisosConfig ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                <div className="loading-spinner" style={{ margin: '0 auto 12px' }} />
+                <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cargando preferencias de comunicación...</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {avisosConfig.tiposAvisos.map((aviso: any) => {
+                  const reglaEstado = avisosConfig.reglas[aviso.idtiposavisos] ?? 0;
+                  let isActivo = true;
+                  if (reglaEstado === 2) isActivo = false;
+                  else if (reglaEstado === 1) isActivo = true;
+                  else if (avisosConfig.userPrefs[aviso.idtiposavisos] === 0) isActivo = false;
+
+                  const isTareasDelHuerto = aviso.tiposavisoscodigo === 'TAREAS';
+
+                  return (
+                    <div key={aviso.idtiposavisos} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: reglaEstado === 2 ? '#f8fafc' : '#ffffff' }}>
+                        <div style={{ flex: 1, paddingRight: '16px' }}>
+                          <h4 style={{ margin: '0 0 4px 0', color: reglaEstado === 2 ? '#94a3b8' : '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: 700 }}>
+                            {aviso.tiposavisosnombre === 'Boletín Agrícola' ? '📰 Boletín Agrícola (Blogs)' : 
+                             aviso.tiposavisosnombre === 'Tareas del Huerto' ? '🗓️ Tareas del Huerto' :
+                             aviso.tiposavisosnombre === 'Alertas Biodinámicas' ? '🌙 Alertas Biodinámicas' :
+                             aviso.tiposavisosnombre === 'Alertas Meteorológicas' ? '⚡ Alertas Meteorológicas' :
+                             aviso.tiposavisosnombre === 'Novedades y Promociones' ? '🎁 Novedades y Promociones' :
+                             aviso.tiposavisosnombre === 'Alertas de Sistema' ? '🛡️ Alertas de Sistema' : 
+                             aviso.tiposavisosnombre}
+                            
+                            {reglaEstado === 2 && <span style={{ fontSize: '0.72rem', padding: '2px 8px', background: '#e2e8f0', color: '#475569', borderRadius: '12px', fontWeight: 600 }}>🔒 Bloqueado en su plan</span>}
+                            {reglaEstado === 1 && <span style={{ fontSize: '0.72rem', padding: '2px 8px', background: '#fee2e2', color: '#b91c1c', borderRadius: '12px', fontWeight: 700 }}>Obligatorio</span>}
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>{aviso.tiposavisosdescripcion}</p>
+                          {reglaEstado === 2 && (
+                            <p style={{ margin: '6px 0 0 0', fontSize: '0.75rem', color: '#b91c1c', fontWeight: 600 }}>
+                              💡 Requiere un plan superior para activar este canal.
+                            </p>
+                          )}
+                        </div>
+
+                        <div style={{ marginLeft: '16px', flexShrink: 0 }}>
+                          {reglaEstado === 2 ? (
+                            <button type="button" style={{ padding: '6px 12px', fontSize: '0.8rem', opacity: 0.6, border: '1px solid #cbd5e1', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', fontWeight: 600 }} disabled>Bloqueado</button>
+                          ) : reglaEstado === 1 ? (
+                            <div style={{ width: '44px', height: '24px', background: '#10b981', borderRadius: '12px', position: 'relative', opacity: 0.6 }}>
+                              <div style={{ width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }} />
+                            </div>
+                          ) : (
+                            <div 
+                              onClick={() => toggleAvisoMaestro(aviso.idtiposavisos, isActivo ? 1 : 0)}
+                              style={{ 
+                                width: '44px', height: '24px', 
+                                background: isActivo ? '#10b981' : '#cbd5e1', 
+                                borderRadius: '12px', position: 'relative', cursor: comunicacionesLocked ? 'not-allowed' : 'pointer', transition: 'all 0.2s' 
+                              }}>
+                              <div style={{ 
+                                width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', 
+                                left: isActivo ? '22px' : '2px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' 
+                              }} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {isTareasDelHuerto && isActivo && (
+                        <div style={{ borderTop: '1px solid #f1f5f9', padding: '16px', background: '#f8fafc' }}>
+                          <p style={{ margin: '0 0 12px 0', fontSize: '0.82rem', color: '#475569', fontWeight: 700 }}>
+                            Desmarca las labores que NO le interesan (Opt-Out):
+                          </p>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                            {avisosConfig.labores.map((labor: any) => {
+                              const laborActiva = avisosConfig.userLaboresPrefs[labor.idlabores] !== 0;
+                              return (
+                                <label 
+                                  key={labor.idlabores} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    cursor: comunicacionesLocked ? 'not-allowed' : 'pointer', 
+                                    background: '#fff', 
+                                    padding: '8px 12px', 
+                                    border: '1px solid #e2e8f0', 
+                                    borderRadius: '8px',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  className={comunicacionesLocked ? '' : 'labor-checkbox-label'}
+                                >
+                                  <input 
+                                    type="checkbox" 
+                                    checked={laborActiva}
+                                    onChange={() => toggleAvisoLabor(labor.idlabores, laborActiva ? 1 : 0)}
+                                    disabled={comunicacionesLocked}
+                                    style={{ accentColor: '#10b981', width: '16px', height: '16px', cursor: comunicacionesLocked ? 'not-allowed' : 'pointer' }}
+                                  />
+                                  <span style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 500 }}>{labor.laboresnombre}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: CULTIVOS ── */}
+      {tab === 'cultivos' && (
+        <div style={{ animation: 'fadeIn 0.3s ease' }}>
+          {/* Desbloqueador de Edición */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: '#f8fafc', padding: '12px 18px', borderRadius: '12px', border: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '10px' }}>
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {cultivosLocked ? '🔒 Los cultivos están bloqueados para evitar modificaciones accidentales.' : '🔓 Edición de cultivos desbloqueada para el administrador.'}
+            </span>
+            <button 
+              onClick={() => setCultivosLocked(!cultivosLocked)}
+              style={{
+                background: cultivosLocked ? '#2563eb' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              {cultivosLocked ? '🔑 Desbloquear Edición' : '🔒 Bloquear Edición'}
+            </button>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: cultivosLocked ? 0.85 : 1, transition: 'opacity 0.2s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+              <h3 style={{ margin: 0, color: '#1e293b', fontWeight: 800, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🌱 Cultivos del Usuario {cultivosLocked && <span style={{ fontSize: '0.8rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Solo Lectura</span>}
+              </h3>
+              
+              {/* Filtros */}
+              <div style={{ display: 'inline-flex', gap: '4px', background: '#f1f5f9', padding: '4px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                {[
+                  { value: 'activos', label: '🌿 En Curso' },
+                  { value: 'historial', label: '📜 Historial' },
+                  { value: 'todos', label: '🌍 Todos' }
+                ].map(f => (
+                  <button
+                    key={f.value}
+                    onClick={() => setCultivosFiltro(f.value as any)}
+                    style={{
+                      background: cultivosFiltro === f.value ? 'white' : 'transparent',
+                      color: cultivosFiltro === f.value ? '#2563eb' : '#64748b',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: cultivosFiltro === f.value ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {f.label}
+                  </button>
                 ))}
               </div>
             </div>
-          ) : (
-             <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-               Sin fotos subidas en galería.
-             </div>
-          )}
-        </>
+
+            {cultivosLoading ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                <div className="loading-spinner" style={{ margin: '0 auto 12px' }} />
+                <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Cargando cultivos del usuario...</p>
+              </div>
+            ) : !cultivos || cultivos.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '8px' }}>🌾</span>
+                <p style={{ fontSize: '0.95rem', fontWeight: 600 }}>No se encontraron cultivos registrados para este usuario.</p>
+              </div>
+            ) : (() => {
+              const filtered = cultivos.filter((c: any) => {
+                if (cultivosFiltro === 'activos') {
+                  return c.cultivosestado !== 'finalizado' && c.cultivosestado !== 'perdido';
+                }
+                if (cultivosFiltro === 'historial') {
+                  return c.cultivosestado === 'finalizado' || c.cultivosestado === 'perdido';
+                }
+                return true;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', border: '1.5px dashed #cbd5e1', borderRadius: '12px', background: '#f8fafc' }}>
+                    <p style={{ fontSize: '0.88rem', fontWeight: 600, margin: 0 }}>No hay cultivos que coincidan con el filtro seleccionado.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  {filtered.map((c: any) => {
+                    return (
+                      <div 
+                        key={c.idcultivos}
+                        style={{ 
+                          border: '1.5px solid #e2e8f0', 
+                          borderRadius: '16px', 
+                          background: '#fff', 
+                          overflow: 'hidden', 
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          transition: 'all 0.25s ease'
+                        }}
+                        className={cultivosLocked ? 'cultivo-card-option-locked' : 'cultivo-card-option'}
+                      >
+                        {/* Cabecera Tarjeta */}
+                        <div style={{ padding: '14px 16px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>{c.especiesicono || '🌱'}</span>
+                            {c.especiesnombre} <span style={{ color: '#94a3b8', fontWeight: 600 }}>#{c.cultivosnumerocoleccion || c.idcultivos}</span>
+                          </span>
+
+                          <select
+                            disabled={cultivosLocked}
+                            value={c.cultivosestado}
+                            onChange={e => handleSaveCultivo(c.idcultivos, 'cultivosestado', e.target.value)}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              border: '1.5px solid #cbd5e1',
+                              fontWeight: 700,
+                              fontSize: '0.78rem',
+                              cursor: cultivosLocked ? 'not-allowed' : 'pointer',
+                              background: c.cultivosestado === 'finalizado' ? '#f1f5f9' : c.cultivosestado === 'perdido' ? '#fee2e2' : '#dcfce7',
+                              color: c.cultivosestado === 'finalizado' ? '#475569' : c.cultivosestado === 'perdido' ? '#991b1b' : '#15803d',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <option value="germinacion">🌱 Germinación</option>
+                            <option value="crecimiento">🌿 Crecimiento</option>
+                            <option value="produccion">🌸 Producción</option>
+                            <option value="finalizado">✅ Finalizado</option>
+                            <option value="perdido">☠️ Perdido</option>
+                          </select>
+                        </div>
+
+                        {/* Contenido */}
+                        <div style={{ padding: '16px', display: 'flex', gap: '14px', flex: 1 }}>
+                          {/* Foto */}
+                          <div style={{ width: '80px', height: '110px', borderRadius: '10px', overflow: 'hidden', background: '#f1f5f9', border: '1px solid #cbd5e1', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {c.foto ? (
+                              <img 
+                                src={getMediaUrl(c.foto)} 
+                                alt="" 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                crossOrigin="anonymous" 
+                              />
+                            ) : (
+                              <span style={{ fontSize: '1.8rem', color: '#cbd5e1' }}>🌿</span>
+                            )}
+                          </div>
+
+                          {/* Campos Form */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Variedad</span>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b', textAlign: 'right', wordBreak: 'break-all' }}>{c.variedad_nombre || '—'}</span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ubicación</span>
+                              <input
+                                type="text"
+                                disabled={cultivosLocked}
+                                value={c.cultivosubicacion || ''}
+                                placeholder="Ej: Exterior, Maceta"
+                                onChange={e => handleSaveCultivo(c.idcultivos, 'cultivosubicacion', e.target.value)}
+                                style={{
+                                  width: '120px',
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  fontWeight: 600,
+                                  color: '#1e293b',
+                                  fontSize: '0.8rem',
+                                  textAlign: 'right',
+                                  background: 'white',
+                                  cursor: cultivosLocked ? 'not-allowed' : 'text'
+                                }}
+                              />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Cantidad</span>
+                              <input
+                                type="number"
+                                disabled={cultivosLocked}
+                                value={c.cultivoscantidad || 1}
+                                min={1}
+                                onChange={e => handleSaveCultivo(c.idcultivos, 'cultivoscantidad', Number(e.target.value))}
+                                style={{
+                                  width: '50px',
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  fontWeight: 600,
+                                  fontSize: '0.8rem',
+                                  textAlign: 'right',
+                                  background: 'white',
+                                  cursor: cultivosLocked ? 'not-allowed' : 'text'
+                                }}
+                              />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Inicio</span>
+                              <input
+                                type="date"
+                                disabled={cultivosLocked}
+                                value={c.cultivosfechainicio ? c.cultivosfechainicio.split('T')[0] : ''}
+                                onChange={e => handleSaveCultivo(c.idcultivos, 'cultivosfechainicio', e.target.value)}
+                                style={{
+                                  width: '120px',
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  fontWeight: 600,
+                                  fontSize: '0.76rem',
+                                  textAlign: 'right',
+                                  background: 'white',
+                                  cursor: cultivosLocked ? 'not-allowed' : 'pointer'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer Tarjeta: Observaciones */}
+                        <div style={{ padding: '10px 16px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Observaciones</span>
+                          <input
+                            type="text"
+                            disabled={cultivosLocked}
+                            value={c.cultivosobservaciones || ''}
+                            placeholder="Añadir notas..."
+                            onChange={e => handleSaveCultivo(c.idcultivos, 'cultivosobservaciones', e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid #e2e8f0',
+                              fontSize: '0.78rem',
+                              fontWeight: 500,
+                              background: 'white',
+                              boxSizing: 'border-box',
+                              cursor: cultivosLocked ? 'not-allowed' : 'text'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Validation Modal ── */}
+      {showValidationModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '20px',
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '500px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            overflow: 'hidden',
+            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid #f1f5f9',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🛡️ Panel de Validación de Imagen
+              </h3>
+              <button 
+                onClick={() => { setShowValidationModal(false); setMotivoSeleccionado(''); setMotivoExtra(''); }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.2rem',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  padding: '4px',
+                  lineHeight: 1,
+                  transition: 'color 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#475569'}
+                onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content (Scrollable) */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '72vh', overflowY: 'auto' }}>
+              {/* Photo Preview */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{
+                  width: '140px',
+                  aspectRatio: '3/4',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '3px solid #e2e8f0',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.08)'
+                }}>
+                  <img
+                    src={getMediaUrl((activeFoto || fotos?.[0])?.ruta || '')}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    crossOrigin="anonymous"
+                  />
+                </div>
+              </div>
+
+              {/* Status Info */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Estado actual:</span>
+                {(() => {
+                  const f = activeFoto || fotos?.[0];
+                  if (!f) return null;
+                  const isApproved = f.validado === 1;
+                  const isRejected = f.resultado === 'rechazado';
+                  return (
+                    <span style={{
+                      background: isApproved ? '#dcfce7' : isRejected ? '#fee2e2' : '#fef3c7',
+                      color: isApproved ? '#166534' : isRejected ? '#991b1b' : '#92400e',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700
+                    }}>
+                      {isApproved ? '🟢 Aprobada' : isRejected ? '🔴 Rechazada' : '⏳ Pendiente'}
+                    </span>
+                  );
+                })()}
+              </div>
+
+              <div style={{ borderBottom: '1px solid #f1f5f9' }} />
+
+              {/* Action: Approve */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h4 style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#475569', fontWeight: 700, textAlign: 'left' }}>Aprobar Imagen</h4>
+                <button
+                  disabled={validating}
+                  onClick={() => handleValidatePhoto('validar')}
+                  style={{
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    cursor: validating ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 4px rgba(16,185,129,0.2)',
+                    transition: 'all 0.2s',
+                    opacity: validating ? 0.7 : 1
+                  }}
+                  onMouseEnter={e => { if(!validating) e.currentTarget.style.background = '#059669'; }}
+                  onMouseLeave={e => { if(!validating) e.currentTarget.style.background = '#10b981'; }}
+                >
+                  {validating ? 'Procesando...' : '✅ Aprobar Imagen'}
+                </button>
+              </div>
+
+              <div style={{ borderBottom: '1px solid #f1f5f9' }} />
+
+              {/* Action: Reject Options */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Leve */}
+                <div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: '#475569', fontWeight: 700, textAlign: 'left' }}>Rechazo Leve (Aviso por email, sin sanción)</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {MOTIVOS_RECHAZO_LEVE.map((motivo, i) => (
+                      <label key={`leve-${i}`} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
+                        padding: '8px 10px', borderRadius: '8px', border: `1.5px solid ${motivoSeleccionado === motivo ? '#ef4444' : '#e2e8f0'}`,
+                        background: motivoSeleccionado === motivo ? '#fef2f2' : 'white',
+                        transition: 'all 0.15s',
+                        textAlign: 'left'
+                      }}>
+                        <input
+                          type="radio"
+                          name="motivo"
+                          value={motivo}
+                          checked={motivoSeleccionado === motivo}
+                          onChange={() => setMotivoSeleccionado(motivo)}
+                          style={{ marginTop: '2px', accentColor: '#ef4444', flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.4 }}>{motivo}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grave */}
+                <div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', color: '#7f1d1d', fontWeight: 700, textAlign: 'left' }}>⚠️ Infracción Grave (Sanción disciplinaria)</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {MOTIVOS_SANCION_GRAVE.map((motivo, i) => (
+                      <label key={`grave-${i}`} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
+                        padding: '8px 10px', borderRadius: '8px', border: `1.5px solid ${motivoSeleccionado === motivo ? '#7f1d1d' : '#e2e8f0'}`,
+                        background: motivoSeleccionado === motivo ? '#fef2f2' : 'white',
+                        transition: 'all 0.15s',
+                        textAlign: 'left'
+                      }}>
+                        <input
+                          type="radio"
+                          name="motivo"
+                          value={motivo}
+                          checked={motivoSeleccionado === motivo}
+                          onChange={() => setMotivoSeleccionado(motivo)}
+                          style={{ marginTop: '2px', accentColor: '#7f1d1d', flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.4 }}>{motivo}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Motivo personalizado */}
+                {motivoSeleccionado === 'Otro motivo — ver nota adicional' && (
+                  <textarea
+                    placeholder="Describe el motivo específico del rechazo..."
+                    value={motivoExtra}
+                    onChange={e => setMotivoExtra(e.target.value)}
+                    rows={3}
+                    style={{
+                      width: '100%', border: '1.5px solid #fca5a5', borderRadius: '8px',
+                      padding: '10px 12px', fontSize: '0.82rem', resize: 'vertical',
+                      fontFamily: 'inherit', boxSizing: 'border-box', color: '#0f172a'
+                    }}
+                  />
+                )}
+
+                {/* Nota informativa contextual */}
+                {MOTIVOS_SANCION_GRAVE.includes(motivoSeleccionado) ? (
+                  <div style={{
+                    background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '8px',
+                    padding: '10px 12px', fontSize: '0.78rem', color: '#991b1b', textAlign: 'left'
+                  }}>
+                    ⛔ <strong>Atención:</strong> La foto será eliminada permanentemente y el usuario recibirá una sanción disciplinaria.
+                  </div>
+                ) : motivoSeleccionado ? (
+                  <div style={{
+                    background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px',
+                    padding: '10px 12px', fontSize: '0.78rem', color: '#9a3412', textAlign: 'left'
+                  }}>
+                    ℹ️ La foto <strong>no se borra</strong>. El usuario la verá marcada como rechazada en su galería y podrá eliminarla o recurrir.
+                  </div>
+                ) : null}
+
+                {/* Reject Button */}
+                <button
+                  disabled={validating || !motivoSeleccionado || (motivoSeleccionado === 'Otro motivo — ver nota adicional' && !motivoExtra.trim())}
+                  onClick={() => handleValidatePhoto('rechazar')}
+                  style={{
+                    background: motivoSeleccionado ? '#ef4444' : '#f1f5f9',
+                    color: motivoSeleccionado ? 'white' : '#94a3b8',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    cursor: (validating || !motivoSeleccionado || (motivoSeleccionado === 'Otro motivo — ver nota adicional' && !motivoExtra.trim())) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    opacity: (validating || !motivoSeleccionado || (motivoSeleccionado === 'Otro motivo — ver nota adicional' && !motivoExtra.trim())) ? 0.5 : 1
+                  }}
+                  onMouseEnter={e => { if(!validating && motivoSeleccionado) e.currentTarget.style.background = '#dc2626'; }}
+                  onMouseLeave={e => { if(!validating && motivoSeleccionado) e.currentTarget.style.background = '#ef4444'; }}
+                >
+                  {validating ? 'Procesando...' : '❌ Denegar Imagen'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

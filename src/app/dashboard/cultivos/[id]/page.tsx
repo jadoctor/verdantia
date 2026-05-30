@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
@@ -11,6 +11,8 @@ import InlineLaborPhotos from './InlineLaborPhotos';
 export default function CultivoDashboard() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
   const cultivoId = params.id as string;
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [cultivo, setCultivo] = useState<any>(null);
@@ -345,10 +347,16 @@ export default function CultivoDashboard() {
       {/* ── Navegación ── */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
         <button 
-          onClick={() => router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedades}`)}
+          onClick={() => {
+            if (from === 'dashboard') {
+              router.push('/dashboard');
+            } else {
+              router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedades}`);
+            }
+          }}
           style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          ← Volver a la Planta
+          {from === 'dashboard' ? '← Volver al Dashboard' : '← Volver a la Planta'}
         </button>
 
         <div style={{ 

@@ -143,8 +143,11 @@ export default function IniciarCultivoModal({
     semillasfechaenvasado: '',
     semillasfechacaducidad: '',
     semillascantidad: '',
-    fechaInicio: new Date().toISOString().split('T')[0]
+    fechaInicio: new Date().toISOString().split('T')[0],
+    xcultivosidsemillas: '' as string | number
   });
+  
+  const [stockInfo, setStockInfo] = useState<{ totalStock: number, lotesCount: number, seedsList: any[] } | null>(null);
   
   const [calendarType, setCalendarType] = useState('Normal');
   const [calendarAdvice, setCalendarAdvice] = useState<any>(null);
@@ -248,6 +251,28 @@ export default function IniciarCultivoModal({
     }
   }, [isOpen, userEmail, plantaNombre, calendarioSolarStr]);
 
+  useEffect(() => {
+    if (isOpen && userEmail && plantaId) {
+      fetch('/api/user/semillas', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => {
+          const seeds = (data.semillas || []).filter((s: any) => s.xsemillasidvariedades === plantaId && s.semillasstockactual > 0 && s.semillasactivosino !== 0);
+          if (seeds.length > 0) {
+            const total = seeds.reduce((acc: number, s: any) => acc + (s.semillasstockactual || 0), 0);
+            setStockInfo({
+              totalStock: total,
+              lotesCount: seeds.length,
+              seedsList: seeds
+            });
+            handleNext({ xcultivosidsemillas: seeds[0].idsemillas });
+          } else {
+            setStockInfo(null);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, userEmail, plantaId]);
+
   if (!isOpen) return null;
 
   const handleNext = (updates: any) => {
@@ -326,6 +351,8 @@ END:VCALENDAR`;
           const seedData = await seedRes.json();
           seedId = seedData.id;
         }
+      } else if (finalData.origen === 'semilla_inventario') {
+        seedId = finalData.xcultivosidsemillas || null;
       }
 
       // Ahora creamos el cultivo
@@ -345,6 +372,21 @@ END:VCALENDAR`;
       });
 
       if (res.ok) {
+        // Decrementar stock de semilla del banco digital
+        if (seedId && finalData.origen === 'semilla_inventario' && stockInfo) {
+          const seedToUpdate = stockInfo.seedsList.find(s => s.idsemillas === parseInt(String(seedId)));
+          if (seedToUpdate) {
+            const newStock = Math.max(0, (seedToUpdate.semillasstockactual || 0) - (parseInt(String(finalData.cantidad)) || 0));
+            await fetch(`/api/user/semillas/${seedId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+              body: JSON.stringify({
+                ...seedToUpdate,
+                semillasstockactual: newStock
+              })
+            });
+          }
+        }
         setSuccess(true);
         setTimeout(() => {
           // Reset y cerrar
@@ -673,10 +715,46 @@ END:VCALENDAR`;
                 </div>
 
                 <h3 style={{ margin: '16px 0 8px', color: '#334155', fontSize: '1.1rem' }}>Paso 2: ¿De dónde es la semilla?</h3>
-                <StepCard 
-                  icon="🤲" title="Propia / Intercambio"
-                  onClick={() => { handleNext({ origen: 'semilla_inventario' }); setStep(3); }}
-                />
+                {stockInfo ? (
+                  <StepCard 
+                    icon="🤲" title="Propia / Intercambio (Desde tu banco)"
+                    onClick={() => { handleNext({ origen: 'semilla_inventario' }); setStep(3); }}
+                  >
+                    <div style={{
+                      fontSize: '0.8rem',
+                      background: '#dcfce7',
+                      color: '#15803d',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      marginTop: '4px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      ✅ Tienes {stockInfo.totalStock} semillas disponibles ({stockInfo.lotesCount} {stockInfo.lotesCount === 1 ? 'lote' : 'lotes'}) en tu banco digital.
+                    </div>
+                  </StepCard>
+                ) : (
+                  <StepCard 
+                    icon="🤲" title="Propia / Intercambio"
+                    onClick={() => { handleNext({ origen: 'semilla_inventario' }); setStep(3); }}
+                  >
+                    <div style={{
+                      fontSize: '0.8rem',
+                      background: '#f1f5f9',
+                      color: '#64748b',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      marginTop: '4px',
+                      display: 'inline-flex',
+                      alignItems: 'center'
+                    }}>
+                      ❌ Sin semillas en tu banco digital de esta variedad.
+                    </div>
+                  </StepCard>
+                )}
                 <StepCard 
                   icon="📦" title="Comprada"
                   onClick={() => { handleNext({ origen: 'semilla_nueva' }); }}
@@ -709,6 +787,10 @@ END:VCALENDAR`;
                             <option value="Clemente Viven" />
                             <option value="EuroGarden" />
                             <option value="Koprima" />
+                            <option value="Semillas Madre Tierra" />
+                            <option value="Fito Agrícola" />
+                            <option value="Semillas Cantueso" />
+                            <option value="Semillas Silvestres" />
                           </datalist>
                         </div>
                         <div>
@@ -722,6 +804,7 @@ END:VCALENDAR`;
                             <option value="Lidl" />
                             <option value="Aldi" />
                             <option value="Ferretería local" />
+                            <option value="Cooperativa agrícola" />
                           </datalist>
                         </div>
                         <div>
@@ -825,6 +908,27 @@ END:VCALENDAR`;
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   
+                  {/* Selector de Lote de Semillas si origen es inventario */}
+                  {formData.origen === 'semilla_inventario' && stockInfo && (
+                    <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1px solid #6ee7b7', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#065f46' }}>Lote de Semillas digital a usar</label>
+                      <select
+                        value={formData.xcultivosidsemillas || ''}
+                        onChange={e => handleNext({ xcultivosidsemillas: e.target.value })}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: 'white' }}
+                      >
+                        {stockInfo.seedsList.map(s => (
+                          <option key={s.idsemillas} value={s.idsemillas}>
+                            Semilla Nº {s.semillasnumerocoleccion || s.idsemillas} ({s.semillasmarca || 'Sin marca'}) — {s.semillasstockactual} uds. disponibles
+                          </option>
+                        ))}
+                      </select>
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#047857' }}>
+                        💡 Restaremos automáticamente las semillas usadas del stock de este lote.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Fecha de Siembra / Inicio */}
                   <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>

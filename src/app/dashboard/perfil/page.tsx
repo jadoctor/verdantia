@@ -28,7 +28,7 @@ interface UserProfile {
 
 const getMaxPhotos = (plan: string = 'Gratuito') => {
   const p = (plan || '').toLowerCase();
-  if (p === 'premium') return 5;
+  if (p === 'premium') return 4;
   if (p === 'avanzado' || p === 'pro') return 3;
   if (p === 'esencial' || p === 'plus') return 2;
   return 1; // Gratuito / Free / visitante / sin plan
@@ -65,6 +65,7 @@ function PerfilContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [activeTab, setActiveTab] = useState('perfil');
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,6 +88,9 @@ function PerfilContent() {
   const [tipoLaboreo, setTipoLaboreo] = useState('Convencional');
   const [avisosConfig, setAvisosConfig] = useState<any>(null);
   const [avisosLoading, setAvisosLoading] = useState(false);
+  const [collapsedMandatory, setCollapsedMandatory] = useState(false);
+  const [collapsedOptional, setCollapsedOptional] = useState(false);
+
 
   // Location autocomplete
   const [cpSuggestions, setCpSuggestions] = useState<{cp: string; ciudad: string}[]>([]);
@@ -122,6 +126,18 @@ function PerfilContent() {
 
   // Photos
   const [photos, setPhotos] = useState<any[]>([]);
+  const [activeFotoId, setActiveFotoId] = useState<number | null>(null);
+
+  const activeFoto = photos.find(f => f.id === activeFotoId) || photos.find(f => f.esPrincipal || f.esPrincipal === 1) || photos[0];
+
+  useEffect(() => {
+    if (photos && photos.length > 0) {
+      const primary = photos.find(p => p.esPrincipal === 1 || p.esPrincipal) || photos[0];
+      if (primary && activeFotoId === null) {
+        setActiveFotoId(primary.id);
+      }
+    }
+  }, [photos, activeFotoId]);
   const [uploading, setUploading] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -1201,43 +1217,198 @@ function PerfilContent() {
     <div className="perfil-page">
       {toast && <div className="perfil-toast">{toast}</div>}
 
+      {/* ── Navegación (Estándar de Especies) ── */}
+      <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button type="button" onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
+          🏠 Volver al Inicio
+        </button>
+      </div>
+
+      {/* ── Subheader Integrado (Estándar de Especies) ── */}
+      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white', boxShadow: '0 4px 15px rgba(15, 118, 110, 0.15)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {nombre || 'Mi Perfil'} {apellidos || ''}
+            </h1>
+            <p style={{ margin: '6px 0 0', opacity: 0.9, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>@{nombreUsuario || 'usuario'}</span>
+              <span>·</span>
+              <span>{profile.email}</span>
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontWeight: 750,
+              fontSize: '0.78rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              👑 {profile.suscripcion || 'Gratuito'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── HERO GALLERY HEADER (Estándar de Especies) ── */}
+      <div style={{
+        marginBottom: '28px',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #14b8a612 60%, #10b98120 100%)',
+        transition: 'background 0.6s ease',
+        overflow: 'hidden'
+      }}>
+        {photos.length > 0 ? (
+          <div className="profile-hero-gallery">
+            {/* Hero photo */}
+            <div className="profile-hero-main">
+              {activeFoto && (() => {
+                let hMeta: any = {};
+                try { hMeta = JSON.parse(activeFoto.resumen || '{}'); } catch (e) {}
+                const fullFilter = `${STYLE_FILTERS[hMeta.profile_style] === 'none' ? '' : (STYLE_FILTERS[hMeta.profile_style] || '')} brightness(${hMeta.profile_brightness ?? 100}%) contrast(${hMeta.profile_contrast ?? 100}%)`.trim();
+                return (
+                  <>
+                    <img key={activeFoto.id} src={getMediaUrl(activeFoto.ruta)}
+                      alt={nombre}
+                      style={{
+                        width: '100%', height: '100%', objectFit: 'cover',
+                        objectPosition: `${hMeta.profile_object_x ?? 50}% ${hMeta.profile_object_y ?? 38}%`,
+                        transformOrigin: `${hMeta.profile_object_x ?? 50}% ${hMeta.profile_object_y ?? 38}%`,
+                        transform: hMeta.profile_object_zoom > 100 ? `scale(${hMeta.profile_object_zoom / 100})` : undefined,
+                        filter: fullFilter, transition: 'opacity 0.3s ease'
+                      }}
+                      crossOrigin="anonymous" />
+                    
+                    {/* Badge / Button Overlay */}
+                    <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 10 }}>
+                      {activeFoto.esPrincipal ? (
+                        <span style={{ background: '#10b981', color: 'white', fontSize: '0.68rem', padding: '4px 10px', borderRadius: '20px', fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+                          ⭐ Principal
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setPhotoPrimary(activeFoto.id)}
+                          style={{
+                            background: 'rgba(15, 23, 42, 0.75)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '20px',
+                            padding: '4px 10px',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            backdropFilter: 'blur(4px)',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#10b981';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(15, 23, 42, 0.75)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                        >
+                          ☆ Hacer Principal
+                        </button>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Right strip: only photos NOT currently shown as hero */}
+            {photos.filter(p => p.id !== activeFoto?.id).length > 0 && (
+              <div className="profile-hero-thumbnails">
+                {photos
+                  .filter(p => p.id !== activeFoto?.id)
+                  .slice(0, 3) // Muestra hasta 3 miniaturas
+                  .map(p => {
+                    let tMeta: any = {};
+                    try { tMeta = JSON.parse(p.resumen || '{}'); } catch (e) { }
+                    return (
+                      <div key={p.id}
+                        onClick={() => setActiveFotoId(p.id)}
+                        className={`profile-hero-thumb ${p.esPrincipal ? 'is-preferred' : ''}`}
+                        style={{
+                          width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
+                          border: p.esPrincipal ? '2.5px solid #f59e0b' : '2px solid rgba(0,0,0,0.08)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                      >
+                        <img src={getMediaUrl(p.ruta)}
+                          draggable={false}
+                          alt=""
+                          style={{
+                            width: '100%', height: '100%', objectFit: 'cover',
+                            objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 38}%`,
+                            filter: `${STYLE_FILTERS[tMeta.profile_style] === 'none' ? '' : (STYLE_FILTERS[tMeta.profile_style] || '')} brightness(${tMeta.profile_brightness ?? 100}%) contrast(${tMeta.profile_contrast ?? 100}%)`.trim()
+                          }} crossOrigin="anonymous" />
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {icono ? (
+              <span style={{ fontSize: '2.5rem' }}>{icono}</span>
+            ) : (
+              <span style={{ fontSize: '2.5rem' }}>👤</span>
+            )}
+            <h2 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', fontWeight: 700 }}>Sin fotos en la galería</h2>
+          </div>
+        )}
+      </div>
+
+      {/* ── PREMIUM TAB NAVIGATION ── */}
+      <div className="profile-tabs-nav">
+        {[
+          { id: 'perfil', label: '👤 Datos Personales' },
+          { id: 'fotos', label: '📸 Fotos de Perfil' },
+          { id: 'comunicaciones', label: '🔔 Comunicaciones' },
+          { id: 'cultivo', label: '🌾 Preferencias de Cultivo' },
+          { id: 'seguridad', label: '🔒 Seguridad & Privacidad' },
+          { id: 'suscripcion', label: '⭐ Suscripción & Logros' },
+          { id: 'cuenta', label: '⚠️ Eliminar Cuenta' }
+        ].map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`profile-tab-btn ${isActive ? 'is-active' : ''}`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ═══════════════════════════════════════════ */}
       {/* 1. FOTOGRAFÍA E ICONOS                      */}
       {/* ═══════════════════════════════════════════ */}
-      <details open>
-        <summary style={{ display: 'flex', alignItems: 'center', gap: '0px', flexWrap: 'nowrap' }}>
-          📸 Fotografía e Iconos
-          {/* Miniatura de la foto/icono actual */}
-          {icono && AVATAR_ICONS.includes(icono) ? (
-            <span className="summary-thumb" style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icono}</span>
-          ) : photos.length > 0 && photos.find(p => p.esPrincipal) ? (
-            (() => {
-              const mainPhoto = photos.find(p => p.esPrincipal)!;
-              let meta: any = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
-              try { meta = { ...meta, ...JSON.parse(mainPhoto.resumen || '{}') }; } catch {}
-              return (
-                <span className="summary-thumb" style={{
-                  width: '24px', height: '32px', borderRadius: '4px', overflow: 'hidden',
-                  display: 'inline-flex', flexShrink: 0, border: '2px solid #f59e0b',
-                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)', marginLeft: '6px'
-                }}>
-                  <img
-                    src={getMediaUrl(mainPhoto.ruta)}
-                    alt=""
-                    crossOrigin="anonymous"
-                    style={{
-                      width: '100%', height: '100%', objectFit: 'cover',
-                      objectPosition: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
-                      transformOrigin: `${meta.profile_object_x}% ${meta.profile_object_y}%`,
-                      transform: meta.profile_object_zoom > 100 ? `scale(${meta.profile_object_zoom / 100})` : undefined
-                    }}
-                  />
-                </span>
-              );
-            })()
-          ) : null}
-        </summary>
-        <div className="accordion-body">
+      {activeTab === 'fotos' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>📸 Fotografía e Iconos</h3>
+          <div className="accordion-body">
           {/* ── Galería de Fotos ── */}
           <label className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
             <span>Fotos de Perfil</span>
@@ -1434,25 +1605,42 @@ function PerfilContent() {
             Este icono se mostrará como emoji cuando no tengas fotografía. Su guardado es automático al clicar uno.
           </small>
         </div>
-      </details>
+      </div>
+      )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* 2. DATOS PERSONALES                          */}
       {/* ═══════════════════════════════════════════ */}
-      <details open>
-        <summary>
-          👤 Datos Personales
-          <span className="accordion-preview">({nombre} {apellidos})</span>
-        </summary>
-        <div className="accordion-body">
+      {activeTab === 'perfil' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <div className="accordion-body">
 
           {/* ── CAMPOS OBLIGATORIOS (autoguardado) ── */}
           <div className="mandatory-zone">
-            <div className="mandatory-zone-header">
+            <div className="mandatory-zone-header" onClick={() => setCollapsedMandatory(!collapsedMandatory)} style={{ cursor: 'pointer', userSelect: 'none' }}>
               <span>📋 Campos Obligatorios</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <small style={{ color: '#92400e', opacity: 0.8, fontSize: '0.8rem', fontWeight: 600 }}>{collapsedMandatory ? 'Mostrar' : 'Ocultar'}</small>
+                <svg 
+                  style={{ 
+                    transform: collapsedMandatory ? 'rotate(-90deg)' : 'rotate(0deg)', 
+                    transition: 'transform 0.25s ease',
+                    width: '16px',
+                    height: '16px',
+                    color: '#92400e'
+                  }}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
             </div>
 
-            <div className="form-grid">
+            {!collapsedMandatory && (
+              <div className="form-grid">
               {/* Fila 1: Nombre + Nombre de Usuario */}
               <div className="form-group">
                 <label htmlFor="nombre" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -1795,110 +1983,37 @@ function PerfilContent() {
                 )}
               </div>
             </div>
+            )}
           </div>
 
-
-
-          {/* ── CENTRO DE COMUNICACIONES ── */}
-          <div id="comunicaciones" className="optional-zone" style={{ marginTop: '20px' }}>
-            <div className="optional-zone-header">
-              <h3>🔔 Centro de Comunicaciones</h3>
-              <p>Gestiona los canales por los que Verdantia se comunica contigo.</p>
-            </div>
-            
-            <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                {avisosLoading || !avisosConfig ? (
-                  <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Cargando preferencias...</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {avisosConfig.tiposAvisos.map((aviso: any) => {
-                      const reglaEstado = avisosConfig.reglas[aviso.idtiposavisos] ?? 0;
-                      let isActivo = true;
-                      if (reglaEstado === 2) isActivo = false;
-                      else if (reglaEstado === 1) isActivo = true;
-                      else if (avisosConfig.userPrefs[aviso.idtiposavisos] === 0) isActivo = false;
-
-                      const isTareasDelHuerto = aviso.tiposavisoscodigo === 'TAREAS';
-
-                      return (
-                        <div key={aviso.idtiposavisos} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: reglaEstado === 2 ? '#f8fafc' : '#ffffff' }}>
-                            <div>
-                              <h4 style={{ margin: '0 0 4px 0', color: reglaEstado === 2 ? '#94a3b8' : '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {aviso.tiposavisosnombre}
-                                {reglaEstado === 2 && <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: '#e2e8f0', color: '#475569', borderRadius: '12px' }}>🔒 Bloqueado en tu plan</span>}
-                                {reglaEstado === 1 && <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: '#fef3c7', color: '#b45309', borderRadius: '12px' }}>Obligatorio</span>}
-                              </h4>
-                              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{aviso.tiposavisosdescripcion}</p>
-                              {reglaEstado === 2 && (
-                                <p style={{ margin: '6px 0 0 0', fontSize: '0.75rem', color: '#b91c1c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  💡 <span>Mejora a un plan superior para desbloquear esta función.</span>
-                                </p>
-                              )}
-                            </div>
-
-                            <div style={{ marginLeft: '16px' }}>
-                              {reglaEstado === 2 ? (
-                                <button type="button" style={{ padding: '6px 12px', fontSize: '0.85rem', opacity: 0.7, border: '1px solid #cbd5e1', borderRadius: '8px', background: 'transparent' }} disabled>Bloqueado</button>
-                              ) : reglaEstado === 1 ? (
-                                <div style={{ width: '44px', height: '24px', background: '#10b981', borderRadius: '12px', position: 'relative', opacity: 0.6 }}>
-                                  <div style={{ width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }} />
-                                </div>
-                              ) : (
-                                <div 
-                                  onClick={() => toggleAvisoMaestro(aviso.idtiposavisos, isActivo ? 1 : 0)}
-                                  style={{ 
-                                    width: '44px', height: '24px', 
-                                    background: isActivo ? '#10b981' : '#cbd5e1', 
-                                    borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' 
-                                  }}>
-                                  <div style={{ 
-                                    width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', 
-                                    left: isActivo ? '22px' : '2px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' 
-                                  }} />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {isTareasDelHuerto && isActivo && (
-                            <div style={{ borderTop: '1px solid #f1f5f9', padding: '16px', background: '#f8fafc' }}>
-                              <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Desmarca las labores que NO te interesan (Opt-Out):</p>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
-                                {avisosConfig.labores.map((labor: any) => {
-                                  const laborActiva = avisosConfig.userLaboresPrefs[labor.idlabores] !== 0;
-                                  return (
-                                    <label key={labor.idlabores} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#fff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                                      <input 
-                                        type="checkbox" 
-                                        checked={laborActiva}
-                                        onChange={() => toggleAvisoLabor(labor.idlabores, laborActiva ? 1 : 0)}
-                                        style={{ accentColor: '#10b981', width: '16px', height: '16px', cursor: 'pointer' }}
-                                      />
-                                      <span style={{ fontSize: '0.85rem', color: '#334155' }}>{labor.laboresnombre}</span>
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
           {/* ── CAMPOS OPCIONALES ── */}
           <div className="optional-zone">
-            <div className="optional-zone-header">
+            <div className="optional-zone-header" onClick={() => setCollapsedOptional(!collapsedOptional)} style={{ cursor: 'pointer', userSelect: 'none' }}>
               <span>📝 Datos Complementarios</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <small style={{ color: '#475569', opacity: 0.8, fontSize: '0.8rem', fontWeight: 600 }}>{collapsedOptional ? 'Mostrar' : 'Ocultar'}</small>
+                <svg 
+                  style={{ 
+                    transform: collapsedOptional ? 'rotate(-90deg)' : 'rotate(0deg)', 
+                    transition: 'transform 0.25s ease',
+                    width: '16px',
+                    height: '16px',
+                    color: '#475569'
+                  }}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24" 
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
             </div>
 
-            <div className="form-grid">
+            {!collapsedOptional && (
+              <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
+                <div className="form-grid">
               {/* Apellidos */}
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label htmlFor="apellidos" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -2085,19 +2200,119 @@ function PerfilContent() {
                 </div>
               </div>
             </div>
+            </div>
+            )}
           </div>
         </div>
-      </details>
+      </div>
+      )}
+
+      {/* ── Tab de Comunicaciones ── */}
+      {activeTab === 'comunicaciones' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>🔔 Centro de Comunicaciones</h3>
+          
+          <div className="optional-zone" style={{ marginTop: '0px' }}>
+            <div className="optional-zone-header">
+              <span>🔔 Canales de Aviso</span>
+              <small>Configura tus preferencias</small>
+            </div>
+            
+            <div className="form-grid">
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                {avisosLoading || !avisosConfig ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Cargando preferencias...</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {avisosConfig.tiposAvisos.map((aviso: any) => {
+                      const reglaEstado = avisosConfig.reglas[aviso.idtiposavisos] ?? 0;
+                      let isActivo = true;
+                      if (reglaEstado === 2) isActivo = false;
+                      else if (reglaEstado === 1) isActivo = true;
+                      else if (avisosConfig.userPrefs[aviso.idtiposavisos] === 0) isActivo = false;
+
+                      const isTareasDelHuerto = aviso.tiposavisoscodigo === 'TAREAS';
+
+                      return (
+                        <div key={aviso.idtiposavisos} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#fff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: reglaEstado === 2 ? '#f8fafc' : '#ffffff' }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 4px 0', color: reglaEstado === 2 ? '#94a3b8' : '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {aviso.tiposavisosnombre}
+                                {reglaEstado === 2 && <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: '#e2e8f0', color: '#475569', borderRadius: '12px' }}>🔒 Bloqueado en tu plan</span>}
+                                {reglaEstado === 1 && <span style={{ fontSize: '0.8rem', padding: '2px 8px', background: '#fef3c7', color: '#b45309', borderRadius: '12px' }}>Obligatorio</span>}
+                              </h4>
+                              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{aviso.tiposavisosdescripcion}</p>
+                              {reglaEstado === 2 && (
+                                <p style={{ margin: '6px 0 0 0', fontSize: '0.75rem', color: '#b91c1c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  💡 <span>Mejora a un plan superior para desbloquear esta función.</span>
+                                </p>
+                              )}
+                            </div>
+
+                            <div style={{ marginLeft: '16px' }}>
+                              {reglaEstado === 2 ? (
+                                <button type="button" style={{ padding: '6px 12px', fontSize: '0.85rem', opacity: 0.7, border: '1px solid #cbd5e1', borderRadius: '8px', background: 'transparent' }} disabled>Bloqueado</button>
+                              ) : reglaEstado === 1 ? (
+                                <div style={{ width: '44px', height: '24px', background: '#10b981', borderRadius: '12px', position: 'relative', opacity: 0.6 }}>
+                                  <div style={{ width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }} />
+                                </div>
+                              ) : (
+                                <div 
+                                  onClick={() => toggleAvisoMaestro(aviso.idtiposavisos, isActivo ? 1 : 0)}
+                                  style={{ 
+                                    width: '44px', height: '24px', 
+                                    background: isActivo ? '#10b981' : '#cbd5e1', 
+                                    borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: 'all 0.2s' 
+                                  }}>
+                                  <div style={{ 
+                                    width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', 
+                                    left: isActivo ? '22px' : '2px', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' 
+                                  }} />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {isTareasDelHuerto && isActivo && (
+                            <div style={{ borderTop: '1px solid #f1f5f9', padding: '16px', background: '#f8fafc' }}>
+                              <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Desmarca las labores que NO te interesan (Opt-Out):</p>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                                {avisosConfig.labores.map((labor: any) => {
+                                  const laborActiva = avisosConfig.userLaboresPrefs[labor.idlabores] !== 0;
+                                  return (
+                                    <label key={labor.idlabores} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#fff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                                      <input 
+                                        type="checkbox" 
+                                        checked={laborActiva}
+                                        onChange={() => toggleAvisoLabor(labor.idlabores, laborActiva ? 1 : 0)}
+                                        style={{ accentColor: '#10b981', width: '16px', height: '16px', cursor: 'pointer' }}
+                                      />
+                                      <span style={{ fontSize: '0.85rem', color: '#334155' }}>{labor.laboresnombre}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* 2B. MI FORMA DE CULTIVAR                    */}
       {/* ═══════════════════════════════════════════ */}
-      <details open>
-        <summary>
-          🌾 Mi forma de cultivar
-          <span className="accordion-preview">({tipoCalendario} • {tipoLaboreo})</span>
-        </summary>
-        <div className="accordion-body" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      {activeTab === 'cultivo' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>🌾 Mi forma de cultivar</h3>
+          <div className="accordion-body" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
           {/* Subapartado 1: Calendario de cultivo */}
           <div className="optional-zone" style={{ marginTop: '0px' }}>
@@ -2549,14 +2764,16 @@ function PerfilContent() {
           </div>
 
         </div>
-      </details>
+      </div>
+      )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* 3. SEGURIDAD                                 */}
       {/* ═══════════════════════════════════════════ */}
-      <details open>
-        <summary>🔒 Seguridad</summary>
-        <div className="accordion-body">
+      {activeTab === 'seguridad' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '24px', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>🔒 Seguridad</h3>
+          <div className="accordion-body">
           <div className="form-grid">
             {/* Restablecer contraseña */}
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
@@ -2606,14 +2823,16 @@ function PerfilContent() {
             </div>
           </div>
         </div>
-      </details>
+      </div>
+      )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* 4. ROLES Y SUSCRIPCIONES                     */}
       {/* ═══════════════════════════════════════════ */}
-      <details open>
-        <summary>⭐ Roles y Suscripciones</summary>
-        <div className="accordion-body">
+      {activeTab === 'suscripcion' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>⭐ Roles y Suscripciones</h3>
+          <div className="accordion-body">
           <label className="section-label">Roles Actuales Aprobados</label>
           <div className="roles-display">
 {roles.map((rol) => (
@@ -2838,7 +3057,7 @@ function PerfilContent() {
                   {/* Opciones de upgrade */}
                   {[{ plan: 'Esencial / Plus', price: '4,99 €/mes', icon: '🌱', color: '#059669', features: ['2 fotos de perfil', 'Calendario Lunar', '3 ofertas de semillas'] },
                     { plan: 'Avanzado / Pro', price: '9,99 €/mes', icon: '🌿', color: '#2563eb', features: ['3 fotos de perfil', 'Calendario Biod.', '10 ofertas de semillas'] },
-                    { plan: 'Premium', price: '14,99 €/mes', icon: '🌳', color: '#d97706', features: ['5 fotos de perfil', 'Todos los calendarios', 'Ofertas ilimitadas', 'IA avanzada'] },
+                    { plan: 'Premium', price: '14,99 €/mes', icon: '🌳', color: '#d97706', features: ['4 fotos de perfil', 'Todos los calendarios', 'Ofertas ilimitadas', 'IA avanzada'] },
                   ].map(({ plan, price, icon, color, features }) => (
                     <div key={plan} style={{ padding: '14px', borderRadius: '12px', border: `1.5px solid ${color}30`, background: `${color}08`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
                       <div>
@@ -2894,7 +3113,7 @@ function PerfilContent() {
                     </thead>
                     <tbody>
                       {[
-                        ['Fotos de perfil', '1', '2', '3', '5'],
+                        ['Fotos de perfil', '1', '2', '3', '4'],
                         ['Plantas activas', '10', '25', '50', 'Ilimitadas'],
                         ['Ofertas de semillas', '1', '3', '10', 'Ilimitadas'],
                         ['Calendario Normal', '✅', '✅', '✅', '✅'],
@@ -2922,14 +3141,16 @@ function PerfilContent() {
             </div>
           )}
         </div>
-      </details>
+      </div>
+      )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* 5. POLÍTICA DE PRIVACIDAD (RGPD)             */}
       {/* ═══════════════════════════════════════════ */}
-      <details open>
-        <summary>📋 Política de Privacidad</summary>
-        <div className="accordion-body">
+      {activeTab === 'seguridad' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>📋 Política de Privacidad</h3>
+          <div className="accordion-body">
           <div className="privacy-box">
             <label className="section-label">🛡️ Tratamiento de Datos Personales (RGPD)</label>
             <label className="privacy-check">
@@ -2953,14 +3174,16 @@ function PerfilContent() {
             </div>
           </div>
         </div>
-      </details>
+      </div>
+      )}
 
       {/* ═══════════════════════════════════════════ */}
       {/* 6. ZONA DE PELIGRO — CANCELAR CUENTA         */}
       {/* ═══════════════════════════════════════════ */}
-      <details>
-        <summary className="danger-summary">⚠️ Zona de Peligro — Cancelar Cuenta</summary>
-        <div className="accordion-body">
+      {activeTab === 'cuenta' && (
+        <div style={{ background: 'white', border: '1.5px solid #fca5a5', borderRadius: '16px', padding: '24px', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#ef4444', fontSize: '1.1rem', fontWeight: 800 }}>⚠️ Zona de Peligro — Cancelar Cuenta</h3>
+          <div className="accordion-body">
           <div className="danger-zone">
             <h4>🗑️ Eliminar mi cuenta permanentemente</h4>
             <p className="danger-text">
@@ -3003,7 +3226,8 @@ function PerfilContent() {
             </button>
           </div>
         </div>
-      </details>
+      </div>
+      )}
 
       {/* El botón de guardar manual ha sido eliminado en favor del autoguardado */}
 

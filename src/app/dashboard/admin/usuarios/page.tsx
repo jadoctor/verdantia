@@ -202,13 +202,13 @@ export default function UsuariosAdminPage() {
 
                       {/* Avatar */}
                       <td style={{ padding: '10px 14px' }}>
-                        <div style={{ width: '52px', height: '64px', borderRadius: '10px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #93c5fd', flexShrink: 0, position: 'relative' }}>
+                        <div style={{ width: '52px', height: '64px', borderRadius: '10px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${u.fotoPrincipal && !u.fotoValidada ? '#f59e0b' : '#93c5fd'}`, flexShrink: 0, position: 'relative' }}>
                           {u.fotoPrincipal ? (
                             <>
                               <img 
                                 src={getMediaUrl(u.fotoPrincipal)} 
                                 alt="" 
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}  
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: u.fotoValidada ? 1 : 0.7 }}  
                                 crossOrigin="anonymous" 
                                 onError={(e) => { 
                                   e.currentTarget.style.display = 'none'; 
@@ -219,6 +219,9 @@ export default function UsuariosAdminPage() {
                               <span style={{ display: 'none' }}>
                                 {u.icono && u.icono.length <= 4 ? u.icono : '👤'}
                               </span>
+                              {!u.fotoValidada && (
+                                <span title="Foto pendiente de verificación" style={{ position: 'absolute', top: '-2px', right: '-2px', background: '#f59e0b', color: 'white', fontSize: '0.6rem', fontWeight: 900, borderRadius: '4px', padding: '1px 3px', lineHeight: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>⏳</span>
+                              )}
                             </>
                           ) : u.icono && u.icono.length <= 4 ? (
                             <span>{u.icono}</span>
@@ -235,8 +238,11 @@ export default function UsuariosAdminPage() {
                       </td>
 
                       {/* Email */}
-                      <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {u.email}
+                      <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ color: u.emailVerificado ? '#059669' : '#dc2626', fontWeight: 600 }}>{u.email}</span>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: u.emailVerificado ? '#059669' : '#dc2626', marginTop: '2px' }}>
+                          {u.emailVerificado ? '✅ Verificado' : '❌ No verificado'}
+                        </div>
                       </td>
 
                       {/* Rol — select inline */}
@@ -266,9 +272,15 @@ export default function UsuariosAdminPage() {
                           <option value="Premium">👑 Premium</option>
                         </select>
                         {u.suscripcion && u.suscripcion !== 'Gratuito' ? (
-                          <span style={{ display: 'block', color: u.esPrueba ? '#059669' : '#d97706', marginTop: '2px', fontWeight: 600 }}>
-                            {u.esPrueba ? '🎁 De Regalo' : '💳 De Pago'}
-                          </span>
+                          <div style={{ 
+                            marginTop: '6px',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            color: u.esPrueba ? '#10b981' : '#d97706',
+                            textTransform: 'lowercase'
+                          }}>
+                            {u.suscripcion} {u.esPrueba ? 'no pago' : 'pago'}
+                          </div>
                         ) : null}
                       </td>
 

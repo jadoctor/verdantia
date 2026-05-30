@@ -25,6 +25,7 @@ interface UserProfile {
   poblacion?: string | null;
   tipoCalendario?: string;
   fotosRechazadasCount?: number;
+  suscripcion?: string;
 }
 
 // Función sencilla para calcular la fase lunar aproximada
@@ -201,7 +202,7 @@ export default function DashboardLayout({
         const res = await fetch(`/api/auth/profile?email=${encodeURIComponent(user.email!)}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
         if (res.ok) {
           const data = await res.json();
-          setProfile(data.profile);
+          setProfile(data.profile as UserProfile);
         }
       } catch (err) {
         console.error('Error cargando perfil:', err);
@@ -673,7 +674,7 @@ export default function DashboardLayout({
               {!isSuperAdmin && isAdmin && <span className="role-badge admin">ADMIN</span>}
               <span className="profile-achievement">
                 <span>{profile?.roles?.includes('visitante') ? '🧳' : (profile?.iconoLogro || '🧑‍🌾')}</span>
-                <span>{profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz'}</span>
+                <span>{profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz'} · ⭐ {profile?.suscripcion || 'Básica'}</span>
               </span>
               <span className="profile-edit-hint">✏️ Editar perfil</span>
             </div>

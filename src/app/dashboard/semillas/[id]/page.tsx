@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import Link from 'next/link';
@@ -9,6 +9,8 @@ import Link from 'next/link';
 export default function EditarSemillaPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const from = searchParams?.get('from');
   const semillaId = params?.id as string;
   
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -123,8 +125,17 @@ export default function EditarSemillaPage() {
       
       {/* ── Navegación ── */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={() => router.push('/dashboard/semillas')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          ← Volver a Inventario
+        <button 
+          onClick={() => {
+            if (from === 'dashboard') {
+              router.push('/dashboard');
+            } else {
+              router.push('/dashboard/semillas');
+            }
+          }} 
+          style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          {from === 'dashboard' ? '← Volver al Dashboard' : '← Volver a Inventario'}
         </button>
       </div>
 
@@ -133,7 +144,7 @@ export default function EditarSemillaPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '2rem' }}>🌱</span> Lote de Semillas Nº {formData.semillasnumerocoleccion || semillaId}
+              <span style={{ fontSize: '2rem' }}>🌱</span> Semilla Nº {formData.semillasnumerocoleccion || semillaId}
               {hasChanges && <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Cambios sin guardar</span>}
             </h1>
             <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
@@ -148,7 +159,7 @@ export default function EditarSemillaPage() {
         {/* HEADER TAB (Solo para simular la estructura del EspecieForm) */}
         <div style={{ padding: '0 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '24px' }}>
           <div style={{ padding: '16px 0', borderBottom: '3px solid #0f766e', color: '#0f766e', fontWeight: 'bold', fontSize: '1rem' }}>
-            ✏️ Edición de Lote
+            ✏️ Edición de Semilla
           </div>
         </div>
 
@@ -174,11 +185,50 @@ export default function EditarSemillaPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Marca Comercial</label>
-                <input type="text" name="semillasmarca" placeholder="Ej. Fito, Batlle..." value={formData.semillasmarca} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                <input 
+                  list="main-brands"
+                  type="text" 
+                  name="semillasmarca" 
+                  placeholder="Ej. Fito, Batlle..." 
+                  value={formData.semillasmarca} 
+                  onChange={handleChange} 
+                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
+                />
+                <datalist id="main-brands">
+                  <option value="Semillas Fitó" />
+                  <option value="Semillas Batlle" />
+                  <option value="Rocalba" />
+                  <option value="Vilmorin" />
+                  <option value="Clemente Viven" />
+                  <option value="EuroGarden" />
+                  <option value="Koprima" />
+                  <option value="Semillas Madre Tierra" />
+                  <option value="Fito Agrícola" />
+                  <option value="Semillas Cantueso" />
+                  <option value="Semillas Silvestres" />
+                </datalist>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Lugar de Compra</label>
-                <input type="text" name="semillaslugarcompra" placeholder="Ej. Leroy Merlin, Vivero Local" value={formData.semillaslugarcompra} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                <input 
+                  list="buy-places"
+                  type="text" 
+                  name="semillaslugarcompra" 
+                  placeholder="Ej. Leroy Merlin, Vivero Local" 
+                  value={formData.semillaslugarcompra} 
+                  onChange={handleChange} 
+                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
+                />
+                <datalist id="buy-places">
+                  <option value="Leroy Merlin" />
+                  <option value="Verdecora" />
+                  <option value="Vivero local" />
+                  <option value="Amazon" />
+                  <option value="Lidl" />
+                  <option value="Aldi" />
+                  <option value="Ferretería local" />
+                  <option value="Cooperativa agrícola" />
+                </datalist>
               </div>
             </div>
           )}

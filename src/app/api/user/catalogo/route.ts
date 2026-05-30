@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     // Especies visibles con su foto principal
     let especiesQuery = `
       SELECT e.idespecies, e.especiesnombre, e.especiesnombrecientifico, e.especiesfamilia, 
-             e.especiestipo, e.especiesicono, e.especiesdescripcion, e.especiesdificultad,
+             e.especiestipo, e.especiesicono, e.especiesdescripcion, e.especiesdificultad, e.especiespeso1000semillas,
              (SELECT datosadjuntosruta FROM datosadjuntos 
               WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' 
               AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as foto,

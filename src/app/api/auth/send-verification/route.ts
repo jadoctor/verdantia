@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // Lazy load: NO importar firebase/admin estáticamente (causa hash corrupto en Turbopack)
 import { Resend } from 'resend';
 import { VerificationEmail } from '@/emails/VerificationEmail';
+import { render } from '@react-email/components';
 
 // Asegúrate de poner RESEND_API_KEY en tu .env.local
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -45,15 +46,17 @@ export async function POST(request: Request) {
     const customVerificationLink = `${host}/auth/action${urlObj.search}`;
 
     // 2. Enviar el correo bonito usando Resend y React Email
+    const htmlBody = await render(VerificationEmail({ 
+      nombre: nombre || 'Agricultor', 
+      verificationLink: customVerificationLink,
+      sexo
+    }));
+
     const resendResult = await resend.emails.send({
       from: 'Verdantia Seguridad <admin@verdantia.life>',
       to: email,
       subject: '✉️ Verifica tu correo electrónico — Verdantia',
-      react: VerificationEmail({ 
-        nombre: nombre || 'Agricultor', 
-        verificationLink: customVerificationLink,
-        sexo
-      }),
+      html: htmlBody,
     });
 
     if (resendResult.error) {

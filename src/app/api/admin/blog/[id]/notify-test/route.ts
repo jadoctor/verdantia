@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { Resend } from 'resend';
 import { NewPostEmail } from '@/emails/NewPostEmail';
+import { render } from '@react-email/components';
 import { getMediaUrl } from '@/lib/media-url';
 import crypto from 'crypto';
 
@@ -61,19 +62,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const hash = crypto.createHmac('sha256', secret).update(emailDestino).digest('hex');
     const unsubscribeUrl = `${host}/api/unsubscribe?email=${encodeURIComponent(emailDestino)}&hash=${hash}&avisoId=${idAviso}`;
 
+    const htmlBody = await render(NewPostEmail({
+      nombre: 'Administrador',
+      blogTitulo: blog.blogtitulo,
+      blogResumen: blog.blogresumen || 'Descubre nuestro nuevo artículo en el blog.',
+      blogUrl: postUrl,
+      blogImagenUrl: imagenAbsoluta || '',
+      unsubscribeUrl: unsubscribeUrl,
+      planGratuito: planGratuito
+    }));
+
     const result = await resend.emails.send({
       from: 'Verdantia Boletín <admin@verdantia.life>',
       to: emailDestino,
       subject: `🧪 [PRUEBA] Nuevo artículo: ${blog.blogtitulo}`,
-      react: NewPostEmail({
-        nombre: 'Administrador',
-        blogTitulo: blog.blogtitulo,
-        blogResumen: blog.blogresumen || 'Descubre nuestro nuevo artículo en el blog.',
-        blogUrl: postUrl,
-        blogImagenUrl: imagenAbsoluta || '',
-        unsubscribeUrl: unsubscribeUrl,
-        planGratuito: planGratuito
-      })
+      html: htmlBody
     });
 
     if (result.error) {

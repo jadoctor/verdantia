@@ -56,6 +56,29 @@ export async function POST(request: Request) {
       [userId]
     );
 
+    // Asignar el plan Gratuito de inicio en la tabla normalizada de suscripciones
+    try {
+      const [freeSubRows] = await pool.query(
+        "SELECT idsuscripciones FROM suscripciones WHERE suscripcionesnombre = 'Gratuito' LIMIT 1"
+      );
+      const freePlan = (freeSubRows as any[])[0];
+      if (freePlan) {
+        await pool.query(
+          `INSERT INTO usuariossuscripciones (
+            xusuariossuscripcionesidusuarios, 
+            xusuariossuscripcionesidsuscripciones, 
+            usuariossuscripcionesfechainicio, 
+            usuariossuscripcionesfechafin, 
+            usuariossuscripcionesestado,
+            usuariossuscripcionesorigen
+          ) VALUES (?, ?, NOW(), NULL, 'activa', 'asignado_admin')`,
+          [userId, freePlan.idsuscripciones]
+        );
+      }
+    } catch (e) {
+      console.error('Error al asignar suscripción Gratuita inicial:', e);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Perfil creado correctamente.',

@@ -28,7 +28,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
          WHERE xdatosadjuntosidusuarios = u.idusuarios 
            AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 
-           AND datosadjuntosvalidado = 1
            AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
            AND xdatosadjuntosidvariedades IS NULL
          ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
@@ -39,7 +38,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         u.usuariosfechadenacimiento AS fechaNacimiento,
         u.usuariosfechacreacion AS fechaRegistro,
         u.usuariosconsentimientofoto AS consentimientoFoto,
-        u.usuariosespruebasuscripcion AS esPrueba
+        u.usuariosespruebasuscripcion AS esPrueba,
+        u.usuariostipocalendario AS tipoCalendario,
+        u.usuariostipolaboreo AS tipoLaboreo
        FROM usuarios u
        LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
        LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
@@ -63,7 +64,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Fotos
     const [fotos] = await pool.query(
-      `SELECT iddatosadjuntos AS id, datosadjuntosruta AS ruta, datosadjuntosesprincipal AS esPrincipal, datosadjuntosresumen AS resumen 
+      `SELECT iddatosadjuntos AS id, datosadjuntosruta AS ruta, datosadjuntosesprincipal AS esPrincipal, datosadjuntosresumen AS resumen, datosadjuntosvalidado AS validado, datosadjuntosresultadovalidacion AS resultado 
        FROM datosadjuntos 
        WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 AND xdatosadjuntosidvariedades IS NULL
        ORDER BY datosadjuntosesprincipal DESC`,
@@ -82,7 +83,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
        FROM usuariossuscripciones us
        JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
        WHERE us.xusuariossuscripcionesidusuarios = ?
-       ORDER BY us.idusuariossuscripciones DESC`,
+       ORDER BY us.usuariossuscripcionesfechainicio DESC`,
       [id]
     );
 
@@ -96,7 +97,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { roles, estado, esPrueba } = body;
+    const { roles, estado, esPrueba, emailVerificado, tipoCalendario, tipoLaboreo } = body;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -104,6 +105,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (roles !== undefined) { updates.push('usuariosroles = ?'); values.push(roles); }
     if (estado !== undefined) { updates.push('usuariosestadocuenta = ?'); values.push(estado); }
     if (esPrueba !== undefined) { updates.push('usuariosespruebasuscripcion = ?'); values.push(esPrueba === true || esPrueba === '1' || esPrueba === 1 ? 1 : 0); }
+    if (emailVerificado !== undefined) { updates.push('usuariosemailverificado = ?'); values.push(emailVerificado === true || emailVerificado === '1' || emailVerificado === 1 ? 1 : 0); }
+    
+    if (tipoCalendario !== undefined) {
+      if (!['Normal', 'Lunar', 'Biodinámico'].includes(tipoCalendario)) {
+        return NextResponse.json({ error: 'Tipo de calendario no válido' }, { status: 400 });
+      }
+      updates.push('usuariostipocalendario = ?');
+      values.push(tipoCalendario);
+    }
+
+    if (tipoLaboreo !== undefined) {
+      if (!['Convencional', 'Mínimo', 'No laboreo'].includes(tipoLaboreo)) {
+        return NextResponse.json({ error: 'Tipo de laboreo no válido' }, { status: 400 });
+      }
+      updates.push('usuariostipolaboreo = ?');
+      values.push(tipoLaboreo);
+    }
 
     if (updates.length === 0) return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });
 

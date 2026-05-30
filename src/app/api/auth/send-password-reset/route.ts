@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // Lazy load: NO importar firebase/admin estáticamente (causa hash corrupto en Turbopack)
 import { Resend } from 'resend';
 import { PasswordResetEmail } from '@/emails/PasswordResetEmail';
+import { render } from '@react-email/components';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -45,15 +46,17 @@ export async function POST(request: Request) {
     const nombre = userRecord.displayName || email.split('@')[0];
 
     // Enviar correo personalizado con Resend
+    const htmlBody = await render(PasswordResetEmail({
+      nombre,
+      email,
+      resetLink: customResetLink,
+    }));
+
     const resendResult = await resend.emails.send({
       from: 'Verdantia Seguridad <admin@verdantia.life>',
       to: email,
       subject: '🔑 Restablece tu contraseña — Verdantia',
-      react: PasswordResetEmail({
-        nombre,
-        email,
-        resetLink: customResetLink,
-      }),
+      html: htmlBody,
     });
 
     if (resendResult.error) {

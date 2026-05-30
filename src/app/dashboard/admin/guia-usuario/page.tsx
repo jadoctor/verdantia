@@ -1092,7 +1092,30 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li>Redacción y edición del contenido de blogs fluida, intuitiva y 100% estable, libre de pérdida de foco, con persistencia perfecta y correcta de enlaces de vídeos de YouTube drag-and-drop.</li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>30/05/2026 17:05 – Estandarización Responsiva Premium del Perfil de Usuario</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Las pestañas del perfil (<code>profile-tabs-nav</code>) utilizaban estilos en línea rígidos con desbordamiento horizontal oculto, haciendo invisibles las secciones traseras en ordenadores de sobremesa y dificultando la navegación en móviles.</li>
+                  <li style={{ marginBottom: '8px' }}>El contenedor principal (<code>.perfil-page</code>) estaba restringido a un ancho máximo angosto de 900px, desalineándose visualmente de los estándares de amplitud de los demás dashboards de Verdantia.</li>
+                  <li>La galería de cabecera de fotos (<code>profile-hero-gallery</code>) usaba un flexbox horizontal rígido de tamaño fijo que provocaba desbordamientos o deformaciones del contenido en smartphones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Re-maquetación de Pestañas:</strong> Migración de estilos inline a la clase <code>.profile-tabs-nav</code> y botones a la clase <code>.profile-tab-btn</code> en <code>perfil/page.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Flex-Wrap y Estiramiento Autoadaptable:</strong> Inyección de <code>flex-wrap: wrap</code> en el contenedor de navegación y <code>flex-grow: 1</code> en cada botón de pestaña en <code>perfil.css</code>. Las pestañas ahora se estiran simétricamente ocupando todo el ancho en ordenadores.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Grillas CSS Adaptables (@media):</strong> Implementación de consulta de medios para móviles, organizando las pestañas en 2 columnas en smartphones de tamaño medio y a 1 columna en pantallas ultra-estrechas.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Ampliación Espacial del Dashboard:</strong> Cambio del ancho máximo de <code>.perfil-page</code> a 1200px en <code>perfil.css</code>, incorporando padding lateral defensivo de 16px.</li>
+                  <li><strong>Carrusel de Fotos Responsivo:</strong> Refactorización de la galería principal para que en smartphones pase de diseño de fila a columna, centrando el héroe de la foto y listando las miniaturas alternativas horizontalmente debajo.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La totalidad de las pestañas e información del perfil del usuario ahora se visualiza al 100% en cualquier pantalla de escritorio, tablet o smartphone con adaptabilidad milimétrica e interactiva, alcanzando la coherencia espacial y el estándar de experiencia de usuario de Verdantia.</li>
                 </ul>
               </div>
             </li>
@@ -1126,7 +1149,7 @@ export default function GuiaUsuarioPage() {
                 <td style={{ padding: '16px', fontWeight: 'bold', color: '#15803d' }}>4 👑 Premium</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>9.99€ / mes</td>
                 <td style={{ padding: '16px' }}><strong>Ilimitadas.</strong> Múltiples huertos y control total.</td>
-                <td style={{ padding: '16px' }}>5 fotos de perfil. <strong>Fotos ilimitadas</strong> por galería/labor.</td>
+                <td style={{ padding: '16px' }}>4 fotos de perfil. <strong>Fotos ilimitadas</strong> por galería/labor.</td>
                 <td style={{ padding: '16px' }}>Acceso ilimitado al Chat IA y generación de posts.</td>
                 <td style={{ padding: '16px' }}>Completos (Agrícola, Biodinámico Avanzado e IA).</td>
               </tr>
@@ -1175,7 +1198,7 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}>Cada vez que un usuario abre la pantalla de su Perfil (<code>/dashboard/perfil</code>), el cliente invoca el endpoint <code>/api/auth/check-plan-degradation</code>.</li>
           <li style={{ marginBottom: '8px' }}>El endpoint comprueba la fecha de caducidad actual (<code>usuariossuscripcionesfechafin</code>).</li>
           <li style={{ marginBottom: '8px' }}>Si la fecha ya ha pasado, la base de datos se actualiza instantáneamente en cascada al siguiente nivel inferior, asignando otros +30 días (pero calculados basándose en milisegundos para evitar bugs de cambios de hora DST).</li>
-          <li style={{ marginBottom: '8px' }}>Si el límite de fotos excede el del nuevo plan (ej. pasa de 5 a 3 fotos al bajar de Premium a Avanzado), <strong>ninguna foto se borra</strong>. El sistema bloquea temporalmente la edición visual del perfil hasta que el usuario elimine voluntariamente el exceso para cuadrar con el nuevo plan.</li>
+          <li style={{ marginBottom: '8px' }}>Si el límite de fotos excede el del nuevo plan (ej. pasa de 4 a 3 fotos al bajar de Premium a Avanzado), <strong>ninguna foto se borra</strong>. El sistema bloquea temporalmente la edición visual del perfil hasta que el usuario elimine voluntariamente el exceso para cuadrar con el nuevo plan.</li>
         </ul>
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>7.4. Recepción de Boletines y Blogs (Email)</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>

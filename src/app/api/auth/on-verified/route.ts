@@ -54,9 +54,9 @@ export async function POST(request: Request) {
 
     const userId = user.idusuarios;
 
-    // 3. Subir rol: visitante → usuario
+    // 3. Subir rol: visitante → usuario + marcar email como verificado + marcar como prueba
     await pool.query(
-      'UPDATE usuarios SET usuariosroles = ? WHERE idusuarios = ?',
+      'UPDATE usuarios SET usuariosroles = ?, usuariosemailverificado = 1, usuariosespruebasuscripcion = 1 WHERE idusuarios = ?',
       ['usuario', userId]
     );
 
@@ -91,23 +91,43 @@ export async function POST(request: Request) {
       const premiumPlan = (subRows as any[])[0];
 
       if (premiumPlan) {
-        const [existingSub] = await pool.query(
+        // Buscar si ya tiene una suscripción Premium activa de prueba para evitar duplicados
+        const [existingPremium] = await pool.query(
           `SELECT idusuariossuscripciones FROM usuariossuscripciones 
            WHERE xusuariossuscripcionesidusuarios = ? 
-           AND usuariossuscripcionesestado IN ('activa','degradacion_fase1','degradacion_fase2','degradacion_fase3')
+             AND xusuariossuscripcionesidsuscripciones = ?
+             AND usuariossuscripcionesestado = 'activa'
            LIMIT 1`,
-          [userId]
+          [userId, premiumPlan.idsuscripciones]
         );
 
-        if ((existingSub as any[]).length === 0) {
+        if ((existingPremium as any[]).length === 0) {
+          // 1. Cerrar suscripción Gratuita activa anterior
+          const [freePlanRows] = await pool.query(
+            "SELECT idsuscripciones FROM suscripciones WHERE suscripcionesnombre = 'Gratuito' LIMIT 1"
+          );
+          const freePlan = (freePlanRows as any[])[0];
+          if (freePlan) {
+            await pool.query(
+              `UPDATE usuariossuscripciones 
+               SET usuariossuscripcionesestado = 'finalizada', usuariossuscripcionesfechafin = ? 
+               WHERE xusuariossuscripcionesidusuarios = ? 
+                 AND xusuariossuscripcionesidsuscripciones = ? 
+                 AND usuariossuscripcionesestado = 'activa'`,
+              [fechaInicio, userId, freePlan.idsuscripciones]
+            );
+          }
+
+          // 2. Insertar nueva suscripción Premium activa
           await pool.query(
             `INSERT INTO usuariossuscripciones (
               xusuariossuscripcionesidusuarios, 
               xusuariossuscripcionesidsuscripciones, 
               usuariossuscripcionesfechainicio, 
               usuariossuscripcionesfechafin, 
-              usuariossuscripcionesestado
-            ) VALUES (?, ?, ?, ?, 'activa')`,
+              usuariossuscripcionesestado,
+              usuariossuscripcionesorigen
+            ) VALUES (?, ?, ?, ?, 'activa', 'trial_inicial')`,
             [userId, premiumPlan.idsuscripciones, fechaInicio, fechaFin]
           );
         }

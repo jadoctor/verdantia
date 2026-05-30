@@ -137,7 +137,7 @@ export default function PoliticaPrivacidadPage() {
               </thead>
               <tbody>
                 <tr><td>Plantas activas</td><td>10</td><td>25</td><td>50</td><td className="check">Ilimitadas</td></tr>
-                <tr><td>Fotos de perfil máximas</td><td>1</td><td>2</td><td>3</td><td className="check">5</td></tr>
+                <tr><td>Fotos de perfil máximas</td><td>1</td><td>2</td><td>3</td><td className="check">4</td></tr>
                 <tr><td>Ofertas intercambio</td><td>1</td><td>3</td><td>10</td><td className="check">Ilimitadas</td></tr>
                 <tr><td>Calendario Agrícola</td><td>Normal</td><td className="check">Lunar</td><td className="check">Biodinámico</td><td className="check">Biodinámico</td></tr>
                 <tr><td>Generador IA imágenes</td><td className="cross">✗</td><td className="cross">✗</td><td>5/mes</td><td className="check">Ilimitado</td></tr>
