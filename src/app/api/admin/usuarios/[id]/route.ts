@@ -40,7 +40,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         u.usuariosconsentimientofoto AS consentimientoFoto,
         u.usuariosespruebasuscripcion AS esPrueba,
         u.usuariostipocalendario AS tipoCalendario,
-        u.usuariostipolaboreo AS tipoLaboreo
+        u.usuariostipolaboreo AS tipoLaboreo,
+        u.usuarioscamacultivobilateral AS camaCultivoBilateral,
+        u.usuarioscamacultivounilateral AS camaCultivoUnilateral,
+        u.usuariospasillo AS pasillo
        FROM usuarios u
        LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
        LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
@@ -97,7 +100,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { roles, estado, esPrueba, emailVerificado, tipoCalendario, tipoLaboreo } = body;
+    const { roles, estado, esPrueba, emailVerificado, tipoCalendario, tipoLaboreo, camaCultivoBilateral, camaCultivoUnilateral, pasillo } = body;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -121,6 +124,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
       updates.push('usuariostipolaboreo = ?');
       values.push(tipoLaboreo);
+    }
+
+    if (camaCultivoBilateral !== undefined) {
+      const val = parseFloat(camaCultivoBilateral);
+      if (isNaN(val) || val <= 0) {
+        return NextResponse.json({ error: 'La anchura de la cama de cultivo bilateral debe ser un número válido mayor que 0.' }, { status: 400 });
+      }
+      updates.push('usuarioscamacultivobilateral = ?');
+      values.push(val);
+    }
+
+    if (camaCultivoUnilateral !== undefined) {
+      const val = parseFloat(camaCultivoUnilateral);
+      if (isNaN(val) || val <= 0) {
+        return NextResponse.json({ error: 'La anchura de la cama de cultivo unilateral debe ser un número válido mayor que 0.' }, { status: 400 });
+      }
+      updates.push('usuarioscamacultivounilateral = ?');
+      values.push(val);
+    }
+
+    if (pasillo !== undefined) {
+      const val = parseFloat(pasillo);
+      if (isNaN(val) || val <= 0) {
+        return NextResponse.json({ error: 'El ancho del pasillo debe ser un número válido mayor que 0.' }, { status: 400 });
+      }
+      updates.push('usuariospasillo = ?');
+      values.push(val);
     }
 
     if (updates.length === 0) return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });

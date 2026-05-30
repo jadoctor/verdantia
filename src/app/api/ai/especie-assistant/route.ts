@@ -51,6 +51,7 @@ Las claves esperadas en el JSON son:
 - especiestemperaturamaxima (numero decimal, ej: 35.0)
 - especiesmarcoplantas (entero en cm, ej: 40)
 - especiesmarcofilas (entero en cm, ej: 80)
+- especiesmarcomargen (entero en cm, margen desde el borde del bancal. Aconseja aproximadamente la mitad del marco entre plantas, ej: 20)
 - especiesprofundidadsiembra (numero decimal en cm, ej: 1.0)
 - especiesprofundidadtrasplante (numero decimal en cm, ej: 5.0)
 - especieshistoria (string, una breve historia de 2 párrafos sobre su origen)

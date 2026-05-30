@@ -687,6 +687,7 @@ export default function MiPlantaDetail() {
                         <FieldCompare label="Temp. Mínima (ºC)" field="variedadestemperaturaminima" type="number" />
                         <FieldCompare label="Temp. Óptima (ºC)" field="variedadestemperaturaoptima" type="number" />
                         <FieldCompare label="Temp. Máxima (ºC)" field="variedadestemperaturamaxima" type="number" />
+                        <FieldCompare label="Margen al Borde (cm)" field="variedadesmarcomargen" type="number" />
                       </div>
                     )}
 

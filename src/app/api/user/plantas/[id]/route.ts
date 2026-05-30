@@ -38,6 +38,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         COALESCE(vu.variedadestemperaturamaxima, vg.variedadestemperaturamaxima, e.especiestemperaturamaxima) AS temperaturamaxima,
         COALESCE(vu.variedadesmarcoplantas, vg.variedadesmarcoplantas, e.especiesmarcoplantas) AS marcoplantas,
         COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesmarcofilas) AS marcofilas,
+        COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesmarcomargen) AS marcomargen,
         COALESCE(vu.variedadesprofundidadsiembra, vg.variedadesprofundidadsiembra, e.especiesprofundidadsiembra) AS profundidadsiembra,
         COALESCE(vu.variedadesprofundidadtrasplante, vg.variedadesprofundidadtrasplante, e.especiesprofundidadtrasplante) AS profundidadtrasplante,
         COALESCE(vu.variedadeshistoria, vg.variedadeshistoria, e.especieshistoria) AS historia,
@@ -95,7 +96,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vu.variedadesbiodinamicacategoria IS NOT NULL AS _p_biodinamicacategoria,
         vu.variedadesbiodinamicafasesiembra IS NOT NULL AS _p_biodinamicafasesiembra,
         vu.variedadesbiodinamicafasetrasplante IS NOT NULL AS _p_biodinamicafasetrasplante,
-        vu.variedadesbiodinamicanotas IS NOT NULL AS _p_biodinamicanotas
+        vu.variedadesbiodinamicanotas IS NOT NULL AS _p_biodinamicanotas,
+        vu.variedadesmarcomargen IS NOT NULL AS _p_marcomargen
 
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
@@ -145,7 +147,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       'variedadesnombre', 'variedadesdescripcion', 'variedadescolor', 'variedadestamano',
       'variedadesdiasgerminacion', 'variedadesviabilidadsemilla', 'variedadesdiashastafructificacion',
       'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima',
-      'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra',
+      'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesmarcomargen', 'variedadesprofundidadsiembra',
       'variedadesprofundidadtrasplante', 'variedadeshistoria',
       'variedadessemillerodesde', 'variedadessemillerohasta',
       'variedadessiembradirectadesde', 'variedadessiembradirectahasta',

@@ -1092,6 +1092,11 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Se ha resuelto por completo la pérdida de foco en el editor de blogs y estabilizado la reproducción de videos, logrando una experiencia de edición fluida e íntegra.</li>
+                </ul>
+              </div>
+            </li>
+
             <li style={{ marginBottom: '24px' }}>
               <strong>30/05/2026 17:05 – Estandarización Responsiva Premium del Perfil de Usuario</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
@@ -1116,6 +1121,35 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li>La totalidad de las pestañas e información del perfil del usuario ahora se visualiza al 100% en cualquier pantalla de escritorio, tablet o smartphone con adaptabilidad milimétrica e interactiva, alcanzando la coherencia espacial y el estándar de experiencia de usuario de Verdantia.</li>
+                </ul>
+              </div>
+            </li>
+
+            <li style={{ marginBottom: '24px' }}>
+              <strong>30/05/2026 22:06 – Motor de Bancales, Mapa Interactivo de Huerto e Integración Catastral SIGPAC</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Los usuarios carecían de una gestión estructurada y dimensional de sus bancales o camas de cultivo ("Bancales"), limitando la estimación y control del espacio agrícola real.</li>
+                  <li style={{ marginBottom: '8px' }}>La visualización en el mapa del huerto carecía de interactividad táctil/visual para explicar y estructurar la distribución espacial de bancales y cultivos.</li>
+                  <li style={{ marginBottom: '8px' }}>El selector de cultivos en el modal de inicio no validaba el espacio del bancal ni el límite espacial del plan de suscripción del usuario, permitiendo solapamientos de cultivos.</li>
+                  <li>Falta de una consulta directa a parcelas catastrales españolas oficiales (SIGPAC) para estimar de forma precisa la superficie agrícola del usuario.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Base de datos & Auth:</strong> Inyección de campos de camas de cultivo bilaterales, unilaterales y de pasillos en el perfil del usuario (<code>src/lib/auth.ts</code>, <code>src/app/api/perfil/route.ts</code>).</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Backend de Bancales:</strong> Creación del endpoint <code>src/app/api/user/bancales/route.ts</code> para crear, leer, actualizar y borrar bancales reales, incluyendo el control estricto de límite de 4 bancales reales, cálculo de espacio disponible según el plan del usuario, y desacoplamiento ON DELETE SET NULL de cultivos.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Proxy Catastral SIGPAC:</strong> Creación del endpoint <code>src/app/api/location/sigpac/route.ts</code> que se conecta a la API pública de SIGPAC para rescatar recintos y superficies con fallback determinista y seguro.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Frontend del Mapa & Configuración:</strong> Creación de <code>BancalesSettings.tsx</code> para el control de dimensiones, formas (rectangulares o trapezoidales con ancho superior) y geolocalización catastral (SIGPAC). Creación de <code>GardenMap.tsx</code> que proporciona un visualizador interactivo premium de los bancales del usuario usando Canvas 2D adaptativo.</li>
+                  <li><strong>Validación en Modal:</strong> Refactorización de <code>IniciarCultivoModal.tsx</code> para incorporar validaciones de espacio libre disponible (Plan de Suscripción) y del bancal destino seleccionado, impidiendo el registro si se sobrepasan los metros cuadrados.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Gestión premium de bancales y cultivos 100% interactiva, con validación de capacidad en tiempo real y soporte catastral SIGPAC, garantizando una planificación agrícola ultra-precisa y alineada con los límites de cada plan de Verdantia.</li>
                 </ul>
               </div>
             </li>

@@ -1206,6 +1206,138 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
               })}
             </div>
           </div>
+
+          {/* Camas y Pasillos de cultivo */}
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginTop: '20px', opacity: cultivarLocked ? 0.85 : 1, transition: 'opacity 0.2s ease' }}>
+            <h3 style={{ margin: '0 0 6px 0', color: '#1e293b', fontWeight: 800, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🌱 Dimensiones y Camas de Cultivo {cultivarLocked && <span style={{ fontSize: '0.8rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Solo Lectura</span>}
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Medidas predeterminadas del huerto de este usuario en metros reales.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+              
+              {/* Cama Bilateral */}
+              <div>
+                <label style={{ display: 'block', margin: '0 0 6px 0', fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>↕️ Cama Bilateral (acceso 2 lados)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input 
+                    type="number" 
+                    step="0.05"
+                    min="0.2"
+                    max="10.0"
+                    value={u.camaCultivoBilateral !== undefined ? u.camaCultivoBilateral : 1.20}
+                    disabled={cultivarLocked}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, camaCultivoBilateral: isNaN(val) ? 0 : val } } : null);
+                    }}
+                    onBlur={() => {
+                      const val = Math.max(0.2, Math.min(10.0, parseFloat(u.camaCultivoBilateral) || 1.20));
+                      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, camaCultivoBilateral: val } } : null);
+                      handlePatch('camaCultivoBilateral', val);
+                    }}
+                    style={{
+                      width: '100px',
+                      background: cultivarLocked ? '#f8fafc' : '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.9rem',
+                      color: '#1e293b',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      outline: 'none',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      cursor: cultivarLocked ? 'not-allowed' : 'text'
+                    }}
+                  />
+                  <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>m</span>
+                </div>
+              </div>
+
+              {/* Cama Unilateral */}
+              <div>
+                <label style={{ display: 'block', margin: '0 0 6px 0', fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>🧱 Cama Unilateral (acceso 1 lado)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input 
+                    type="number" 
+                    step="0.05"
+                    min="0.1"
+                    max="5.0"
+                    value={u.camaCultivoUnilateral !== undefined ? u.camaCultivoUnilateral : 0.75}
+                    disabled={cultivarLocked}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, camaCultivoUnilateral: isNaN(val) ? 0 : val } } : null);
+                    }}
+                    onBlur={() => {
+                      const val = Math.max(0.1, Math.min(5.0, parseFloat(u.camaCultivoUnilateral) || 0.75));
+                      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, camaCultivoUnilateral: val } } : null);
+                      handlePatch('camaCultivoUnilateral', val);
+                    }}
+                    style={{
+                      width: '100px',
+                      background: cultivarLocked ? '#f8fafc' : '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.9rem',
+                      color: '#1e293b',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      outline: 'none',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      cursor: cultivarLocked ? 'not-allowed' : 'text'
+                    }}
+                  />
+                  <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>m</span>
+                </div>
+              </div>
+
+              {/* Pasillo */}
+              <div>
+                <label style={{ display: 'block', margin: '0 0 6px 0', fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>🚶 Pasillo (distancia entre camas)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input 
+                    type="number" 
+                    step="0.05"
+                    min="0.1"
+                    max="3.0"
+                    value={u.pasillo !== undefined ? u.pasillo : 0.50}
+                    disabled={cultivarLocked}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, pasillo: isNaN(val) ? 0 : val } } : null);
+                    }}
+                    onBlur={() => {
+                      const val = Math.max(0.1, Math.min(3.0, parseFloat(u.pasillo) || 0.50));
+                      setData(prev => prev ? { ...prev, usuario: { ...prev.usuario, pasillo: val } } : null);
+                      handlePatch('pasillo', val);
+                    }}
+                    style={{
+                      width: '100px',
+                      background: cultivarLocked ? '#f8fafc' : '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.9rem',
+                      color: '#1e293b',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      outline: 'none',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      cursor: cultivarLocked ? 'not-allowed' : 'text'
+                    }}
+                  />
+                  <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>m</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       )}
 

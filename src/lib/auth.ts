@@ -25,6 +25,9 @@ export interface UserProfile {
   zonaClimatica: string | null;
   tipoCalendario: string;
   tipoLaboreo: string;
+  camaCultivoBilateral: number;
+  camaCultivoUnilateral: number;
+  pasillo: number;
   passkeysCount?: number;
   fotosRechazadasCount?: number;
 }
@@ -54,12 +57,16 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         usuariostelefono,
         usuarioszonaclimatica,
         usuariostipocalendario,
-        usuariostipolaboreo
+        usuariostipolaboreo,
+        usuarioscamacultivobilateral,
+        usuarioscamacultivounilateral,
+        usuariospasillo
        FROM usuarios  
        WHERE usuariosemail = ? 
        LIMIT 1`,
       [email]
     );
+
 
     const results = rows as any[];
     if (results.length === 0) return null;
@@ -181,6 +188,9 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       zonaClimatica: user.usuarioszonaclimatica || null,
       tipoCalendario: user.usuariostipocalendario || 'Normal',
       tipoLaboreo: user.usuariostipolaboreo || 'Convencional',
+      camaCultivoBilateral: user.usuarioscamacultivobilateral != null ? parseFloat(user.usuarioscamacultivobilateral) : 1.20,
+      camaCultivoUnilateral: user.usuarioscamacultivounilateral != null ? parseFloat(user.usuarioscamacultivounilateral) : 0.75,
+      pasillo: user.usuariospasillo != null ? parseFloat(user.usuariospasillo) : 0.50,
       passkeysCount: passkeysCount,
       fotosRechazadasCount: fotosRechazadasCount,
     };

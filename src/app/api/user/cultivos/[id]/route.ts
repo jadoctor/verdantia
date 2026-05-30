@@ -254,7 +254,10 @@ export async function PATCH(
       'cultivosfecharecoleccion',
       'cultivosfechafinalizacion',
       'cultivosobservaciones',
-      'cultivosmetodo'
+      'cultivosmetodo',
+      'cultivosposicionx',
+      'cultivosposiciony',
+      'xcultivosidbancales'
     ];
 
     allowedFields.forEach(field => {

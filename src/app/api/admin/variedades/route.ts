@@ -100,7 +100,8 @@ export async function POST(request: Request) {
       variedadeslunarfasetrasplante,
       variedadeslunarobservaciones,
       variedadesbiodinamicafasesiembra,
-      variedadesbiodinamicafasetrasplante
+      variedadesbiodinamicafasetrasplante,
+      variedadesmarcomargen
     } = body;
 
     if (!variedadesnombre || !xvariedadesidespecies) {
@@ -121,8 +122,8 @@ export async function POST(request: Request) {
         variedadesprofundidadtrasplante, variedadesphsuelo, variedadesnecesidadriego, variedadestiposiembra,
         variedadesvolumenmaceta, variedadesluzsolar, variedadescaracteristicassuelo, variedadesdificultad, variedadestemperaturamaxima,
         variedadeslunarfasesiembra, variedadeslunarfasetrasplante, variedadeslunarobservaciones,
-        variedadesbiodinamicafasesiembra, variedadesbiodinamicafasetrasplante
-      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        variedadesbiodinamicafasesiembra, variedadesbiodinamicafasetrasplante, variedadesmarcomargen
+      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -173,7 +174,8 @@ export async function POST(request: Request) {
       variedadeslunarfasetrasplante || null,
       variedadeslunarobservaciones || null,
       variedadesbiodinamicafasesiembra || null,
-      variedadesbiodinamicafasetrasplante || null
+      variedadesbiodinamicafasetrasplante || null,
+      variedadesmarcomargen || null
     ];
 
     const [result]: any = await pool.query(query, params);

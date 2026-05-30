@@ -94,7 +94,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesbiodinamicafasesiembra,
       especiesbiodinamicafasetrasplante,
       especiesemillerovolumendesde,
-      especiesemillerovolumenhasta
+      especiesemillerovolumenhasta,
+      especiesmarcomargen
     } = body;
 
     if (!especiesnombre) {
@@ -120,7 +121,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         especiestemperaturamaxima = ?, especiesdiashastarecoleccion = ?,
         especieslunarfasesiembra = ?, especieslunarfasetrasplante = ?, especieslunarobservaciones = ?,
         especiesbiodinamicafasesiembra = ?, especiesbiodinamicafasetrasplante = ?,
-        especiesemillerovolumendesde = ?, especiesemillerovolumenhasta = ?
+        especiesemillerovolumendesde = ?, especiesemillerovolumenhasta = ?, especiesmarcomargen = ?
       WHERE idespecies = ?
     `;
 
@@ -180,6 +181,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       especiesbiodinamicafasetrasplante || null,
       especiesemillerovolumendesde || null,
       especiesemillerovolumenhasta || null,
+      especiesmarcomargen || null,
       idespecies
     ];
 

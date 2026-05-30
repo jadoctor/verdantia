@@ -1,0 +1,2077 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { auth } from '@/lib/firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  ArrowLeft, Search, Plus, Minus, Move, RefreshCw, 
+  Trash2, Layers, Check, AlertTriangle, ShieldAlert, Sparkles, Sprout, Ruler,
+  ChevronLeft, ChevronRight
+} from 'lucide-react';
+
+const ACCESSORIES_LIBRARY = [
+  { id: 'arbol_frutal', nombre: 'Árbol Frutal', icono: '🌳', desc: 'Añade sombra y frutos a tu huerto.', tamaño: 'Grande (1.5m)' },
+  { id: 'pino_decorativo', nombre: 'Pino Decorativo', icono: '🌲', desc: 'Barrera visual o cortavientos.', tamaño: 'Mediano (1m)' },
+  { id: 'valla_madera', nombre: 'Valla de Madera', icono: '🪵', desc: 'Delimita y protege tu bancal.', tamaño: 'Largo ajustable' },
+  { id: 'camino_piedra', nombre: 'Camino de Piedra', icono: '🪨', desc: 'Sendero transitable entre cultivos.', tamaño: 'Fácil colocación' },
+  { id: 'espantapajaros', nombre: 'Espantapájaros', icono: '🤠', desc: 'Protege tus brotes de aves.', tamaño: 'Punto fijo' },
+  { id: 'estanque_agua', nombre: 'Estanque / Pozo', icono: '⛲', desc: 'Reserva de agua y biodiversidad.', tamaño: 'Circular (1.2m)' },
+  { id: 'aspersor_riego', nombre: 'Aspersor Riego', icono: '💧', desc: 'Microaspersión automática.', tamaño: 'Radio 2m' }
+];
+
+const getAccessoryPhysicalRadius = (type: string) => {
+  switch (type) {
+    case 'arbol_frutal': return 0.75; // 1.5m diameter
+    case 'pino_decorativo': return 0.5; // 1.0m diameter
+    case 'valla_madera': return 0.3; // 0.6m diameter
+    case 'camino_piedra': return 0.25; // 0.5m diameter
+    case 'espantapajaros': return 0.3; // 0.6m diameter
+    case 'estanque_agua': return 0.6; // 1.2m diameter
+    case 'aspersor_riego': return 0.4; // 0.8m diameter
+    default: return 0.4;
+  }
+};
+
+
+export default function BancalWorkspace() {
+  const router = useRouter();
+  const params = useParams();
+  const bedId = params.id as string;
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [bancal, setBancal] = useState<any>(null);
+  const [crops, setCrops] = useState<any[]>([]);
+  const [selectedCrop, setSelectedCrop] = useState<any | null>(null);
+  const [showMeasures, setShowMeasures] = useState(true);
+  const [allActiveCrops, setAllActiveCrops] = useState<any[]>([]);
+  const [placingCrop, setPlacingCrop] = useState<any | null>(null);
+  const [showLeftSidebar, setShowLeftSidebar] = useState(true);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
+
+  // Accessories State
+  const [placedAccessories, setPlacedAccessories] = useState<any[]>([]);
+  const [placingAccessory, setPlacingAccessory] = useState<any | null>(null);
+  const [draggingAccessory, setDraggingAccessory] = useState<any | null>(null);
+  const [selectedAccessory, setSelectedAccessory] = useState<any | null>(null);
+  
+  // Custom Crops visual scales (ID to physical radius in meters)
+  const [cropScales, setCropScales] = useState<Record<number, number>>({});
+  
+  // Library search and tabs
+  const [searchQuery, setSearchQuery] = useState('');
+  const [libraryTab, setLibraryTab] = useState<'semillas' | 'catalogo' | 'accesorios'>('semillas');
+  const [catalog, setCatalog] = useState<any[]>([]);
+
+  // Workspace Pan & Zoom
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // Drag and drop states for placing/moving plants
+  const [draggingCrop, setDraggingCrop] = useState<any | null>(null);
+  const [placingPlant, setPlacingPlant] = useState<any | null>(null); // "Modo Siembra" variety/seed template
+
+  // Collision state
+  const [collisions, setCollisions] = useState<Record<number, boolean>>({});
+
+  // Canvas ref for coordinate translations
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Raised Bed Interactive Boundary Resizing States
+  const [isResizingBed, setIsResizingBed] = useState<'width' | 'length' | 'both' | 'topWidth' | null>(null);
+  const [hoveredHandle, setHoveredHandle] = useState<string | null>(null);
+  const [resizeStartDims, setResizeStartDims] = useState({ w: 2, l: 1.2, wSup: 1.5, baseScale: 100 });
+  const [resizeStartCoords, setResizeStartCoords] = useState({ x: 0, y: 0 });
+
+  // Stable scale tracking to prevent infinite feedback loops during real-time dragging
+  const [stableScale, setStableScale] = useState<number>(120);
+
+  useEffect(() => {
+    if (bancal && !isResizingBed) {
+      const w = parseFloat(bancal.bancalesancho) || 2;
+      const wSup = bancal.bancalesforma === 'trapezoidal' ? (parseFloat(bancal.bancalesanchosuperior) || 1.5) : w;
+      const l = parseFloat(bancal.bancaleslargo) || 1.2;
+      const maxD = Math.max(w, wSup, l);
+      setStableScale(240 / maxD);
+    }
+  }, [bancal, isResizingBed]);
+
+
+
+  // Load user auth
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user && user.email) {
+        setUserEmail(user.email);
+      } else {
+        router.push('/login');
+      }
+    });
+    return () => unsub();
+  }, [router]);
+
+  // Load all Workspace Data
+  const loadWorkspaceData = async () => {
+    if (!userEmail || !bedId) return;
+    setLoading(true);
+    try {
+      // 1. Fetch raised bed details and maximum subscription limits
+      const bedRes = await fetch('/api/user/bancales', {
+        headers: { 'x-user-email': userEmail }
+      });
+      if (bedRes.ok) {
+        const bedData = await bedRes.json();
+        const foundBed = (bedData.bancales || []).find((b: any) => String(b.idbancales) === String(bedId));
+        if (!foundBed) {
+          router.push('/dashboard/perfil?tab=bancales');
+          return;
+        }
+        setBancal(foundBed);
+      }
+
+      // 2. Fetch active crops for this user
+      const cropsRes = await fetch('/api/user/cultivos', {
+        headers: { 'x-user-email': userEmail }
+      });
+      if (cropsRes.ok) {
+        const cropsData = await cropsRes.json();
+        const activeList = (cropsData.cultivos || []).filter(
+          (c: any) => c.cultivosestado !== 'finalizado' && c.cultivosestado !== 'perdido'
+        );
+        setAllActiveCrops(activeList);
+
+        // Filter active crops mapped to this specific raised bed
+        const bedCrops = activeList.filter(
+          (c: any) => String(c.xcultivosidbancales) === String(bedId)
+        );
+        setCrops(bedCrops);
+      }
+
+      // 3. Fetch generic botanical catalog
+      const catRes = await fetch('/api/user/catalogo', {
+        headers: { 'x-user-email': userEmail }
+      });
+      if (catRes.ok) {
+        const catData = await catRes.json();
+        setCatalog(catData.especies || []);
+      }
+
+    } catch (err) {
+      console.error('Error loading workspace data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userEmail && bedId) {
+      loadWorkspaceData();
+    }
+  }, [userEmail, bedId]);
+
+  // Load accessories from localStorage
+  useEffect(() => {
+    if (bedId) {
+      const stored = localStorage.getItem(`verdantia_accessories_${bedId}`);
+      if (stored) {
+        try {
+          setPlacedAccessories(JSON.parse(stored));
+        } catch (e) {
+          console.error("Error parsing stored accessories", e);
+        }
+      } else {
+        setPlacedAccessories([]);
+      }
+    }
+  }, [bedId]);
+
+  // Load crop scales from localStorage
+  useEffect(() => {
+    if (bedId) {
+      const stored = localStorage.getItem(`verdantia_crop_scales_${bedId}`);
+      if (stored) {
+        try {
+          setCropScales(JSON.parse(stored));
+        } catch (e) {
+          console.error("Error parsing stored crop scales", e);
+        }
+      } else {
+        setCropScales({});
+      }
+    }
+  }, [bedId]);
+
+  const saveAccessories = (list: any[]) => {
+    setPlacedAccessories(list);
+    localStorage.setItem(`verdantia_accessories_${bedId}`, JSON.stringify(list));
+  };
+
+  const saveCropScale = (cropId: number, scaleMeters: number | null) => {
+    setCropScales(prev => {
+      const updated = { ...prev };
+      if (scaleMeters === null) {
+         delete updated[cropId];
+      } else {
+         updated[cropId] = scaleMeters;
+      }
+      localStorage.setItem(`verdantia_crop_scales_${bedId}`, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const saveAccessoryScale = (accId: number, scaleMeters: number | null) => {
+    setPlacedAccessories(prev => {
+      const updated = prev.map(acc => {
+        if (acc.id === accId) {
+          return {
+            ...acc,
+            escalaMetros: scaleMeters === null ? undefined : scaleMeters
+          };
+        }
+        return acc;
+      });
+
+      // Sync local selectedAccessory reference if active
+      if (selectedAccessory && selectedAccessory.id === accId) {
+        setSelectedAccessory((prev: any) => ({
+          ...prev,
+          escalaMetros: scaleMeters === null ? undefined : scaleMeters
+        }));
+      }
+
+      localStorage.setItem(`verdantia_accessories_${bedId}`, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleSelectAccessory = (acc: any) => {
+    setPlacingPlant(null);
+    setPlacingCrop(null);
+    setPlacingAccessory(acc);
+  };
+
+  // Compute collisions on active crops
+  useEffect(() => {
+    if (!bancal || crops.length === 0) {
+      setCollisions({});
+      return;
+    }
+
+    const newCollisions: Record<number, boolean> = {};
+    const w = parseFloat(bancal.bancalesancho) || 0;
+    const l = parseFloat(bancal.bancaleslargo) || 0;
+
+    for (let i = 0; i < crops.length; i++) {
+      const cA = crops[i];
+      const ax = parseFloat(cA.cultivosposicionx) || 50;
+      const ay = parseFloat(cA.cultivosposiciony) || 50;
+      const spacingA = Math.max(parseFloat(cA.especiesmarcoplantas) || 30, 20);
+      const radiusAMeters = (spacingA / 2) / 100; // cm to radial occupancy meters
+
+      for (let j = i + 1; j < crops.length; j++) {
+        const cB = crops[j];
+        const bx = parseFloat(cB.cultivosposicionx) || 50;
+        const by = parseFloat(cB.cultivosposiciony) || 50;
+        const spacingB = Math.max(parseFloat(cB.especiesmarcoplantas) || 30, 20);
+        const radiusBMeters = (spacingB / 2) / 100;
+
+        // Distances in physical meters
+        const dx = (Math.abs(ax - bx) / 100) * w;
+        const dy = (Math.abs(ay - by) / 100) * l;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Radial collision limit
+        if (dist < (radiusAMeters + radiusBMeters)) {
+          newCollisions[cA.idcultivos] = true;
+          newCollisions[cB.idcultivos] = true;
+        }
+      }
+    }
+    setCollisions(newCollisions);
+  }, [crops, bancal]);
+
+  if (loading || !bancal) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw',
+        justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: 'white'
+      }}>
+        <div style={{ width: '32px', height: '32px', border: '3px solid #cbd5e1', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '12px' }} />
+        <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 600 }}>Cargando entorno de diseño de huerto...</span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // Dimension helpers with Spanish comma format
+  const formatDec = (val: number | string, decimals: number = 2) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) return '0';
+    return num.toLocaleString('es-ES', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  };
+
+  const bedW = parseFloat(bancal.bancalesancho) || 2;
+  const bedWSup = bancal.bancalesforma === 'trapezoidal' ? (parseFloat(bancal.bancalesanchosuperior) || 1.5) : bedW;
+  const bedL = parseFloat(bancal.bancaleslargo) || 1.2;
+
+  const getCalculatedArea = () => {
+    if (bancal.bancalesforma === 'trapezoidal') {
+      return ((bedW + bedWSup) / 2) * bedL;
+    } else if (bancal.bancalesforma === 'circular') {
+      return Math.PI * (bedW / 2) * (bedL / 2);
+    }
+    return bedW * bedL;
+  };
+
+  // Grid Canvas Scales - Using stableScale to prevent infinite zoom feedback loops during resizing
+  const baseScale = stableScale;
+
+  const svgW = bedW * baseScale;
+  const svgWSup = bedWSup * baseScale;
+  const svgH = bedL * baseScale;
+
+  const ox = (400 - svgW) / 2;
+  const oxSup = (400 - svgWSup) / 2;
+  const oy = (400 - svgH) / 2;
+  const minX = Math.min(ox, oxSup);
+
+  // SVG Pan & Zoom handlers
+  const handleZoomIn = () => setZoom(z => Math.min(z + 0.25, 4));
+  const handleZoomOut = () => setZoom(z => Math.max(z - 0.25, 0.5));
+  const handleResetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const handleCanvasWheel = (e: React.WheelEvent) => {
+    if (!svgRef.current) return;
+    
+    // Prevent default to avoid scrolling the whole page if the user scrolls over the canvas
+    e.preventDefault();
+
+    const rect = svgRef.current.getBoundingClientRect();
+    // Get mouse position relative to the SVG 500x500 viewport coordinate space
+    const mx = ((e.clientX - rect.left) / rect.width) * 500;
+    const my = ((e.clientY - rect.top) / rect.height) * 500;
+
+    const zoomFactor = 1.08;
+    const oldZoom = zoom;
+    let newZoom = oldZoom;
+
+    if (e.deltaY < 0) {
+      newZoom = Math.min(oldZoom * zoomFactor, 4);
+    } else {
+      newZoom = Math.max(oldZoom / zoomFactor, 0.5);
+    }
+
+    if (newZoom !== oldZoom) {
+      // Calculate new pan coordinates so the point under the cursor remains stable.
+      // Scaling origin is defined at (250, 250).
+      const newPanX = mx - 250 - ((mx - 250 - pan.x) * newZoom) / oldZoom;
+      const newPanY = my - 250 - ((my - 250 - pan.y) * newZoom) / oldZoom;
+
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
+    }
+  };
+
+  // Convert screen coordinates to standard 500x500 SVG coordinates, compensating for camera translation and zoom
+  const getUnpannedSvgCoords = (clientX: number, clientY: number) => {
+    if (!svgRef.current) return { x: 250, y: 250 };
+    const rect = svgRef.current.getBoundingClientRect();
+    
+    // Map screen mouse position to standard 500x500 viewBox coordinates
+    const mx = ((clientX - rect.left) / rect.width) * 500;
+    const my = ((clientY - rect.top) / rect.height) * 500;
+
+    // Compensate for camera translation (pan) and zoom centered at (250, 250)
+    const cx = 250 + (mx - 250 - pan.x) / zoom;
+    const cy = 250 + (my - 250 - pan.y) / zoom;
+
+    return { x: cx, y: cy };
+  };
+
+  const startResizeBed = (e: React.MouseEvent, type: 'width' | 'length' | 'both' | 'topWidth') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizingBed(type);
+    setResizeStartCoords(getUnpannedSvgCoords(e.clientX, e.clientY));
+    setResizeStartDims({
+      w: parseFloat(bancal.bancalesancho) || 2,
+      l: parseFloat(bancal.bancaleslargo) || 1.2,
+      wSup: parseFloat(bancal.bancalesanchosuperior || bancal.bancalesancho) || 1.5,
+      baseScale: baseScale
+    });
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (draggingCrop || placingPlant || isResizingBed) return;
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+    } else if (draggingCrop || draggingAccessory) {
+      updateDragCoords(e);
+    } else if (isResizingBed) {
+      const currentCoords = getUnpannedSvgCoords(e.clientX, e.clientY);
+      const dxSvg = currentCoords.x - resizeStartCoords.x;
+      const dySvg = currentCoords.y - resizeStartCoords.y;
+      
+      // Symmetrical scaling requires a 2x multiplier because the bed expands evenly on both sides from its center
+      const deltaMetersX = (dxSvg / resizeStartDims.baseScale) * 2;
+      const deltaMetersY = (dySvg / resizeStartDims.baseScale) * 2;
+
+      if (bancal.bancalesforma === 'circular') {
+        const delta = Math.abs(deltaMetersX) > Math.abs(deltaMetersY) ? deltaMetersX : deltaMetersY;
+        const newD = Math.max(0.5, Math.min(500.0, resizeStartDims.w + delta));
+        setBancal((prev: any) => prev ? { 
+          ...prev, 
+          bancalesancho: newD.toFixed(2), 
+          bancaleslargo: newD.toFixed(2) 
+        } : null);
+      } else {
+        if (isResizingBed === 'width' || isResizingBed === 'both') {
+          const newW = Math.max(0.5, Math.min(500.0, resizeStartDims.w + deltaMetersX));
+          setBancal((prev: any) => prev ? { ...prev, bancalesancho: newW.toFixed(2) } : null);
+        }
+        if (isResizingBed === 'topWidth') {
+          const newWSup = Math.max(0.5, Math.min(500.0, resizeStartDims.wSup + deltaMetersX));
+          setBancal((prev: any) => prev ? { ...prev, bancalesanchosuperior: newWSup.toFixed(2) } : null);
+        }
+        if (isResizingBed === 'length' || isResizingBed === 'both') {
+          const newL = Math.max(0.5, Math.min(500.0, resizeStartDims.l + deltaMetersY));
+          setBancal((prev: any) => prev ? { ...prev, bancaleslargo: newL.toFixed(2) } : null);
+        }
+      }
+    }
+  };
+
+  const handleCanvasMouseUp = async () => {
+    setIsPanning(false);
+    
+    if (draggingCrop || draggingAccessory) {
+      persistDragCoords();
+    } else if (isResizingBed) {
+      const finalW = parseFloat(bancal.bancalesancho);
+      const finalL = parseFloat(bancal.bancaleslargo);
+      const finalWSup = bancal.bancalesforma === 'trapezoidal' ? parseFloat(bancal.bancalesanchosuperior || bancal.bancalesancho) : null;
+      
+      setIsResizingBed(null);
+
+      try {
+        const res = await fetch('/api/user/bancales', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': userEmail || ''
+          },
+          body: JSON.stringify({
+            idbancales: bedId,
+            bancalesnombre: bancal.bancalesnombre,
+            bancalesancho: finalW,
+            bancalesanchosuperior: finalWSup,
+            bancaleslargo: finalL,
+            bancalesforma: bancal.bancalesforma,
+            bancalessigpacprovincia: bancal.bancalessigpacprovincia,
+            bancalessigpacmunicipio: bancal.bancalessigpacmunicipio,
+            bancalessigpacpoligono: bancal.bancalessigpacpoligono,
+            bancalessigpacparcela: bancal.bancalessigpacparcela,
+            bancalessigpacrecinto: bancal.bancalessigpacrecinto,
+            bancalessigpacsuperficie: bancal.bancalessigpacsuperficie
+          })
+        });
+        if (res.ok) {
+          console.log("Bancal redimensionado guardado con éxito.");
+        }
+      } catch (err) {
+        console.error("Error saving bed dimensions:", err);
+      }
+    }
+  };
+
+
+  // Convert client cursor coords to percentage of the bed frame
+  const getCoordsFromMouse = (e: React.MouseEvent) => {
+    if (!svgRef.current) return { x: 50, y: 50 };
+    const rect = svgRef.current.getBoundingClientRect();
+
+    // Map mouse click to inner SVG 400x400 space, compensating for current pan and zoom
+    const svgClickX = ((e.clientX - rect.left) / rect.width) * 400;
+    const svgClickY = ((e.clientY - rect.top) / rect.height) * 400;
+
+    // Mathematically correct unpanning formula compensating for the centered (250px, 250px) transform origin inside a 500x500 viewport (which is 200px, 200px in a 400x400 viewport)
+    const unpannedX = 200 + (svgClickX - 200 - pan.x) / zoom;
+    const unpannedY = 200 + (svgClickY - 200 - pan.y) / zoom;
+
+    // Relative percentage inside the bed bounding frame
+    let pctX = ((unpannedX - ox) / svgW) * 100;
+    let pctY = ((unpannedY - oy) / svgH) * 100;
+
+    // Constraints check
+    pctX = Math.max(0, Math.min(100, pctX));
+    pctY = Math.max(0, Math.min(100, pctY));
+
+    return { x: pctX, y: pctY };
+  };
+
+  // Drag existing crop mechanics
+  const startDragCrop = (e: React.MouseEvent, crop: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingCrop(crop);
+    setSelectedCrop(crop);
+    setSelectedAccessory(null);
+  };
+
+  const startDragAccessory = (e: React.MouseEvent, acc: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingAccessory(acc);
+    setSelectedAccessory(acc);
+    setSelectedCrop(null);
+  };
+
+  const updateDragCoords = (e: React.MouseEvent) => {
+    if (draggingCrop) {
+      const { x, y } = getCoordsFromMouse(e);
+      
+      // Update locally for visual instant feedback
+      setCrops(prev => prev.map(c => 
+        c.idcultivos === draggingCrop.idcultivos 
+          ? { ...c, cultivosposicionx: x, cultivosposiciony: y }
+          : c
+      ));
+      if (selectedCrop && selectedCrop.idcultivos === draggingCrop.idcultivos) {
+        setSelectedCrop((prev: any) => ({ ...prev, cultivosposicionx: x, cultivosposiciony: y }));
+      }
+    } else if (draggingAccessory) {
+      const { x, y } = getCoordsFromMouse(e);
+      setPlacedAccessories(prev => prev.map(a => 
+        a.id === draggingAccessory.id 
+          ? { ...a, posicionx: x, posiciony: y }
+          : a
+      ));
+      if (selectedAccessory && selectedAccessory.id === draggingAccessory.id) {
+        setSelectedAccessory((prev: any) => ({ ...prev, posicionx: x, posiciony: y }));
+      }
+    }
+  };
+
+  const persistDragCoords = async () => {
+    if (draggingCrop) {
+      const targetCrop = crops.find(c => c.idcultivos === draggingCrop.idcultivos);
+      setDraggingCrop(null);
+
+      if (targetCrop) {
+        try {
+          await fetch(`/api/user/cultivos/${targetCrop.idcultivos}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+            body: JSON.stringify({
+              cultivosposicionx: targetCrop.cultivosposicionx,
+              cultivosposiciony: targetCrop.cultivosposiciony
+            })
+          });
+          loadWorkspaceData();
+        } catch (err) {
+          console.error('Error saving new plant coordinates:', err);
+        }
+      }
+    } else if (draggingAccessory) {
+      const targetAcc = placedAccessories.find(a => a.id === draggingAccessory.id);
+      setDraggingAccessory(null);
+      if (targetAcc) {
+        saveAccessories(placedAccessories);
+      }
+    }
+  };
+
+  // Placing a new plant from the library (Modo Siembra)
+  const handleSelectToPlant = (plant: any) => {
+    setPlacingPlant(plant);
+  };
+
+  const handleCanvasDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const { x, y } = getCoordsFromMouse(e as any);
+    
+    try {
+      const rawData = e.dataTransfer.getData('text/plain');
+      if (!rawData) return;
+      
+      const { item, source } = JSON.parse(rawData);
+      
+      if (source === 'accesorios') {
+        const newAcc = {
+          id: Date.now(),
+          type: item.id,
+          nombre: item.nombre,
+          icono: item.icono,
+          posicionx: x,
+          posiciony: y
+        };
+        // Use existing state to append the new accessory
+        setPlacedAccessories(prev => {
+          const updated = [...prev, newAcc];
+          localStorage.setItem(`verdantia_accessories_${bedId}`, JSON.stringify(updated));
+          return updated;
+        });
+        setSelectedAccessory(newAcc);
+        setSelectedCrop(null);
+      } else if (source === 'catalogo') {
+        const res = await fetch('/api/user/cultivos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+          body: JSON.stringify({
+            xcultivosidvariedades: item.idespecies,
+            xcultivosidsemillas: null,
+            xcultivosidbancales: bedId,
+            cultivoscantidad: 1,
+            cultivosposicionx: x,
+            cultivosposiciony: y,
+            cultivosorigen: 'plantel_comprado',
+            cultivosmetodo: 'trasplante_directo',
+            cultivosestado: 'crecimiento'
+          })
+        });
+
+        if (res.ok) {
+          loadWorkspaceData();
+        } else {
+          const data = await res.json();
+          alert(`Error al plantar: ${data.error || 'Espacio excedido en el bancal.'}`);
+        }
+      } else if (source === 'semillas') {
+        const res = await fetch(`/api/user/cultivos/${item.idcultivos}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+          body: JSON.stringify({
+            xcultivosidbancales: bedId,
+            cultivosposicionx: x,
+            cultivosposiciony: y
+          })
+        });
+
+        if (res.ok) {
+          loadWorkspaceData();
+        } else {
+          const data = await res.json();
+          alert(`Error al ubicar cultivo: ${data.error || 'No se pudo actualizar la ubicación.'}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error handling canvas drop:', err);
+    }
+  };
+
+  const handleCanvasClick = async (e: React.MouseEvent) => {
+    const { x, y } = getCoordsFromMouse(e);
+
+    if (placingAccessory) {
+      const tempAcc = placingAccessory;
+      setPlacingAccessory(null);
+      const newAcc = {
+        id: Date.now(),
+        type: tempAcc.id,
+        nombre: tempAcc.nombre,
+        icono: tempAcc.icono,
+        posicionx: x,
+        posiciony: y
+      };
+      saveAccessories([...placedAccessories, newAcc]);
+      setSelectedAccessory(newAcc);
+      setSelectedCrop(null);
+      return;
+    }
+
+    if (placingCrop) {
+      const targetCrop = placingCrop;
+      setPlacingCrop(null);
+      try {
+        // Move/place existing active crop on this bed
+        const res = await fetch(`/api/user/cultivos/${targetCrop.idcultivos}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+          body: JSON.stringify({
+            xcultivosidbancales: bedId,
+            cultivosposicionx: x,
+            cultivosposiciony: y
+          })
+        });
+
+        if (res.ok) {
+          loadWorkspaceData();
+        } else {
+          const data = await res.json();
+          alert(`Error al ubicar cultivo: ${data.error || 'No se pudo actualizar la ubicación.'}`);
+        }
+      } catch (err) {
+        console.error('Error placing active crop:', err);
+      }
+      return;
+    }
+
+    if (!placingPlant) return;
+
+    const tempPlacing = placingPlant;
+    setPlacingPlant(null);
+
+    // Call API to plant it at this exact coordinate
+    try {
+      const isSeed = tempPlacing.idsemillas !== undefined;
+      const res = await fetch('/api/user/cultivos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+        body: JSON.stringify({
+          xcultivosidvariedades: isSeed ? tempPlacing.xsemillasidvariedades : tempPlacing.idvariedades || tempPlacing.idespecies,
+          xcultivosidsemillas: isSeed ? tempPlacing.idsemillas : null,
+          xcultivosidbancales: bedId,
+          cultivoscantidad: 1,
+          cultivosposicionx: x,
+          cultivosposiciony: y,
+          cultivosorigen: isSeed ? 'semilla_inventario' : 'plantel_comprado',
+          cultivosmetodo: isSeed ? 'siembra_directa' : 'trasplante_directo',
+          cultivosestado: 'crecimiento'
+        })
+      });
+
+      if (res.ok) {
+        loadWorkspaceData();
+      } else {
+        const data = await res.json();
+        alert(`Error al plantar: ${data.error || 'Espacio excedido en el bancal.'}`);
+      }
+    } catch (err) {
+      console.error('Error planting new element:', err);
+    }
+  };
+
+  // Remove/Delete crop action
+  const handleRemoveCrop = async (cropId: number) => {
+    if (!confirm('¿Seguro que quieres eliminar este cultivo de tu bancal?')) return;
+    try {
+      const res = await fetch(`/api/user/cultivos/${cropId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail! }
+      });
+
+      if (res.ok) {
+        setSelectedCrop(null);
+        loadWorkspaceData();
+      } else {
+        const errData = await res.json();
+        alert(`Error al eliminar: ${errData.error || 'No se pudo eliminar el cultivo'}`);
+      }
+    } catch (err) {
+      console.error('Error removing crop:', err);
+    }
+  };
+
+  // Update crop state directly
+  const handleUpdateCropState = async (newState: string) => {
+    if (!selectedCrop) return;
+    try {
+      // Direct update of selected crop state
+      await fetch(`/api/user/cultivos/${selectedCrop.idcultivos}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
+        body: JSON.stringify({
+          cultivosestado: newState
+        })
+      });
+      setSelectedCrop((prev: any) => ({ ...prev, cultivosestado: newState }));
+      loadWorkspaceData();
+    } catch (err) {
+      console.error('Error updating crop state:', err);
+    }
+  };
+
+  const filteredCatalog = catalog.filter(item => 
+    item.especiesnombre.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredActiveCrops = allActiveCrops.filter(crop =>
+    (crop.especiesnombre || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (crop.variedad_nombre || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw',
+      background: '#0f172a', color: '#f8fafc', overflow: 'hidden', fontFamily: 'system-ui, sans-serif'
+    }}>
+      {/* ── Botonera Doble de Navegación (Estándar de Navegación en Dashboards) ── */}
+      <div style={{
+        padding: '12px 24px',
+        display: 'flex',
+        gap: '12px',
+        background: '#111827',
+        borderBottom: '1px solid #1f2937'
+      }}>
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: '#1f2937', color: '#f8fafc', border: '1px solid #374151',
+            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer',
+            fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center',
+            gap: '6px', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#374151';
+            e.currentTarget.style.borderColor = '#4b5563';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = '#1f2937';
+            e.currentTarget.style.borderColor = '#374151';
+          }}
+        >
+          🏠 Volver al Inicio
+        </button>
+        <button
+          onClick={() => router.push('/dashboard/perfil?tab=bancales')}
+          style={{
+            background: '#1f2937', color: '#f8fafc', border: '1px solid #374151',
+            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer',
+            fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center',
+            gap: '6px', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = '#374151';
+            e.currentTarget.style.borderColor = '#4b5563';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = '#1f2937';
+            e.currentTarget.style.borderColor = '#374151';
+          }}
+        >
+          🚜 Volver a Bancales
+        </button>
+      </div>
+
+      {/* ── Subheader Integrado (Variante de Editor con Fondo Degradado Emerald/Teal) ── */}
+      <div style={{
+        background: 'linear-gradient(to right, #047857, #0f766e)',
+        padding: '16px 24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '1px solid #10b981',
+        flexShrink: 0
+      }}>
+        {/* Left Side: Title & Dimensions */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🚜 Diseñador: {bancal.bancalesnombre}
+            </h1>
+            <span style={{
+              background: '#064e3b', color: '#34d399', fontSize: '0.65rem',
+              fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+              textTransform: 'uppercase', border: '1px solid #059669'
+            }}>{bancal.bancalesforma}</span>
+          </div>
+          <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#a7f3d0' }}>
+            Dimensiones: {bancal.bancalesforma === 'trapezoidal' ? `${formatDec(bedWSup,1)}m/${formatDec(bedW,1)}m` : `${formatDec(bedW,1)}m`} × {formatDec(bedL,1)}m = <strong style={{ color: '#34d399' }}>{formatDec(getCalculatedArea(), 2)} m²</strong>
+          </p>
+        </div>
+
+        {/* Center Side: Zoom, Reset, Ruler, and % Controls Toolbar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'rgba(0, 0, 0, 0.25)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          borderRadius: '10px',
+          padding: '4px'
+        }}>
+          <button 
+            onClick={handleZoomIn} 
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.1)', 
+              border: 'none', 
+              color: 'white', 
+              width: '26px', 
+              height: '26px', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }} 
+            title="Acercar"
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          >
+            <Plus size={13} />
+          </button>
+          <button 
+            onClick={handleZoomOut} 
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.1)', 
+              border: 'none', 
+              color: 'white', 
+              width: '26px', 
+              height: '26px', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }} 
+            title="Alejar"
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          >
+            <Minus size={13} />
+          </button>
+          <button 
+            onClick={handleResetView} 
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.1)', 
+              border: 'none', 
+              color: 'white', 
+              width: '26px', 
+              height: '26px', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }} 
+            title="Restablecer Vista"
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          >
+            <RefreshCw size={11} />
+          </button>
+          <button 
+            onClick={() => setShowMeasures(!showMeasures)} 
+            style={{ 
+              background: showMeasures ? '#10b981' : 'rgba(255, 255, 255, 0.1)', 
+              border: 'none', 
+              color: showMeasures ? '#111827' : 'white', 
+              width: '26px', 
+              height: '26px', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }} 
+            title={showMeasures ? "Ocultar Cotas y Medidas" : "Mostrar Cotas y Medidas"}
+            onMouseEnter={e => {
+              if (!showMeasures) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={e => {
+              if (!showMeasures) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+          >
+            <Ruler size={13} />
+          </button>
+          <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.15)', height: '14px', margin: '0 2px' }} />
+          <div style={{ padding: '0 6px', fontSize: '0.7rem', color: '#a7f3d0', fontWeight: 'bold' }}>
+            {Math.round(zoom * 100)}%
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {placingPlant && (
+            <div style={{
+              background: '#78350f', border: '1px solid #d97706', color: '#fef3c7',
+              padding: '6px 14px', borderRadius: '10px', fontSize: '0.8rem',
+              fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
+              animation: 'pulse 2s infinite'
+            }}>
+              <span style={{ fontSize: '1.1rem' }}>📍</span> Modo Siembra: Haz click en el lienzo para plantar {placingPlant.especiesnombre || placingPlant.variedadesnombre}
+              <button 
+                onClick={() => setPlacingPlant(null)}
+                style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer', fontWeight: 'bold', marginLeft: '6px' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+          {placingCrop && (
+            <div style={{
+              background: '#047857', border: '1px solid #34d399', color: '#ecfdf5',
+              padding: '6px 14px', borderRadius: '10px', fontSize: '0.8rem',
+              fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
+              animation: 'pulse 2s infinite'
+            }}>
+              <span style={{ fontSize: '1.1rem' }}>📍</span> Ubicar Cultivo: Haz click en el lienzo para situar {placingCrop.especiesnombre} ({placingCrop.variedad_nombre || 'Común'})
+              <button 
+                onClick={() => setPlacingCrop(null)}
+                style={{ background: 'none', border: 'none', color: '#a7f3d0', cursor: 'pointer', fontWeight: 'bold', marginLeft: '6px' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+          {placingAccessory && (
+            <div style={{
+              background: '#1e3a8a', border: '1px solid #3b82f6', color: '#eff6ff',
+              padding: '6px 14px', borderRadius: '10px', fontSize: '0.8rem',
+              fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
+              animation: 'pulse 2s infinite'
+            }}>
+              <span style={{ fontSize: '1.1rem' }}>📍</span> Colocar Accesorio: Haz click en el lienzo para situar {placingAccessory.nombre}
+              <button 
+                onClick={() => setPlacingAccessory(null)}
+                style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontWeight: 'bold', marginLeft: '6px' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+          <button 
+            onClick={loadWorkspaceData}
+            style={{
+              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#f8fafc',
+              padding: '8px 16px', borderRadius: '10px', cursor: 'pointer',
+              fontWeight: 600, fontSize: '0.8rem', display: 'flex',
+              alignItems: 'center', gap: '6px', transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          >
+            <RefreshCw size={14} /> Sincronizar
+          </button>
+        </div>
+      </div>
+
+      {/* Main layout frame */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', width: '100%' }}>
+        
+        {/* COLUMN 1: LEFT PALETTE / BOTANICAL LIBRARY */}
+        <aside style={{
+          width: showLeftSidebar ? '320px' : '0px',
+          background: '#111827',
+          borderRight: showLeftSidebar ? '1px solid #1f2937' : 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          flexShrink: 0,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          {/* Search bar */}
+          <div style={{ padding: '16px', borderBottom: '1px solid #1f2937' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
+              <Search size={14} style={{ position: 'absolute', left: '12px', top: '12px', color: '#6b7280' }} />
+              <input 
+                type="text"
+                placeholder="Buscar semillas o plantas..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%', background: '#1f2937', border: '1px solid #374151',
+                  borderRadius: '10px', padding: '8px 12px 8px 36px', fontSize: '0.85rem',
+                  color: 'white', outline: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Tab selectors */}
+          <div style={{
+            display: 'flex', borderBottom: '1px solid #1f2937', background: '#111827',
+            padding: '4px'
+          }}>
+            <button 
+              onClick={() => setLibraryTab('semillas')}
+              style={{
+                flex: 1, background: libraryTab === 'semillas' ? '#1f2937' : 'transparent',
+                border: 'none', color: libraryTab === 'semillas' ? '#f8fafc' : '#9ca3af',
+                padding: '8px 0', fontSize: '0.75rem', fontWeight: 700,
+                borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              🌱 Cultivos
+            </button>
+            <button 
+              onClick={() => setLibraryTab('catalogo')}
+              style={{
+                flex: 1, background: libraryTab === 'catalogo' ? '#1f2937' : 'transparent',
+                border: 'none', color: libraryTab === 'catalogo' ? '#f8fafc' : '#9ca3af',
+                padding: '8px 0', fontSize: '0.75rem', fontWeight: 700,
+                borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              📖 Catálogo
+            </button>
+            <button 
+              onClick={() => setLibraryTab('accesorios')}
+              style={{
+                flex: 1, background: libraryTab === 'accesorios' ? '#1f2937' : 'transparent',
+                border: 'none', color: libraryTab === 'accesorios' ? '#f8fafc' : '#9ca3af',
+                padding: '8px 0', fontSize: '0.75rem', fontWeight: 700,
+                borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              🪵 Accesorios
+            </button>
+          </div>
+
+          {/* Cards List container */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {libraryTab === 'semillas' ? (
+              filteredActiveCrops.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#6b7280', fontSize: '0.8rem' }}>
+                  No tienes cultivos activos de esta búsqueda en tu huerto.
+                </div>
+              ) : (
+                filteredActiveCrops.map(item => (
+                  <div 
+                    key={item.idcultivos}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', JSON.stringify({ item, source: 'semillas' }));
+                    }}
+                    onClick={() => {
+                      setPlacingPlant(null);
+                      setPlacingCrop(item);
+                    }}
+                    style={{
+                      background: '#1f2937', border: '1px solid #374151', borderRadius: '12px',
+                      padding: '12px', cursor: 'grab', transition: 'all 0.2s',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)', position: 'relative',
+                      borderColor: placingCrop?.idcultivos === item.idcultivos ? '#10b981' : '#374151'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#10b981'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = placingCrop?.idcultivos === item.idcultivos ? '#10b981' : '#374151'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '1.8rem' }}>{item.especiesicono || '🌱'}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.65rem', background: '#374151', color: '#9ca3af', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                            #{item.cultivosnumerocoleccion || item.idcultivos}
+                          </span>
+                          <span style={{ 
+                            fontSize: '0.65rem', 
+                            background: item.xcultivosidbancales === bancal.idbancales 
+                              ? '#064e3b' 
+                              : item.xcultivosidbancales 
+                                ? '#1e2937' 
+                                : '#78350f', 
+                            color: item.xcultivosidbancales === bancal.idbancales 
+                              ? '#34d399' 
+                              : item.xcultivosidbancales 
+                                ? '#9ca3af' 
+                                : '#fbbf24', 
+                            padding: '1px 6px', 
+                            borderRadius: '4px', 
+                            fontWeight: 700 
+                          }}>
+                            {item.xcultivosidbancales === bancal.idbancales 
+                              ? '📍 Ubicado aquí' 
+                              : item.xcultivosidbancales 
+                                ? '🚜 En otro bancal' 
+                                : '⏳ Sin Ubicar'}
+                          </span>
+                        </div>
+                        <h4 style={{ margin: '4px 0 2px', fontSize: '0.85rem', color: 'white', fontWeight: 700 }}>
+                          {item.especiesnombre}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.7rem', color: '#9ca3af' }}>
+                          Variedad: {item.variedad_nombre || 'Común'} • Cantidad: {item.cultivoscantidad || 1}
+                        </p>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.65rem', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 800 }}>
+                          Estado: <span style={{ color: '#fbbf24' }}>{item.cultivosestado}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )
+            ) : libraryTab === 'catalogo' ? (
+              filteredCatalog.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#6b7280', fontSize: '0.8rem' }}>
+                  No se encontraron especies en el catálogo.
+                </div>
+              ) : (
+                filteredCatalog.map(item => (
+                  <div 
+                    key={item.idespecies}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', JSON.stringify({ item, source: 'catalogo' }));
+                    }}
+                    onClick={() => handleSelectToPlant(item)}
+                    style={{
+                      background: '#1f2937', border: '1px solid #374151', borderRadius: '12px',
+                      padding: '12px', cursor: 'grab', transition: 'all 0.2s',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      borderColor: placingPlant?.idespecies === item.idespecies ? '#fbbf24' : '#374151'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#10b981'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = placingPlant?.idespecies === item.idespecies ? '#fbbf24' : '#374151'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '1.8rem' }}>{item.especiesicono || '🌱'}</span>
+                      <div style={{ flex: 1 }}>
+                        <h4 style={{ margin: '0 0 2px', fontSize: '0.85rem', color: 'white', fontWeight: 700 }}>
+                          {item.especiesnombre}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.7rem', color: '#9ca3af' }}>
+                          Marco: {item.especiesmarcoplantas}x{item.especiesmarcofilas}cm • Ciclo: {item.especiesciclodevida || 'anual'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )
+            ) : (
+              ACCESSORIES_LIBRARY.map(item => (
+                <div 
+                  key={item.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({ item, source: 'accesorios' }));
+                  }}
+                  onClick={() => handleSelectAccessory(item)}
+                  style={{
+                    background: '#1f2937', border: '1px solid #374151', borderRadius: '12px',
+                    padding: '12px', cursor: 'grab', transition: 'all 0.2s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    borderColor: placingAccessory?.id === item.id ? '#3b82f6' : '#374151'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = placingAccessory?.id === item.id ? '#3b82f6' : '#374151'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.8rem' }}>{item.icono}</span>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 2px', fontSize: '0.85rem', color: 'white', fontWeight: 700 }}>
+                        {item.nombre}
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.7rem', color: '#9ca3af' }}>
+                        {item.tamaño} • {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </aside>
+
+        {/* COLUMN 2: CENTER WORKSPACE CANVAS (SVG) */}
+        <main style={{
+          flex: 1, background: '#090d16', display: 'flex', flexDirection: 'column',
+          position: 'relative', overflow: 'hidden', userSelect: 'none'
+        }}>
+          {/* Collapsible Sidebar Handles */}
+          {/* Left Handle */}
+          <button
+            onClick={() => setShowLeftSidebar(!showLeftSidebar)}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 40,
+              width: '24px',
+              height: '56px',
+              background: 'rgba(17, 24, 39, 0.85)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '8px',
+              color: '#10b981',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+            title={showLeftSidebar ? "Colapsar panel izquierdo" : "Expandir panel izquierdo"}
+            onMouseEnter={e => {
+              e.currentTarget.style.border = '1px solid #10b981';
+              e.currentTarget.style.boxShadow = '0 0 10px rgba(16,185,129,0.4)';
+              e.currentTarget.style.color = '#34d399';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.5)';
+              e.currentTarget.style.color = '#10b981';
+            }}
+          >
+            {showLeftSidebar ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </button>
+
+          {/* Right Handle */}
+          <button
+            onClick={() => setShowRightSidebar(!showRightSidebar)}
+            style={{
+              position: 'absolute',
+              right: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 40,
+              width: '24px',
+              height: '56px',
+              background: 'rgba(17, 24, 39, 0.85)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '8px',
+              color: '#10b981',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+            title={showRightSidebar ? "Colapsar panel derecho" : "Expandir panel derecho"}
+            onMouseEnter={e => {
+              e.currentTarget.style.border = '1px solid #10b981';
+              e.currentTarget.style.boxShadow = '0 0 10px rgba(16,185,129,0.4)';
+              e.currentTarget.style.color = '#34d399';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.5)';
+              e.currentTarget.style.color = '#10b981';
+            }}
+          >
+            {showRightSidebar ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+
+          {/* Immersive Interactive Grid Drawing Area */}
+          <div 
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseLeave={handleCanvasMouseUp}
+            onClick={handleCanvasClick}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleCanvasDrop}
+            onWheel={handleCanvasWheel}
+            style={{
+              flex: 1, width: '100%', height: '100%', cursor: placingPlant ? 'crosshair' : isPanning ? 'grabbing' : 'grab',
+              display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative'
+            }}
+          >
+            {/* The SVG Canvas viewport */}
+            <svg 
+              ref={svgRef}
+              width="100%" height="100%" viewBox="0 0 500 500"
+              style={{
+                background: '#090d16',
+                backgroundImage: `
+                  linear-gradient(to right, rgba(31, 41, 55, 0.4) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(31, 41, 55, 0.4) 1px, transparent 1px),
+                  linear-gradient(to right, rgba(17, 24, 39, 0.6) 0.5px, transparent 0.5px),
+                  linear-gradient(to bottom, rgba(17, 24, 39, 0.6) 0.5px, transparent 0.5px)
+                `,
+                backgroundSize: '30px 30px, 30px 30px, 15px 15px, 15px 15px',
+                border: 'none', overflow: 'hidden', display: 'block'
+              }}
+            >
+
+              {/* Viewport translation group for pan & zoom support */}
+              <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`} style={{ transformOrigin: '250px 250px', transition: isPanning ? 'none' : 'transform 0.15s ease-out' }}>
+                
+                {/* 1. SVG BED SHAPE OUTLINE */}
+                {bancal.bancalesforma === 'rectangular' && (
+                  <rect
+                    x={ox} y={oy}
+                    width={svgW} height={svgH}
+                    rx="8" fill="#10b981" fillOpacity="0.08"
+                    stroke="#10b981" strokeWidth="2" strokeDasharray="3 3"
+                  />
+                )}
+
+                {bancal.bancalesforma === 'circular' && (
+                  <circle
+                    cx="200" cy="200"
+                    r={svgW / 2}
+                    fill="#10b981" fillOpacity="0.08"
+                    stroke="#10b981" strokeWidth="2" strokeDasharray="3 3"
+                  />
+                )}
+
+                {bancal.bancalesforma === 'trapezoidal' && (
+                  <polygon
+                    points={`
+                      ${oxSup},${oy} 
+                      ${oxSup + svgWSup},${oy} 
+                      ${ox + svgW},${oy + svgH} 
+                      ${ox},${oy + svgH}
+                    `}
+                    fill="#10b981" fillOpacity="0.08"
+                    stroke="#10b981" strokeWidth="2" strokeDasharray="3 3"
+                  />
+                )}
+
+                {/* CAD RULERS & MEASUREMENT LABELS */}
+                {showMeasures && (
+                  <g style={{ pointerEvents: 'none' }}>
+                    {/* 1. Base / Ancho Inferior / Diámetro Horizontal */}
+                    {bancal.bancalesforma !== 'circular' ? (
+                      <g>
+                        <line x1={ox} y1={oy + svgH + 16} x2={ox + svgW} y2={oy + svgH + 16} stroke="#64748b" strokeWidth="1" />
+                        <line x1={ox} y1={oy + svgH + 4} x2={ox} y2={oy + svgH + 24} stroke="#475569" strokeWidth="1" />
+                        <line x1={ox + svgW} y1={oy + svgH + 4} x2={ox + svgW} y2={oy + svgH + 24} stroke="#475569" strokeWidth="1" />
+                        <line x1={ox - 4} y1={oy + svgH + 20} x2={ox + 4} y2={oy + svgH + 12} stroke="#475569" strokeWidth="1.5" />
+                        <line x1={ox + svgW - 4} y1={oy + svgH + 20} x2={ox + svgW + 4} y2={oy + svgH + 12} stroke="#475569" strokeWidth="1.5" />
+                        <text x={ox + svgW / 2} y={oy + svgH + 28} textAnchor="middle" fill="#cbd5e1" fontSize="9" fontWeight="bold">
+                          {formatDec(bedW, 2)}m
+                        </text>
+                      </g>
+                    ) : (
+                      <g>
+                        <line x1={200 - svgW / 2} y1={200 + svgW / 2 + 16} x2={200 + svgW / 2} y2={200 + svgW / 2 + 16} stroke="#64748b" strokeWidth="1" />
+                        <line x1={200 - svgW / 2} y1={200 + svgW / 2 + 4} x2={200 - svgW / 2} y2={200 + svgW / 2 + 24} stroke="#475569" strokeWidth="1" />
+                        <line x1={200 + svgW / 2} y1={200 + svgW / 2 + 4} x2={200 + svgW / 2} y2={200 + svgW / 2 + 24} stroke="#475569" strokeWidth="1" />
+                        <line x1={200 - svgW / 2 - 4} y1={200 + svgW / 2 + 20} x2={200 - svgW / 2 + 4} y2={200 + svgW / 2 + 12} stroke="#475569" strokeWidth="1.5" />
+                        <line x1={200 + svgW / 2 - 4} y1={200 + svgW / 2 + 20} x2={200 + svgW / 2 + 4} y2={200 + svgW / 2 + 12} stroke="#475569" strokeWidth="1.5" />
+                        <text x={200} y={200 + svgW / 2 + 28} textAnchor="middle" fill="#cbd5e1" fontSize="9" fontWeight="bold">
+                          Ø {formatDec(bedW, 2)}m
+                        </text>
+                      </g>
+                    )}
+
+                    {/* 2. Ancho Superior (Base Menor - Solo Trapecios) */}
+                    {bancal.bancalesforma === 'trapezoidal' && (
+                      <g>
+                        <line x1={oxSup} y1={oy - 16} x2={oxSup} y2={oy - 16} stroke="#64748b" strokeWidth="1" />
+                        <line x1={oxSup} y1={oy - 4} x2={oxSup} y2={oy - 24} stroke="#475569" strokeWidth="1" />
+                        <line x1={oxSup + svgWSup} y1={oy - 4} x2={oxSup + svgWSup} y2={oy - 24} stroke="#475569" strokeWidth="1" />
+                        <line x1={oxSup - 4} y1={oy - 12} x2={oxSup + 4} y2={oy - 20} stroke="#475569" strokeWidth="1.5" />
+                        <line x1={oxSup + svgWSup - 4} y1={oy - 12} x2={oxSup + svgWSup + 4} y2={oy - 20} stroke="#475569" strokeWidth="1.5" />
+                        <text x={oxSup + svgWSup / 2} y={oy - 24} textAnchor="middle" fill="#cbd5e1" fontSize="9" fontWeight="bold">
+                          Sup: {formatDec(bedWSup, 2)}m
+                        </text>
+                      </g>
+                    )}
+
+                    {/* 3. Largo (Vertical) */}
+                    {bancal.bancalesforma !== 'circular' && (
+                      <g>
+                        <line x1={minX - 16} y1={oy} x2={minX - 16} y2={oy + svgH} stroke="#64748b" strokeWidth="1" />
+                        <line x1={oxSup - 4} y1={oy} x2={minX - 24} y2={oy} stroke="#475569" strokeWidth="1" />
+                        <line x1={ox - 4} y1={oy + svgH} x2={minX - 24} y2={oy + svgH} stroke="#475569" strokeWidth="1" />
+                        <line x1={minX - 20} y1={oy - 4} x2={minX - 12} y2={oy + 4} stroke="#475569" strokeWidth="1.5" />
+                        <line x1={minX - 20} y1={oy + svgH - 4} x2={minX - 12} y2={oy + svgH + 4} stroke="#475569" strokeWidth="1.5" />
+                        <text x={minX - 26} y={oy + svgH / 2} textAnchor="middle" fill="#cbd5e1" fontSize="9" fontWeight="bold" transform={`rotate(-90 ${minX - 26} ${oy + svgH / 2})`}>
+                          {formatDec(bedL, 2)}m
+                        </text>
+                      </g>
+                    )}
+                  </g>
+                )}
+
+                {/* 2. PLACED PLANTS COLLISION RINGS & BADGES */}
+                {crops.map(crop => {
+                  const px = parseFloat(crop.cultivosposicionx) || 50;
+                  const py = parseFloat(crop.cultivosposiciony) || 50;
+
+                  // Map percentage back to SVG bed outline coordinates
+                  const cx = ox + (px / 100) * svgW;
+                  const cy = oy + (py / 100) * svgH;
+
+                  // Botanical spacing occupancy radius (unclamped physical scale!)
+                  const spacing = Math.max(parseFloat(crop.especiesmarcoplantas) || 30, 20);
+                  const r = ((spacing / 2) / bedW) * svgW; // Exact physical radius relative to bed bounds
+
+                  // Physically scale foliage badge (foliage is ~75% of botanical spacing footprint or custom user scaling)
+                  const customRadius = cropScales[crop.idcultivos];
+                  const physFoliageRadius = customRadius !== undefined ? customRadius : (spacing * 0.75 / 2) / 100;
+                  const badgeR = (physFoliageRadius / bedW) * svgW;
+
+                  const hasCollision = collisions[crop.idcultivos] || false;
+                  const isSelected = selectedCrop?.idcultivos === crop.idcultivos;
+
+                  return (
+                    <g key={crop.idcultivos}>
+                      {/* Collision / Spacing Ring */}
+                      {showMeasures && (
+                        <circle
+                          cx={cx} cy={cy} r={r}
+                          fill={hasCollision ? '#ef4444' : isSelected ? '#10b981' : '#4b5563'}
+                          fillOpacity={hasCollision ? 0.15 : isSelected ? 0.08 : 0.03}
+                          stroke={hasCollision ? '#ef4444' : isSelected ? '#10b981' : '#6b7280'}
+                          strokeWidth={0.75 / zoom}
+                          strokeDasharray={isSelected ? 'none' : '3 3'}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )}
+
+                      {/* Selection Ring (Dotted organic highlight when selected!) */}
+                      {isSelected && (
+                        <circle
+                          cx={cx} cy={cy} r={badgeR + 4}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth={1.5 / zoom}
+                          strokeDasharray="3 3"
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )}
+
+                      {/* Plant Spacing / Foliage Ring (Thin dotted outline showing physical size) */}
+                      {!isSelected && !hasCollision && (
+                        <circle
+                          cx={cx} cy={cy} r={badgeR}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth={0.5 / zoom}
+                          strokeOpacity="0.25"
+                          strokeDasharray="2 2"
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )}
+
+                      {/* Plant Emoji (Rendered directly, scaled proportionally with readable safety clamp!) */}
+                      <text
+                        x={cx} y={cy + Math.max(12, badgeR * 2) * 0.35}
+                        textAnchor="middle" 
+                        fontSize={Math.max(12, badgeR * 2)}
+                        style={{ userSelect: 'none', pointerEvents: 'none', transition: 'font-size 0.2s ease, y 0.2s ease' }}
+                      >
+                        {crop.especiesicono || '🌱'}
+                      </text>
+
+                      {/* Collection indicator (Scaled and positioned organically relative to emoji) */}
+                      {badgeR >= 10 && (
+                        <g style={{ pointerEvents: 'none' }}>
+                          <circle cx={cx + badgeR * 0.8} cy={cy - badgeR * 0.8} r="5" fill="#111827" stroke="white" strokeWidth="0.5" />
+                          <text x={cx + badgeR * 0.8} y={cy - badgeR * 0.8 + 1.5} textAnchor="middle" fill="white" fontSize="5" fontWeight="bold">
+                            {crop.cultivosnumerocoleccion || '1'}
+                          </text>
+                        </g>
+                      )}
+
+                      {/* INVISIBLE ACTIVE INTERACTIVE HITBOX CIRCLE (Ensures comfortable clicking/dragging ergonomics on tiny physical scales!) */}
+                      <circle
+                        cx={cx} cy={cy} r={Math.max(18, badgeR)}
+                        fill="transparent"
+                        onMouseDown={(e) => startDragCrop(e, crop)}
+                        style={{ cursor: draggingCrop?.idcultivos === crop.idcultivos ? 'grabbing' : 'grab' }}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* 3. PLACED ACCESSORIES */}
+                {placedAccessories.map(acc => {
+                  const px = parseFloat(acc.posicionx) || 50;
+                  const py = parseFloat(acc.posiciony) || 50;
+
+                  // Map percentage back to SVG bed outline coordinates
+                  const cx = ox + (px / 100) * svgW;
+                  const cy = oy + (py / 100) * svgH;
+
+                  const physR = acc.escalaMetros !== undefined ? acc.escalaMetros : getAccessoryPhysicalRadius(acc.type);
+                  const accR = (physR / bedW) * svgW; // Exact physical radius relative to bed bounds
+
+                  const isSelected = selectedAccessory?.id === acc.id;
+
+                  return (
+                    <g key={acc.id}>
+                      {/* Selection Ring (Dotted organic highlight when selected!) */}
+                      {isSelected && (
+                        <circle
+                          cx={cx} cy={cy} r={accR + 5}
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth={1.5 / zoom}
+                          strokeDasharray="3 3"
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )}
+
+                      {/* Placed Accessory Emoji Icon (Rendered directly, scaled proportionally with readable safety clamp!) */}
+                      <text
+                        x={cx} y={cy + Math.max(12, accR * 2) * 0.35}
+                        textAnchor="middle" 
+                        fontSize={Math.max(12, accR * 2)}
+                        style={{ userSelect: 'none', pointerEvents: 'none', transition: 'font-size 0.2s ease, y 0.2s ease' }}
+                      >
+                        {acc.icono}
+                      </text>
+
+                      {/* INVISIBLE ACTIVE INTERACTIVE HITBOX CIRCLE (Ensures perfect clicking/dragging ergonomics on tiny physical scales!) */}
+                      <circle
+                        cx={cx} cy={cy} r={Math.max(18, accR)}
+                        fill="transparent"
+                        onMouseDown={(e) => startDragAccessory(e, acc)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCrop(null);
+                          setSelectedAccessory(acc);
+                        }}
+                        style={{ cursor: draggingAccessory?.id === acc.id ? 'grabbing' : 'grab' }}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* 4. BED RESIZE DRAG HANDLES */}
+                {!placingPlant && !placingAccessory && !draggingCrop && !draggingAccessory && (
+                  <g>
+                    {/* Rectangular Bed Handles */}
+                    {bancal.bancalesforma === 'rectangular' && (
+                      <>
+                        {/* East Handle (Resizes Width) */}
+                        <circle
+                          cx={ox + svgW}
+                          cy={oy + svgH / 2}
+                          r={(hoveredHandle === 'width' || isResizingBed === 'width' ? 9 : 6) / zoom}
+                          fill={hoveredHandle === 'width' || isResizingBed === 'width' ? '#10b981' : '#ffffff'}
+                          stroke="#059669"
+                          strokeWidth={2 / zoom}
+                          style={{ cursor: 'ew-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                          onMouseEnter={() => setHoveredHandle('width')}
+                          onMouseLeave={() => setHoveredHandle(null)}
+                          onMouseDown={(e) => startResizeBed(e, 'width')}
+                        />
+                        {/* South Handle (Resizes Length) */}
+                        <circle
+                          cx={ox + svgW / 2}
+                          cy={oy + svgH}
+                          r={(hoveredHandle === 'length' || isResizingBed === 'length' ? 9 : 6) / zoom}
+                          fill={hoveredHandle === 'length' || isResizingBed === 'length' ? '#10b981' : '#ffffff'}
+                          stroke="#059669"
+                          strokeWidth={2 / zoom}
+                          style={{ cursor: 'ns-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                          onMouseEnter={() => setHoveredHandle('length')}
+                          onMouseLeave={() => setHoveredHandle(null)}
+                          onMouseDown={(e) => startResizeBed(e, 'length')}
+                        />
+                        {/* Southeast Handle (Resizes Both) */}
+                        <circle
+                          cx={ox + svgW}
+                          cy={oy + svgH}
+                          r={(hoveredHandle === 'both' || isResizingBed === 'both' ? 10 : 7) / zoom}
+                          fill={hoveredHandle === 'both' || isResizingBed === 'both' ? '#10b981' : '#ffffff'}
+                          stroke="#059669"
+                          strokeWidth={2.5 / zoom}
+                          style={{ cursor: 'nwse-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                          onMouseEnter={() => setHoveredHandle('both')}
+                          onMouseLeave={() => setHoveredHandle(null)}
+                          onMouseDown={(e) => startResizeBed(e, 'both')}
+                        />
+                      </>
+                    )}
+
+                    {/* Circular Bed Handle */}
+                    {bancal.bancalesforma === 'circular' && (
+                      <circle
+                        cx={200 + svgW / 2}
+                        cy={200}
+                        r={(hoveredHandle === 'width' || isResizingBed === 'width' ? 9 : 6) / zoom}
+                        fill={hoveredHandle === 'width' || isResizingBed === 'width' ? '#10b981' : '#ffffff'}
+                        stroke="#059669"
+                        strokeWidth={2 / zoom}
+                        style={{ cursor: 'ew-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                        onMouseEnter={() => setHoveredHandle('width')}
+                        onMouseLeave={() => setHoveredHandle(null)}
+                        onMouseDown={(e) => startResizeBed(e, 'width')}
+                      />
+                    )}
+
+                    {/* Trapezoidal Bed Handles */}
+                    {bancal.bancalesforma === 'trapezoidal' && (
+                      <>
+                        {/* East Handle / Bottom Width (Resizes bottom-right corner) */}
+                        <circle
+                          cx={ox + svgW}
+                          cy={oy + svgH}
+                          r={(hoveredHandle === 'width' || isResizingBed === 'width' ? 9 : 6) / zoom}
+                          fill={hoveredHandle === 'width' || isResizingBed === 'width' ? '#10b981' : '#ffffff'}
+                          stroke="#059669"
+                          strokeWidth={2 / zoom}
+                          style={{ cursor: 'ew-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                          onMouseEnter={() => setHoveredHandle('width')}
+                          onMouseLeave={() => setHoveredHandle(null)}
+                          onMouseDown={(e) => startResizeBed(e, 'width')}
+                        />
+                        {/* Top Width Handle (Resizes top-right corner) */}
+                        <circle
+                          cx={oxSup + svgWSup}
+                          cy={oy}
+                          r={(hoveredHandle === 'topWidth' || isResizingBed === 'topWidth' ? 9 : 6) / zoom}
+                          fill={hoveredHandle === 'topWidth' || isResizingBed === 'topWidth' ? '#10b981' : '#ffffff'}
+                          stroke="#059669"
+                          strokeWidth={2 / zoom}
+                          style={{ cursor: 'ew-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                          onMouseEnter={() => setHoveredHandle('topWidth')}
+                          onMouseLeave={() => setHoveredHandle(null)}
+                          onMouseDown={(e) => startResizeBed(e, 'topWidth')}
+                        />
+                        {/* South Handle (Resizes Length/Height) */}
+                        <circle
+                          cx={ox + svgW / 2}
+                          cy={oy + svgH}
+                          r={(hoveredHandle === 'length' || isResizingBed === 'length' ? 9 : 6) / zoom}
+                          fill={hoveredHandle === 'length' || isResizingBed === 'length' ? '#10b981' : '#ffffff'}
+                          stroke="#059669"
+                          strokeWidth={2 / zoom}
+                          style={{ cursor: 'ns-resize', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))', transition: 'r 0.15s ease, fill 0.15s ease' }}
+                          onMouseEnter={() => setHoveredHandle('length')}
+                          onMouseLeave={() => setHoveredHandle(null)}
+                          onMouseDown={(e) => startResizeBed(e, 'length')}
+                        />
+                      </>
+                    )}
+                  </g>
+                )}
+              </g>
+            </svg>
+
+          </div>
+        </main>
+
+        {/* COLUMN 3: RIGHT PANEL - PROPERTIES INSPECTOR */}
+        <aside style={{
+          width: showRightSidebar ? '320px' : '0px',
+          background: '#111827',
+          borderLeft: showRightSidebar ? '1px solid #1f2937' : 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          flexShrink: 0,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Layers size={16} style={{ color: '#10b981' }} /> Inspector de Propiedades
+            </h3>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {selectedAccessory ? (
+              <>
+                {/* Accessory General header info */}
+                <div style={{ background: '#1e293b', padding: '16px', borderRadius: '16px', border: '1px solid #475569', textAlign: 'center' }}>
+                  <span style={{ fontSize: '3rem', display: 'block', marginBottom: '8px' }}>{selectedAccessory.icono}</span>
+                  <span style={{
+                    background: '#3b82f6', color: '#ffffff', fontSize: '0.65rem',
+                    fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+                    display: 'inline-block', marginBottom: '6px'
+                  }}>Accesorios / Decoración</span>
+                  <h4 style={{ margin: 0, fontSize: '1rem', color: 'white', fontWeight: 800 }}>
+                    {selectedAccessory.nombre}
+                  </h4>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
+                    {ACCESSORIES_LIBRARY.find(a => a.id === selectedAccessory.type)?.desc || 'Accesorio decorativo y funcional del huerto.'}
+                  </p>
+                </div>
+
+                {/* Coords */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 700 }}>Ubicación en el Bancal</label>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div style={{ background: '#1f2937', padding: '10px', borderRadius: '10px', border: '1px solid #374151' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'block' }}>Eje X (Ancho)</span>
+                      <strong style={{ fontSize: '0.85rem', color: 'white' }}>
+                        {formatDec((parseFloat(selectedAccessory.posicionx) / 100) * bedW, 2)} m
+                      </strong>
+                      <span style={{ fontSize: '0.6rem', color: '#6b7280', display: 'block', marginTop: '2px' }}>
+                        ({Math.round(selectedAccessory.posicionx)}%)
+                      </span>
+                    </div>
+
+                    <div style={{ background: '#1f2937', padding: '10px', borderRadius: '10px', border: '1px solid #374151' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'block' }}>Eje Y (Largo)</span>
+                      <strong style={{ fontSize: '0.85rem', color: 'white' }}>
+                        {formatDec((parseFloat(selectedAccessory.posiciony) / 100) * bedL, 2)} m
+                      </strong>
+                      <span style={{ fontSize: '0.6rem', color: '#6b7280', display: 'block', marginTop: '2px' }}>
+                        ({Math.round(selectedAccessory.posiciony)}%)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Specs */}
+                <div style={{
+                  background: '#1f2937', borderRadius: '12px', padding: '14px',
+                  display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.75rem',
+                  color: '#9ca3af', border: '1px solid #374151'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Categoría:</span>
+                    <strong style={{ color: 'white' }}>Estructura Exterior</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Dimensión Sugerida:</span>
+                    <strong style={{ color: 'white' }}>
+                      {ACCESSORIES_LIBRARY.find(a => a.id === selectedAccessory.type)?.tamaño || 'Proporcional'}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Control de Tamaño de Accesorio */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#1f2937', padding: '14px', borderRadius: '12px', border: '1px solid #374151' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Tamaño del Elemento</span>
+                    <span style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                      {formatDec((selectedAccessory.escalaMetros !== undefined ? selectedAccessory.escalaMetros : getAccessoryPhysicalRadius(selectedAccessory.type)) * 2, 2)} m (Ø)
+                    </span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0.2" 
+                    max="10.0" 
+                    step="0.1" 
+                    value={(selectedAccessory.escalaMetros !== undefined ? selectedAccessory.escalaMetros : getAccessoryPhysicalRadius(selectedAccessory.type)) * 2}
+                    onChange={(e) => {
+                      const diameter = parseFloat(e.target.value);
+                      saveAccessoryScale(selectedAccessory.id, diameter / 2);
+                    }}
+                    style={{
+                      width: '100%',
+                      accentColor: '#3b82f6',
+                      cursor: 'pointer',
+                      background: '#374151',
+                      height: '6px',
+                      borderRadius: '3px',
+                      outline: 'none'
+                    }}
+                  />
+                  {selectedAccessory.escalaMetros !== undefined && (
+                    <button
+                      onClick={() => saveAccessoryScale(selectedAccessory.id, null)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#60a5fa',
+                        fontSize: '0.65rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        padding: '4px 0 0',
+                        fontWeight: 700,
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Restablecer al tamaño original
+                    </button>
+                  )}
+                </div>
+
+                {/* Spacer */}
+                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+                  <button 
+                    onClick={() => {
+                      if (confirm('¿Seguro que quieres eliminar este accesorio?')) {
+                        const filtered = placedAccessories.filter(a => a.id !== selectedAccessory.id);
+                        saveAccessories(filtered);
+                        setSelectedAccessory(null);
+                      }
+                    }}
+                    style={{
+                      background: '#7f1d1d', color: '#fca5a5', border: '1px solid #b91c1c',
+                      padding: '12px', borderRadius: '12px', cursor: 'pointer',
+                      fontWeight: 700, fontSize: '0.85rem', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#991b1b'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#7f1d1d'}
+                  >
+                    <Trash2 size={16} /> Eliminar Accesorio
+                  </button>
+                </div>
+              </>
+            ) : selectedCrop ? (
+              <>
+                {/* Crop General header info */}
+                <div style={{ background: '#1f2937', padding: '16px', borderRadius: '16px', border: '1px solid #374151', textAlign: 'center' }}>
+                  <span style={{ fontSize: '3rem', display: 'block', marginBottom: '8px' }}>{selectedCrop.especiesicono || '🌱'}</span>
+                  <span style={{
+                    background: '#374151', color: '#9ca3af', fontSize: '0.65rem',
+                    fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+                    display: 'inline-block', marginBottom: '6px'
+                  }}>Colección #{selectedCrop.cultivosnumerocoleccion}</span>
+                  <h4 style={{ margin: 0, fontSize: '1rem', color: 'white', fontWeight: 800 }}>
+                    {selectedCrop.variedad_nombre || 'Variedad Común'}
+                  </h4>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>
+                    {selectedCrop.especiesnombre}
+                  </p>
+                </div>
+
+                {/* Spacing limit feedback banner */}
+                {collisions[selectedCrop.idcultivos] && (
+                  <div style={{
+                    background: '#7f1d1d', border: '1px solid #f87171', borderRadius: '12px',
+                    padding: '12px', color: '#fca5a5', fontSize: '0.75rem', display: 'flex',
+                    alignItems: 'flex-start', gap: '8px'
+                  }}>
+                    <ShieldAlert size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong>¡Alerta de Apiñamiento!</strong><br />
+                      Esta planta está demasiado cerca de un cultivo colindante en base a su densidad recomendada ({selectedCrop.especiesmarcoplantas} cm). Por favor, arrástrala a un espacio más despejado.
+                    </div>
+                  </div>
+                )}
+
+                {/* State selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 700 }}>Fase o Estado del Cultivo</label>
+                  <select 
+                    value={selectedCrop.cultivosestado}
+                    onChange={e => handleUpdateCropState(e.target.value)}
+                    style={{
+                      width: '100%', background: '#1f2937', border: '1px solid #374151',
+                      borderRadius: '10px', padding: '10px', fontSize: '0.85rem', color: 'white',
+                      outline: 'none', cursor: 'pointer'
+                    }}
+                  >
+                    <option value="germinacion">🌱 Germinación / Semillero</option>
+                    <option value="en_espera">⏳ En Espera</option>
+                    <option value="crecimiento">🌿 Crecimiento</option>
+                    <option value="floracion">🌸 Floración</option>
+                    <option value="recoleccion">🍇 Recolección / Cosecha</option>
+                  </select>
+                </div>
+
+                {/* Fine adjustments positioning coordinates */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 700 }}>Ajuste Preciso de Ubicación</label>
+                  
+                  {/* Coords display in meters */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div style={{ background: '#1f2937', padding: '10px', borderRadius: '10px', border: '1px solid #374151' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'block' }}>Eje X (Ancho)</span>
+                      <strong style={{ fontSize: '0.85rem', color: 'white' }}>
+                        {formatDec((parseFloat(selectedCrop.cultivosposicionx) / 100) * bedW, 2)} m
+                      </strong>
+                      <span style={{ fontSize: '0.6rem', color: '#6b7280', display: 'block', marginTop: '2px' }}>
+                        ({Math.round(selectedCrop.cultivosposicionx)}%)
+                      </span>
+                    </div>
+
+                    <div style={{ background: '#1f2937', padding: '10px', borderRadius: '10px', border: '1px solid #374151' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'block' }}>Eje Y (Largo)</span>
+                      <strong style={{ fontSize: '0.85rem', color: 'white' }}>
+                        {formatDec((parseFloat(selectedCrop.cultivosposiciony) / 100) * bedL, 2)} m
+                      </strong>
+                      <span style={{ fontSize: '0.6rem', color: '#6b7280', display: 'block', marginTop: '2px' }}>
+                        ({Math.round(selectedCrop.cultivosposiciony)}%)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botanical specs */}
+                <div style={{
+                  background: '#1f2937', borderRadius: '12px', padding: '14px',
+                  display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.75rem',
+                  color: '#9ca3af', border: '1px solid #374151'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Marco Botánico:</span>
+                    <strong style={{ color: 'white' }}>{selectedCrop.especiesmarcoplantas}x{selectedCrop.especiesmarcofilas} cm</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Espacio Ocupado:</span>
+                    <strong style={{ color: 'white' }}>
+                      {formatDec((selectedCrop.cultivoscantidad * (selectedCrop.especiesmarcoplantas || 30) * (selectedCrop.especiesmarcofilas || 30)) / 10000, 2)} m²
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Control de Diámetro de Follaje de Cultivo */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#1f2937', padding: '14px', borderRadius: '12px', border: '1px solid #374151' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Diámetro de Follaje</span>
+                    <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                      {formatDec((cropScales[selectedCrop.idcultivos] !== undefined ? cropScales[selectedCrop.idcultivos] : (Math.max(parseFloat(selectedCrop.especiesmarcoplantas) || 30, 20) * 0.75 / 2) / 100) * 2, 2)} m
+                    </span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="0.1" 
+                    max="4.0" 
+                    step="0.05" 
+                    value={(cropScales[selectedCrop.idcultivos] !== undefined ? cropScales[selectedCrop.idcultivos] : (Math.max(parseFloat(selectedCrop.especiesmarcoplantas) || 30, 20) * 0.75 / 2) / 100) * 2}
+                    onChange={(e) => {
+                      const diameter = parseFloat(e.target.value);
+                      saveCropScale(selectedCrop.idcultivos, diameter / 2);
+                    }}
+                    style={{
+                      width: '100%',
+                      accentColor: '#10b981',
+                      cursor: 'pointer',
+                      background: '#374151',
+                      height: '6px',
+                      borderRadius: '3px',
+                      outline: 'none'
+                    }}
+                  />
+                  {cropScales[selectedCrop.idcultivos] !== undefined && (
+                    <button
+                      onClick={() => saveCropScale(selectedCrop.idcultivos, null)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#34d399',
+                        fontSize: '0.65rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        padding: '4px 0 0',
+                        fontWeight: 700,
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Restablecer al tamaño botánico
+                    </button>
+                  )}
+                </div>
+
+                {/* Spacer */}
+                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+                  <button 
+                    onClick={() => handleRemoveCrop(selectedCrop.idcultivos)}
+                    style={{
+                      background: '#7f1d1d', color: '#fca5a5', border: '1px solid #b91c1c',
+                      padding: '12px', borderRadius: '12px', cursor: 'pointer',
+                      fontWeight: 700, fontSize: '0.85rem', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#991b1b'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#7f1d1d'}
+                  >
+                    <Trash2 size={16} /> Eliminar del Bancal
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{
+                textAlign: 'center', padding: '60px 20px', color: '#6b7280',
+                border: '2px dashed #1f2937', borderRadius: '16px', fontSize: '0.8rem'
+              }}>
+                <Sprout size={32} style={{ margin: '0 auto 12px', color: '#374151' }} />
+                <span>Selecciona una planta en el bancal o añade una nueva de la paleta izquierda para empezar.</span>
+              </div>
+            )}
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  );
+}

@@ -6,6 +6,7 @@ import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getMediaUrl } from '@/lib/media-url';
 import './perfil.css';
+import BancalesSettings from '@/components/user/BancalesSettings';
 
 interface UserProfile {
   id: number;
@@ -86,6 +87,9 @@ function PerfilContent() {
   const [telefono, setTelefono] = useState('');
   const [tipoCalendario, setTipoCalendario] = useState('Normal');
   const [tipoLaboreo, setTipoLaboreo] = useState('Convencional');
+  const [camaCultivoBilateral, setCamaCultivoBilateral] = useState(1.20);
+  const [camaCultivoUnilateral, setCamaCultivoUnilateral] = useState(0.75);
+  const [pasillo, setPasillo] = useState(0.50);
   const [avisosConfig, setAvisosConfig] = useState<any>(null);
   const [avisosLoading, setAvisosLoading] = useState(false);
   const [collapsedMandatory, setCollapsedMandatory] = useState(false);
@@ -280,6 +284,9 @@ function PerfilContent() {
           setTelefono(data.profile.telefono || '');
           setTipoCalendario(data.profile.tipoCalendario || 'Normal');
           setTipoLaboreo(data.profile.tipoLaboreo || 'Convencional');
+          setCamaCultivoBilateral(parseFloat(data.profile.camaCultivoBilateral) || 1.20);
+          setCamaCultivoUnilateral(parseFloat(data.profile.camaCultivoUnilateral) || 0.75);
+          setPasillo(parseFloat(data.profile.pasillo) || 0.50);
           loadPhotos(p.id);
           loadAchievementsHistory(p.id);
           loadAvisos(p.email);
@@ -1384,6 +1391,7 @@ function PerfilContent() {
           { id: 'fotos', label: '📸 Fotos de Perfil' },
           { id: 'comunicaciones', label: '🔔 Comunicaciones' },
           { id: 'cultivo', label: '🌾 Preferencias de Cultivo' },
+          { id: 'bancales', label: '🚜 Bancales (SIGPAC)' },
           { id: 'seguridad', label: '🔒 Seguridad & Privacidad' },
           { id: 'suscripcion', label: '⭐ Suscripción & Logros' },
           { id: 'cuenta', label: '⚠️ Eliminar Cuenta' }
@@ -2763,8 +2771,152 @@ function PerfilContent() {
             </div>
           </div>
 
+          {/* Subapartado 3: Cama de cultivo y Pasillo */}
+          <div id="cama-cultivo" className="optional-zone" style={{ marginTop: '30px' }}>
+            <div className="optional-zone-header" style={{ marginBottom: '15px' }}>
+              <h3>🌱 Preferencias de Camas de Cultivo y Pasillos</h3>
+              <p>Configura las dimensiones ideales de tu huerto. Estas medidas se utilizarán por defecto al calcular la distribución de tus bancales.</p>
+            </div>
+            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              
+              {/* Cama Bilateral */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '2.2rem', marginTop: '4px' }}>↕️</span>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', color: '#1e293b', fontWeight: 700 }}>Cama Bilateral</h4>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', minHeight: '48px' }}>
+                    Acceso desde ambos lados. El estándar agroecológico recomendado para trabajar cómodamente es de 1,20 m.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="number" 
+                      step="0.05"
+                      min="0.2"
+                      max="10.0"
+                      value={camaCultivoBilateral}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setCamaCultivoBilateral(isNaN(val) ? 0 : val);
+                      }}
+                      onBlur={() => {
+                        const val = Math.max(0.2, Math.min(10.0, camaCultivoBilateral || 1.20));
+                        setCamaCultivoBilateral(val);
+                        autoSaveField('camaCultivoBilateral', String(val));
+                      }}
+                      style={{
+                        width: '100px',
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.9rem',
+                        color: '#1e293b',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                        outline: 'none',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>metros</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cama Unilateral */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '2.2rem', marginTop: '4px' }}>🧱</span>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', color: '#1e293b', fontWeight: 700 }}>Cama Unilateral</h4>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', minHeight: '48px' }}>
+                    Acceso por un solo lado (apoyado en pared o valla). Se recomienda de 0,70 m a 0,80 m para alcanzar el fondo.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="number" 
+                      step="0.05"
+                      min="0.1"
+                      max="5.0"
+                      value={camaCultivoUnilateral}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setCamaCultivoUnilateral(isNaN(val) ? 0 : val);
+                      }}
+                      onBlur={() => {
+                        const val = Math.max(0.1, Math.min(5.0, camaCultivoUnilateral || 0.75));
+                        setCamaCultivoUnilateral(val);
+                        autoSaveField('camaCultivoUnilateral', String(val));
+                      }}
+                      style={{
+                        width: '100px',
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.9rem',
+                        color: '#1e293b',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                        outline: 'none',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>metros</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pasillo entre Camas */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                <span style={{ fontSize: '2.2rem', marginTop: '4px' }}>🚶</span>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', color: '#1e293b', fontWeight: 700 }}>Pasillos / Caminos</h4>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', minHeight: '48px' }}>
+                    Ancho de caminos entre camas. El estándar es de 0,50 m para transitar cómodamente y pasar con carretilla.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="number" 
+                      step="0.05"
+                      min="0.1"
+                      max="3.0"
+                      value={pasillo}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setPasillo(isNaN(val) ? 0 : val);
+                      }}
+                      onBlur={() => {
+                        const val = Math.max(0.1, Math.min(3.0, pasillo || 0.50));
+                        setPasillo(val);
+                        autoSaveField('pasillo', String(val));
+                      }}
+                      style={{
+                        width: '100px',
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        fontSize: '0.9rem',
+                        color: '#1e293b',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                        outline: 'none',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>metros</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       </div>
+      )}
+
+      {activeTab === 'bancales' && (
+        <BancalesSettings profile={profile} showToast={showToast} />
       )}
 
       {/* ═══════════════════════════════════════════ */}

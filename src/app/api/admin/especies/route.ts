@@ -110,7 +110,8 @@ export async function POST(request: Request) {
       especiesbiodinamicafasesiembra,
       especiesbiodinamicafasetrasplante,
       especiesemillerovolumendesde,
-      especiesemillerovolumenhasta
+      especiesemillerovolumenhasta,
+      especiesmarcomargen
     } = body;
 
     if (!especiesnombre) {
@@ -134,8 +135,8 @@ export async function POST(request: Request) {
         especiestemperaturamaxima, especiesdiashastarecoleccion,
         especieslunarfasesiembra, especieslunarfasetrasplante, especieslunarobservaciones,
         especiesbiodinamicafasesiembra, especiesbiodinamicafasetrasplante,
-        especiesemillerovolumendesde, especiesemillerovolumenhasta
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        especiesemillerovolumendesde, especiesemillerovolumenhasta, especiesmarcomargen
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -193,7 +194,8 @@ export async function POST(request: Request) {
       especiesbiodinamicafasesiembra || null,
       especiesbiodinamicafasetrasplante || null,
       especiesemillerovolumendesde || null,
-      especiesemillerovolumenhasta || null
+      especiesemillerovolumenhasta || null,
+      especiesmarcomargen || null
     ];
 
     const [result]: any = await pool.query(query, params);

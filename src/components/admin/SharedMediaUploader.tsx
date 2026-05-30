@@ -31,7 +31,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '', 
     especiesdiashastafructificacion: '', especiesdiashastarecoleccion: '',
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
-    especiesmarcoplantas: '', especiesmarcofilas: '', especiesprofundidadsiembra: '',
+    especiesmarcoplantas: '', especiesmarcofilas: '', especiesmarcomargen: '', especiesprofundidadsiembra: '',
     especiesfechasemillerodesde: '', especiesfechasemillerohasta: '',
     especiesfechasiembradirectadesde: '', especiesfechasiembradirectahasta: '',
     especiestrasplantedesde: '', especiestrasplantehasta: '',
@@ -47,7 +47,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
   const [formData, setFormData] = useState<any>(defaultFormData);
   const [initialData, setInitialData] = useState<any>(defaultFormData);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'no-changes'>('idle');
   const [relaciones, setRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
   const [initialRelaciones, setInitialRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
   const [relacionesDirty, setRelacionesDirty] = useState(false);
@@ -304,6 +304,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
           especiestemperaturaoptima: especie.especiestemperaturaoptima !== null ? parseFloat(especie.especiestemperaturaoptima).toString() : '',
           especiesmarcoplantas: especie.especiesmarcoplantas !== null ? parseInt(especie.especiesmarcoplantas, 10).toString() : '',
           especiesmarcofilas: especie.especiesmarcofilas !== null ? parseInt(especie.especiesmarcofilas, 10).toString() : '',
+          especiesmarcomargen: especie.especiesmarcomargen !== null ? parseInt(especie.especiesmarcomargen, 10).toString() : '',
           especiestipo: especie.especiestipo ? especie.especiestipo.split(',') : [],
           especiesciclo: especie.especiesciclo ? especie.especiesciclo.split(',') : []
         };
@@ -339,22 +340,75 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     } catch (e) { console.error('Error cargando blogs:', e); }
   };
 
+  const autoSaveField = async (name: string, value: any, customFormData?: any) => {
+    if (entityType !== 'especies' || !entityId || !userEmail) return;
+
+    const dataToSave = customFormData || {
+      ...formData,
+      [name]: value
+    };
+
+    // Evitamos guardar si no hay cambios reales comparado con la base de datos
+    if (JSON.stringify(dataToSave[name]) === JSON.stringify(initialData[name])) return;
+
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`/api/admin/especies/${entityId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail
+        },
+        body: JSON.stringify(dataToSave)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInitialData(dataToSave);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('idle');
+      }
+    } catch (e) {
+      console.error('Error in autoSaveField:', e);
+      setSaveStatus('idle');
+    }
+  };
+
+  const handleFormBlur = (e: React.FocusEvent<HTMLFormElement>) => {
+    const target = e.target as any;
+    if (target && target.name && target.type !== 'checkbox') {
+      autoSaveField(target.name, target.value);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       if (name === 'especiestipo' || name === 'especiesciclo') {
-        setFormData((prev: any) => ({
-          ...prev,
-          [name]: checked 
-            ? [...prev[name], value] 
-            : prev[name].filter((item: string) => item !== value)
-        }));
+        const nextArray = checked 
+          ? [...formData[name], value] 
+          : formData[name].filter((item: string) => item !== value);
+        setFormData((prev: any) => {
+          const next = { ...prev, [name]: nextArray };
+          setTimeout(() => autoSaveField(name, nextArray, next), 100);
+          return next;
+        });
       } else {
-        setFormData({ ...formData, [name]: checked ? 1 : 0 });
+        const finalValue = checked ? 1 : 0;
+        setFormData((prev: any) => {
+          const next = { ...prev, [name]: finalValue };
+          setTimeout(() => autoSaveField(name, finalValue, next), 100);
+          return next;
+        });
       }
     } else {
       setFormData({ ...formData, [name]: value });
+      if (e.target.tagName === 'SELECT') {
+        const next = { ...formData, [name]: value };
+        setTimeout(() => autoSaveField(name, value, next), 100);
+      }
     }
   };
 
@@ -495,10 +549,11 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     {
       id: 'autosuficiencia',
       title: 'Autosuficiencia y Marcos',
-      keys: ['especiesmarcoplantas', 'especiesmarcofilas', 'especiesautosuficienciaparcial', 'especiesautosuficiencia', 'especiesautosuficienciaconserva'],
+      keys: ['especiesmarcoplantas', 'especiesmarcofilas', 'especiesmarcomargen', 'especiesautosuficienciaparcial', 'especiesautosuficiencia', 'especiesautosuficienciaconserva'],
       labels: {
         especiesmarcoplantas: 'Marco Plantas',
         especiesmarcofilas: 'Marco Filas',
+        especiesmarcomargen: 'Margen al Borde',
         especiesautosuficienciaparcial: 'Autosuf. Parcial',
         especiesautosuficiencia: 'Autosuf. Completa',
         especiesautosuficienciaconserva: 'Autosuf. Conserva'
@@ -1818,7 +1873,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       </div>
       <div className="especie-form-container">
 
-      <form onSubmit={handleSubmit} className="especie-form-body">
+      <form onSubmit={handleSubmit} onBlur={handleFormBlur} className="especie-form-body">
         
         <div 
           className="collapsible-header" 
@@ -2306,6 +2361,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 <label>Marco Filas (cm)</label>
                 <input type="number" name="especiesmarcofilas" value={formData.especiesmarcofilas || ''} onChange={handleChange} />
               </div>
+              <div className="form-group">
+                <label>Margen al Borde (cm)</label>
+                <input type="number" name="especiesmarcomargen" value={formData.especiesmarcomargen || ''} onChange={handleChange} />
+              </div>
 
               {(formData.especiesmarcoplantas || formData.especiesmarcofilas) && (
                 <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
@@ -2314,76 +2373,153 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                   {(() => {
                     let p = parseFloat(formData.especiesmarcoplantas);
                     let f = parseFloat(formData.especiesmarcofilas);
+                    let m = parseFloat(formData.especiesmarcomargen) || 0;
                     if (!p || p <= 0) p = 50;
                     if (!f || f <= 0) f = 50;
 
-                    const maxW = 160;
-                    const maxH = 120;
-                    
-                    let drawW, drawH;
-                    const ratio = p / f;
+                    // Dimensiones físicas totales incluyendo el margen doble
+                    const totalW = p + 2 * m;
+                    const totalH = f + 2 * m;
+
+                    const maxW = 220;
+                    const maxH = 160;
+
+                    let drawTotalW, drawTotalH;
+                    const ratio = totalW / totalH;
                     const maxRatio = maxW / maxH;
 
                     if (ratio > maxRatio) {
-                      drawW = maxW;
-                      drawH = maxW / ratio;
+                      drawTotalW = maxW;
+                      drawTotalH = maxW / ratio;
                     } else {
-                      drawH = maxH;
-                      drawW = maxH * ratio;
+                      drawTotalH = maxH;
+                      drawTotalW = maxH * ratio;
                     }
 
-                    if (drawW < 40) drawW = 40;
-                    if (drawH < 40) drawH = 40;
+                    if (drawTotalW < 50) drawTotalW = 50;
+                    if (drawTotalH < 50) drawTotalH = 50;
 
-                    const cx = 120;
-                    const cy = 90;
-                    const x1 = cx - drawW / 2;
-                    const x2 = cx + drawW / 2;
-                    const y1 = cy - drawH / 2;
-                    const y2 = cy + drawH / 2;
+                    // Factor de escala (píxeles por cm)
+                    const scale = drawTotalW / totalW;
+                    const drawM = m * scale;
+                    const drawW = p * scale;
+                    const drawH = f * scale;
+
+                    const cx = 160;
+                    const cy = 120;
+
+                    // Límites del Bancal / Cama
+                    const bedX1 = cx - drawTotalW / 2;
+                    const bedX2 = cx + drawTotalW / 2;
+                    const bedY1 = cy - drawTotalH / 2;
+                    const bedY2 = cy + drawTotalH / 2;
+
+                    // Coordenadas de las 4 plantas
+                    const x1 = bedX1 + drawM;
+                    const x2 = bedX2 - drawM;
+                    const y1 = bedY1 + drawM;
+                    const y2 = bedY2 - drawM;
 
                     return (
-                      <svg width="240" height="180" viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
-                        <circle cx={x1} cy={y1} r="8" fill="#22c55e" />
-                        <circle cx={x2} cy={y1} r="8" fill="#22c55e" />
-                        <circle cx={x1} cy={y2} r="8" fill="#22c55e" />
-                        <circle cx={x2} cy={y2} r="8" fill="#22c55e" />
+                      <svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
+                        {/* Cama de Cultivo (Fondo) */}
+                        <rect 
+                          x={bedX1} 
+                          y={bedY1} 
+                          width={drawTotalW} 
+                          height={drawTotalH} 
+                          fill="#fdfbf7" 
+                          stroke="#10b981" 
+                          strokeWidth="1.5" 
+                          rx="6" 
+                          style={{ filter: 'drop-shadow(0 2px 4px rgba(16,185,129,0.05))' }}
+                        />
 
+                        {/* Plantas */}
+                        <circle cx={x1} cy={y1} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                        <circle cx={x2} cy={y1} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                        <circle cx={x1} cy={y2} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                        <circle cx={x2} cy={y2} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+
+                        {/* Marco entre Plantas (Horizontal) */}
                         {x2 - x1 > 30 && (
                           <>
-                            <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#94a3b8" strokeWidth="2" />
-                            <polygon points={`${x1+12},${y1-4} ${x1+8},${y1} ${x1+12},${y1+4}`} fill="#94a3b8" />
-                            <polygon points={`${x2-12},${y1-4} ${x2-8},${y1} ${x2-12},${y1+4}`} fill="#94a3b8" />
+                            <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#64748b" strokeWidth="2" />
+                            <polygon points={`${x1 + 12},${y1 - 4} ${x1 + 8},${y1} ${x1 + 12},${y1 + 4}`} fill="#64748b" />
+                            <polygon points={`${x2 - 12},${y1 - 4} ${x2 - 8},${y1} ${x2 - 12},${y1 + 4}`} fill="#64748b" />
                           </>
                         )}
-                        
-                        <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#f8fafc" rx="4" />
-                        <text x={cx} y={y1 + 4} fontSize="12" fontWeight="bold" fill="#334155" textAnchor="middle">
+
+                        <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                        <text x={cx} y={y1 + 4} fontSize="11" fontWeight="bold" fill="#0f172a" textAnchor="middle">
                           {formData.especiesmarcoplantas ? `${formData.especiesmarcoplantas} cm` : '? cm'}
                         </text>
 
+                        {/* Marco entre Filas (Vertical) */}
                         {y2 - y1 > 30 && (
                           <>
-                            <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#94a3b8" strokeWidth="2" />
-                            <polygon points={`${x1-4},${y1+12} ${x1},${y1+8} ${x1+4},${y1+12}`} fill="#94a3b8" />
-                            <polygon points={`${x1-4},${y2-12} ${x1},${y2-8} ${x1+4},${y2-12}`} fill="#94a3b8" />
+                            <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#64748b" strokeWidth="2" />
+                            <polygon points={`${x1 - 4},${y1 + 12} ${x1},${y1 + 8} ${x1 + 4},${y1 + 12}`} fill="#64748b" />
+                            <polygon points={`${x1 - 4},${y2 - 12} ${x1},${y2 - 8} ${x1 + 4},${y2 - 12}`} fill="#64748b" />
                           </>
                         )}
-                        
-                        <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#f8fafc" rx="4" />
-                        <text x={x1} y={cy + 4} fontSize="12" fontWeight="bold" fill="#334155" textAnchor="middle">
+
+                        <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                        <text x={x1} y={cy + 4} fontSize="11" fontWeight="bold" fill="#0f172a" textAnchor="middle">
                           {formData.especiesmarcofilas ? `${formData.especiesmarcofilas} cm` : '? cm'}
                         </text>
 
-                        <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
-                        <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
+                        {/* Líneas de Guía de Rejilla de Plantas */}
+                        <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+                        <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+
+                        {/* Cota Margen al Borde (Horizontal) */}
+                        {m > 0 && (
+                          <>
+                            <line x1={x2} y1={y1} x2={bedX2} y2={y1} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
+                            {drawM > 15 && (
+                              <>
+                                <line x1={x2 + 8} y1={y1} x2={bedX2 - 4} y2={y1} stroke="#f59e0b" strokeWidth="1.5" />
+                                <polygon points={`${x2 + 8},${y1 - 3} ${x2 + 3},${y1} ${x2 + 8},${y1 + 3}`} fill="#f59e0b" />
+                                <polygon points={`${bedX2 - 5},${y1 - 3} ${bedX2 - 1},${y1} ${bedX2 - 5},${y1 + 3}`} fill="#f59e0b" />
+                              </>
+                            )}
+                            <g transform={`translate(${Math.max(x2 + 10, x2 + drawM / 2)}, ${y1 - 16})`}>
+                              <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" />
+                              <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle">
+                                {m} cm
+                              </text>
+                            </g>
+                          </>
+                        )}
+
+                        {/* Cota Margen al Borde (Vertical) */}
+                        {m > 0 && (
+                          <>
+                            <line x1={x2} y1={y2} x2={x2} y2={bedY2} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
+                            {drawM > 15 && (
+                              <>
+                                <line x1={x2} y1={y2 + 8} x2={x2} y2={bedY2 - 4} stroke="#f59e0b" strokeWidth="1.5" />
+                                <polygon points={`${x2 - 3},${y2 + 8} ${x2},${y2 + 3} ${x2 + 3},${y2 + 8}`} fill="#f59e0b" />
+                                <polygon points={`${x2 - 3},${bedY2 - 5} ${x2},${bedY2 - 1} ${x2 + 3},${bedY2 - 5}`} fill="#f59e0b" />
+                              </>
+                            )}
+                            <g transform={`translate(${x2 + 22}, ${Math.max(y2 + 10, y2 + drawM / 2)})`}>
+                              <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" />
+                              <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle">
+                                {m} cm
+                              </text>
+                            </g>
+                          </>
+                        )}
                       </svg>
                     );
                   })()}
 
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0', textAlign: 'center' }}>
                     <strong style={{color:'#64748b'}}>Marco Plantas:</strong> distancia entre plantas de la misma fila.<br/>
-                    <strong style={{color:'#64748b'}}>Marco Filas:</strong> distancia entre las diferentes filas.
+                    <strong style={{color:'#64748b'}}>Marco Filas:</strong> distancia entre las diferentes filas.<br/>
+                    <strong style={{color: '#d97706' }}>Margen al Borde:</strong> distancia desde las plantas exteriores hasta el borde del bancal.
                   </p>
                 </div>
               )}
@@ -2420,7 +2556,9 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 
                 const marcoP = (parseFloat(formData.especiesmarcoplantas) || 0) / 100;
                 const marcoF = (parseFloat(formData.especiesmarcofilas) || 0) / 100;
-                const areaPlant = marcoP * marcoF;
+                const margin = (parseFloat(formData.especiesmarcomargen) || 0) / 100;
+                // El footprint de cada planta incluye el espaciado entre plantas y el doble margen al borde
+                const areaPlant = (marcoP + 2 * margin) * (marcoF + 2 * margin);
                 
                 const m2Parcial = totalPParcial * areaPlant;
                 const m2Fresco = totalPFresco * areaPlant;

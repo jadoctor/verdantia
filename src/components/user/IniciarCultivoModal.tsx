@@ -144,7 +144,8 @@ export default function IniciarCultivoModal({
     semillasfechacaducidad: '',
     semillascantidad: '',
     fechaInicio: new Date().toISOString().split('T')[0],
-    xcultivosidsemillas: '' as string | number
+    xcultivosidsemillas: '' as string | number,
+    xcultivosidbancales: '' as string | number
   });
   
   const [stockInfo, setStockInfo] = useState<{ totalStock: number, lotesCount: number, seedsList: any[] } | null>(null);
@@ -156,6 +157,28 @@ export default function IniciarCultivoModal({
   const [showDateOptions, setShowDateOptions] = useState(false);
   const [crearBanco, setCrearBanco] = useState(false);
   const [nextNumero, setNextNumero] = useState<number | null>(null);
+
+  // raised beds and spacing limit states
+  const [userBancales, setUserBancales] = useState<any[]>([]);
+  const [maxSpace, setMaxSpace] = useState(10);
+  const [usedSpace, setUsedSpace] = useState(0);
+  const [usedPerBancal, setUsedPerBancal] = useState<Record<string, number>>({});
+  const [marcoplantas, setMarcoplantas] = useState(30);
+  const [marcofilas, setMarcofilas] = useState(30);
+
+  const getBancalArea = (b: any) => {
+    if (!b) return 0;
+    const w = parseFloat(b.bancalesancho) || 0;
+    const l = parseFloat(b.bancaleslargo) || 0;
+    if (b.bancalesforma === 'trapezoidal') {
+      const wSup = b.bancalesanchosuperior !== null ? parseFloat(b.bancalesanchosuperior) : w;
+      return ((w + wSup) / 2) * l;
+    } else if (b.bancalesforma === 'circular') {
+      return Math.PI * (w / 2) * (l / 2);
+    }
+    return w * l;
+  };
+
 
   const fetchNextNumero = async () => {
     try {
@@ -273,6 +296,35 @@ export default function IniciarCultivoModal({
     }
   }, [isOpen, userEmail, plantaId]);
 
+  useEffect(() => {
+    if (isOpen && userEmail) {
+      fetch('/api/user/bancales', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => {
+          setUserBancales(data.bancales || []);
+          setMaxSpace(data.maxSpace || 10);
+          setUsedSpace(data.usedSpace || 0);
+          setUsedPerBancal(data.usedPerBancal || {});
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, userEmail]);
+
+  useEffect(() => {
+    if (isOpen && userEmail && plantaId) {
+      fetch(`/api/user/catalogo`, { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => {
+          const esp = (data.especies || []).find((e: any) => e.idespecies === plantaId);
+          if (esp) {
+            setMarcoplantas(parseFloat(esp.especiesmarcoplantas) || 30);
+            setMarcofilas(parseFloat(esp.especiesmarcofilas) || 30);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, userEmail, plantaId]);
+
   if (!isOpen) return null;
 
   const handleNext = (updates: any) => {
@@ -362,6 +414,7 @@ END:VCALENDAR`;
         body: JSON.stringify({
           xcultivosidvariedades: plantaId,
           xcultivosidsemillas: seedId,
+          xcultivosidbancales: finalData.xcultivosidbancales ? parseInt(String(finalData.xcultivosidbancales)) : null,
           cultivosorigen: finalData.origen,
           cultivosmetodo: finalData.metodo,
           cultivoscantidad: finalData.cantidad,
@@ -996,6 +1049,74 @@ END:VCALENDAR`;
                     )}
                   </div>
 
+                  {/* Selector de Bancal */}
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>📍 ¿Dónde lo vas a plantar? (Bancal Destino)</label>
+                    <select
+                      value={formData.xcultivosidbancales || ''}
+                      onChange={e => handleNext({ xcultivosidbancales: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: 'white' }}
+                    >
+                      <option value="">Bancal Estándar (Plan Virtual)</option>
+                      {userBancales.map(b => {
+                        const area = getBancalArea(b);
+                        return (
+                          <option key={b.idbancales} value={b.idbancales}>
+                            🚜 {b.bancalesnombre} ({b.bancalesancho}m × {b.bancaleslargo}m = {area.toFixed(1)} m²)
+                          </option>
+                        );
+                      })}
+                    </select>
+
+                    {/* Espacio requerido y validación */}
+                    {(() => {
+                      const newArea = formData.cantidad * (marcoplantas / 100) * (marcofilas / 100);
+                      const isPlanOver = usedSpace + newArea > maxSpace;
+                      
+                      let isBedOver = false;
+                      let bedName = '';
+                      let bedArea = 0;
+                      let bedUsed = 0;
+
+                      if (formData.xcultivosidbancales !== '') {
+                        const selectedBed = userBancales.find(b => String(b.idbancales) === String(formData.xcultivosidbancales));
+                        if (selectedBed) {
+                          bedName = selectedBed.bancalesnombre;
+                          bedArea = getBancalArea(selectedBed);
+                          bedUsed = usedPerBancal[selectedBed.idbancales] || 0;
+                          isBedOver = bedUsed + newArea > bedArea;
+                        }
+                      }
+
+                      return (
+                        <div style={{ marginTop: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748b' }}>
+                            <span>Espacio requerido para esta siembra:</span>
+                            <strong style={{ color: '#0f766e' }}>{newArea.toFixed(2)} m²</strong>
+                          </div>
+
+                          {isPlanOver && (
+                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', color: '#991b1b', fontSize: '0.78rem', marginTop: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <span>⚠️</span>
+                              <span>
+                                <strong>Límite de Plan Excedido:</strong> Requiere {newArea.toFixed(1)}m² pero tu espacio libre es de {(maxSpace - usedSpace).toFixed(1)}m².
+                              </span>
+                            </div>
+                          )}
+
+                          {isBedOver && (
+                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', color: '#991b1b', fontSize: '0.78rem', marginTop: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <span>⚠️</span>
+                              <span>
+                                <strong>Espacio Insuficiente:</strong> El bancal "{bedName}" tiene {(bedArea - bedUsed).toFixed(1)}m² libres, pero esta siembra requiere {newArea.toFixed(1)}m².
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
                   {/* Cantidad y Ubicación */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
@@ -1030,15 +1151,37 @@ END:VCALENDAR`;
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => handleFinish({})}
-                    style={{
-                      background: '#10b981', color: 'white', border: 'none', padding: '14px', borderRadius: '12px',
-                      fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer', marginTop: '8px'
-                    }}
-                  >
-                    🚀 ¡Plantarlo ya!
-                  </button>
+                  {(() => {
+                    const newArea = formData.cantidad * (marcoplantas / 100) * (marcofilas / 100);
+                    const isPlanOver = usedSpace + newArea > maxSpace;
+                    
+                    let isBedOver = false;
+                    if (formData.xcultivosidbancales !== '') {
+                      const selectedBed = userBancales.find(b => String(b.idbancales) === String(formData.xcultivosidbancales));
+                      if (selectedBed) {
+                        const bedArea = getBancalArea(selectedBed);
+                        const bedUsed = usedPerBancal[selectedBed.idbancales] || 0;
+                        isBedOver = bedUsed + newArea > bedArea;
+                      }
+                    }
+
+                    const isDisabled = isPlanOver || isBedOver;
+
+                    return (
+                      <button 
+                        onClick={() => handleFinish({})}
+                        disabled={isDisabled}
+                        style={{
+                          background: isDisabled ? '#94a3b8' : '#10b981',
+                          color: 'white', border: 'none', padding: '14px', borderRadius: '12px',
+                          fontWeight: 'bold', fontSize: '1.05rem', cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          marginTop: '8px', transition: 'background 0.2s'
+                        }}
+                      >
+                        {isDisabled ? '❌ Espacio Excedido' : '🚀 ¡Plantarlo ya!'}
+                      </button>
+                    );
+                  })()}
                 </div>
               </>
             )}

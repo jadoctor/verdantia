@@ -8,7 +8,7 @@ import { getUserByEmail } from '@/lib/auth';
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { email, nombre, apellidos, nombreUsuario, fechaNacimiento, pais, codigoPostal, poblacion, icono, sexo, domicilio, telefono, tipoCalendario, tipoLaboreo } = body;
+    const { email, nombre, apellidos, nombreUsuario, fechaNacimiento, pais, codigoPostal, poblacion, icono, sexo, domicilio, telefono, tipoCalendario, tipoLaboreo, camaCultivoBilateral, camaCultivoUnilateral, pasillo } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email requerido' }, { status: 400 });
@@ -72,6 +72,33 @@ export async function PUT(request: Request) {
       }
       fields.push('usuariostipolaboreo = ?');
       values.push(tipoLaboreo);
+    }
+
+    if (camaCultivoBilateral !== undefined) {
+      const val = parseFloat(camaCultivoBilateral);
+      if (isNaN(val) || val <= 0) {
+        return NextResponse.json({ error: 'La anchura de la cama de cultivo bilateral debe ser un número válido mayor que 0.' }, { status: 400 });
+      }
+      fields.push('usuarioscamacultivobilateral = ?');
+      values.push(val);
+    }
+
+    if (camaCultivoUnilateral !== undefined) {
+      const val = parseFloat(camaCultivoUnilateral);
+      if (isNaN(val) || val <= 0) {
+        return NextResponse.json({ error: 'La anchura de la cama de cultivo unilateral debe ser un número válido mayor que 0.' }, { status: 400 });
+      }
+      fields.push('usuarioscamacultivounilateral = ?');
+      values.push(val);
+    }
+
+    if (pasillo !== undefined) {
+      const val = parseFloat(pasillo);
+      if (isNaN(val) || val <= 0) {
+        return NextResponse.json({ error: 'El ancho del pasillo debe ser un número válido mayor que 0.' }, { status: 400 });
+      }
+      fields.push('usuariospasillo = ?');
+      values.push(val);
     }
 
     values.push(email);

@@ -73,6 +73,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
     variedadestemperaturamaxima: '',
     variedadesmarcoplantas: '',
     variedadesmarcofilas: '',
+    variedadesmarcomargen: '',
     variedadesprofundidadsiembra: '',
     variedadesprofundidadtrasplante: '',
     variedadessemillerodesde: '',
@@ -255,7 +256,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
       taxonomia: ['variedadesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo', 'variedadescolor', 'variedadestamano', 'variedadesdificultad', 'variedadesluzsolar', 'variedadesnecesidadriego', 'variedadesvolumenmaceta'],
       fisiologia: ['variedadesdiasgerminacion', 'variedadesdiashastatrasplante', 'variedadesviabilidadsemilla', 'variedadespeso1000semillas', 'variedadesdiascrecimientofirme', 'variedadesdiashastafructificacion', 'variedadesdiashastarecoleccion', 'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima', 'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra', 'variedadesprofundidadtrasplante'],
       calendarios: ['variedadessemillerodesde', 'variedadessemillerohasta', 'variedadessiembradirectadesde', 'variedadessiembradirectahasta', 'variedadestrasplantedesde', 'variedadestrasplantehasta', 'variedadesrecolecciondesde', 'variedadesrecoleccionhasta'],
-      autosuficiencia: ['variedadesautosuficiencia', 'variedadesautosuficienciaparcial', 'variedadesautosuficienciaconserva']
+      autosuficiencia: ['variedadesautosuficiencia', 'variedadesautosuficienciaparcial', 'variedadesautosuficienciaconserva', 'variedadesmarcomargen']
     };
 
     const fields = tabFields[tab] || [];
@@ -992,38 +993,153 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                       <h3 style={{ margin: '0 0 16px', color: '#15803d', fontSize: '1rem' }}>📐 Marco de Plantación (cm)</h3>
                       <FieldCompare label="Entre Plantas" field="variedadesmarcoplantas" type="number" />
                       <FieldCompare label="Entre Filas" field="variedadesmarcofilas" type="number" />
+                      <FieldCompare label="Margen al Borde" field="variedadesmarcomargen" type="number" />
 
                       {/* ESQUEMAS SVG A ESCALA (COMPARATIVA) */}
                       {(formData.variedadesmarcoplantas || formData.variedadesmarcofilas || genericData?.variedadesmarcoplantas || genericData?.variedadesmarcofilas) && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
                           {/* SCHEMA ORO (ESPECIE) */}
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', opacity: 0.8 }}>
-                            <span style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>🏆 Gold Standard</span>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>🏆 Gold Standard (Especie)</span>
                             {(() => {
                               const pVal = genericData?.variedadesmarcoplantas || 50;
                               const fVal = genericData?.variedadesmarcofilas || 50;
+                              const mVal = genericData?.variedadesmarcomargen || 0;
                               let p = parseFloat(pVal);
                               let f = parseFloat(fVal);
+                              let m = parseFloat(mVal) || 0;
                               if (isNaN(p) || p <= 0) p = 50;
                               if (isNaN(f) || f <= 0) f = 50;
 
-                              const maxW = 140, maxH = 100;
-                              let drawW, drawH;
-                              const ratio = p / f;
-                              if (ratio > (maxW/maxH)) { drawW = maxW; drawH = maxW / ratio; } else { drawH = maxH; drawW = maxH * ratio; }
-                              const cx = 100, cy = 75;
-                              const x1 = cx - drawW/2, x2 = cx + drawW/2, y1 = cy - drawH/2, y2 = cy + drawH/2;
+                              const totalW = p + 2 * m;
+                              const totalH = f + 2 * m;
+
+                              const maxW = 220;
+                              const maxH = 160;
+
+                              let drawTotalW, drawTotalH;
+                              const ratio = totalW / totalH;
+                              const maxRatio = maxW / maxH;
+
+                              if (ratio > maxRatio) {
+                                drawTotalW = maxW;
+                                drawTotalH = maxW / ratio;
+                              } else {
+                                drawTotalH = maxH;
+                                drawTotalW = maxH * ratio;
+                              }
+
+                              if (drawTotalW < 50) drawTotalW = 50;
+                              if (drawTotalH < 50) drawTotalH = 50;
+
+                              const scale = drawTotalW / totalW;
+                              const drawM = m * scale;
+
+                              const cx = 160;
+                              const cy = 120;
+
+                              const bedX1 = cx - drawTotalW / 2;
+                              const bedX2 = cx + drawTotalW / 2;
+                              const bedY1 = cy - drawTotalH / 2;
+                              const bedY2 = cy + drawTotalH / 2;
+
+                              const x1 = bedX1 + drawM;
+                              const x2 = bedX2 - drawM;
+                              const y1 = bedY1 + drawM;
+                              const y2 = bedY2 - drawM;
 
                               return (
-                                <svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
-                                  <circle cx={x1} cy={y1} r="6" fill="#94a3b8" />
-                                  <circle cx={x2} cy={y1} r="6" fill="#94a3b8" />
-                                  <circle cx={x1} cy={y2} r="6" fill="#94a3b8" />
-                                  <circle cx={x2} cy={y2} r="6" fill="#94a3b8" />
-                                  <line x1={x1+10} y1={y1} x2={x2-10} y2={y1} stroke="#cbd5e1" strokeWidth="1.5" />
-                                  <text x={cx} y={y1-5} fontSize="10" fontWeight="bold" fill="#64748b" textAnchor="middle">{pVal} cm</text>
-                                  <line x1={x1} y1={y1+10} x2={x1} y2={y2-10} stroke="#cbd5e1" strokeWidth="1.5" />
-                                  <text x={x1-25} y={cy+4} fontSize="10" fontWeight="bold" fill="#64748b" textAnchor="middle">{fVal} cm</text>
+                                <svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
+                                  {/* Cama de Cultivo (Fondo) */}
+                                  <rect 
+                                    x={bedX1} 
+                                    y={bedY1} 
+                                    width={drawTotalW} 
+                                    height={drawTotalH} 
+                                    fill="#fdfbf7" 
+                                    stroke="#94a3b8" 
+                                    strokeWidth="1.5" 
+                                    rx="6" 
+                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.02))' }}
+                                  />
+
+                                  {/* Plantas */}
+                                  <circle cx={x1} cy={y1} r="7" fill="#94a3b8" />
+                                  <circle cx={x2} cy={y1} r="7" fill="#94a3b8" />
+                                  <circle cx={x1} cy={y2} r="7" fill="#94a3b8" />
+                                  <circle cx={x2} cy={y2} r="7" fill="#94a3b8" />
+
+                                  {/* Marco entre Plantas (Horizontal) */}
+                                  {x2 - x1 > 30 && (
+                                    <>
+                                      <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#94a3b8" strokeWidth="2" />
+                                      <polygon points={`${x1 + 12},${y1 - 4} ${x1 + 8},${y1} ${x1 + 12},${y1 + 4}`} fill="#94a3b8" />
+                                      <polygon points={`${x2 - 12},${y1 - 4} ${x2 - 8},${y1} ${x2 - 12},${y1 + 4}`} fill="#94a3b8" />
+                                    </>
+                                  )}
+
+                                  <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                                  <text x={cx} y={y1 + 4} fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">
+                                    {pVal} cm
+                                  </text>
+
+                                  {/* Marco entre Filas (Vertical) */}
+                                  {y2 - y1 > 30 && (
+                                    <>
+                                      <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#94a3b8" strokeWidth="2" />
+                                      <polygon points={`${x1 - 4},${y1 + 12} ${x1},${y1 + 8} ${x1 + 4},${y1 + 12}`} fill="#94a3b8" />
+                                      <polygon points={`${x1 - 4},${y2 - 12} ${x1},${y2 - 8} ${x1 + 4},${y2 - 12}`} fill="#94a3b8" />
+                                    </>
+                                  )}
+
+                                  <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                                  <text x={x1} y={cy + 4} fontSize="11" fontWeight="bold" fill="#64748b" textAnchor="middle">
+                                    {fVal} cm
+                                  </text>
+
+                                  {/* Líneas de Guía de Rejilla de Plantas */}
+                                  <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+                                  <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+
+                                  {/* Cota Margen al Borde (Horizontal) */}
+                                  {m > 0 && (
+                                    <>
+                                      <line x1={x2} y1={y1} x2={bedX2} y2={y1} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
+                                      {drawM > 15 && (
+                                        <>
+                                          <line x1={x2 + 8} y1={y1} x2={bedX2 - 4} y2={y1} stroke="#f59e0b" strokeWidth="1.5" opacity="0.7" />
+                                          <polygon points={`${x2 + 8},${y1 - 3} ${x2 + 3},${y1} ${x2 + 8},${y1 + 3}`} fill="#f59e0b" opacity="0.7" />
+                                          <polygon points={`${bedX2 - 5},${y1 - 3} ${bedX2 - 1},${y1} ${bedX2 - 5},${y1 + 3}`} fill="#f59e0b" opacity="0.7" />
+                                        </>
+                                      )}
+                                      <g transform={`translate(${Math.max(x2 + 10, x2 + drawM / 2)}, ${y1 - 16})`}>
+                                        <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" opacity="0.7" />
+                                        <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle" opacity="0.7">
+                                          {m} cm
+                                        </text>
+                                      </g>
+                                    </>
+                                  )}
+
+                                  {/* Cota Margen al Borde (Vertical) */}
+                                  {m > 0 && (
+                                    <>
+                                      <line x1={x2} y1={y2} x2={x2} y2={bedY2} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
+                                      {drawM > 15 && (
+                                        <>
+                                          <line x1={x2} y1={y2 + 8} x2={x2} y2={bedY2 - 4} stroke="#f59e0b" strokeWidth="1.5" opacity="0.7" />
+                                          <polygon points={`${x2 - 3},${y2 + 8} ${x2},${y2 + 3} ${x2 + 3},${y2 + 8}`} fill="#f59e0b" opacity="0.7" />
+                                          <polygon points={`${x2 - 3},${bedY2 - 5} ${x2},${bedY2 - 1} ${x2 + 3},${bedY2 - 5}`} fill="#f59e0b" opacity="0.7" />
+                                        </>
+                                      )}
+                                      <g transform={`translate(${x2 + 22}, ${Math.max(y2 + 10, y2 + drawM / 2)})`}>
+                                        <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" opacity="0.7" />
+                                        <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle" opacity="0.7">
+                                          {m} cm
+                                        </text>
+                                      </g>
+                                    </>
+                                  )}
                                 </svg>
                               );
                             })()}
@@ -1035,28 +1151,142 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                             {(() => {
                               const pVal = formData.variedadesmarcoplantas || genericData?.variedadesmarcoplantas || 50;
                               const fVal = formData.variedadesmarcofilas || genericData?.variedadesmarcofilas || 50;
+                              const mVal = formData.variedadesmarcomargen || genericData?.variedadesmarcomargen || 0;
                               let p = parseFloat(pVal);
                               let f = parseFloat(fVal);
+                              let m = parseFloat(mVal) || 0;
                               if (isNaN(p) || p <= 0) p = 50;
                               if (isNaN(f) || f <= 0) f = 50;
 
-                              const maxW = 140, maxH = 100;
-                              let drawW, drawH;
-                              const ratio = p / f;
-                              if (ratio > (maxW/maxH)) { drawW = maxW; drawH = maxW / ratio; } else { drawH = maxH; drawW = maxH * ratio; }
-                              const cx = 100, cy = 75;
-                              const x1 = cx - drawW/2, x2 = cx + drawW/2, y1 = cy - drawH/2, y2 = cy + drawH/2;
+                              const totalW = p + 2 * m;
+                              const totalH = f + 2 * m;
+
+                              const maxW = 220;
+                              const maxH = 160;
+
+                              let drawTotalW, drawTotalH;
+                              const ratio = totalW / totalH;
+                              const maxRatio = maxW / maxH;
+
+                              if (ratio > maxRatio) {
+                                drawTotalW = maxW;
+                                drawTotalH = maxW / ratio;
+                              } else {
+                                drawTotalH = maxH;
+                                drawTotalW = maxH * ratio;
+                              }
+
+                              if (drawTotalW < 50) drawTotalW = 50;
+                              if (drawTotalH < 50) drawTotalH = 50;
+
+                              const scale = drawTotalW / totalW;
+                              const drawM = m * scale;
+
+                              const cx = 160;
+                              const cy = 120;
+
+                              const bedX1 = cx - drawTotalW / 2;
+                              const bedX2 = cx + drawTotalW / 2;
+                              const bedY1 = cy - drawTotalH / 2;
+                              const bedY2 = cy + drawTotalH / 2;
+
+                              const x1 = bedX1 + drawM;
+                              const x2 = bedX2 - drawM;
+                              const y1 = bedY1 + drawM;
+                              const y2 = bedY2 - drawM;
 
                               return (
-                                <svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
-                                  <circle cx={x1} cy={y1} r="7" fill="#22c55e" />
-                                  <circle cx={x2} cy={y1} r="7" fill="#22c55e" />
-                                  <circle cx={x1} cy={y2} r="7" fill="#22c55e" />
-                                  <circle cx={x2} cy={y2} r="7" fill="#22c55e" />
-                                  <line x1={x1+10} y1={y1} x2={x2-10} y2={y1} stroke="#15803d" strokeWidth="2" />
-                                  <text x={cx} y={y1-5} fontSize="11" fontWeight="bold" fill="#15803d" textAnchor="middle">{pVal} cm</text>
-                                  <line x1={x1} y1={y1+10} x2={x1} y2={y2-10} stroke="#15803d" strokeWidth="2" />
-                                  <text x={x1-25} y={cy+4} fontSize="11" fontWeight="bold" fill="#15803d" textAnchor="middle">{fVal} cm</text>
+                                <svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
+                                  {/* Cama de Cultivo (Fondo) */}
+                                  <rect 
+                                    x={bedX1} 
+                                    y={bedY1} 
+                                    width={drawTotalW} 
+                                    height={drawTotalH} 
+                                    fill="#fdfbf7" 
+                                    stroke="#10b981" 
+                                    strokeWidth="1.5" 
+                                    rx="6" 
+                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(16,185,129,0.05))' }}
+                                  />
+
+                                  {/* Plantas */}
+                                  <circle cx={x1} cy={y1} r="7" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                                  <circle cx={x2} cy={y1} r="7" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                                  <circle cx={x1} cy={y2} r="7" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                                  <circle cx={x2} cy={y2} r="7" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+
+                                  {/* Marco entre Plantas (Horizontal) */}
+                                  {x2 - x1 > 30 && (
+                                    <>
+                                      <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#15803d" strokeWidth="2" />
+                                      <polygon points={`${x1 + 12},${y1 - 4} ${x1 + 8},${y1} ${x1 + 12},${y1 + 4}`} fill="#15803d" />
+                                      <polygon points={`${x2 - 12},${y1 - 4} ${x2 - 8},${y1} ${x2 - 12},${y1 + 4}`} fill="#15803d" />
+                                    </>
+                                  )}
+
+                                  <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                                  <text x={cx} y={y1 + 4} fontSize="11" fontWeight="bold" fill="#15803d" textAnchor="middle">
+                                    {pVal} cm
+                                  </text>
+
+                                  {/* Marco entre Filas (Vertical) */}
+                                  {y2 - y1 > 30 && (
+                                    <>
+                                      <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#15803d" strokeWidth="2" />
+                                      <polygon points={`${x1 - 4},${y1 + 12} ${x1},${y1 + 8} ${x1 + 4},${y1 + 12}`} fill="#15803d" />
+                                      <polygon points={`${x1 - 4},${y2 - 12} ${x1},${y2 - 8} ${x1 + 4},${y2 - 12}`} fill="#15803d" />
+                                    </>
+                                  )}
+
+                                  <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                                  <text x={x1} y={cy + 4} fontSize="11" fontWeight="bold" fill="#15803d" textAnchor="middle">
+                                    {fVal} cm
+                                  </text>
+
+                                  {/* Líneas de Guía de Rejilla de Plantas */}
+                                  <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+                                  <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+
+                                  {/* Cota Margen al Borde (Horizontal) */}
+                                  {m > 0 && (
+                                    <>
+                                      <line x1={x2} y1={y1} x2={bedX2} y2={y1} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
+                                      {drawM > 15 && (
+                                        <>
+                                          <line x1={x2 + 8} y1={y1} x2={bedX2 - 4} y2={y1} stroke="#f59e0b" strokeWidth="1.5" />
+                                          <polygon points={`${x2 + 8},${y1 - 3} ${x2 + 3},${y1} ${x2 + 8},${y1 + 3}`} fill="#f59e0b" />
+                                          <polygon points={`${bedX2 - 5},${y1 - 3} ${bedX2 - 1},${y1} ${bedX2 - 5},${y1 + 3}`} fill="#f59e0b" />
+                                        </>
+                                      )}
+                                      <g transform={`translate(${Math.max(x2 + 10, x2 + drawM / 2)}, ${y1 - 16})`}>
+                                        <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" />
+                                        <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle">
+                                          {m} cm
+                                        </text>
+                                      </g>
+                                    </>
+                                  )}
+
+                                  {/* Cota Margen al Borde (Vertical) */}
+                                  {m > 0 && (
+                                    <>
+                                      <line x1={x2} y1={y2} x2={x2} y2={bedY2} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
+                                      {drawM > 15 && (
+                                        <>
+                                          <line x1={x2} y1={y2 + 8} x2={x2} y2={bedY2 - 4} stroke="#f59e0b" strokeWidth="1.5" />
+                                          <polygon points={`${x2 - 3},${y2 + 8} ${x2},${y2 + 3} ${x2 + 3},${y2 + 8}`} fill="#f59e0b" />
+                                          <polygon points={`${x2 - 3},${bedY2 - 5} ${x2},${bedY2 - 1} ${x2 + 3},${bedY2 - 5}`} fill="#f59e0b" />
+                                        </>
+                                      )}
+                                      <g transform={`translate(${x2 + 22}, ${Math.max(y2 + 10, y2 + drawM / 2)})`}>
+                                        <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" />
+                                        <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle">
+                                          {m} cm
+                                        </text>
+                                      </g>
+                                    </>
+                                  )}
                                 </svg>
                               );
                             })()}
@@ -1072,7 +1302,8 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
 
                               const marcoP = (parseFloat(formData.variedadesmarcoplantas || genericData?.variedadesmarcoplantas) || 50) / 100;
                               const marcoF = (parseFloat(formData.variedadesmarcofilas || genericData?.variedadesmarcofilas) || 50) / 100;
-                              const areaPlant = marcoP * marcoF;
+                              const margin = (parseFloat(formData.variedadesmarcomargen || genericData?.variedadesmarcomargen) || 0) / 100;
+                              const areaPlant = (marcoP + 2 * margin) * (marcoF + 2 * margin);
 
                               const m2Parcial = totalPParcial * areaPlant;
                               const m2Fresco = totalPFresco * areaPlant;

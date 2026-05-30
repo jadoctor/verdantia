@@ -33,6 +33,19 @@ export default function CultivoDashboard() {
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
   const [avisosCompletados, setAvisosCompletados] = useState<any[]>([]);
 
+  // Ref to track debounced save timeouts per field
+  const saveTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Cleanup auto-save timeouts on unmount
+  useEffect(() => {
+    return () => {
+      const currentTimeouts = saveTimeoutRef.current;
+      Object.keys(currentTimeouts).forEach(key => {
+        if (currentTimeouts[key]) clearTimeout(currentTimeouts[key]);
+      });
+    };
+  }, []);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user && user.email) {
@@ -220,13 +233,33 @@ export default function CultivoDashboard() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
-    if (e.target.tagName === 'SELECT') {
-      setTimeout(() => saveField(name, value), 100);
+
+    // Cancel any pending debounced save for this field
+    if (saveTimeoutRef.current[name]) {
+      clearTimeout(saveTimeoutRef.current[name]);
+    }
+
+    const isDate = e.target.tagName === 'INPUT' && (e.target as HTMLInputElement).type === 'date';
+    const isSelect = e.target.tagName === 'SELECT';
+
+    if (isDate || isSelect) {
+      // Save immediately for responsive date-picker and dropdown changes
+      saveField(name, value);
+    } else {
+      // Debounce saving for text inputs, numbers, and textareas (800ms)
+      saveTimeoutRef.current[name] = setTimeout(() => {
+        saveField(name, value);
+      }, 800);
     }
   };
 
   const handleBlurSave = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    saveField(e.target.name, e.target.value);
+    const { name, value } = e.target;
+    // Clear any pending timeout to avoid duplicate saving calls
+    if (saveTimeoutRef.current[name]) {
+      clearTimeout(saveTimeoutRef.current[name]);
+    }
+    saveField(name, value);
   };
 
   const handleSetToday = (field: string) => {

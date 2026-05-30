@@ -5,6 +5,8 @@ import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { getMediaUrl } from '@/lib/media-url';
+import GardenMap from '@/components/user/GardenMap';
+import { Trash2 } from 'lucide-react';
 
 interface UserProfile {
   id: number;
@@ -25,6 +27,8 @@ export default function DashboardHome() {
   const [todosLogros, setTodosLogros] = useState<any[]>([]);
   const [misCultivos, setMisCultivos] = useState<any[]>([]);
   const [misSemillas, setMisSemillas] = useState<any[]>([]);
+  const [deletingCropId, setDeletingCropId] = useState<number | null>(null);
+  const [deletingSeedId, setDeletingSeedId] = useState<number | null>(null);
   const [showCultivoDetalle, setShowCultivoDetalle] = useState(false);
   const router = useRouter();
 
@@ -127,6 +131,54 @@ export default function DashboardHome() {
         ...prev,
         semillascantidad: String(calculated)
       }));
+    }
+  };
+
+  const executeDeleteCrop = async (cropId: number) => {
+    if (!profile?.email) return;
+    try {
+      const res = await fetch(`/api/user/cultivos/${cropId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-email': profile.email
+        }
+      });
+      if (res.ok) {
+        setDeletingCropId(null);
+        loadProfile(profile.email, auth.currentUser?.uid || '');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar el cultivo');
+        setDeletingCropId(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+      setDeletingCropId(null);
+    }
+  };
+
+  const executeDeleteSeed = async (seedId: number) => {
+    if (!profile?.email) return;
+    try {
+      const res = await fetch(`/api/user/semillas/${seedId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-email': profile.email
+        }
+      });
+      if (res.ok) {
+        setDeletingSeedId(null);
+        loadProfile(profile.email, auth.currentUser?.uid || '');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar la semilla');
+        setDeletingSeedId(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+      setDeletingSeedId(null);
     }
   };
 
@@ -905,39 +957,150 @@ export default function DashboardHome() {
                   {/* Listado de especies y variedades */}
                   <div style={{ borderTop: activeCrops.length > 0 ? '1px dashed #e2e8f0' : 'none', paddingTop: activeCrops.length > 0 ? '8px' : 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {activeCrops.length > 0 ? (
-                      activeCrops.slice(0, 3).map((c: any, idx: number) => (
-                        <div 
-                          key={idx} 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/dashboard/cultivos/${c.idcultivos}?from=dashboard`);
-                          }}
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px', 
-                            fontSize: '0.78rem', 
-                            color: '#475569',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '8px',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseOver={e => {
-                            e.currentTarget.style.background = '#f0fdf4';
-                            e.currentTarget.style.color = '#10b981';
-                          }}
-                          onMouseOut={e => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = '#475569';
-                          }}
-                        >
-                          <span style={{ fontSize: '1rem' }}>{c.especiesicono || '🌱'}</span>
-                          <span style={{ fontWeight: 800, color: '#065f46', background: '#d1fae5', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem' }}>Cultivo Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>
-                          <span style={{ fontWeight: 700 }}>{c.especiesnombre}</span>
-                          <span style={{ opacity: 0.85 }}>({c.variedad_nombre || 'Común'})</span>
-                        </div>
-                      ))
+                      activeCrops.slice(0, 3).map((c: any, idx: number) => {
+                        const isConfirming = deletingCropId === c.idcultivos;
+                        if (isConfirming) {
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between',
+                                gap: '6px', 
+                                fontSize: '0.78rem', 
+                                color: '#475569',
+                                padding: '4px 8px',
+                                borderRadius: '8px',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                                <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+                                <span style={{ fontWeight: 800, color: '#991b1b', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>¿Eliminar Cultivo?</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await executeDeleteCrop(c.idcultivos);
+                                  }}
+                                  style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={e => e.currentTarget.style.background = '#dc2626'}
+                                  onMouseOut={e => e.currentTarget.style.background = '#ef4444'}
+                                >
+                                  Sí
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingCropId(null);
+                                  }}
+                                  style={{
+                                    background: 'white',
+                                    color: '#475569',
+                                    border: '1px solid #cbd5e1',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                                  onMouseOut={e => e.currentTarget.style.background = 'white'}
+                                >
+                                  No
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div 
+                            key={idx} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/cultivos/${c.idcultivos}?from=dashboard`);
+                            }}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              gap: '6px', 
+                              fontSize: '0.78rem', 
+                              color: '#475569',
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => {
+                              e.currentTarget.style.background = '#f0fdf4';
+                              e.currentTarget.style.color = '#10b981';
+                            }}
+                            onMouseOut={e => {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = '#475569';
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>{c.especiesicono || '🌱'}</span>
+                              <span style={{ fontWeight: 800, color: '#065f46', background: '#d1fae5', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Cultivo Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>
+                              <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.especiesnombre}</span>
+                              <span style={{ opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>({c.variedad_nombre || 'Común'})</span>
+                            </div>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingCropId(c.idcultivos);
+                              }}
+                              title="Eliminar cultivo"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                padding: '4px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s',
+                                opacity: 0.8
+                              }}
+                              onMouseOver={e => {
+                                e.stopPropagation();
+                                e.currentTarget.style.background = '#fee2e2';
+                                e.currentTarget.style.opacity = '1';
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                              }}
+                              onMouseOut={e => {
+                                e.stopPropagation();
+                                e.currentTarget.style.background = 'none';
+                                e.currentTarget.style.opacity = '0.8';
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        );
+                      })
                     ) : (
                       <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic' }}>No hay cultivos activos en marcha.</span>
                     )}
@@ -968,39 +1131,150 @@ export default function DashboardHome() {
                   {/* Listado de especies y variedades de semillas */}
                   <div style={{ borderTop: activeSeeds.length > 0 ? '1px dashed #e2e8f0' : 'none', paddingTop: activeSeeds.length > 0 ? '8px' : 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {activeSeeds.length > 0 ? (
-                      activeSeeds.slice(0, 3).map((s: any, idx: number) => (
-                        <div 
-                          key={idx} 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/dashboard/semillas/${s.idsemillas}?from=dashboard`);
-                          }}
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px', 
-                            fontSize: '0.78rem', 
-                            color: '#475569',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '8px',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseOver={e => {
-                            e.currentTarget.style.background = '#f0fdfa';
-                            e.currentTarget.style.color = '#0d9488';
-                          }}
-                          onMouseOut={e => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = '#475569';
-                          }}
-                        >
-                          <span style={{ fontSize: '1rem' }}>{s.especiesicono || '🌰'}</span>
-                          <span style={{ fontWeight: 800, color: '#0f766e', background: '#ccfbf1', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem' }}>Semilla Nº {s.semillasnumerocoleccion || s.idsemillas}</span>
-                          <span style={{ fontWeight: 700 }}>{s.especiesnombre}</span>
-                          <span style={{ opacity: 0.85 }}>({s.variedad_nombre || 'Común'})</span>
-                        </div>
-                      ))
+                      activeSeeds.slice(0, 3).map((s: any, idx: number) => {
+                        const isConfirming = deletingSeedId === s.idsemillas;
+                        if (isConfirming) {
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between',
+                                gap: '6px', 
+                                fontSize: '0.78rem', 
+                                color: '#475569',
+                                padding: '4px 8px',
+                                borderRadius: '8px',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                                <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+                                <span style={{ fontWeight: 800, color: '#991b1b', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>¿Eliminar Semilla?</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await executeDeleteSeed(s.idsemillas);
+                                  }}
+                                  style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={e => e.currentTarget.style.background = '#dc2626'}
+                                  onMouseOut={e => e.currentTarget.style.background = '#ef4444'}
+                                >
+                                  Sí
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingSeedId(null);
+                                  }}
+                                  style={{
+                                    background: 'white',
+                                    color: '#475569',
+                                    border: '1px solid #cbd5e1',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                                  onMouseOut={e => e.currentTarget.style.background = 'white'}
+                                >
+                                  No
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div 
+                            key={idx} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/semillas/${s.idsemillas}?from=dashboard`);
+                            }}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              gap: '6px', 
+                              fontSize: '0.78rem', 
+                              color: '#475569',
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => {
+                              e.currentTarget.style.background = '#f0fdfa';
+                              e.currentTarget.style.color = '#0d9488';
+                            }}
+                            onMouseOut={e => {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = '#475569';
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>{s.especiesicono || '🌰'}</span>
+                              <span style={{ fontWeight: 800, color: '#0f766e', background: '#ccfbf1', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Semilla Nº {s.semillasnumerocoleccion || s.idsemillas}</span>
+                              <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.especiesnombre}</span>
+                              <span style={{ opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>({s.variedad_nombre || 'Común'})</span>
+                            </div>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingSeedId(s.idsemillas);
+                              }}
+                              title="Eliminar lote de semillas"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#ef4444',
+                                padding: '4px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s',
+                                opacity: 0.8
+                              }}
+                              onMouseOver={e => {
+                                e.stopPropagation();
+                                e.currentTarget.style.background = '#fee2e2';
+                                e.currentTarget.style.opacity = '1';
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                              }}
+                              onMouseOut={e => {
+                                e.stopPropagation();
+                                e.currentTarget.style.background = 'none';
+                                e.currentTarget.style.opacity = '0.8';
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        );
+                      })
                     ) : (
                       <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic' }}>No hay semillas registradas.</span>
                     )}
@@ -1022,6 +1296,11 @@ export default function DashboardHome() {
               <div className="card-info"><h3>Meteo Local</h3><div className="value">&mdash;</div></div>
             </div>
           </div>
+
+          {/* Visual Scale Garden Map */}
+          {profile && (
+            <GardenMap misCultivos={misCultivos} profile={profile} />
+          )}
 
           {/* Seccion de Logros */}
           <div className="logros-section" style={{ marginTop: '2rem', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--glass-shadow)' }}>
