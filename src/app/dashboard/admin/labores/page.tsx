@@ -114,6 +114,7 @@ export default function LaboresAdminPage() {
               <th style={{ padding: '12px', width: '80px', textAlign: 'center', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Icono</th>
               <th style={{ padding: '12px' }}>Nombre</th>
               <th style={{ padding: '12px' }}>Descripción</th>
+              <th style={{ padding: '12px', textAlign: 'center' }}>Aplica a</th>
               <th style={{ padding: '12px' }}>Estado</th>
               <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
             </tr>
@@ -175,6 +176,13 @@ export default function LaboresAdminPage() {
                       </td>
                       <td style={{ padding: '12px', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#64748b' }}>
                         {labor.laboresdescripcion}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                          <span title="Convencional" style={{ opacity: labor.laboresaplicaconvencional ? 1 : 0.3 }}>🚜</span>
+                          <span title="Mínimo" style={{ opacity: labor.laboresaplicaminimo ? 1 : 0.3 }}>⛏️</span>
+                          <span title="No laboreo" style={{ opacity: labor.laboresaplicanolaboreo ? 1 : 0.3 }}>🚫</span>
+                        </div>
                       </td>
                       <td style={{ padding: '12px' }}>
                         {labor.laboresactivosino === 1 

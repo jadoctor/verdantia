@@ -56,7 +56,9 @@ export async function GET(request: Request) {
         (
           SELECT JSON_ARRAYAGG(JSON_OBJECT('id', idcultivos, 'numero', COALESCE(cultivosnumerocoleccion, idcultivos), 'estado', cultivosestado, 'cantidad', cultivoscantidad))
           FROM cultivos 
-          WHERE xcultivosidvariedades = vu.idvariedades AND cultivosactivosino = 1
+          WHERE (xcultivosidvariedades = vu.idvariedades OR xcultivosidvariedades = vu.xvariedadesidvariedadorigen) 
+            AND xcultivosidusuarios = vu.xvariedadesidusuarios
+            AND cultivosactivosino = 1
         ) AS cultivos_lista
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades

@@ -98,6 +98,8 @@ export default function DashboardLayout({
   const [ajustesHover, setAjustesHover] = useState(false);
   const [tareasAgricolasHover, setTareasAgricolasHover] = useState(false);
   const [tareasAdministrativasHover, setTareasAdministrativasHover] = useState(false);
+  const [bancalesHover, setBancalesHover] = useState(false);
+  const [bancalesList, setBancalesList] = useState<any[]>([]);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
 
@@ -114,7 +116,9 @@ export default function DashboardLayout({
     '/dashboard/siembras': { label: 'Siembras', icon: '🌿' },
     '/dashboard/tareas': { label: 'Tareas', icon: '🔔' },
     '/dashboard/admin/especies': { label: 'Cuarentena de Especies', icon: '🌍' },
-    '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '🌱' },
+    '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '➕' },
+    '/dashboard/admin/fases': { label: 'Fases de Cultivo', icon: '🌱' },
+    '/dashboard/admin/fases/nueva': { label: 'Nueva Fase', icon: '➕' },
     '/dashboard/admin/variedades': { label: 'Variedades Globales', icon: '🏷️' },
     '/dashboard/admin/labores': { label: 'Labores Globales', icon: '🔧' },
     '/dashboard/admin/labores/nueva': { label: 'Nueva Labor', icon: '🛠️' },
@@ -123,6 +127,7 @@ export default function DashboardLayout({
     '/dashboard/admin/usuarios': { label: 'Usuarios', icon: '👥' },
     '/dashboard/admin/chat': { label: 'Chat Admin', icon: '💬' },
     '/dashboard/admin/meteo': { label: 'Meteo Red Global', icon: '🌐' },
+    '/dashboard/bancales': { label: 'Mis Bancales', icon: '🌿' },
     '/dashboard/admin/guia-usuario': { label: 'Guía de Usuario', icon: '📖' },
     '/dashboard/admin/asuntos-pendientes': { label: 'Asuntos Pendientes', icon: '📋' },
     '/dashboard/admin/asuntos-realizados': { label: 'Asuntos Realizados', icon: '✅' },
@@ -141,6 +146,14 @@ export default function DashboardLayout({
       return [
         ROUTE_MAP['/dashboard/admin/especies'],
         { label: 'Detalle Especie', icon: '🌿' },
+      ];
+    }
+    // Rutas dinámicas: /dashboard/admin/fases/[id]
+    const faseMatch = pathname.match(/^\/dashboard\/admin\/fases\/(\d+)$/);
+    if (faseMatch) {
+      return [
+        ROUTE_MAP['/dashboard/admin/fases'],
+        { label: 'Detalle Fase', icon: '✏️' },
       ];
     }
     const laborMatch = pathname.match(/^\/dashboard\/admin\/labores\/(\d+)$/);
@@ -171,6 +184,13 @@ export default function DashboardLayout({
         { label: 'Detalle de Hortaliza', icon: '🌿' },
       ];
     }
+    const bancalMatch = pathname.match(/^\/dashboard\/bancales\/(\d+)$/);
+    if (bancalMatch) {
+      return [
+        { label: 'Mis Bancales', icon: '🌿' },
+        { label: 'Detalle Bancal', icon: '🛏️' },
+      ];
+    }
     return [];
   };
 
@@ -179,12 +199,16 @@ export default function DashboardLayout({
   const getParentUrl = () => {
     const especieMatch = pathname.match(/^\/dashboard\/admin\/especies\/(\d+)$/);
     if (especieMatch) return '/dashboard/admin/especies';
+    const faseMatch = pathname.match(/^\/dashboard\/admin\/fases\/(\d+)$/);
+    if (faseMatch) return '/dashboard/admin/fases';
     const laborMatch = pathname.match(/^\/dashboard\/admin\/labores\/(\d+)$/);
     if (laborMatch) return '/dashboard/admin/labores';
     const usuarioMatch = pathname.match(/^\/dashboard\/admin\/usuarios\/(\d+)$/);
     if (usuarioMatch) return '/dashboard/admin/usuarios';
     const misPlantasMatch = pathname.match(/^\/dashboard\/mis-plantas\/(\d+)$/);
     if (misPlantasMatch) return '/dashboard/mis-plantas';
+    const bancalMatch = pathname.match(/^\/dashboard\/bancales\/(\d+)$/);
+    if (bancalMatch) return '/dashboard';
     return '/dashboard';
   };
   const parentUrl = getParentUrl();
@@ -209,6 +233,23 @@ export default function DashboardLayout({
       } finally {
         setLoading(false);
       }
+    });
+
+    // Fetch bancales del usuario
+    const fetchBancales = async (userEmail: string) => {
+      try {
+        const res = await fetch('/api/user/bancales', { headers: { 'x-user-email': userEmail } });
+        if (res.ok) {
+          const data = await res.json();
+          setBancalesList(data.bancales || []);
+        }
+      } catch (err) {
+        console.error('Error cargando bancales:', err);
+      }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user?.email) fetchBancales(user.email);
     });
 
     return () => unsubscribe();
@@ -528,8 +569,9 @@ export default function DashboardLayout({
                       <span style={{flex: 1}}>Tareas Agrícolas</span>
                       <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                     </button>
-                    <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                    <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/fases') || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
                       <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌍 Especies Globales</a>
+                      <a href="/dashboard/admin/fases" className={`nav-item ${isActive('/dashboard/admin/fases')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Fases de Cultivo</a>
                       <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔧 Labores Globales</a>
                       <a href="/dashboard/admin/plagas" className={`nav-item ${isActive('/dashboard/admin/plagas')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🐛 Plagas Globales</a>
                       <a href="/dashboard/admin/tareas/contenedores" className={`nav-item ${isActive('/dashboard/admin/tareas/contenedores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Contenedores</a>
@@ -618,6 +660,26 @@ export default function DashboardLayout({
                   <span className="nav-icon">🔔</span>
                   <span>Tareas Pendientes</span>
                 </a>
+                {/* Submenú Mis Bancales */}
+                <div className="nav-submenu-wrapper" onMouseEnter={() => setBancalesHover(true)} onMouseLeave={() => setBancalesHover(false)}>
+                  <button type="button" className={`nav-item ${pathname.includes('/dashboard/bancales') ? 'active' : ''}`}
+                    onClick={(e) => { e.preventDefault(); setBancalesHover(h => !h); }}
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                    <span className="nav-icon">🛏️</span>
+                    <span style={{flex: 1}}>Mis Bancales</span>
+                    <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: bancalesHover || pathname.includes('/dashboard/bancales') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                  </button>
+                  <div style={{ display: bancalesHover || pathname.includes('/dashboard/bancales') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                    {bancalesList.length === 0 && (
+                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', padding: '6px 12px', fontStyle: 'italic' }}>Sin bancales aún</span>
+                    )}
+                    {bancalesList.map((b: any) => (
+                      <a key={b.idbancales} href={`/dashboard/bancales/${b.idbancales}`} className={`nav-item ${pathname === `/dashboard/bancales/${b.idbancales}` ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>
+                        🌿 {b.bancalesnombre}
+                      </a>
+                    ))}
+                  </div>
+                </div>
               </nav>
             )}
           </div>

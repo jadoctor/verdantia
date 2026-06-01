@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-
+import pool from '@/lib/db';
 export async function POST(request: Request) {
   try {
-    const { especie, labores, instruccionesAdicionales } = await request.json();
+    const { idespecies, especie, labores, instruccionesAdicionales } = await request.json();
     if (!especie) {
       return NextResponse.json({ error: 'Nombre de la especie requerido' }, { status: 400 });
     }
@@ -25,42 +25,47 @@ ${laboresList}
 Tu objetivo es proponer las "Pautas de Labores" necesarias para esta especie, especificando cuándo y con qué frecuencia deben realizarse.
 
 Fases válidas permitidas (elige SOLO una de estas para cada pauta):
-- presiembra (labores preparatorias ANTES de sembrar. Frecuencia: null si es puntual)
+- planificado (labores preparatorias ANTES de sembrar. Frecuencia: null si es puntual)
 - siembra (momento puntual de depositar la semilla o plantón. Siempre con frecuencia: null)
-- pregerminacion (periodo desde la siembra hasta que emerge la plántula)
-- germinacion (momento o etapa inmediatamente posterior a emerger la plántula)
-- crecimiento_inicial (fase temprana tras la germinación o el enraizamiento inicial)
-- trasplante (momento o periodo de trasplante al lugar definitivo)
-- crecimiento (crecimiento firme y desarrollo vegetativo fuerte)
-- fructificacion (periodo de floración y posterior desarrollo/maduración del fruto)
-- recoleccion (periodo de cosecha o recolección)
-- finalizacion (labores de fin de ciclo, como arranque de la planta o limpieza)
-- general (aplicable a todo el ciclo)
+- postsiembra (periodo desde la siembra hasta que germina la semilla)
+- germinacion (momento puntual cuando asoma el primer brote a la superficie)
+- semillero (desarrollo de la planta en entorno protegido antes del trasplante)
+- trasplante (mudanza puntual al suelo definitivo)
+- enraizamiento (periodo de estrés post-trasplante y desarrollo radicular primario)
+- crecimiento (desarrollo masivo de hojas y tallos, crecimiento vegetativo)
+- floracion (periodo de polinización y cuajado de las primeras flores)
+- cosecha (periodo de recolección de los frutos)
+- finalizado (fin de ciclo o arrancado. Tareas finales de limpieza)
 
 IMPORTANTE sobre las fases:
-- "presiembra" = labores previas a depositar la semilla.
-- "siembra" = momento puntual. Su frecuencia DEBE ser null.
-- "pregerminacion" = labores como riegos frecuentes para mantener la humedad antes de que brote.
-- "germinacion" = acciones puntuales o cuidados justo cuando asoma la planta.
-- "crecimiento_inicial" = cuidados de la plántula antes del crecimiento fuerte.
-- "fructificacion" = engloba tanto la floración como el cuajado y engorde del fruto.
-- "finalizacion" = tareas al terminar el cultivo.
+- "planificado" = pre-siembra, preparar bancal.
+- "siembra", "germinacion", "trasplante", "finalizado" = hitos puntuales. Frecuencia DEBE ser null.
+- "semillero" = aplica SOLO a hortalizas que no son de siembra directa.
+- "floracion" = labores específicas cuando salen flores (ej. polinización manual, abono rico en P/K).
+- "cosecha" = época en la que la planta ya da fruto recolectable.
 
 ${extraText}
 
-REGLAS ESTRICTAS:
-1. Responde ÚNICAMENTE con un array JSON. Nada más.
-2. Usa SOLAMENTE las labores (por su ID numérico) que se listan arriba. NO inventes IDs.
-3. Para la "frecuencia", proporciona un número entero (en días). Si es una labor puntual (como la cosecha final), pon null.
-4. Para el "offset", proporciona un número entero (en días). Usa valores negativos para adelantar la labor respecto al inicio de su fase teórica (ej: -180 para 6 meses antes de la siembra), valores positivos para retrasarla, o 0 si debe ir en su tiempo normal.
-5. Las "notas_ia" deben ser concisas y útiles (máx 150 caracteres).
-6. Agrega el campo "selected": true a todas las pautas.
+REGLAS ESTRICTAS Y EXHAUSTIVIDAD:
+1. SE EXTREMADAMENTE EXHAUSTIVO. No te saltes ninguna fase lógica. Piensa en TODO el ciclo biológico. Es OBLIGATORIO considerar si la especie necesita:
+   - Riego o preparación el día exacto de la "siembra" o "trasplante".
+   - Mantenimiento de humedad durante la "postsiembra" (hasta que germina).
+   - Cuidados especiales durante la "germinacion" (cuando asoma el brote).
+   - Abonados o podas específicos en "crecimiento" y "floracion".
+   - Tareas finales en "cosecha" y "finalizado".
+2. PROHIBIDO crear fases o grupos como "general", "todo el ciclo", "todas las fases". Tienes que obligar a la labor a pertenecer a una fase concreta de las permitidas arriba.
+3. Responde ÚNICAMENTE con un array JSON. Nada más.
+4. Usa SOLAMENTE las labores (por su ID numérico) que se listan arriba. NO inventes IDs.
+4. Para la "frecuencia", proporciona un número entero (en días). Si es una labor puntual (como la cosecha final), pon null.
+5. Para el "offset", proporciona un número entero (en días). Usa valores negativos para adelantar la labor respecto al inicio de su fase teórica (ej: -180 para 6 meses antes de la siembra), valores positivos para retrasarla, o 0 si debe ir en su tiempo normal.
+6. Las "notas_ia" deben ser concisas y útiles (máx 150 caracteres).
+7. Agrega el campo "selected": true a todas las pautas.
 
 Ejemplo de respuesta:
 [
   { "id_labor": 2, "fase": "germinacion", "frecuencia": 2, "offset": 0, "notas_ia": "Riego ligero con pulverizador para no mover las semillas.", "selected": true },
   { "id_labor": 4, "fase": "siembra", "frecuencia": null, "offset": -180, "notas_ia": "Abono profundo y preparación del suelo 6 meses antes de la siembra real.", "selected": true },
-  { "id_labor": 10, "fase": "fructificacion", "frecuencia": null, "offset": 10, "notas_ia": "Poda de chupones unos días después de iniciar la floración.", "selected": true }
+  { "id_labor": 10, "fase": "floracion", "frecuencia": null, "offset": 10, "notas_ia": "Poda de chupones unos días después de iniciar la floración.", "selected": true }
 ]
 `;
 
@@ -97,20 +102,38 @@ Ejemplo de respuesta:
         throw new Error('No se encontró un array JSON en la respuesta');
       }
       pautas = JSON.parse(arrayMatch[0]);
+
+      // Fetch existing ACTIVE pautas for this species
+      let existingSet = new Set<string>();
+      try {
+        const [existing]: any = await pool.query('SELECT xlaborespautaidlabores, laborespautafase FROM laborespauta WHERE xlaborespautaidespecies = ? AND laborespautaactivosino = 1', [idespecies]);
+        (existing || []).forEach((e: any) => {
+          existingSet.add(`${e.xlaborespautaidlabores}_${e.laborespautafase}`);
+        });
+      } catch(e) {
+        console.error('Error fetching existing pautas:', e);
+      }
+
+      // Validación básica y marcado de existentes
+      pautas = pautas.map((p: any) => {
+        const id_labor = Number(p.id_labor) || null;
+        const fase = p.fase || 'general';
+        const alreadyExists = existingSet.has(`${id_labor}_${fase}`);
+        
+        return {
+          ...p,
+          id_labor,
+          fase,
+          frecuencia: typeof p.frecuencia === 'number' ? p.frecuencia : null,
+          offset: typeof p.offset === 'number' ? p.offset : 0,
+          selected: !alreadyExists,
+          alreadyExists
+        };
+      }).filter((p: any) => p.id_labor !== null);
     } catch (parseErr) {
       console.error('Error parseando JSON de Gemini:', resultText);
       return NextResponse.json({ error: 'Formato de respuesta inválido de IA' }, { status: 500 });
     }
-
-    // Validación básica
-    pautas = pautas.map((p: any) => ({
-      ...p,
-      selected: true,
-      frecuencia: typeof p.frecuencia === 'number' ? p.frecuencia : null,
-      offset: typeof p.offset === 'number' ? p.offset : 0,
-      id_labor: Number(p.id_labor) || null,
-      fase: p.fase || 'general'
-    })).filter((p: any) => p.id_labor !== null);
 
     return NextResponse.json({ success: true, pautas });
   } catch (error: any) {

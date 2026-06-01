@@ -21,10 +21,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const idespecies = resolvedParams.id;
     // Join with labores table to get labor details
     const query = `
-      SELECT p.*, l.laboresnombre
+      SELECT p.*, l.laboresnombre, l.laboresaplicaconvencional, l.laboresaplicaminimo, l.laboresaplicanolaboreo
       FROM laborespauta p
       JOIN labores l ON p.xlaborespautaidlabores = l.idlabores
-      WHERE p.xlaborespautaidespecies = ? AND p.xlaborespautaidusuarios IS NULL
+      WHERE p.xlaborespautaidespecies = ? AND p.xlaborespautaidusuarios IS NULL 
+        AND (p.laborespautaactivosino = 1 OR p.laborespautaactivosino IS NULL)
       ORDER BY CASE p.laborespautafase 
                  WHEN 'siembra' THEN 1 
                  WHEN 'germinacion' THEN 2 
@@ -119,7 +120,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const idespecies = resolvedParams.id;
     const body = await request.json();
-    const { xlaborespautaidlabores, laborespautafase, laborespautafrecuenciadias, laborespautaoffset, laborespautametodo, laborespautanotasia, laborespautaactivosino } = body;
+    const { xlaborespautaidlabores, laborespautafase, laborespautafrecuenciadias, laborespautaoffset, laborespautanotasia, laborespautaactivosino } = body;
 
     if (!xlaborespautaidlabores || !laborespautafase) {
       return NextResponse.json({ error: 'Labor y fase son obligatorios' }, { status: 400 });
@@ -128,13 +129,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const query = `
       INSERT INTO laborespauta (
         xlaborespautaidespecies, xlaborespautaidlabores, laborespautafase, 
-        laborespautafrecuenciadias, laborespautaoffset, laborespautametodo, laborespautanotasia, laborespautaactivosino
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        laborespautafrecuenciadias, laborespautaoffset, laborespautanotasia, laborespautaactivosino
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE 
+        laborespautaactivosino = VALUES(laborespautaactivosino),
+        laborespautafrecuenciadias = VALUES(laborespautafrecuenciadias),
+        laborespautaoffset = VALUES(laborespautaoffset),
+        laborespautanotasia = VALUES(laborespautanotasia)
     `;
 
     const queryParams = [
       idespecies, xlaborespautaidlabores, laborespautafase, 
-      laborespautafrecuenciadias || null, laborespautaoffset || 0, laborespautametodo || 'ambos', laborespautanotasia || null, 
+      laborespautafrecuenciadias || null, laborespautaoffset || 0, laborespautanotasia || null, 
       laborespautaactivosino !== undefined ? laborespautaactivosino : 1
     ];
 
@@ -142,7 +148,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ success: true, id: result.insertId });
   } catch (error: any) {
     console.error('Error creating pauta:', error);
-    // Duplicate entry handling
+    // Duplicate entry is now handled by ON DUPLICATE KEY UPDATE, 
+    // but keep standard fallback just in case
     if (error.code === 'ER_DUP_ENTRY') {
       return NextResponse.json({ error: 'Ya existe una pauta para esta labor en esta fase.' }, { status: 400 });
     }

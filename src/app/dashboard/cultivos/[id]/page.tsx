@@ -381,7 +381,10 @@ export default function CultivoDashboard() {
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
         <button 
           onClick={() => {
-            if (from === 'dashboard') {
+            if (from === 'bancal') {
+              const bancalId = searchParams.get('bancalId');
+              router.push(`/dashboard/bancales/${bancalId}`);
+            } else if (from === 'dashboard') {
               router.push('/dashboard');
             } else {
               router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedades}`);
@@ -389,7 +392,7 @@ export default function CultivoDashboard() {
           }}
           style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          {from === 'dashboard' ? '← Volver al Dashboard' : '← Volver a la Planta'}
+          {from === 'bancal' ? '← Volver al Bancal' : from === 'dashboard' ? '← Volver al Dashboard' : '← Volver a la Planta'}
         </button>
 
         <div style={{ 

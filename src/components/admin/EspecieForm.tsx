@@ -152,6 +152,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   // -- Pautas Labores State --
   const [pautas, setPautas] = useState<any[]>([]);
+  const [pautasFiltroFase, setPautasFiltroFase] = useState('');
+  const [pautasFiltroLabor, setPautasFiltroLabor] = useState('');
+  const [pautasFiltroLaboreo, setPautasFiltroLaboreo] = useState('');
   const [masterLabores, setMasterLabores] = useState<any[]>([]);
   const [editingPauta, setEditingPauta] = useState<any>(null);
   const [pautaForm, setPautaForm] = useState({
@@ -159,7 +162,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     laborespautafase: 'germinacion',
     laborespautafrecuenciadias: '',
     laborespautaoffset: 0,
-    laborespautametodo: 'ambos',
     laborespautanotasia: '',
     laborespautaactivosino: 1,
     idlaborespauta: undefined as number | undefined
@@ -1554,7 +1556,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         laborespautafase: 'germinacion',
         laborespautafrecuenciadias: '',
         laborespautaoffset: 0,
-        laborespautametodo: 'ambos',
         laborespautanotasia: '',
         laborespautaactivosino: 1,
         idlaborespauta: undefined
@@ -1610,6 +1611,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          idespecies: especieId,
           especie: formData.especiesnombre,
           labores: masterLabores.map(l => ({ id: l.idlabores, nombre: l.laboresnombre })),
           instruccionesAdicionales: pautasExtraInstructions
@@ -2930,6 +2932,65 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       )}
                     </div>
 
+                    {/* BARRA DE FILTROS */}
+                    {especieId && pautas.length > 0 && (
+                      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', background: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>🔍 Filtrar por:</span>
+                        
+                        <select 
+                          value={pautasFiltroFase} 
+                          onChange={(e) => setPautasFiltroFase(e.target.value)}
+                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#f8fafc', color: '#334155' }}
+                        >
+                          <option value="">Todas las Fases</option>
+                          <option value="planificado">1. Pre-siembra</option>
+                          <option value="siembra">2. Siembra</option>
+                          <option value="postsiembra">3. Post-siembra</option>
+                          <option value="germinacion">4. Germinación</option>
+                          <option value="semillero">5. Semillero</option>
+                          <option value="trasplante">6. Trasplante</option>
+                          <option value="enraizamiento">7. Post-Trasplante</option>
+                          <option value="crecimiento">8. Crecimiento Veg.</option>
+                          <option value="floracion">9. Floración</option>
+                          <option value="cosecha">10. Cosecha</option>
+                          <option value="finalizado">11. Finalizado</option>
+                          <option value="general">🌍 General</option>
+                        </select>
+
+                        <select 
+                          value={pautasFiltroLabor} 
+                          onChange={(e) => setPautasFiltroLabor(e.target.value)}
+                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#f8fafc', color: '#334155' }}
+                        >
+                          <option value="">Todas las Labores</option>
+                          {masterLabores.map(l => (
+                            <option key={l.idlabores} value={String(l.idlabores)}>{l.laboresnombre}</option>
+                          ))}
+                        </select>
+
+                        <select 
+                          value={pautasFiltroLaboreo} 
+                          onChange={(e) => setPautasFiltroLaboreo(e.target.value)}
+                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#f8fafc', color: '#334155' }}
+                        >
+                          <option value="">Sistemas de Cultivo (Todos)</option>
+                          <option value="convencional">🚜 Convencional</option>
+                          <option value="minimo">⛏️ Mínimo</option>
+                          <option value="nolaboreo">🚫 No laboreo</option>
+                        </select>
+
+                        {(pautasFiltroFase || pautasFiltroLabor || pautasFiltroLaboreo) && (
+                          <button 
+                            type="button" 
+                            onClick={() => { setPautasFiltroFase(''); setPautasFiltroLabor(''); setPautasFiltroLaboreo(''); }}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            Limpiar filtros
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {!especieId ? (
                       <div style={{ padding: '20px', background: '#fffbeb', color: '#b45309', borderRadius: '8px', border: '1px solid #fef3c7' }}>
                         Debes guardar la especie primero antes de poder asignar pautas de labores.
@@ -2961,17 +3022,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 onChange={e => setPautaForm({ ...pautaForm, laborespautafase: e.target.value })}
                                 style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                               >
-                                <option value="presiembra">1. Presiembra</option>
+                                <option value="planificado">1. Pre-siembra</option>
                                 <option value="siembra">2. Siembra</option>
-                                <option value="pregerminacion">3. Pre-Germinación</option>
+                                <option value="postsiembra">3. Post-siembra</option>
                                 <option value="germinacion">4. Germinación</option>
-                                <option value="crecimiento_inicial">5. Crec. Inicial</option>
+                                <option value="semillero">5. Semillero</option>
                                 <option value="trasplante">6. Trasplante</option>
-                                <option value="crecimiento">7. Crec. Firme</option>
-                                <option value="fructificacion">8. Flor. y Fructificación</option>
-                                <option value="recoleccion">9. Recolección</option>
-                                <option value="finalizacion">10. Finalización</option>
-                                <option value="general">11. General / Todo el Ciclo</option>
+                                <option value="enraizamiento">7. Post-Trasplante</option>
+                                <option value="crecimiento">8. Crecimiento Veg.</option>
+                                <option value="floracion">9. Floración</option>
+                                <option value="cosecha">10. Cosecha</option>
+                                <option value="finalizado">11. Finalizado</option>
+                                <option value="general">🌍 General / Todo el ciclo</option>
                               </select>
                             </div>
                             <div>
@@ -2995,18 +3057,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                                 title="Días de anticipación (negativo) o retraso (positivo) respecto al inicio de la fase."
                               />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Aplica a (Origen)</label>
-                              <select
-                                value={pautaForm.laborespautametodo}
-                                onChange={e => setPautaForm({ ...pautaForm, laborespautametodo: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white' }}
-                              >
-                                <option value="ambos">🌱 Ambos métodos</option>
-                                <option value="semilla">🌰 Sólo Semilla</option>
-                                <option value="planton">🪴 Sólo Plantón</option>
-                              </select>
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Notas de la IA / Instrucciones</label>
@@ -3032,7 +3082,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                   type="button"
                                   onClick={() => {
                                     setShowAddPautaForm(false);
-                                    setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautametodo: 'ambos', laborespautanotasia: '', laborespautaactivosino: 1, idlaborespauta: undefined, laborespautaoffset: 0 });
+                                    setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1, idlaborespauta: undefined, laborespautaoffset: 0 });
                                   }}
                                   style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
                                 >
@@ -3057,7 +3107,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 <tr>
                                   <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', width: '20%' }}>Fase</th>
                                   <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', width: '30%' }}>Labor</th>
-                                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', width: '15%' }}>Aplica a</th>
                                   <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Frec.</th>
                                   <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Offset</th>
                                   <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Estado</th>
@@ -3066,8 +3115,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               </thead>
                               <tbody>
                                 {(() => {
-                                  const faseOrder: Record<string, number> = { presiembra: 1, siembra: 2, pregerminacion: 3, germinacion: 4, crecimiento_inicial: 5, trasplante: 6, crecimiento: 7, fructificacion: 8, recoleccion: 9, finalizacion: 10, general: 11 };
-                                  const sortedPautas = [...pautas].sort((a, b) => {
+                                  const faseOrder: Record<string, number> = { planificado: 1, siembra: 2, postsiembra: 3, germinacion: 4, semillero: 5, trasplante: 6, enraizamiento: 7, crecimiento: 8, floracion: 9, cosecha: 10, finalizado: 11, general: 99 };
+                                  const filteredPautas = [...pautas].filter(p => {
+                                    if (p.laborespautaactivosino === 0) return false;
+                                    if (pautasFiltroFase && p.laborespautafase !== pautasFiltroFase) return false;
+                                    if (pautasFiltroLabor && String(p.xlaborespautaidlabores) !== String(pautasFiltroLabor)) return false;
+                                    if (pautasFiltroLaboreo === 'convencional' && p.laboresaplicaconvencional === 0) return false;
+                                    if (pautasFiltroLaboreo === 'minimo' && p.laboresaplicaminimo === 0) return false;
+                                    if (pautasFiltroLaboreo === 'nolaboreo' && p.laboresaplicanolaboreo === 0) return false;
+                                    return true;
+                                  });
+                                  const sortedPautas = filteredPautas.sort((a, b) => {
                                     const orderA = faseOrder[a.laborespautafase] || 99;
                                     const orderB = faseOrder[b.laborespautafase] || 99;
                                     return orderA - orderB;
@@ -3113,17 +3171,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                             onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
                                             onBlur={e => e.target.style.border = '1px solid transparent'}
                                           >
-                                            <option value="presiembra">1. Presiembra</option>
+                                            <option value="planificado">1. Pre-siembra</option>
                                             <option value="siembra">2. Siembra</option>
-                                            <option value="pregerminacion">3. Pre-Germinación</option>
+                                            <option value="postsiembra">3. Post-siembra</option>
                                             <option value="germinacion">4. Germinación</option>
-                                            <option value="crecimiento_inicial">5. Crec. Inicial</option>
+                                            <option value="semillero">5. Semillero</option>
                                             <option value="trasplante">6. Trasplante</option>
-                                            <option value="crecimiento">7. Crec. Firme</option>
-                                            <option value="fructificacion">8. Flor. y Fructificación</option>
-                                            <option value="recoleccion">9. Recolección</option>
-                                            <option value="finalizacion">10. Finalización</option>
-                                            <option value="general">11. General / Todo el Ciclo</option>
+                                            <option value="enraizamiento">7. Post-Trasplante</option>
+                                            <option value="crecimiento">8. Crecimiento Veg.</option>
+                                            <option value="floracion">9. Floración</option>
+                                            <option value="cosecha">10. Cosecha</option>
+                                            <option value="finalizado">11. Finalizado</option>
+                                            <option value="general">🌍 General / Todo el Ciclo</option>
                                           </select>
                                         </td>
                                         <td style={{ padding: '8px 12px' }}>
@@ -3137,19 +3196,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                             {masterLabores.map(l => (
                                               <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
                                             ))}
-                                          </select>
-                                        </td>
-                                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                          <select
-                                            value={p.laborespautametodo || 'ambos'}
-                                            onChange={e => updateField('laborespautametodo', e.target.value)}
-                                            style={{ width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', textAlign: 'center', fontSize: '0.85rem', cursor: 'pointer' }}
-                                            onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
-                                            onBlur={e => e.target.style.border = '1px solid transparent'}
-                                          >
-                                            <option value="ambos">Ambos</option>
-                                            <option value="semilla">Semilla</option>
-                                            <option value="planton">Plantón</option>
                                           </select>
                                         </td>
                                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>
@@ -3207,11 +3253,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                             >
                                               {isNotesOpen ? '📖' : '✏️'}
                                             </button>
-                                            {p.inUse ? (
-                                              <button type="button" disabled style={{ background: 'none', border: 'none', padding: '4px', fontSize: '1rem', opacity: 0.4, cursor: 'not-allowed' }} title="No se puede eliminar porque ya hay cultivos creados con esta especie. Puedes inactivarla.">🗑️</button>
-                                            ) : (
-                                              <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', fontSize: '1rem', opacity: 0.8 }} title="Eliminar labor" onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'}>🗑️</button>
-                                            )}
+                                            <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', fontSize: '1rem', opacity: 0.8 }} title="Eliminar labor" onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'}>🗑️</button>
                                           </div>
                                         </td>
                                       </tr>
@@ -4766,7 +4808,7 @@ JSON de salida obligatorio:
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px', borderLeft: '4px solid #94a3b8' }}>
                       <span style={{ fontSize: '1.1rem' }}>✅</span>
-                      <span style={{ fontWeight: 'bold', color: '#475569', fontSize: '0.95rem' }}>Ya incorporados ({existingOnes.length})</span>
+                      <span style={{ fontWeight: 'bold', color: '#475469', fontSize: '0.95rem' }}>Ya incorporados ({existingOnes.length})</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {existingOnes.map((prop, idx) => renderCard(prop, idx, true))}
@@ -4961,10 +5003,32 @@ JSON de salida obligatorio:
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-              {aiPautasProposal.length === 0 ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>
-              ) : (
-                aiPautasProposal.map((prop, idx) => {
+              {(() => {
+                const faseLabels: Record<string, string> = {
+                  planificado: '1. Pre-siembra',
+                  siembra: '2. Siembra',
+                  postsiembra: '3. Post-siembra',
+                  germinacion: '4. Germinación',
+                  semillero: '5. Semillero',
+                  trasplante: '6. Trasplante',
+                  enraizamiento: '7. Post-Trasplante',
+                  crecimiento: '8. Crecimiento Veg.',
+                  floracion: '9. Floración',
+                  cosecha: '10. Cosecha',
+                  finalizado: '11. Finalizado',
+                  general: '🌍 General'
+                };
+                
+                if (aiPautasProposal.length === 0) {
+                  return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>;
+                }
+                
+                const faseOrderModal: Record<string, number> = { planificado: 1, siembra: 2, postsiembra: 3, germinacion: 4, semillero: 5, trasplante: 6, enraizamiento: 7, crecimiento: 8, floracion: 9, cosecha: 10, finalizado: 11, general: 99 };
+                const sortedAiPautas = aiPautasProposal
+                  .map((prop, originalIdx) => ({ prop, idx: originalIdx }))
+                  .sort((a, b) => (faseOrderModal[a.prop.fase] || 99) - (faseOrderModal[b.prop.fase] || 99));
+
+                return sortedAiPautas.map(({ prop, idx }) => {
                   const isExisting = pautas.some(p => p.xlaborespautaidlabores == prop.id_labor && p.laborespautafase === prop.fase);
                   const laborDef = masterLabores.find(l => l.idlabores == prop.id_labor);
 
@@ -4993,7 +5057,7 @@ JSON de salida obligatorio:
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isExisting ? '#64748b' : '#1e293b' }}>
                           {laborDef ? laborDef.laboresnombre : 'Labor desconocida'}
-                          <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>— Fase: {prop.fase}</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>— Fase: {faseLabels[prop.fase] || prop.fase}</span>
                         </div>
                         <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.85rem', color: '#64748b' }}>
                           <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
@@ -5001,6 +5065,9 @@ JSON de salida obligatorio:
                           </span>
                           <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
                             ⏳ Offset: {prop.offset !== 0 ? `${prop.offset} días` : 'Normal (0)'}
+                          </span>
+                          <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: '600', textTransform: 'capitalize' }}>
+                            {prop.metodo === 'semilla' ? '🌱 Semilla' : prop.metodo === 'planton' ? '🪴 Plantón' : '🌍 Ambos'}
                           </span>
                         </div>
                         {prop.notas_ia && (
@@ -5011,8 +5078,8 @@ JSON de salida obligatorio:
                       </div>
                     </label>
                   );
-                })
-              )}
+                });
+              })()}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>

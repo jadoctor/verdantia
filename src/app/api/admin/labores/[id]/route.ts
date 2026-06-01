@@ -42,7 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const data = await req.json();
-    const { laboresnombre, laboresdescripcion, laboresicono, laborescolor, laboresactivosino } = data;
+    const { laboresnombre, laboresdescripcion, laboresicono, laborescolor, laboresactivosino, laboresaplicaconvencional, laboresaplicaminimo, laboresaplicanolaboreo } = data;
 
     if (!laboresnombre) {
       return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
@@ -54,9 +54,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
        laboresdescripcion = ?, 
        laboresicono = ?, 
        laborescolor = ?, 
-       laboresactivosino = ? 
+       laboresactivosino = ?,
+       laboresaplicaconvencional = ?,
+       laboresaplicaminimo = ?,
+       laboresaplicanolaboreo = ?
        WHERE idlabores = ?`,
-      [laboresnombre, laboresdescripcion || '', laboresicono || '', laborescolor || '#64748b', laboresactivosino !== undefined ? laboresactivosino : 1, id]
+      [
+        laboresnombre, 
+        laboresdescripcion || '', 
+        laboresicono || '', 
+        laborescolor || '#64748b', 
+        laboresactivosino !== undefined ? laboresactivosino : 1, 
+        laboresaplicaconvencional !== undefined ? laboresaplicaconvencional : 1,
+        laboresaplicaminimo !== undefined ? laboresaplicaminimo : 1,
+        laboresaplicanolaboreo !== undefined ? laboresaplicanolaboreo : 1,
+        id
+      ]
     );
 
     return NextResponse.json({ success: true });

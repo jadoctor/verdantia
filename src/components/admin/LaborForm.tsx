@@ -67,7 +67,10 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
     laboresdescripcion: '',
     laboresicono: '',
     laborescolor: '#64748b',
-    laboresactivosino: 1
+    laboresactivosino: 1,
+    laboresaplicaconvencional: 1,
+    laboresaplicaminimo: 1,
+    laboresaplicanolaboreo: 1
   };
 
   const [formData, setFormData] = useState<any>(defaultFormData);
@@ -150,7 +153,10 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
           laboresdescripcion: data.labor.laboresdescripcion || '',
           laboresicono: iconToUse || '',
           laborescolor: data.labor.laborescolor || '#64748b',
-          laboresactivosino: data.labor.laboresactivosino !== undefined ? data.labor.laboresactivosino : 1
+          laboresactivosino: data.labor.laboresactivosino !== undefined ? data.labor.laboresactivosino : 1,
+          laboresaplicaconvencional: data.labor.laboresaplicaconvencional !== undefined ? data.labor.laboresaplicaconvencional : 1,
+          laboresaplicaminimo: data.labor.laboresaplicaminimo !== undefined ? data.labor.laboresaplicaminimo : 1,
+          laboresaplicanolaboreo: data.labor.laboresaplicanolaboreo !== undefined ? data.labor.laboresaplicanolaboreo : 1
         };
         setFormData(loadedData);
         setInitialData(loadedData);
@@ -731,6 +737,26 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
           <input type="checkbox" name="laboresactivosino" checked={formData.laboresactivosino === 1} onChange={handleFormChange} style={{ width: '22px', height: '22px', accentColor: '#10b981' }} />
           Esta labor está activa y disponible globalmente
         </label>
+      </div>
+
+      {/* ── Tipos de Laboreo Bar ── */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid #cbd5e1`, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Aplica a sistemas de cultivo</h3>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Selecciona en qué métodos de laboreo tiene sentido esta labor. Por ejemplo, "Arar" no aplica a "No laboreo".</p>
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginTop: '4px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569', fontSize: '0.95rem' }}>
+            <input type="checkbox" name="laboresaplicaconvencional" checked={formData.laboresaplicaconvencional === 1} onChange={handleFormChange} style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
+            🚜 Convencional
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569', fontSize: '0.95rem' }}>
+            <input type="checkbox" name="laboresaplicaminimo" checked={formData.laboresaplicaminimo === 1} onChange={handleFormChange} style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
+            ⛏️ Mínimo
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569', fontSize: '0.95rem' }}>
+            <input type="checkbox" name="laboresaplicanolaboreo" checked={formData.laboresaplicanolaboreo === 1} onChange={handleFormChange} style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
+            🚫 No laboreo
+          </label>
+        </div>
       </div>
 
       {/* HERO GALLERY HEADER */}

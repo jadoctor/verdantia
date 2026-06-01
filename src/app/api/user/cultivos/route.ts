@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     let sql = `
       SELECT 
         c.idcultivos,
+        c.xcultivosidloteorigen,
         c.xcultivosidvariedades,
         c.xcultivosidsemillas,
         c.xcultivosidbancales,
@@ -62,8 +63,8 @@ export async function GET(request: Request) {
     const params: any[] = [user.id];
 
     if (variedadId) {
-      sql += ` AND c.xcultivosidvariedades = ?`;
-      params.push(variedadId);
+      sql += ` AND (c.xcultivosidvariedades = ? OR c.xcultivosidvariedades = (SELECT xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ? LIMIT 1))`;
+      params.push(variedadId, variedadId, user.id);
     }
 
     sql += `
@@ -77,6 +78,77 @@ export async function GET(request: Request) {
     `;
 
     const [cultivos] = await pool.query(sql, params);
+
+    // Auto-fix: detectar y corregir números de colección duplicados silenciosamente
+    if (!variedadId) {
+      const activeCultivos = (cultivos as any[]).filter(
+        (c: any) => c.cultivosestado !== 'finalizado' && c.cultivosestado !== 'perdido'
+      );
+      
+      // Agrupar por año
+      const byYear: Record<number, any[]> = {};
+      for (const c of activeCultivos) {
+        const year = c.cultivosfechainicio 
+          ? new Date(c.cultivosfechainicio).getFullYear() 
+          : new Date().getFullYear();
+        if (!byYear[year]) byYear[year] = [];
+        byYear[year].push(c);
+      }
+
+      // Para cada año, detectar duplicados y corregir
+      for (const [, crops] of Object.entries(byYear)) {
+        const usedNumbers = new Set<number>();
+        const toFix: { id: number, newNum: number }[] = [];
+
+        for (const crop of crops) {
+          const num = crop.cultivosnumerocoleccion;
+          if (num && usedNumbers.has(num)) {
+            toFix.push({ id: crop.idcultivos, newNum: 0 });
+          } else if (num) {
+            usedNumbers.add(num);
+          }
+        }
+
+        if (toFix.length > 0) {
+          for (const fix of toFix) {
+            let nextNum = 1;
+            while (usedNumbers.has(nextNum)) nextNum++;
+            fix.newNum = nextNum;
+            usedNumbers.add(nextNum);
+          }
+          // Aplicar correcciones y actualizar los datos en memoria
+          for (const fix of toFix) {
+            await pool.query(
+              `UPDATE cultivos SET cultivosnumerocoleccion = ? WHERE idcultivos = ?`,
+              [fix.newNum, fix.id]
+            );
+            const crop = (cultivos as any[]).find((c: any) => c.idcultivos === fix.id);
+            if (crop) crop.cultivosnumerocoleccion = fix.newNum;
+          }
+        }
+      }
+    }
+
+    // Fetch ubicaciones
+    const cropIds = (cultivos as any[]).map((c: any) => c.idcultivos);
+    if (cropIds.length > 0) {
+      const [ubicacionesRows]: any = await pool.query(
+        `SELECT * FROM cultivosubicaciones WHERE xcultivosubicacionesidcultivos IN (?)`,
+        [cropIds]
+      );
+      
+      const ubiMap: Record<number, any[]> = {};
+      for (const u of ubicacionesRows) {
+        if (!ubiMap[u.xcultivosubicacionesidcultivos]) {
+          ubiMap[u.xcultivosubicacionesidcultivos] = [];
+        }
+        ubiMap[u.xcultivosubicacionesidcultivos].push(u);
+      }
+      
+      for (const c of (cultivos as any[])) {
+        c.ubicaciones = ubiMap[c.idcultivos] || [];
+      }
+    }
 
     return NextResponse.json({ cultivos });
   } catch (error: any) {
@@ -108,7 +180,8 @@ export async function POST(request: Request) {
       cultivosfechainicio,
       cultivoscantidad,
       cultivosubicacion,
-      cultivosobservaciones
+      cultivosobservaciones,
+      xcultivosidloteorigen
     } = body;
 
     if (!xcultivosidvariedades) {
@@ -231,14 +304,20 @@ export async function POST(request: Request) {
 
     let nextNumero = cultivosnumerocoleccion;
     if (!nextNumero) {
+      // El número de colección debe ser único por usuario y año
+      const cropYear = cultivosfechainicio 
+        ? new Date(cultivosfechainicio).getFullYear() 
+        : new Date().getFullYear();
+      
       const [rows]: any = await pool.query(
         `SELECT cultivosnumerocoleccion 
          FROM cultivos 
          WHERE xcultivosidusuarios = ? 
            AND cultivosnumerocoleccion IS NOT NULL 
            AND cultivosactivosino = 1
+           AND YEAR(cultivosfechainicio) = ?
          ORDER BY cultivosnumerocoleccion ASC`,
-         [user.id]
+         [user.id, cropYear]
       );
       
       nextNumero = 1;
@@ -253,6 +332,7 @@ export async function POST(request: Request) {
 
     const [result]: any = await pool.query(
       `INSERT INTO cultivos (
+        xcultivosidloteorigen,
         xcultivosidusuarios, 
         xcultivosidvariedades, 
         xcultivosidsemillas, 
@@ -267,8 +347,9 @@ export async function POST(request: Request) {
         cultivoscantidad,
         cultivosubicacion,
         cultivosobservaciones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        xcultivosidloteorigen || null,
         user.id, 
         xcultivosidvariedades, 
         xcultivosidsemillas || null,
@@ -286,9 +367,19 @@ export async function POST(request: Request) {
       ]
     );
 
+    const newCropId = result.insertId;
+
+    if (finalBancalId && posx !== undefined && posy !== undefined) {
+      await pool.query(
+        `INSERT INTO cultivosubicaciones (xcultivosubicacionesidcultivos, xcultivosubicacionesidbancales, cultivosubicacionesposicionx, cultivosubicacionesposiciony) 
+         VALUES (?, ?, ?, ?)`,
+        [newCropId, finalBancalId, posx, posy]
+      );
+    }
+
     return NextResponse.json({ 
       success: true, 
-      id: result.insertId,
+      id: newCropId,
       message: 'Cultivo iniciado correctamente'
     });
   } catch (error: any) {

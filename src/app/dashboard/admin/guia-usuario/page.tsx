@@ -22,7 +22,7 @@ export default function GuiaUsuarioPage() {
 
   const isOpen = (key: string) => !!openSections[key];
 
-  const allKeys = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+  const allKeys = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10'];
   const allOpen = allKeys.every(k => openSections[k]);
   const toggleAll = () => {
     if (allOpen) {
@@ -348,6 +348,33 @@ export default function GuiaUsuarioPage() {
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Despliegues</h3>
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>01/06/2026 21:00 – Refactorización Arquitectónica de Pautas IA y Tipos de Laboreo</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>La Inteligencia Artificial cometía errores de "alucinación" al intentar adivinar a qué método de propagación (semilla o plantón) correspondía cada labor.</li>
+                  <li style={{ marginBottom: '8px' }}>El campo "Método" de las pautas generaba duplicidades confusas en la base de datos y ensuciaba el formulario de Especies.</li>
+                  <li style={{ marginBottom: '8px' }}>La plataforma no distinguía correctamente las tareas agresivas (como Arar) para los usuarios que practican agricultura de "No laboreo" o "Laboreo Mínimo", mostrando tareas incompatibles con sus perfiles agronómicos.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>Extirpación del Método:</strong> Se eliminó la columna <code>laborespautametodo</code> de la tabla <code>laborespauta</code>. El asistente IA ya no usa este parámetro y se han limpiado los filtros en <code>EspecieForm.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Migración de la lógica al Catálogo Maestro:</strong> Se crearon las columnas <code>laboresaplicaconvencional</code>, <code>laboresaplicaminimo</code> y <code>laboresaplicanolaboreo</code> en la tabla maestra <code>labores</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Refinamiento de Prompts (IA):</strong> Se actualizó <code>api/ai/pautas/route.ts</code> para prohibir explícitamente fases vagas como "general" o "todo el ciclo", forzando una cronología estricta.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Nuevas labores avanzadas:</strong> Se añadieron 8 labores específicas agronómicas (Tarping, Deshierbe térmico, Escarificado, etc.) con sus debidas restricciones (ej. Laboreo profundo restringido en No-till).</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>La plataforma tiene ahora una integridad agronómica enorme: la base de datos filtra intrínsecamente las tareas según la filosofía de cultivo, la interfaz es más rápida y limpia, y la IA genera pautas muchísimo más predecibles y de mayor calidad profesional.</li>
+                </ul>
+              </div>
+            </li>
+
             <li style={{ marginBottom: '24px' }}>
               <strong>24/05/2026 22:20 – Estandarización tipográfica y Refactor dinámico de Guía</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
@@ -1710,6 +1737,119 @@ export default function GuiaUsuarioPage() {
         </>)}
       </Section>
 
+      <Section id="s10" title="10. Taxonomía y Fases de Cultivo">
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          La plataforma emplea una taxonomía agronómica de 12 fases (incluyendo estados finales) que permite definir con precisión milimétrica el estado vital de una planta y asignarle tareas específicas (Labores). Es crucial entender la diferencia técnica entre <strong>"Hitos"</strong> (momentos puntuales) y <strong>"Periodos"</strong> (rangos temporales de latencia o crecimiento).
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.3rem' }}>10.1. El Ciclo de Vida (Orden Cronológico Estricto)</h3>
+        
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '16px', background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+            <tr>
+              <th style={{ padding: '12px', textAlign: 'left', color: '#334155', fontSize: '0.9rem' }}>Orden</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: '#334155', fontSize: '0.9rem' }}>Clave BD</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: '#334155', fontSize: '0.9rem' }}>Nombre UX</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: '#334155', fontSize: '0.9rem' }}>Tipo</th>
+              <th style={{ padding: '12px', textAlign: 'left', color: '#334155', fontSize: '0.9rem' }}>Descripción Técnica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>1</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>planificado</td>
+              <td style={{ padding: '12px' }}>📅 Pre-siembra</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Registrado en sistema, semilla sin usar.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>2</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>siembra</td>
+              <td style={{ padding: '12px' }}>⛏️ Siembra</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Acto físico de meter semilla en sustrato.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>3</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>postsiembra</td>
+              <td style={{ padding: '12px' }}>⏳ Post-siembra</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Latencia invisible bajo tierra.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>4</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>germinacion</td>
+              <td style={{ padding: '12px' }}>🌱 Germinación</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Asoma el primer brote a la superficie.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>5</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>semillero</td>
+              <td style={{ padding: '12px' }}>🪴 Semillero</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Desarrollo en entorno protegido.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>6</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>trasplante</td>
+              <td style={{ padding: '12px' }}>🚚 Trasplante</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Mudanza al suelo o bancal definitivo.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>7</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>enraizamiento</td>
+              <td style={{ padding: '12px' }}>🪵 Post-Trasplante</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Estrés y desarrollo radicular primario.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>8</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>crecimiento</td>
+              <td style={{ padding: '12px' }}>🌿 Crecimiento Veg.</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Desarrollo masivo de tallos y hojas (Nitrógeno).</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>9</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>floracion</td>
+              <td style={{ padding: '12px' }}>🌸 Floración</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Polinización y cuajado (Fósforo/Potasio).</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>10</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>cosecha</td>
+              <td style={{ padding: '12px' }}>🧺 Cosecha</td>
+              <td style={{ padding: '12px' }}>Periodo</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Época de recolección de frutos.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#fef2f2' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>11</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>finalizado</td>
+              <td style={{ padding: '12px' }}>🏁 Finalizado</td>
+              <td style={{ padding: '12px' }}>Hito Final</td>
+              <td style={{ padding: '12px', color: '#b91c1c', fontSize: '0.9rem' }}>Fin natural o arrancado. `esfin = 1`</td>
+            </tr>
+            <tr style={{ background: '#fef2f2' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>99</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>perdido</td>
+              <td style={{ padding: '12px' }}>🥀 Perdido</td>
+              <td style={{ padding: '12px' }}>Hito Final</td>
+              <td style={{ padding: '12px', color: '#b91c1c', fontSize: '0.9rem' }}>Fracaso (plaga, helada). `esfin = 1`</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.3rem' }}>10.2. Protección de Consultas (Anti-Hardcoding)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Dado que el sistema permite saltar fases (por ejemplo en siembra directa) o añadir nuevas fases intermedias en el futuro, <strong>está estrictamente prohibido usar lógicas matemáticas (`orden &lt; 11`) para saber si un cultivo está activo</strong> en el software.
+        </p>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para consultar si un cultivo ha terminado su ciclo, se debe utilizar siempre la bandera booleana <code>fasescultivoesfin</code> asociada a la fase actual.
+        </p>
+      </Section>
 
     </div>
   );

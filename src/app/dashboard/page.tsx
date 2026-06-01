@@ -1044,7 +1044,7 @@ export default function DashboardHome() {
                               fontSize: '0.78rem', 
                               color: '#475569',
                               cursor: 'pointer',
-                              padding: '4px 8px',
+                              padding: '6px 8px',
                               borderRadius: '8px',
                               transition: 'all 0.2s'
                             }}
@@ -1057,11 +1057,36 @@ export default function DashboardHome() {
                               e.currentTarget.style.color = '#475569';
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>{c.especiesicono || '🌱'}</span>
-                              <span style={{ fontWeight: 800, color: '#065f46', background: '#d1fae5', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Cultivo Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>
-                              <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.especiesnombre}</span>
-                              <span style={{ opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>({c.variedad_nombre || 'Común'})</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '1rem', flexShrink: 0 }}>{c.especiesicono || '🌱'}</span>
+                                <span style={{ fontWeight: 800, color: '#065f46', background: '#d1fae5', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>
+                                <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.especiesnombre}</span>
+                                <span style={{ opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>({c.variedad_nombre || 'Común'})</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '26px', flexWrap: 'wrap' }}>
+                                {c.cultivosfechainicio && (
+                                  <span style={{ fontSize: '0.62rem', color: '#64748b', background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                    📅 {new Date(c.cultivosfechainicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                                  </span>
+                                )}
+                                <span style={{ 
+                                  fontSize: '0.62rem', 
+                                  padding: '1px 5px', 
+                                  borderRadius: '4px', 
+                                  fontWeight: 700, 
+                                  whiteSpace: 'nowrap',
+                                  background: c.cultivosestado === 'germinacion' ? '#fef3c7' : c.cultivosestado === 'crecimiento' ? '#d1fae5' : c.cultivosestado === 'recoleccion' ? '#fce7f3' : c.cultivosestado === 'en_espera' ? '#e0e7ff' : '#f1f5f9',
+                                  color: c.cultivosestado === 'germinacion' ? '#92400e' : c.cultivosestado === 'crecimiento' ? '#065f46' : c.cultivosestado === 'recoleccion' ? '#9d174d' : c.cultivosestado === 'en_espera' ? '#3730a3' : '#475569'
+                                }}>
+                                  {c.cultivosestado === 'germinacion' ? '🌱 Germinación' : c.cultivosestado === 'crecimiento' ? '🌿 Crecimiento' : c.cultivosestado === 'recoleccion' ? '🧺 Recolección' : c.cultivosestado === 'en_espera' ? '⏳ En espera' : c.cultivosestado === 'trasplante' ? '🪴 Trasplante' : c.cultivosestado}
+                                </span>
+                                {c.cultivoscantidad && (
+                                  <span style={{ fontSize: '0.62rem', color: '#0f766e', background: '#ccfbf1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                    ×{c.cultivoscantidad} uds
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             
                             <button

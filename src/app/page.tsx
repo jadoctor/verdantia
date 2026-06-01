@@ -24,10 +24,10 @@ export default function Home() {
           </a>
           <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="text-sm text-green-700 bg-green-100 px-4 py-2 rounded-full font-medium inline-block mb-2 shadow-sm border border-green-200">
-              ✅ <span className="font-bold">Verificado:</span> 30/05/2026 22:06
+              ✅ <span className="font-bold">Verificado:</span> 01/06/2026 21:00
             </div>
             <div className="text-xs text-slate-500 max-w-xl mx-auto italic">
-              "Motor de Bancales, Mapa Interactivo de Huerto e Integración Catastral SIGPAC"
+              "Refactorización Arquitectónica de Pautas IA y Catálogo de Labores"
             </div>
           </div>
         </div>

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
     const data = await req.json();
-    const { laboresnombre, laboresdescripcion, laboresicono, laborescolor, laboresactivosino } = data;
+    const { laboresnombre, laboresdescripcion, laboresicono, laborescolor, laboresactivosino, laboresaplicaconvencional, laboresaplicaminimo, laboresaplicanolaboreo } = data;
 
     if (!laboresnombre) {
       return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
@@ -56,9 +56,18 @@ export async function POST(req: NextRequest) {
 
     const [result]: any = await pool.query(
       `INSERT INTO labores 
-       (laboresnombre, laboresdescripcion, laboresicono, laborescolor, laboresactivosino) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [laboresnombre, laboresdescripcion || '', laboresicono || '', laborescolor || '#64748b', laboresactivosino !== undefined ? laboresactivosino : 1]
+       (laboresnombre, laboresdescripcion, laboresicono, laborescolor, laboresactivosino, laboresaplicaconvencional, laboresaplicaminimo, laboresaplicanolaboreo) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        laboresnombre, 
+        laboresdescripcion || '', 
+        laboresicono || '', 
+        laborescolor || '#64748b', 
+        laboresactivosino !== undefined ? laboresactivosino : 1,
+        laboresaplicaconvencional !== undefined ? laboresaplicaconvencional : 1,
+        laboresaplicaminimo !== undefined ? laboresaplicaminimo : 1,
+        laboresaplicanolaboreo !== undefined ? laboresaplicanolaboreo : 1
+      ]
     );
 
     return NextResponse.json({ success: true, id: result.insertId });
