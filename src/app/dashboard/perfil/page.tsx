@@ -1393,7 +1393,8 @@ function PerfilContent() {
           { id: 'cultivo', label: '🌾 Preferencias de Cultivo' },
           { id: 'bancales', label: '🚜 Bancales (SIGPAC)' },
           { id: 'seguridad', label: '🔒 Seguridad & Privacidad' },
-          { id: 'suscripcion', label: '⭐ Suscripción & Logros' },
+          { id: 'suscripcion', label: '⭐ Suscripción' },
+          { id: 'logros', label: '🏆 Logros y Roles' },
           { id: 'cuenta', label: '⚠️ Eliminar Cuenta' }
         ].map(tab => {
           const isActive = activeTab === tab.id;
@@ -2979,11 +2980,11 @@ function PerfilContent() {
       )}
 
       {/* ═══════════════════════════════════════════ */}
-      {/* 4. ROLES Y SUSCRIPCIONES                     */}
+      {/* 4. LOGROS Y ROLES                            */}
       {/* ═══════════════════════════════════════════ */}
-      {activeTab === 'suscripcion' && (
+      {activeTab === 'logros' && (
         <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>⭐ Roles y Suscripciones</h3>
+          <h3 style={{ margin: '0 0 16px 0', color: '#d97706', fontSize: '1.1rem', fontWeight: 800 }}>🏆 Logros y Roles</h3>
           <div className="accordion-body">
           <label className="section-label">Roles Actuales Aprobados</label>
           <div className="roles-display">
@@ -3014,8 +3015,18 @@ function PerfilContent() {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Aún no has desbloqueado ningún logro. ¡Sigue interactuando en la comunidad!</p>
             )}
           </div>
+          </div>
+        </div>
+      )}
 
-          <label className="section-label" style={{ marginTop: '20px' }}>Nivel de Suscripción Actual</label>
+      {/* ═══════════════════════════════════════════ */}
+      {/* 5. SUSCRIPCIÓN                               */}
+      {/* ═══════════════════════════════════════════ */}
+      {activeTab === 'suscripcion' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>⭐ Mi Suscripción</h3>
+          <div className="accordion-body">
+          <label className="section-label">Nivel de Suscripción Actual</label>
 
           {/* ── Timeline de Suscripción ── */}
           {(() => {
@@ -3029,7 +3040,7 @@ function PerfilContent() {
               { key: 'premium',  label: 'Premium',  icon: '🌳', color: '#d97706', bg: '#fffbeb', price: '14,99€' },
               { key: 'avanzado', label: 'Avanzado', icon: '🌿', color: '#2563eb', bg: '#eff6ff', price: '9,99€' },
               { key: 'esencial', label: 'Esencial', icon: '🌱', color: '#059669', bg: '#f0fdf4', price: '4,99€' },
-              { key: 'gratuito', label: 'Gratuito', icon: '🌰', color: '#94a3b8', bg: '#f8fafc', price: 'Gratis' },
+              { key: 'gratuito', label: 'Gratuito', icon: '🌾', color: '#94a3b8', bg: '#f8fafc', price: 'Gratis' },
             ];
 
             const currentIdx = isPremium ? 0 : isAvanzado ? 1 : isEsencial ? 2 : 3;
@@ -3254,7 +3265,7 @@ function PerfilContent() {
                     <thead>
                       <tr>
                         {[{ label: 'Característica', color: '#f8fafc', textColor: '#64748b' },
-                          { label: '🌰 Gratuito\n0 €', color: '#f8fafc', textColor: '#64748b' },
+                          { label: '🌾 Gratuito\n0 €', color: '#f8fafc', textColor: '#64748b' },
                           { label: '🌱 Esencial\n4,99 €/mes', color: '#f0fdf4', textColor: '#059669' },
                           { label: '🌿 Avanzado\n9,99 €/mes', color: '#eff6ff', textColor: '#2563eb' },
                           { label: '🌳 Premium\n14,99 €/mes', color: '#fffbeb', textColor: '#d97706' },

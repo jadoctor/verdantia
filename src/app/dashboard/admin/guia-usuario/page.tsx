@@ -173,37 +173,60 @@ export default function GuiaUsuarioPage() {
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.1. El Encabezado (Hero Carousel)</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Si un formulario o modal gestiona imágenes, la parte superior debe contar con un <strong>Hero Carousel</strong>.
+          Si un formulario o modal gestiona imágenes, la parte superior debe contar con un <strong>Hero Carousel</strong>. Los parámetros arquitectónicos y de estilo son de cumplimiento estricto para evitar cortes de imagen (ej. recortar caras):
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Comportamiento Fijo (Sticky):</strong> El contenedor del carrusel debe mantenerse en la parte superior al hacer scroll para garantizar que la foto principal permanezca visible.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Distribución Visual:</strong>
+          <li style={{ marginBottom: '8px' }}><strong>Contenedor Padre:</strong> Debe usar <code>display: 'flex', gap: 0, alignItems: 'center'</code> para centrar verticalmente la foto principal y la columna de miniaturas. Debe incorporar el color vibrante extraído por IA como un sutil <code>linear-gradient</code>.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Foto Principal (Hero):</strong>
             <ul>
-              <li><strong>Izquierda:</strong> La foto principal (Hero Photo) en gran formato.</li>
-              <li><strong>Derecha:</strong> Una tira vertical con las miniaturas de las fotos restantes.</li>
+              <li><strong>Dimensiones y Ajuste:</strong> Contenedor rígido de <code>180px x 220px</code> (proporción 3:4).</li>
+              <li><strong>Aplicación de Metadatos (JSON):</strong> Debe aplicar <code>objectFit: 'cover'</code> inyectando los valores guardados por el usuario en el editor: <code>objectPosition: x y</code>, <code>transformOrigin: x y</code>, <code>transform: scale(zoom)</code>, y los filtros de brillo/contraste.</li>
             </ul>
           </li>
-          <li><strong>Arrastre y Ordenamiento (Drag & Drop):</strong>
+          <li style={{ marginBottom: '8px' }}><strong>Fotos Accesorias (Miniaturas):</strong>
             <ul>
-              <li>Las miniaturas de la derecha son arrastrables entre sí para reordenarlas en la galería.</li>
-              <li>Si una miniatura se arrastra <strong>sobre la foto grande (Hero)</strong>, se convierte instantáneamente en la nueva foto principal, mandando la anterior a la tira de miniaturas.</li>
+              <li><strong>Dimensiones Exactas:</strong> Formato vertical estricto de <code>52px ancho x 70px alto</code> (permite apilar 3 miniaturas encajando perfectamente en los 220px del Hero).</li>
+              <li><strong>Encuadre Protegido:</strong> Las miniaturas <strong>NO deben heredar el zoom (scale) ni el transformOrigin</strong> de la foto Hero. Deben usar siempre <code>objectFit: 'cover'</code> y <code>objectPosition: 'center center'</code> para evitar que los encuadres muy cerrados corten la cara en tamaños pequeños.</li>
             </ul>
           </li>
+          <li><strong>Estado Vacío (Empty State):</strong> Si no hay fotos, no se muestra el carrusel; se muestra el Grid tipo "Pinterest" (fondo rosa claro/vibrante, fotos de stock) de especies globales.</li>
         </ul>
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.2. La Galería y Editor (Pestaña "Adjuntos")</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Toda gestión fotográfica pesada se oculta tras una pestaña designada.
+          Toda gestión fotográfica pesada se oculta tras una pestaña designada, rigiéndose por reglas de suscripción y paridad visual total.
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Dropzone:</strong> Zona amplia que acepta arrastrar y soltar múltiples archivos (o hacer clic).</li>
-          <li style={{ marginBottom: '8px' }}><strong>Límite Estricto:</strong> Máximo de 4 fotos por entidad (excepto foto de perfil que es 1).</li>
-          <li style={{ marginBottom: '8px' }}><strong>Botones de Acción:</strong> Estrella (marcar principal), Lápiz (abrir editor visual) y Aspa (eliminar).</li>
-          <li><strong>Editor Visual:</strong> Permite alterar de forma no destructiva (guardado en base de datos):
+          <li style={{ marginBottom: '8px' }}><strong>Límites por Plan (Validación Backend y UI):</strong> La zona de subida se bloquea dinámicamente según el plan (Básica=1, Avanzada=2, Profesional=3, Premium=4). Debe mostrar un contador visible (ej. <code>2 / 4 permitidas</code>) que pasa a rojo al llegar al límite.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Overlay de Penalización (Lock Overlay):</strong> Si un usuario tiene más fotos de las que su plan actual permite (por haber bajado de plan), las fotos sobrantes muestran un overlay semitransparente con un icono 🔒 "Excede límite". Estas fotos pierden el atributo <code>draggable</code> y esconden los botones de Editar y Favorito. Solo conservan el botón ✕ de borrado.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Botones de Acción (Iconografía Estándar):</strong> Estrella (★/☆ para portada), Lápiz (✏️ para editor) y Aspa (✕ para eliminar).</li>
+          <li><strong>El Único Editor Visual Válido:</strong> Cualquier sección que permita re-encuadrar fotos debe usar la arquitectura estandarizada descrita a continuación.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.3. El Editor de Fotos Estándar (Arquitectura y UI)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para garantizar una consistencia absoluta, cualquier módulo que requiera manipular fotos debe implementar el editor estandarizado siguiendo estas especificaciones exactas:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Dependencia CSS:</strong> Toda la estructura visual debe heredar las clases maestras de <code>EspecieForm.css</code> (<code>photo-editor-overlay</code>, <code>photo-editor-modal</code>, <code>photo-editor-header</code>, <code>photo-editor-body</code>, <code>photo-editor-footer</code>). Queda prohibido inventar modales ad-hoc con Tailwind.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Estado y Variables Requeridas:</strong> El componente debe persistir y manipular un objeto JSON con estas cinco claves obligatorias:
             <ul>
-              <li>Paneo del enfoque y Zoom.</li>
-              <li>Ajustes de Brillo y Contraste.</li>
-              <li>Filtros CSS predefinidos (Vintage, Comic, Cinematic, etc.).</li>
+              <li><code>profile_object_x</code> y <code>profile_object_y</code> (por defecto 50, ajustado mediante evento de arrastre <em>onMouseMove</em>).</li>
+              <li><code>profile_object_zoom</code> (por defecto 100, manipulado mediante un slider de 100 a 300).</li>
+              <li><code>profile_brightness</code> y <code>profile_contrast</code> (por defecto 100, manipulados mediante sliders de 50 a 150).</li>
+            </ul>
+          </li>
+          <li style={{ marginBottom: '8px' }}><strong>La Ventana de Previsualización:</strong>
+            <ul>
+              <li>Debe forzar una proporción vertical de <strong>3:4</strong>.</li>
+              <li>La imagen dentro de la ventana debe aplicar de inmediato: <code>transform: scale(zoom/100)</code>, <code>transformOrigin: x y</code>, y <code>filter: brightness(b%) contrast(c%)</code>.</li>
+              <li>Debe soportar arrastre manual fluido (click & drag) que actualice <code>x</code> e <code>y</code> en tiempo real respetando los límites para que la foto no se salga del encuadre.</li>
+            </ul>
+          </li>
+          <li><strong>Botonera y Acciones:</strong>
+            <ul>
+              <li><strong>Controles Superiores:</strong> Botones de "✨ Auto Color" (restaura x/y/zoom y pone brillo 110, contraste 110) y "↺ Reset" (todo a valores de fábrica).</li>
+              <li><strong>Smart Save (Guardado Inteligente):</strong> El botón inferior de "Guardar Cambios" solo se renderiza si los parámetros actuales difieren de los iniciales al abrir el modal.</li>
             </ul>
           </li>
         </ul>
@@ -348,6 +371,33 @@ export default function GuiaUsuarioPage() {
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Despliegues</h3>
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>07/06/2026 20:50 – Origen pendiente de asignar y mejoras del Asistente de Semillas</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El origen de semilla no permitía un estado indefinido o "Pendiente de asignar" (`por_definir`), lo cual forzaba a los usuarios a seleccionar un origen ficticio o incorrecto al momento de adquirir.</li>
+                  <li style={{ marginBottom: '8px' }}>La vista detallada de edición de semillas (`src/app/dashboard/semillas/[id]/page.tsx`) y el modal de cultivo (`src/components/user/IniciarCultivoModal.tsx`) no tenían la opción "Pendiente de asignar", lo que provocaba inconsistencias visuales y sobreescrituras accidentales al editar.</li>
+                  <li style={{ marginBottom: '8px' }}>El proyecto presentaba varios errores de compilación TypeScript debido a la falta de desestructuración de `peso1000semillas`, variables con tipo implícito `any` en funciones flecha y paso incorrecto de un tipo `number` a una prop que esperaba `string`.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>src/components/SeedWizardModal.tsx:</strong> Ajustado el asistente de adquisición para soportar origen `'por_definir'`. Ocultación de campos de marca, lugar de compra, observaciones y fechas en caso de origen pendiente de asignar, dejando solo stock y peso.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/dashboard/semillas/page.tsx:</strong> Modificado el renderizado del origen de la semilla para traducir `'por_definir'` a `'PENDIENTE DE ASIGNAR'` y aplicar un estilo de badge gris suave.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/dashboard/semillas/[id]/page.tsx:</strong> Añadida la opción `'por_definir'` al dropdown de origen. Corregido el paso de la prop `semillaId` como string en lugar de int en `UserSemillaMediaManager`. Añadido el tipado explícito `(prev: any)` en las llamadas a setFormData.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/components/user/IniciarCultivoModal.tsx:</strong> Añadida la opción `'por_definir'` al select de origen. Corregido el tipado y desestructurado `peso1000semillas`. Declarados `semillasorigen` y `semillasdonante` en el `useState` del formulario.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/components/user/UserSemillaMediaManager.tsx:</strong> Reemplazada la referencia no definida `e.target.value` por el vaciado seguro vía `fileInputRef.current`.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Registro exitoso de lotes de semillas sin origen obligatorio, visualización correcta en el listado y coherencia total en las pantallas de edición y cultivo. Eliminados al 100% todos los errores de TypeScript en el compilador del proyecto.</li>
+                </ul>
+              </div>
+            </li>
             <li style={{ marginBottom: '24px' }}>
               <strong>01/06/2026 21:00 – Refactorización Arquitectónica de Pautas IA y Tipos de Laboreo</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>

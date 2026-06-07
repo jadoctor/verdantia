@@ -122,7 +122,7 @@ export default function LogrosAdminPage() {
                 <th style={{ padding: '12px 8px', width: '50px', textAlign: 'center' }}>Nv.</th>
                 <th style={{ padding: '12px', width: '280px' }}>Rango & Privilegios</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Meses de antigüedad">📅 Antig.</th>
-                <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Semillas">🌰 Sem.</th>
+                <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Semillas">🌾 Sem.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Siembras">🪴 Siem.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Recolecciones">🧺 Rec.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Especies">🧬 Esp.</th>

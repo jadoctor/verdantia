@@ -48,7 +48,7 @@ function ActionHandler() {
               const data = await res.json();
               
               if (data.unlockedAchievement) {
-                setStatus("🧑‍🌾 ¡Enhorabuena! Eres Campesino Aprendiz. Redirigiendo...");
+                setStatus("2️⃣🤓 ¡Enhorabuena! Eres Campesino Aprendiz. Redirigiendo...");
                 setTimeout(() => {
                   router.push(`/dashboard/perfil?achievement=${encodeURIComponent(data.unlockedAchievement)}&underage=${data.isUnderageLimitation ? '1' : '0'}`);
                 }, 2000);

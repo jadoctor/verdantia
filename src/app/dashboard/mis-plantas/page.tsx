@@ -718,6 +718,7 @@ export default function MisPlantasPage() {
               : undefined
           }
           tiposiembra={(modalNuevoCultivoPlanta as any).tiposiembra}
+          peso1000semillas={(modalNuevoCultivoPlanta as any).especiespeso1000semillas}
           userEmail={userEmail}
         />
       )}

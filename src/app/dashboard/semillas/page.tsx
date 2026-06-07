@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
+import { SeedWizardModal } from '@/components/SeedWizardModal';
 
 export default function SemillasDashboard() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [semillas, setSemillas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSeedModal, setShowSeedModal] = useState(false);
   
   // Custom Modal State
   const [uiModal, setUiModal] = useState<{ show: boolean, type: 'confirm' | 'error', title: string, message: string, onConfirm?: () => void }>({
@@ -34,7 +36,7 @@ export default function SemillasDashboard() {
       const res = await fetch('/api/user/semillas', { headers: { 'x-user-email': email } });
       if (res.ok) {
         const data = await res.json();
-        setSemillas(data.semillas || []);
+        setSemillas(data.semillas?.filter((s: any) => s.semillasactivosino === 1) || []);
       }
     } catch (e) {
       console.error(e);
@@ -98,12 +100,27 @@ export default function SemillasDashboard() {
 
   return (
     <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
-        <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>🗃️ Banco de Semillas</h1>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '8px' }}>
-            Tu inventario de semillas propias y compradas.
-          </p>
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          🏠 Volver al Inicio
+        </button>
+      </div>
+      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>🌾 Banco de Semillas</h1>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+              Tu inventario personal de semillas propias y compradas
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+            <button 
+              onClick={() => setShowSeedModal(true)}
+              style={{ padding: '8px 16px', borderRadius: '8px', background: 'white', color: '#0f766e', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+            >
+              ➕ Añadir Semilla
+            </button>
+          </div>
         </div>
       </div>
 
@@ -129,16 +146,21 @@ export default function SemillasDashboard() {
               </tr>
             </thead>
             <tbody>
-              {semillas.map((s, i) => (
+              {semillas.map((s, i) => {
+                const isExpired = s.semillasfechacaducidad && new Date(s.semillasfechacaducidad) < new Date();
+                const isOutOfStock = s.semillasstockactual !== null && Number(s.semillasstockactual) <= 0;
+                const needsArchiving = isExpired || isOutOfStock;
+
+                return (
                 <tr 
                   key={s.idsemillas} 
                   style={{ 
                     borderBottom: '1px solid #e2e8f0', 
-                    background: i % 2 === 0 ? 'white' : '#f8fafc',
+                    background: needsArchiving ? '#fef2f2' : (i % 2 === 0 ? 'white' : '#f8fafc'),
                     transition: 'all 0.3s ease'
                   }}
                 >
-                  <td style={{ padding: '12px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '70px', minWidth: '70px', textAlign: 'center', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '12px', position: 'sticky', left: 0, zIndex: 1, background: needsArchiving ? '#fef2f2' : (i % 2 === 0 ? 'white' : '#f8fafc'), width: '70px', minWidth: '70px', textAlign: 'center', verticalAlign: 'middle' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {s.foto ? (
                         <img src={getMediaUrl(s.foto)} alt={s.variedad_nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" loading="lazy" />
@@ -154,11 +176,32 @@ export default function SemillasDashboard() {
                     {s.especiesnombre}
                   </td>
                   <td style={{ padding: '12px', color: '#475569' }}>
-                    {s.variedad_nombre || s.especiesnombre}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span>{s.variedad_nombre || s.especiesnombre}</span>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {needsArchiving && (
+                          <span style={{ fontSize: '0.7rem', color: '#b91c1c', background: '#fee2e2', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                            ⚠️ {isOutOfStock ? 'Sin Stock' : 'Caducada'}
+                          </span>
+                        )}
+                        {s.semillascompartir === 1 && (
+                          <span style={{ fontSize: '0.7rem', color: '#1d4ed8', background: '#dbeafe', padding: '2px 6px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                            🤝 Compartida
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td style={{ padding: '12px' }}>
-                    <span style={{ background: '#dcfce7', color: '#16a34a', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600 }}>
-                      {s.semillasorigen.replace('_', ' ').toUpperCase()}
+                    <span style={{ 
+                      background: s.semillasorigen === 'por_definir' ? '#f1f5f9' : '#dcfce7', 
+                      color: s.semillasorigen === 'por_definir' ? '#475569' : '#16a34a', 
+                      padding: '4px 10px', 
+                      borderRadius: '12px', 
+                      fontSize: '0.8rem', 
+                      fontWeight: 600 
+                    }}>
+                      {s.semillasorigen === 'por_definir' ? 'PENDIENTE DE ASIGNAR' : s.semillasorigen.replace('_', ' ').toUpperCase()}
                     </span>
                   </td>
                   <td style={{ padding: '12px' }}>
@@ -166,11 +209,11 @@ export default function SemillasDashboard() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <span style={{ 
                           fontWeight: 'bold', 
-                          color: (s.semillasstockactual / s.semillasstockinicial) > 0.5 ? '#16a34a' : (s.semillasstockactual / s.semillasstockinicial) > 0.2 ? '#d97706' : '#dc2626'
+                          color: isOutOfStock ? '#b91c1c' : (s.semillasstockactual / s.semillasstockinicial) > 0.5 ? '#16a34a' : (s.semillasstockactual / s.semillasstockinicial) > 0.2 ? '#d97706' : '#dc2626'
                         }}>
-                          {Math.round((s.semillasstockactual / s.semillasstockinicial) * 100)}%
+                          {isOutOfStock ? '0%' : `${Math.round((s.semillasstockactual / s.semillasstockinicial) * 100)}%`}
                         </span>
-                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        <span style={{ fontSize: '0.8rem', color: isOutOfStock ? '#b91c1c' : '#64748b' }}>
                           {s.semillasstockactual} / {s.semillasstockinicial} uds
                         </span>
                       </div>
@@ -179,7 +222,11 @@ export default function SemillasDashboard() {
                     )}
                   </td>
                   <td style={{ padding: '12px', color: '#475569' }}>
-                    {s.semillasfechacaducidad ? new Date(s.semillasfechacaducidad).toLocaleDateString() : '-'}
+                    {s.semillasfechacaducidad ? (
+                      <span style={{ color: isExpired ? '#b91c1c' : 'inherit', fontWeight: isExpired ? 'bold' : 'normal' }}>
+                        {new Date(s.semillasfechacaducidad).toLocaleDateString()}
+                      </span>
+                    ) : '-'}
                   </td>
                   <td style={{ padding: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -199,7 +246,8 @@ export default function SemillasDashboard() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -236,6 +284,14 @@ export default function SemillasDashboard() {
           </div>
         </div>
       )}
+
+      <SeedWizardModal
+        show={showSeedModal}
+        onClose={() => setShowSeedModal(false)}
+        onSuccess={() => {
+          if (userEmail) loadSemillas(userEmail);
+        }}
+      />
     </div>
   );
 }

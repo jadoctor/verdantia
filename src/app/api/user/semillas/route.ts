@@ -21,12 +21,20 @@ export async function GET(request: Request) {
         s.semillasmarca,
         s.semillasfecharecoleccion,
         s.semillasfechaenvasado,
+        s.semillasfechaadquisicion,
+        s.semillasprecio,
         s.semillasfechacaducidad,
         s.semillaslote,
         s.semillasstockinicial,
         s.semillasstockactual,
         s.semillasobservaciones,
+        s.semillasfechacreacion,
         s.semillasactivosino,
+        s.semillascompartir,
+        s.semillasdonante,
+        s.xsemillasidusuariodonante,
+        u.usuariosnombreusuario AS donante_nombreusuario,
+        u.usuariosemail AS donante_email,
         (SELECT COUNT(*) FROM cultivos c WHERE c.xcultivosidsemillas = s.idsemillas AND c.cultivosactivosino = 1) AS cultivos_activos_count,
         (SELECT GROUP_CONCAT(CONCAT('Nº ', COALESCE(c.cultivosnumerocoleccion, c.idcultivos), ' (Iniciado el ', DATE_FORMAT(c.cultivosfechainicio, '%d/%m/%Y'), ' - Estado actual: ', 
           CASE COALESCE(c.cultivosestado, '')
@@ -44,8 +52,10 @@ export async function GET(request: Request) {
         COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS variedad_nombre,
         e.especiesnombre,
         e.especiesicono,
-        -- Foto de la variedad o especie
+        -- Foto del sobre/semilla, luego variedad, luego especie
         COALESCE(
+          (SELECT datosadjuntosruta FROM datosadjuntos 
+           WHERE xdatosadjuntosidsemillas = s.idsemillas AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC, iddatosadjuntos ASC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
            WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
@@ -57,7 +67,8 @@ export async function GET(request: Request) {
       JOIN variedades vu ON s.xsemillasidvariedades = vu.idvariedades
       LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
-      WHERE s.xsemillasidusuarios = ? AND s.semillasactivosino = 1
+      LEFT JOIN usuarios u ON s.xsemillasidusuariodonante = u.idusuarios
+      WHERE s.xsemillasidusuarios = ?
       ORDER BY s.semillasfechacreacion DESC
     `, [user.id]);
 
@@ -90,11 +101,58 @@ export async function POST(request: Request) {
       semillasobservaciones,
       semillasnumerocoleccion,
       semillaslugarcompra,
-      semillasmarca
+      semillasmarca,
+      semillasdonante,
+      semillascompartir
     } = body;
 
     if (!xsemillasidvariedades) {
       return NextResponse.json({ error: 'La variedad es obligatoria' }, { status: 400 });
+    }
+
+    let finalNumero = semillasnumerocoleccion;
+    if (!finalNumero) {
+      const currentYear = new Date().getFullYear();
+      const [rowsNum]: any = await pool.query(`
+        SELECT semillasnumerocoleccion 
+        FROM semillas 
+        WHERE xsemillasidusuarios = ? 
+          AND YEAR(semillasfechacreacion) = ?
+          AND semillasnumerocoleccion IS NOT NULL
+      `, [user.id, currentYear]);
+
+      const numbers = rowsNum
+        .map((r: any) => parseInt(r.semillasnumerocoleccion))
+        .filter((n: number) => !isNaN(n))
+        .sort((a: number, b: number) => a - b);
+
+      let nextNum = 1;
+      for (const num of numbers) {
+        if (num === nextNum) {
+          nextNum++;
+        } else if (num > nextNum) {
+          break;
+        }
+      }
+      finalNumero = nextNum;
+    }
+
+    let finalDonante = semillasdonante || null;
+    let finalUsuarioDonanteId = null;
+
+    if (semillasdonante && semillasdonante.trim() !== '') {
+      const searchTerm = semillasdonante.trim();
+      const searchUsername = searchTerm.replace(/^@/, '');
+      
+      const [userRows]: any = await pool.query(
+        'SELECT idusuarios FROM usuarios WHERE usuariosemail = ? OR usuariosnombreusuario = ? LIMIT 1',
+        [searchTerm, searchUsername]
+      );
+      
+      if (userRows.length > 0) {
+        finalUsuarioDonanteId = userRows[0].idusuarios;
+        finalDonante = null; 
+      }
     }
 
     const [result]: any = await pool.query(
@@ -107,28 +165,113 @@ export async function POST(request: Request) {
         semillasmarca,
         semillasfecharecoleccion, 
         semillasfechaenvasado,
+        semillasfechaadquisicion,
+        semillasprecio,
         semillasfechacaducidad, 
         semillaslote, 
         semillasstockinicial,
         semillasstockactual, 
-        semillasobservaciones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        semillasobservaciones,
+        semillasdonante,
+        xsemillasidusuariodonante,
+        semillascompartir
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.id, 
         xsemillasidvariedades, 
-        semillasnumerocoleccion || null,
+        finalNumero,
         semillasorigen || 'sobre_comprado',
         semillaslugarcompra || null,
         semillasmarca || null,
         semillasfecharecoleccion || null,
         semillasfechaenvasado || null,
+        body.semillasfechaadquisicion || null,
+        body.semillasprecio || null,
         semillasfechacaducidad || null,
         semillaslote || null,
         semillasstockinicial || null,
         semillasstockactual || null,
-        semillasobservaciones || null
+        semillasobservaciones || null,
+        finalDonante,
+        finalUsuarioDonanteId,
+        semillascompartir ? 1 : 0
       ]
     );
+
+    // AUTO-ASIGNAR VARIEDAD Y ESPECIE
+    try {
+      const [varRows]: any = await pool.query(`
+        SELECT 
+          v.idvariedades, 
+          v.xvariedadesidespecies AS especie_id_var,
+          vg.xvariedadesidespecies AS especie_id_gen
+        FROM variedades v
+        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
+        WHERE v.idvariedades = ?
+      `, [xsemillasidvariedades]);
+
+      if (varRows.length > 0) {
+        const variedadInfo = varRows[0];
+        const especieId = variedadInfo.especie_id_gen || variedadInfo.especie_id_var;
+
+        // 1. Asignar Variedad si no la tiene en la tabla cruzada variedadesusuarios
+        const [userVarRows]: any = await pool.query(`
+          SELECT idvariedadesusuarios FROM variedadesusuarios 
+          WHERE Xvariedadesusuariosidusuarios = ? AND xvariedadesusuariosidvariedades = ?
+        `, [user.id, xsemillasidvariedades]);
+
+        if (userVarRows.length === 0) {
+          await pool.query(`
+            INSERT INTO variedadesusuarios (Xvariedadesusuariosidusuarios, xvariedadesusuariosidvariedades)
+            VALUES (?, ?)
+          `, [user.id, xsemillasidvariedades]);
+        }
+
+        // 2. Adquirir la variedad en la tabla 'variedades' (como planta propia del usuario para que aparezca en "Mis Plantas") si no la tiene ya
+        if (especieId) {
+          const [userOwnedVarCheck]: any = await pool.query(`
+            SELECT idvariedades FROM variedades 
+            WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?
+          `, [user.id, xsemillasidvariedades]);
+
+          if (userOwnedVarCheck.length === 0) {
+            await pool.query(`
+              INSERT INTO variedades (
+                xvariedadesidespecies, 
+                xvariedadesidusuarios, 
+                xvariedadesidvariedadorigen, 
+                variedadesesgenerica
+              ) VALUES (?, ?, ?, 0)
+            `, [especieId, user.id, xsemillasidvariedades]);
+          }
+        }
+
+        // 3. Asignar Especie si no la tiene en especiesusuarios
+        if (especieId) {
+          const [userEspRows]: any = await pool.query(`
+            SELECT idespeciesusuarios FROM especiesusuarios 
+            WHERE xespeciesusuariosidusuarios = ? AND xespeciesusuariosidespecies = ?
+          `, [user.id, especieId]);
+
+          if (userEspRows.length === 0) {
+            const [espInfo]: any = await pool.query(`SELECT especiesnombre FROM especies WHERE idespecies = ?`, [especieId]);
+            const nombreEspecie = espInfo.length > 0 ? espInfo[0].especiesnombre : '';
+
+            await pool.query(`
+              INSERT INTO especiesusuarios (
+                xespeciesusuariosidusuarios, 
+                xespeciesusuariosidespecies, 
+                especiesusuariosnombre,
+                especiesusuariosactivosino
+              ) VALUES (?, ?, ?, 1)
+            `, [user.id, especieId, nombreEspecie]);
+          }
+        }
+      }
+    } catch (autoAssignErr) {
+      console.error('Error auto-asignando variedad/especie:', autoAssignErr);
+      // No bloqueamos la creación de la semilla si falla la auto-asignación
+    }
 
     return NextResponse.json({ 
       success: true, 

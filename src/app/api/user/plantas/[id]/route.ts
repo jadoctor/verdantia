@@ -22,6 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         e.idespecies,
         e.especiesnombre,
         e.especiesicono,
+        COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiespeso1000semillas) AS especiespeso1000semillas,
         vg.variedadesnombre AS nombre_gold,
         vg.variedadesesgenerica AS es_generica,
 

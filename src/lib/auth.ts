@@ -19,6 +19,8 @@ export interface UserProfile {
   fotoPreferida: string | null;
   fotoPreferidaMeta?: string | null;
   iconoLogro: string | null;
+  nombreLogro?: string | null;
+  nivelLogro?: number | null;
   sexo: string | null;
   domicilio: string | null;
   telefono: string | null;
@@ -128,7 +130,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
 
     // Obtener el icono del último logro
     const [logroRows] = await pool.query(
-      `SELECT l.logrosnombre as nombre_logro 
+      `SELECT l.logrosnombre as nombre_logro, l.logrosicono, l.logrosnivel 
        FROM usuarioslogros u
        JOIN logros l ON u.xusuarioslogrosidlogros = l.idlogros
        WHERE u.xusuarioslogrosidusuarios = ?
@@ -136,10 +138,14 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       [user.idusuarios]
     );
     let iconoLogro = null;
+    let nombreLogro = null;
+    let nivelLogro = null;
     if ((logroRows as any[]).length > 0) {
-      const nombreLogro = (logroRows as any[])[0].nombre_logro;
-      // Extraemos el emoji si lo tiene en el nombre, si no ponemos 🏆
-      iconoLogro = nombreLogro ? nombreLogro.match(/[\p{Emoji}]/u)?.[0] || '🏆' : null;
+      nombreLogro = (logroRows as any[])[0].nombre_logro;
+      nivelLogro = (logroRows as any[])[0].logrosnivel;
+      const dbIcon = (logroRows as any[])[0].logrosicono;
+      // Usamos el icono de la base de datos o extraemos el emoji si lo tiene en el nombre, si no ponemos 🏆
+      iconoLogro = dbIcon ? dbIcon : (nombreLogro ? nombreLogro.match(/[\p{Emoji}]/u)?.[0] || '🏆' : null);
     }
 
     // Obtener cantidad de passkeys (biometría) registrados
@@ -185,6 +191,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       fotoPreferida: fotoPreferida,
       fotoPreferidaMeta: fotoPreferidaMeta,
       iconoLogro: iconoLogro,
+      nombreLogro: nombreLogro,
       zonaClimatica: user.usuarioszonaclimatica || null,
       tipoCalendario: user.usuariostipocalendario || 'Normal',
       tipoLaboreo: user.usuariostipolaboreo || 'Convencional',

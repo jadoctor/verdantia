@@ -53,9 +53,11 @@ export async function PUT(
   try {
     const body = await request.json();
     const {
+      xsemillasidvariedades,
       semillasnumerocoleccion, semillasorigen, semillaslugarcompra, semillasmarca,
-      semillasfecharecoleccion, semillasfechaenvasado, semillasfechacaducidad,
-      semillaslote, semillasstockinicial, semillasstockactual, semillasobservaciones
+      semillasfecharecoleccion, semillasfechaenvasado, semillasfechaadquisicion, semillasprecio, semillasfechacaducidad,
+      semillaslote, semillasstockinicial, semillasstockactual, semillasobservaciones,
+      semillasdonante, semillascompartir
     } = body;
 
     // Verificar que la semilla pertenezca al usuario
@@ -68,32 +70,72 @@ export async function PUT(
       return NextResponse.json({ error: 'Semilla no encontrada o no autorizada' }, { status: 404 });
     }
 
+    let finalDonante = null;
+    let finalUsuarioDonanteId = null;
+
+    if (semillasdonante && semillasdonante.trim() !== '') {
+      const searchTerm = semillasdonante.trim();
+      const searchUsername = searchTerm.replace(/^@/, '');
+      
+      const [userRows]: any = await pool.query(
+        'SELECT idusuarios FROM usuarios WHERE usuariosemail = ? OR usuariosnombreusuario = ? LIMIT 1',
+        [searchTerm, searchUsername]
+      );
+      
+      if (userRows.length > 0) {
+        finalUsuarioDonanteId = userRows[0].idusuarios;
+      } else {
+        finalDonante = searchTerm;
+      }
+    }
+
+    let finalCompartir = body.semillascompartir !== undefined ? (body.semillascompartir ? 1 : 0) : null;
+    const isExpired = semillasfechacaducidad && new Date(semillasfechacaducidad) < new Date();
+    const isOutOfStock = semillasstockactual !== null && semillasstockactual !== '' && Number(semillasstockactual) <= 0;
+    if (isExpired || isOutOfStock) {
+      finalCompartir = 0;
+    }
+
     await pool.query(
       `UPDATE semillas SET 
+        xsemillasidvariedades = COALESCE(?, xsemillasidvariedades),
         semillasnumerocoleccion = ?,
         semillasorigen = ?,
         semillaslugarcompra = ?,
         semillasmarca = ?,
         semillasfecharecoleccion = ?,
         semillasfechaenvasado = ?,
+        semillasfechaadquisicion = ?,
+        semillasprecio = ?,
         semillasfechacaducidad = ?,
         semillaslote = ?,
         semillasstockinicial = ?,
         semillasstockactual = ?,
-        semillasobservaciones = ?
+        semillasobservaciones = ?,
+        semillasdonante = ?,
+        xsemillasidusuariodonante = ?,
+        semillasactivosino = COALESCE(?, semillasactivosino),
+        semillascompartir = COALESCE(?, semillascompartir)
        WHERE idsemillas = ? AND xsemillasidusuarios = ?`,
       [
+        xsemillasidvariedades || null,
         semillasnumerocoleccion || null,
-        semillasorigen || null,
+        semillasorigen || 'cosecha_propia',
         semillaslugarcompra || null,
         semillasmarca || null,
         semillasfecharecoleccion || null,
         semillasfechaenvasado || null,
+        semillasfechaadquisicion || null,
+        semillasprecio || null,
         semillasfechacaducidad || null,
         semillaslote || null,
-        semillasstockinicial || 0,
-        semillasstockactual || 0,
+        semillasstockinicial || null,
+        semillasstockactual || null,
         semillasobservaciones || null,
+        finalDonante,
+        finalUsuarioDonanteId,
+        body.semillasactivosino !== undefined ? body.semillasactivosino : null,
+        finalCompartir,
         semillaId,
         user.id
       ]

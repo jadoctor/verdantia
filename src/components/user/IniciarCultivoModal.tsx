@@ -113,7 +113,8 @@ export default function IniciarCultivoModal({
   userEmail,
   calendarioSolar,
   viabilidadSemilla,
-  tiposiembra
+  tiposiembra,
+  peso1000semillas
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -123,6 +124,7 @@ export default function IniciarCultivoModal({
   calendarioSolar?: any;
   viabilidadSemilla?: number;
   tiposiembra?: string;
+  peso1000semillas?: number | string;
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -138,9 +140,13 @@ export default function IniciarCultivoModal({
     ubicacion: '',
     numerocoleccion: '',
     // Detalles sobre semilla comprada
+    semillasorigen: '',
+    semillasdonante: '',
     semillaslugarcompra: '',
     semillasmarca: '',
     semillasfechaenvasado: '',
+    semillasfechaadquisicion: '',
+    semillasprecio: '',
     semillasfechacaducidad: '',
     semillascantidad: '',
     fechaInicio: new Date().toISOString().split('T')[0],
@@ -379,10 +385,13 @@ END:VCALENDAR`;
       if (finalData.origen === 'semilla_nueva') {
         const seedBody: any = {
           xsemillasidvariedades: plantaId,
-          semillasorigen: 'sobre_comprado',
+          semillasorigen: finalData.semillasorigen || 'sobre_comprado',
+          semillasdonante: finalData.semillasdonante || null,
           semillaslugarcompra: finalData.semillaslugarcompra,
           semillasmarca: finalData.semillasmarca,
           semillasfechaenvasado: finalData.semillasfechaenvasado,
+          semillasfechaadquisicion: finalData.semillasfechaadquisicion,
+          semillasprecio: finalData.semillasprecio,
           semillasfechacaducidad: finalData.semillasfechacaducidad,
           semillasstock: 'medio'
         };
@@ -829,9 +838,41 @@ END:VCALENDAR`;
                     <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeIn 0.3s ease' }}>
                       <h4 style={{ margin: '0 0 4px', color: '#475569', fontSize: '0.95rem' }}>Datos del Sobre (Opcional)</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Origen de la semilla</label>
+                          <select 
+                            value={formData.semillasorigen || 'sobre_comprado'} 
+                            onChange={e => handleNext({ semillasorigen: e.target.value })}
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white' }}
+                          >
+                            <option value="sobre_comprado">Sobre comprado</option>
+                            <option value="intercambio">Intercambio</option>
+                            <option value="cosecha_propia">Recolección propia</option>
+                            <option value="por_definir">Pendiente de asignar</option>
+                          </select>
+                        </div>
+
+                        {formData.semillasorigen === 'intercambio' && (
+                          <div style={{ gridColumn: '1 / -1', background: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#166534', marginBottom: '4px', fontWeight: 'bold' }}>
+                              Donante (Nombre, @usuario o Email)
+                            </label>
+                            <input 
+                              type="text" 
+                              placeholder="Ej. @juan_perez o mario@email.com" 
+                              value={formData.semillasdonante || ''} 
+                              onChange={e => handleNext({ semillasdonante: e.target.value })} 
+                              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #86efac' }} 
+                            />
+                            <div style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '4px' }}>
+                              Si es un usuario de Verdantia y coinciden los datos, se enlazará automáticamente.
+                            </div>
+                          </div>
+                        )}
+
                         <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Marca / Nombre Comercial</label>
-                          <input list="marcas" type="text" placeholder="Ej. Fito, Batlle..." value={formData.semillasmarca} onChange={e => handleNext({ semillasmarca: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                          <input list="marcas" type="text" placeholder="Ej. Fito, Batlle..." value={formData.semillasmarca || ''} onChange={e => handleNext({ semillasmarca: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
                           <datalist id="marcas">
                             <option value="Semillas Fitó" />
                             <option value="Semillas Batlle" />
@@ -883,6 +924,27 @@ END:VCALENDAR`;
                           />
                         </div>
                         <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Fecha Adquisición</label>
+                          <input 
+                            type="date" 
+                            value={formData.semillasfechaadquisicion} 
+                            onChange={e => handleNext({ semillasfechaadquisicion: e.target.value })} 
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Precio (€)</label>
+                          <input 
+                            type="number" 
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={formData.semillasprecio} 
+                            onChange={e => handleNext({ semillasprecio: e.target.value })} 
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
+                          />
+                        </div>
+                        <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Caducidad (Preferente)</label>
                           <input type="month" value={formData.semillasfechacaducidad ? formData.semillasfechacaducidad.substring(0, 7) : ''} onChange={e => handleNext({ semillasfechacaducidad: e.target.value ? e.target.value + '-01' : '' })} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
                         </div>
@@ -912,16 +974,39 @@ END:VCALENDAR`;
                                 #{nextNumero || '...'}
                               </strong>
                             </p>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Cantidad aprox. de semillas a guardar</label>
-                              <input 
-                                type="number" 
-                                min="1"
-                                placeholder="Ej. 50"
-                                value={formData.semillascantidad} 
-                                onChange={e => handleNext({ semillascantidad: e.target.value })} 
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
-                              />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Calculadora (Gramos)</label>
+                                <input 
+                                  type="number" 
+                                  step="0.01"
+                                  min="0"
+                                  placeholder={peso1000semillas ? `1g ≈ ${Math.round(1000 / parseFloat(peso1000semillas.toString()))} uds` : "Ej. 1.5"}
+                                  onChange={e => {
+                                    const gramos = parseFloat(e.target.value);
+                                    if (gramos > 0) {
+                                      if (peso1000semillas) {
+                                        const uds = Math.round((gramos / parseFloat(peso1000semillas.toString())) * 1000);
+                                        handleNext({ semillascantidad: uds.toString() });
+                                      } else {
+                                        alert('No hay datos de peso para esta especie. Introduce las unidades a mano.');
+                                      }
+                                    }
+                                  }} 
+                                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Cantidad de semillas a guardar (Uds)</label>
+                                <input 
+                                  type="number" 
+                                  min="1"
+                                  placeholder="Ej. 50"
+                                  value={formData.semillascantidad} 
+                                  onChange={e => handleNext({ semillascantidad: e.target.value })} 
+                                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
+                                />
+                              </div>
                             </div>
                           </div>
                         )}

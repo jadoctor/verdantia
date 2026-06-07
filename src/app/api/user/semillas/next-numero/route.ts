@@ -10,14 +10,28 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
   try {
+    const currentYear = new Date().getFullYear();
     const [rows]: any = await pool.query(`
-      SELECT MAX(CAST(semillasnumerocoleccion AS UNSIGNED)) as maxNum 
+      SELECT semillasnumerocoleccion 
       FROM semillas 
-      WHERE xsemillasidusuarios = ? AND semillasactivosino = 1
-    `, [user.id]);
+      WHERE xsemillasidusuarios = ? 
+        AND YEAR(semillasfechacreacion) = ?
+        AND semillasnumerocoleccion IS NOT NULL
+    `, [user.id, currentYear]);
 
-    const maxNum = rows[0]?.maxNum || 0;
-    const nextNum = maxNum + 1;
+    const numbers = rows
+      .map((r: any) => parseInt(r.semillasnumerocoleccion))
+      .filter((n: number) => !isNaN(n))
+      .sort((a: number, b: number) => a - b);
+
+    let nextNum = 1;
+    for (const num of numbers) {
+      if (num === nextNum) {
+        nextNum++;
+      } else if (num > nextNum) {
+        break;
+      }
+    }
 
     return NextResponse.json({ nextNumero: nextNum });
   } catch (e: any) {

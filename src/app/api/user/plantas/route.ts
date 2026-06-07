@@ -23,6 +23,7 @@ export async function GET(request: Request) {
         COALESCE(vu.variedadesdificultad, vg.variedadesdificultad, e.especiesdificultad) AS dificultad,
         e.especiesnombre,
         e.especiesicono,
+        COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiespeso1000semillas) AS especiespeso1000semillas,
         vg.variedadesnombre AS nombre_gold,
         vg.variedadesesgenerica AS es_generica,
         -- Foto: primero la del usuario, luego la de la variedad gold, luego la de la especie

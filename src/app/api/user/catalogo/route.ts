@@ -43,7 +43,18 @@ export async function GET(request: Request) {
 
     especiesQuery += ` ORDER BY e.especiesnombre`;
 
-    const [especies] = await pool.query(especiesQuery, params);
+    const [especies]: any = await pool.query(especiesQuery, params);
+
+    const [variedades]: any = await pool.query(`
+      SELECT idvariedades, xvariedadesidespecies, variedadesnombre, variedadesesgenerica, variedadespeso1000semillas
+      FROM variedades
+      WHERE xvariedadesidusuarios IS NULL OR xvariedadesidusuarios = ?
+      ORDER BY variedadesesgenerica DESC, variedadesnombre ASC
+    `, [user.id]);
+
+    for (const esp of especies) {
+      esp.variedades = variedades.filter((v: any) => v.xvariedadesidespecies === esp.idespecies);
+    }
 
     return NextResponse.json({ especies });
   } catch (error: any) {

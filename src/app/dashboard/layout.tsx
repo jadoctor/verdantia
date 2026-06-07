@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import ConflictosDashboard from '@/components/user/ConflictosDashboard';
+import RangoBadge from '@/components/ui/RangoBadge';
 
 interface UserProfile {
   id: number;
@@ -26,6 +27,8 @@ interface UserProfile {
   tipoCalendario?: string;
   fotosRechazadasCount?: number;
   suscripcion?: string;
+  nombreLogro?: string | null;
+  nivelLogro?: number | null;
 }
 
 // Función sencilla para calcular la fase lunar aproximada
@@ -650,7 +653,7 @@ export default function DashboardLayout({
                 </a>
                 <a href="/dashboard/semillas" className={`nav-item ${isActive('/dashboard/semillas')}`} onClick={handleNavClick}>
                   <span className="nav-icon">🌾</span>
-                  <span>Semillas (Inventario)</span>
+                  <span>Mis Semillas</span>
                 </a>
                 <a href="/dashboard/siembras" className={`nav-item ${isActive('/dashboard/siembras')}`} onClick={handleNavClick}>
                   <span className="nav-icon">🌿</span>
@@ -735,8 +738,8 @@ export default function DashboardLayout({
               {isSuperAdmin && <span className="role-badge superadmin">SUPERADMIN</span>}
               {!isSuperAdmin && isAdmin && <span className="role-badge admin">ADMIN</span>}
               <span className="profile-achievement">
-                <span>{profile?.roles?.includes('visitante') ? '🧳' : (profile?.iconoLogro || '🧑‍🌾')}</span>
-                <span>{profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz'} · ⭐ {profile?.suscripcion || 'Básica'}</span>
+                <RangoBadge icono={profile?.iconoLogro || '1️⃣👶'} nivel={profile?.nivelLogro} size={18} style={{ marginRight: '6px' }} />
+                <span>{profile?.nombreLogro || 'Visitante'} · ⭐ {profile?.suscripcion || 'Básica'}</span>
               </span>
               <span className="profile-edit-hint">✏️ Editar perfil</span>
             </div>
