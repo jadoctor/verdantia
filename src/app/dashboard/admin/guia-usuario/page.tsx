@@ -22,7 +22,7 @@ export default function GuiaUsuarioPage() {
 
   const isOpen = (key: string) => !!openSections[key];
 
-  const allKeys = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10'];
+  const allKeys = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12'];
   const allOpen = allKeys.every(k => openSections[k]);
   const toggleAll = () => {
     if (allOpen) {
@@ -185,21 +185,28 @@ export default function GuiaUsuarioPage() {
           </li>
           <li style={{ marginBottom: '8px' }}><strong>Fotos Accesorias (Miniaturas):</strong>
             <ul>
+              <li><strong>Disposición Vertical (Columna):</strong> Las miniaturas se apilan <strong>verticalmente</strong> junto al Hero usando <code>flexDirection: 'column'</code> con <code>gap: '5px'</code> y <code>padding: '0 12px'</code>. No se permite disposición horizontal en fila. Máximo 3 miniaturas visibles (<code>slice(1, 4)</code>).</li>
               <li><strong>Dimensiones Exactas:</strong> Formato vertical estricto de <code>52px ancho x 70px alto</code> (permite apilar 3 miniaturas encajando perfectamente en los 220px del Hero).</li>
               <li><strong>Encuadre Protegido:</strong> Las miniaturas <strong>NO deben heredar el zoom (scale) ni el transformOrigin</strong> de la foto Hero. Deben usar siempre <code>objectFit: 'cover'</code> y <code>objectPosition: 'center center'</code> para evitar que los encuadres muy cerrados corten la cara en tamaños pequeños.</li>
+              <li><strong>Hover Interactivo:</strong> Al pasar el cursor, la miniatura escala a <code>scale(1.05)</code> y cambia su borde a morado (<code>#7c3aed</code>), indicando que es clicable para establecerla como portada principal.</li>
+              <li><strong>Sin Texto Explicativo:</strong> No se incluye texto tipo "Haz clic para cambiar" debajo de las miniaturas, ya que descentra visualmente la columna respecto al Hero. La interactividad se comunica exclusivamente mediante el efecto hover.</li>
             </ul>
           </li>
+          <li style={{ marginBottom: '8px' }}><strong>Sincronización (onMediaChange):</strong> El Hero Carousel consume el estado <code>photos</code> del componente padre (<code>VariedadForm</code>, <code>EspecieForm</code>). Cuando el componente hijo <code>VariedadMediaManager</code> realiza cualquier operación sobre las fotos (subida, eliminación, cambio de principal), debe invocar el callback <code>onMediaChange</code> para que el padre recargue sus fotos y el Hero se actualice automáticamente sin necesidad de recargar la página.</li>
           <li><strong>Estado Vacío (Empty State):</strong> Si no hay fotos, no se muestra el carrusel; se muestra el Grid tipo "Pinterest" (fondo rosa claro/vibrante, fotos de stock) de especies globales.</li>
         </ul>
 
-        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.2. La Galería y Editor (Pestaña "Adjuntos")</h3>
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.2. La Galería y Editor (Pestañas "📷 Fotos" y "📄 PDFs")</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Toda gestión fotográfica pesada se oculta tras una pestaña designada, rigiéndose por reglas de suscripción y paridad visual total.
+          Toda gestión fotográfica y documental se divide en <strong>dos pestañas independientes</strong> dentro de la Ficha Técnica. Queda prohibido agruparlas bajo una única pestaña "Adjuntos". El componente reutilizable <code>VariedadMediaManager</code> acepta un prop <code>section</code> (<code>'photos'</code> | <code>'pdfs'</code> | <code>'all'</code>) para renderizar solo la sección correspondiente:
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Pestaña "📷 Fotos" (<code>section="photos"</code>):</strong> Contiene exclusivamente la galería de fotos con drag-and-drop, el generador de imágenes IA, los botones de acción (★, ✏️, ✕) y la zona de subida (Dropzone). Debe mostrar el contador de fotos permitidas por plan.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pestaña "📄 PDFs" (<code>section="pdfs"</code>):</strong> Contiene exclusivamente la gestión de documentos PDF con portadas, el buscador de PDFs con IA, la subida manual por Dropzone, y los blogs generados a partir de cada PDF.</li>
           <li style={{ marginBottom: '8px' }}><strong>Límites por Plan (Validación Backend y UI):</strong> La zona de subida se bloquea dinámicamente según el plan (Básica=1, Avanzada=2, Profesional=3, Premium=4). Debe mostrar un contador visible (ej. <code>2 / 4 permitidas</code>) que pasa a rojo al llegar al límite.</li>
           <li style={{ marginBottom: '8px' }}><strong>Overlay de Penalización (Lock Overlay):</strong> Si un usuario tiene más fotos de las que su plan actual permite (por haber bajado de plan), las fotos sobrantes muestran un overlay semitransparente con un icono 🔒 "Excede límite". Estas fotos pierden el atributo <code>draggable</code> y esconden los botones de Editar y Favorito. Solo conservan el botón ✕ de borrado.</li>
           <li style={{ marginBottom: '8px' }}><strong>Botones de Acción (Iconografía Estándar):</strong> Estrella (★/☆ para portada), Lápiz (✏️ para editor) y Aspa (✕ para eliminar).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pre-carga en Segundo Plano (Evitar Retrasos):</strong> Para evitar que al entrar en la pestaña las fotos se muestren vacías durante un segundo antes de renderizarse (lo cual resulta poco visual), el componente gestor de archivos/imágenes (<code>VariedadMediaManager</code>) debe estar **siempre montado en el DOM** si el registro ya existe (con <code>variedadId</code> válido). El intercambio entre las pestañas de Fotos y PDFs debe realizarse controlando su visibilidad mediante CSS (<code>display: activeTab === 'fotos' ? 'grid' : 'none'</code>) en lugar de desmontar/renderizar condicionalmente con React. Si el registro es nuevo, se muestra un texto informativo indicando que se debe guardar el registro primero.</li>
           <li><strong>El Único Editor Visual Válido:</strong> Cualquier sección que permita re-encuadrar fotos debe usar la arquitectura estandarizada descrita a continuación.</li>
         </ul>
 
@@ -285,6 +292,7 @@ export default function GuiaUsuarioPage() {
             2. <code>🌍 Volver a [Nombre de la Sección Global]</code> (ej. Volver a Especies Globales).
           </li>
           <li style={{ marginBottom: '8px' }}><strong>Eliminación de Redundancias:</strong> Queda estrictamente prohibido colocar botones de "Volver" al final de los formularios o debajo de los carruseles de fotos. Tampoco se utilizarán breadcrumbs dinámicos en el header superior global para evitar recargar la interfaz.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Botones en Pestañas:</strong> Si una pestaña del formulario o panel secundario tiene botones de acción asociados (ej. <code>✨ Asistente IA</code>, <code>➕ Nueva Variedad</code>, etc.), estos se colocarán <strong>alineados a la izquierda</strong> (usando <code>justifyContent: 'flex-start'</code>) para mantener una coherencia de lectura visual inmediata desde la izquierda.</li>
         </ul>
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>5.3. Patrón de Subheader Integrado</h3>
@@ -312,6 +320,7 @@ export default function GuiaUsuarioPage() {
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px', marginBottom: '16px' }}>
           <li style={{ marginBottom: '8px' }}><strong>Para Listados y Muestra de Datos:</strong> La ruta <code>/dashboard/admin/especies</code> es el estándar. Define cómo se deben estructurar las tablas, los filtros de búsqueda, el subheader de contexto global y la paginación.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Ancho Completo de Pantalla:</strong> Todos los listados, cuadrículas y dashboards de visualización de datos de usuario u organización deben configurarse para ocupar el <code>100%</code> del ancho de la pantalla (usando <code>width: '100%'</code> sin restricciones limitantes de <code>maxWidth</code> ni centrado artificial), adaptándose plenamente al área del layout global.</li>
           <li><strong>Para Edición e Inserción:</strong> La ruta <code>/dashboard/admin/especies/[id]</code> (por ejemplo <code>/dashboard/admin/especies/23</code> gestionado por <code>EspecieForm.tsx</code>) es el estándar definitivo de formularios.</li>
         </ul>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
@@ -322,7 +331,20 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>Cuadrículas de Edición en Línea (Inline Editable Grids):</strong> Las listas de elementos relacionados no utilizan modales adicionales ni páginas externas para su edición. Se rigen por un formato de "cuadrícula compacta" donde cada celda o fila tiene inputs directos y selectores visibles, incorporando auto-guardado automático (<i>onBlur</i> o <i>onChange</i>) al perder el foco o modificar la opción.</li>
           <li style={{ marginBottom: '8px' }}><strong>Botones Escondidos (Smart Actions):</strong> Cualquier botón de acción global (Guardar Cambios) debe permanecer oculto hasta que se detecten modificaciones no persistidas (<code>isDirty === true</code>), previniendo saturación visual y peticiones API vacías.</li>
           <li style={{ marginBottom: '8px' }}><strong>El Editor de Fotos Estándar:</strong> Todos los modales de edición de fotografía en el proyecto (Especies, Labores, etc.) deben seguir estrictamente el patrón de Especies. Esto incluye: soporte drag-to-pan, controles de Zoom, Brillo, Contraste, Estilos IA (Filtros), un campo de Texto Alternativo SEO (Alt Tag) guardado en el JSON de resumen, y botones de Auto-Mejora y Reset.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Pestaña de Adjuntos Segmentada:</strong> La pestaña de "Documentos Adjuntos" debe segmentarse siempre en dos secciones distintas: una galería drag-and-drop para <strong>Fotos</strong> con soporte de Generador IA, y una sección inferior separada para <strong>Documentos Adicionales (PDF)</strong>.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pestañas Separadas de Fotos y PDFs:</strong> Queda <strong>prohibido</strong> agrupar fotos y PDFs bajo una única pestaña "Adjuntos". Deben existir siempre como <strong>dos pestañas independientes</strong>: <code>📷 Fotos</code> y <code>📄 PDFs</code>. Ambas pestañas instancian el componente reutilizable <code>VariedadMediaManager</code> con el prop <code>section</code> correspondiente (<code>"photos"</code> o <code>"pdfs"</code>), y ambas deben pasar el callback <code>onMediaChange</code> para sincronizar el Hero Carousel del formulario padre cuando se suban, eliminen o reordenen fotos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pre-carga en Segundo Plano para Todas las Pestañas (UX Fluido):</strong> Para evitar pantallas en blanco, spinners de carga tardíos o saltos visuales al alternar entre pestañas en los editores de administración, <strong>está estrictamente prohibido desmontar condicionalmente los componentes de las pestañas utilizando operadores lógicos en React</strong> (ej. <code>{'{'}activeTab === 'x' &amp;&amp; &lt;Componente /&gt;{'}'}</code>). En su lugar, todos los paneles de pestañas se deben mantener montados en el DOM permanentemente, controlando su visibilidad de forma inmediata mediante propiedades CSS de ocultación (ej. <code>style={'{'}{'{'} display: activeTab === 'x' ? 'grid' : 'none' {'}'}{'}'}</code> o <code>'block'</code>). Esto permite pre-cargar los datos del servidor en segundo plano al montar la página, logrando transiciones instantáneas y una fluidez óptima para el usuario.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>5.5. Filtros de Formulario</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Para evitar el parpadeo de pantalla blanca ("flickering") y el descolocamiento del layout (layout shifts) al filtrar listas o cambiar filtros de visualización, se establece la siguiente norma obligatoria para todos los componentes de listado:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>No desmontar la tabla:</strong> Queda estrictamente prohibido desmontar u ocultar la tabla o cuadrícula de datos mientras el estado <code>loading</code> esté activo durante una recarga de filtros (ej. <code>loading ? &lt;Spinner /&gt; : &lt;Tabla /&gt;</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Contenedor con Posicionamiento Relativo:</strong> El elemento contenedor de la lista debe usar <code>position: 'relative'</code> y un <code>minHeight</code> mínimo para mantener el espacio físico en la interfaz.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Superposición de Carga Semitransparente (Overlay):</strong> Cuando el estado <code>loading</code> sea verdadero, se debe renderizar un overlay absoluto (<code>position: 'absolute', inset: 0</code>) con fondo semitransparente (ej. <code>rgba(255, 255, 255, 0.65)</code>) y efecto <code>backdropFilter: 'blur(1px)'</code>.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Spinner de Carga Centrado:</strong> Dentro del overlay, se mostrará un spinner giratorio circular animado mediante CSS Keyframes (<code>@keyframes spin-loader</code>) y un texto descriptivo, centrados vertical y horizontalmente.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Degradación de Opacidad:</strong> La tabla o cuadrícula que está debajo del overlay debe reducir su opacidad (ej. <code>opacity: 0.6</code>) y aplicar una transición suave (<code>transition: 'opacity 0.2s ease'</code>) para dar una señal clara de actualización en curso.</li>
         </ul>
       </Section>
 
@@ -371,6 +393,58 @@ export default function GuiaUsuarioPage() {
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>6.2. Despliegues</h3>
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>08/06/2026 18:58 – Copia de seguridad en GitHub</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/especies/[id]/usuarios-vinculados/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/ai/proponer-variedades/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/ai/variedad-assistant/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/components/PlantWizardModal.tsx</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/especies/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/especies/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/variedades/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/variedades/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/ai/generate-image/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/catalogo/[especieId]/variedades/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/catalogo/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/plantas/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/plantas/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/semillas/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/especies/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/mis-plantas/[id]/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/mis-plantas/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/semillas/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/SeedWizardModal.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/EspecieForm.css</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/EspecieVariedadesTab.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/SharedMediaUploader.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadForm.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadMediaManager.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadesList.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/user/IniciarCultivoModal.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
             <li style={{ marginBottom: '24px' }}>
               <strong>08/06/2026 10:02 – Acciones de Inactivación y Eliminación de Variedades y Semillas en Hortalizas</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
@@ -1925,6 +1999,129 @@ export default function GuiaUsuarioPage() {
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
           Para consultar si un cultivo ha terminado su ciclo, se debe utilizar siempre la bandera booleana <code>fasescultivoesfin</code> asociada a la fase actual.
         </p>
+      </Section>
+
+      <Section id="s11" title="11. Estándar de Integración del Asistente IA (Llamada, Configuración y Revisión)">
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          Para garantizar la consistencia en el desarrollo y uso de la Inteligencia Artificial dentro del panel administrativo de Verdantia, se define este estándar UX/UI obligatorio de tres fases para cualquier módulo de enriquecimiento asistido por IA (Especies, Variedades, Plagas, etc.).
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>11.1. Botón Comando de Llamada (Trigger)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          La entrada de cualquier asistente IA se realiza mediante un botón unificado en el formulario o sección correspondiente.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Estilo Fijo:</strong> Utiliza la clase CSS <code>.btn-ai</code>, que aplica un degradado de morados (<code>linear-gradient(135deg, #8b5cf6, #6d28d9)</code>) con un efecto de sombra morada suave (<code>box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3)</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Texto e Icono:</strong> Debe ser descriptivo e ir precedido por estrellas: <code>✨ Asistente IA</code> o <code>✨ Asistente IA de Variedades</code>.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Estado de Carga:</strong> Durante el proceso de llamada o si la IA está activa, el botón debe deshabilitarse mostrando un spinner o texto adaptativo (ej. <code>⏳ Pensando...</code>).</li>
+          <li style={{ marginBottom: '8px' }}><strong>Ubicación Estratégica:</strong> Se coloca en la parte superior izquierda de la sección o del bloque de la Ficha Técnica, de forma visible y de fácil acceso, pero sin interrumpir los inputs de datos del formulario principal.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>11.2. Ventana Intermedia de Configuración (Setup)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Al hacer clic en el botón de llamada, <strong>NUNCA</strong> se llama directamente a la API. Debe abrirse un modal de configuración intermedia para dar transparencia al usuario y permitirle afinar la búsqueda.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Estructura del Modal:</strong> Ancho máximo recomendado de 700px. El encabezado (<code>ai-modal-header</code>) cuenta con un fondo degradado púrpura y dispone a la derecha de los controles inmediatos de ejecución y cierre: un botón <code>🚀 Buscar</code> (o spinner de carga) y un botón de aspa <code>✖</code> para cancelar y cerrar.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Bloque de Contexto (Objetivo):</strong> Tarjeta superior gris claro detallando el objetivo de la búsqueda agronómica, el nombre de la especie/variedad actual y su taxonomía básica asociada.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Prompt Técnico Colapsable:</strong> Un acordeón cerrado por defecto que muestra en un cuadro de estilo terminal oscuro (<code>background: #1e293b</code>) el prompt base que se enviará al backend, asegurando la trazabilidad del comportamiento del sistema.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Instrucciones Específicas del Usuario:</strong> Un área de texto (<code>textarea</code>) con instrucciones por defecto que el usuario puede libremente modificar o ampliar para añadir pautas específicas a la IA (ej. "enfócate en cultivos hidropónicos" o "sugiere solo plagas de clima mediterráneo").</li>
+          <li style={{ marginBottom: '8px' }}><strong>Resumen de Campos a Analizar:</strong> Tarjeta verde informativa (<code>#f0fdf4</code>) al final del modal que lista explícitamente qué propiedades o grupos se van a enriquecer con los resultados obtenidos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Contador de Segundos (Loading State):</strong> Durante la petición a la IA, la ventana intermedia muestra un contador cronométrico en segundos (ej. <code>⏳ 12s</code>) sobre el botón de ejecución para dar feedback del tiempo transcurrido al usuario y prevenir clics duplicados.</li>
+        </ul>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>11.3. Modal de Muestra y Aceptación de Datos (Review Checklist)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Una vez la IA devuelve los datos estructurados, se cierra la configuración y se abre automáticamente el modal de comparación y checklist de revisión.
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}><strong>Acciones Globales Exclusivas en la Cabecera (Header Actions):</strong> Para maximizar la facilidad de uso y evitar la repetición de botones en scroll largo, los botones de acción global <strong>MUST</strong> colocarse únicamente en el encabezado del modal (<code>ai-modal-header</code>):
+            <ul>
+              <li><strong>✨ Asimilar Todo:</strong> Botón principal (degradado morado) que acepta e incorpora todas las sugerencias de la IA de un solo clic.</li>
+              <li><strong>Cancelar:</strong> Botón secundario (blanco con borde gris) que cierra el modal y descarta todas las propuestas sin alterar los datos del formulario principal.</li>
+              <li><strong>Eliminación de Redundancias:</strong> Está prohibido repetir estos botones al final del cuerpo o pie del modal.</li>
+            </ul>
+          </li>
+          <li style={{ marginBottom: '8px' }}><strong>Organización por Bloques (Cards):</strong> Las sugerencias se dividen en secciones temáticas (ej. Taxonomía, Fisiología, Suelo). Cada sección incluye un botón independiente <strong>"✨ Asimilar este bloque"</strong> para aceptar únicamente ese conjunto de datos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Tabla Comparativa de 3 Columnas:</strong>
+            <ol style={{ paddingLeft: '20px', marginTop: '4px' }}>
+              <li><strong>Campo:</strong> Nombre descriptivo de la propiedad.</li>
+              <li><strong>Valor Actual:</strong> El dato existente. Si el campo está vacío y hereda el valor del padre (ej. una variedad sin pH propio que asume el de su especie), se debe mostrar obligatoriamente el valor heredado acompañado de una insignia de herencia (ej. <code>🌱 Especie</code>) para clarificar que es un valor asumido de la especie.</li>
+              <li><strong>Propuesta IA:</strong> El dato sugerido por el modelo. Si es diferente al valor actual efectivo, se resalta visualmente en morado (<code>.ai-value-changed</code>) y la fila completa se colorea con la clase de discrepancia (<code>.ai-row-diff</code>).</li>
+            </ol>
+          </li>
+          <li style={{ marginBottom: '8px' }}><strong>Comparación Inteligente:</strong> La comparación de diferencias se realiza siempre contra el <strong>valor efectivo</strong> (el propio de la entidad o el heredado de su especie padre). De esta forma, si la IA propone un valor idéntico al que ya se asume por herencia, la fila se muestra como idéntica, evitando alertar por cambios inexistentes.</li>
+        </ul>
+      </Section>
+
+      <Section id="s12" title="12. Eliminación de Registros y Control de Dependencias">
+        <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
+          Para garantizar la estabilidad del sistema y proteger los datos históricos de los usuarios, Verdantia implementa políticas estrictas para la eliminación de registros principales en la base de datos central.
+        </p>
+
+        <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>12.1. Catálogo de Especies (Tabla Especies)</h3>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          La eliminación física de una especie global (borrado de la fila en la tabla <code>especies</code>) es irreversible y solo se permite cuando el registro se encuentra libre de cualquier relación o dependencia activa. Si la especie cuenta con alguna asociación o uso, el sistema realizará automáticamente una <strong>inhabilitación lógica</strong> (soft-delete), ocultándola del catálogo general pero preservándola en la base de datos.
+        </p>
+
+        <h4 style={{ color: '#374151', marginTop: '20px', fontSize: '1.15rem', fontWeight: 700 }}>A. Criterios de Bloqueo de Eliminación Física</h4>
+        <p style={{ color: '#475569', lineHeight: 1.6 }}>
+          Una especie <strong>NO</strong> se eliminará físicamente si se detecta alguna de las siguientes dependencias en el sistema:
+        </p>
+        <ul style={{ color: '#475569', lineHeight: 1.8, paddingLeft: '20px' }}>
+          <li style={{ marginBottom: '8px' }}>
+            <strong>Variedades específicas:</strong> Existencia de variedades creadas para esa especie (distintas a la variedad genérica automática).
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM variedades WHERE xvariedadesidespecies = ? AND variedadesesgenerica = 0</code></small>
+          </li>
+          <li style={{ marginBottom: '8px' }}>
+            <strong>Semillas de usuarios:</strong> Existencia de cualquier semilla en inventarios de usuarios asociada a la variedad genérica o variedades específicas de la especie.
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM semillas s JOIN variedades v ON s.xsemillasidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ?</code></small>
+          </li>
+          <li style={{ marginBottom: '8px' }}>
+            <strong>Cultivos de usuarios:</strong> Existencia de cultivos activos o históricos en huertos de usuarios vinculados a las variedades de la especie.
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM cultivos c JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ?</code></small>
+          </li>
+          <li style={{ marginBottom: '8px' }}>
+            <strong>Asociaciones con usuarios:</strong> 
+            <ul>
+              <li>Que la especie pertenezca a un usuario concreto (especie privada). <small style={{ color: '#64748b' }}>(<code>xespeciesidusuarios IS NOT NULL</code>)</small></li>
+              <li>Que la especie esté personalizada por usuarios en la tabla <code>especiesusuarios</code>.</li>
+              <li>Que alguna variedad de la especie esté personalizada por usuarios en la tabla <code>variedadesusuarios</code>.</li>
+            </ul>
+          </li>
+          <li style={{ marginBottom: '8px' }}>
+            <strong>Relaciones con plagas:</strong> Existencia de plagas asociadas a la especie en la tabla de cruce <code>especiesplagas</code>.
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM especiesplagas WHERE xespeciesplagasidespecies = ?</code></small>
+          </li>
+          <li style={{ marginBottom: '8px' }}>
+            <strong>Asociaciones botánicas:</strong> Existencia de la especie como origen o destino en relaciones benéficas (<code>asociacionesbeneficiosas</code>) o perjudiciales (<code>asociacionesperjudiciales</code>).
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM asociacionesbeneficiosas WHERE xasociacionesbeneficiosasidespecieorigen = ? OR xasociacionesbeneficiosasidespeciedestino = ?</code></small>
+          </li>
+        </ul>
+
+        <h4 style={{ color: '#374151', marginTop: '20px', fontSize: '1.15rem', fontWeight: 700 }}>B. Comportamiento y Flujos de Ejecución</h4>
+        
+        <div style={{ background: '#fef3c7', borderLeft: '4px solid #d97706', padding: '16px', marginBottom: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#92400e', marginTop: 0, marginBottom: '8px', fontSize: '1.05rem', fontWeight: 700 }}>Caso 1: Con dependencias activas (Inhabilitación)</h4>
+          <p style={{ color: '#78350f', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
+            El sistema ejecuta un soft-delete modificando la visibilidad del registro principal a <code>0</code>:
+            <br />
+            <code>UPDATE especies SET especiesvisibilidadsino = 0 WHERE idespecies = ?</code>
+            <br />
+            La especie se oculta de las vistas del catálogo general de usuarios, pero se mantiene en la base de datos para no corromper la integridad referencial de los cultivos, semillas y diarios existentes.
+          </p>
+        </div>
+
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #16a34a', padding: '16px', borderRadius: '0 8px 8px 0' }}>
+          <h4 style={{ color: '#14532d', marginTop: 0, marginBottom: '8px', fontSize: '1.05rem', fontWeight: 700 }}>Caso 2: Libre de dependencias (Borrado Físico)</h4>
+          <p style={{ color: '#166534', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
+            El sistema procede con la eliminación secuencial:
+            <ol style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
+              <li>Elimina la variedad genérica asociada de la tabla <code>variedades</code> para evitar fallos de clave foránea.</li>
+              <li>Elimina físicamente el registro de la especie de la tabla <code>especies</code>.</li>
+            </ol>
+          </p>
+        </div>
       </Section>
 
     </div>

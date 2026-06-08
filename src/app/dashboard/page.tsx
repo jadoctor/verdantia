@@ -172,7 +172,11 @@ export default function DashboardHome() {
 
   // Funciones del asistente de cultivo (emergente)
   const getSemillaStock = (idVariedad: number) => {
-    const seeds = misSemillas.filter(s => s.xsemillasidvariedades === idVariedad && s.semillasstockactual > 0 && s.semillasactivosino !== 0);
+    const seeds = misSemillas.filter(s => 
+      Number(s.xsemillasidvariedades) === Number(idVariedad) && 
+      (s.semillasstockactual === null || s.semillasstockactual > 0) && 
+      s.semillasactivosino !== 0
+    );
     if (seeds.length === 0) return null;
     const total = seeds.reduce((acc, s) => acc + (s.semillasstockactual || 0), 0);
     return {
@@ -1037,7 +1041,10 @@ export default function DashboardHome() {
               );
             })()}
             {(() => {
-              const activeSeeds = misSemillas.filter((s: any) => s.semillasstockactual > 0 && s.semillasactivosino !== 0);
+              const activeSeeds = misSemillas.filter((s: any) => 
+                (s.semillasstockactual === null || s.semillasstockactual > 0) && 
+                s.semillasactivosino !== 0
+              );
               return (
                 <div className="stat-card" style={{ cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'stretch' }} onClick={() => openSeedModal()}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
@@ -2120,7 +2127,7 @@ export default function DashboardHome() {
                                           borderRadius: '8px',
                                           fontWeight: 700
                                         }}>
-                                          📦 {s.semillasstockactual} uds.
+                                          📦 {s.semillasstockactual !== null ? `${s.semillasstockactual} uds.` : 'Disponible'}
                                         </div>
                                       </div>
                                     );
@@ -2177,7 +2184,7 @@ export default function DashboardHome() {
                                             borderRadius: '8px',
                                             fontWeight: 700
                                           }}>
-                                            📦 {s.semillasstockactual} disponibles
+                                            📦 {s.semillasstockactual !== null ? `${s.semillasstockactual} disponibles` : 'Disponible (cant. no especificada)'}
                                           </div>
                                         </button>
                                       );

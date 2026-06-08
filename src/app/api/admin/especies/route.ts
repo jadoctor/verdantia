@@ -19,12 +19,19 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const tipo = searchParams.get('tipo') || '';
+  const filter = searchParams.get('filter') || 'activas';
 
   try {
     let query = `
       SELECT e.*, 
-        (SELECT COUNT(*) FROM variedades v WHERE v.xvariedadesidespecies = e.idespecies AND v.xvariedadesidusuarios IS NULL) as total_variedades, 
+        (SELECT COUNT(*) FROM variedades v WHERE v.xvariedadesidespecies = e.idespecies AND v.xvariedadesidusuarios IS NULL AND v.variedadesvisibilidadsino = 1 AND v.variedadesesgenerica = 0) as total_variedades, 
         (SELECT COUNT(*) FROM semillas s JOIN variedades v2 ON s.xsemillasidvariedades = v2.idvariedades WHERE v2.xvariedadesidespecies = e.idespecies) as total_semillas,
+        (SELECT COUNT(*) FROM cultivos c JOIN variedades v3 ON c.xcultivosidvariedades = v3.idvariedades WHERE v3.xvariedadesidespecies = e.idespecies) as total_cultivos,
+        (SELECT COUNT(*) FROM especiesusuarios eu WHERE eu.xespeciesusuariosidespecies = e.idespecies) as total_especiesusuarios,
+        (SELECT COUNT(*) FROM variedadesusuarios vu JOIN variedades v4 ON vu.xvariedadesusuariosidvariedades = v4.idvariedades WHERE v4.xvariedadesidespecies = e.idespecies) as total_variedadesusuarios,
+        (SELECT COUNT(*) FROM asociacionesbeneficiosas ab WHERE ab.xasociacionesbeneficiosasidespecieorigen = e.idespecies OR ab.xasociacionesbeneficiosasidespeciedestino = e.idespecies) as total_asociacionesbeneficiosas,
+        (SELECT COUNT(*) FROM asociacionesperjudiciales ap WHERE ap.xasociacionesperjudicialesidespecieorigen = e.idespecies OR ap.xasociacionesperjudicialesidespeciedestino = e.idespecies) as total_asociacionesperjudiciales,
+        (SELECT COUNT(*) FROM especiesplagas ep WHERE ep.xespeciesplagasidespecies = e.idespecies) as total_especiesplagas,
         (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_ruta,
         (SELECT datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_resumen
       FROM especies e 
@@ -35,6 +42,12 @@ export async function GET(request: Request) {
     if (tipo) {
       query += ` AND FIND_IN_SET(?, e.especiestipo)`;
       params.push(tipo);
+    }
+
+    if (filter === 'activas') {
+      query += ` AND e.especiesvisibilidadsino = 1`;
+    } else if (filter === 'inactivas') {
+      query += ` AND e.especiesvisibilidadsino = 0`;
     }
 
     query += ` ORDER BY e.especiesnombre`;

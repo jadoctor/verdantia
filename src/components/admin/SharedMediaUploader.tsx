@@ -3350,9 +3350,26 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       {showAiModal && aiProposal && (
         <div className="ai-modal-overlay">
           <div className="ai-modal-content">
-            <div className="ai-modal-header">
-              <h2>✨ Revisión de Inteligencia Artificial</h2>
-              <button className="btn-close-modal" onClick={() => setShowAiModal(false)}>✖ Cerrar</button>
+            <div className="ai-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>✨ Revisión de Inteligencia Artificial — {formData.especiesnombre || 'Ficha Técnica'}</h2>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <button 
+                  type="button" 
+                  className="btn-ai" 
+                  onClick={assimilateAll} 
+                  style={{ padding: '8px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                >
+                  ✨ Asimilar Todo
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-close-modal" 
+                  onClick={() => setShowAiModal(false)}
+                  style={{ padding: '8px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', color: '#475569', fontWeight: 'bold' }}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
             
             <div className="ai-modal-body">
@@ -3495,12 +3512,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 </div>
               )}
             </div>
-
-            <div className="ai-modal-footer">
-              <button className="btn-assimilate-all" onClick={assimilateAll}>
-                ✨ Asimilar TODOS los cambios de la IA
-              </button>
-            </div>
+            
           </div>
         </div>
       )}

@@ -17,6 +17,7 @@ export async function GET(request: Request) {
         vu.idvariedades,
         vu.xvariedadesidvariedadorigen,
         vu.xvariedadesidespecies,
+        COALESCE(vu.variedadesvisibilidadsino, 1) AS variedadesvisibilidadsino,
         COALESCE(vu.variedadesnombre, vg.variedadesnombre) AS nombre,
         COALESCE(vu.variedadesdescripcion, vg.variedadesdescripcion, e.especiesdescripcion) AS descripcion,
         COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesicono) AS icono,
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
         COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiespeso1000semillas) AS especiespeso1000semillas,
         vg.variedadesnombre AS nombre_gold,
         vg.variedadesesgenerica AS es_generica,
+        vg.variedadesvisibilidadsino AS origen_visibilidad,
         -- Foto: primero la del usuario, luego la de la variedad gold, luego la de la especie
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos 
@@ -89,7 +91,7 @@ export async function GET(request: Request) {
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
-      WHERE vu.xvariedadesidusuarios = ? AND COALESCE(vu.variedadesvisibilidadsino, 1) = 1
+      WHERE vu.xvariedadesidusuarios = ?
       ORDER BY e.especiesnombre, COALESCE(vu.variedadesnombre, vg.variedadesnombre)
     `, [user.id]);
 

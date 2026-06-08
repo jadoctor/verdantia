@@ -18,10 +18,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { tipoEntidad = 'especie', especieNombre, especieNombreCientifico, especieFamilia, concept, customPrompt } = await request.json();
+    const { tipoEntidad = 'especie', especieNombre, variedadNombre, especieNombreCientifico, especieFamilia, concept, customPrompt } = await request.json();
 
     if (!especieNombre) {
-      return NextResponse.json({ error: 'Falta el nombre de la entidad (especie/labor)' }, { status: 400 });
+      return NextResponse.json({ error: 'Falta el nombre de la entidad (especie/labor/variedad)' }, { status: 400 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -31,6 +31,31 @@ export async function POST(request: Request) {
 
     const sciNameContext = especieNombreCientifico ? ` Nombre científico: ${especieNombreCientifico}.` : '';
     const familyContext = especieFamilia ? ` Familia botánica: ${especieFamilia}.` : '';
+
+    let varietyVisualDescription = '';
+    if (tipoEntidad === 'variedad' && !customPrompt) {
+      try {
+        const searchPrompt = `Busca fotos, imágenes y descripciones reales de la variedad de ${especieNombre} llamada "${variedadNombre}" en internet para ver cómo es físicamente. A partir de lo que observes en las imágenes y la información, describe con detalle sus características visuales reales y fenotipo (color exacto, forma, tamaño, hojas y aspecto general) para que un generador de imágenes de IA pueda ilustrarla con total fidelidad botánica y no se la invente.`;
+        const searchPayload = {
+          contents: [{ role: 'user', parts: [{ text: searchPrompt }] }],
+          tools: [{ googleSearch: {} }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 250 }
+        };
+        const searchUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const searchRes = await fetch(searchUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(searchPayload)
+        });
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          varietyVisualDescription = searchData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          console.log('[AI Image Gen Grounding] Found variety description:', varietyVisualDescription);
+        }
+      } catch (err) {
+        console.warn('[AI Image Gen Grounding] Error fetching variety grounding:', err);
+      }
+    }
 
     let finalPrompt = '';
 
@@ -42,20 +67,37 @@ MUY IMPORTANTE Y ESTRICTO:
 1. La foto DEBE ilustrar claramente la realización de esta tarea o labor, o las herramientas asociadas.
 2. La foto debe estar perfectamente enfocada en la acción o los elementos de esta labor, ocupando el centro geométrico de la composición y abarcando la mayor parte de la fotografía como foco absoluto de atención.`;
     } else if (tipoEntidad === 'documento') {
+      const subject = variedadNombre ? `la variedad "${variedadNombre}" de la especie "${especieNombre}"` : `"${especieNombre}"`;
       finalPrompt = `Ilustración digital de alta calidad, estilo editorial y académico, diseño limpio y minimalista.
-Tema principal: Portada de documento técnico o manual sobre "${especieNombre}".
+Tema principal: Portada de documento técnico o manual sobre ${subject}.
 Contexto y situación: ${concept || 'Diseño de portada académica'}.
 MUY IMPORTANTE Y ESTRICTO:
 1. La imagen DEBE parecer la portada de un libro o manual técnico, con composición equilibrada y espacio negativo.
 2. Usa colores sobrios y elementos gráficos relacionados con la agricultura o la botánica, pero manteniendo un formato de publicación profesional.`;
     } else if (tipoEntidad === 'blog') {
+      const subject = variedadNombre ? `la variedad "${variedadNombre}" de la especie "${especieNombre}"` : `"${especieNombre}"`;
       finalPrompt = `Fotografía hiperrealista de alta calidad, estilo editorial profesional para artículo de blog sobre agricultura y horticultura, iluminación natural cálida, hiperdetallada, resolución 8k.
-Contexto del artículo: "${especieNombre}".
+Contexto del artículo: "${subject}".
 Enfoque visual: ${concept || 'Escena atractiva y profesional relacionada con el cultivo y la agricultura'}.
 MUY IMPORTANTE Y ESTRICTO:
 1. La foto DEBE ser una imagen editorial atractiva que ilustre visualmente el tema del artículo.
 2. Composición profesional tipo revista, con profundidad de campo, colores vibrantes y un estilo que invite a la lectura.
 3. NO incluir texto, logos ni marcas de agua en la imagen.`;
+    } else if (tipoEntidad === 'variedad') {
+      const defaultConcept = `varios ejemplares de la variedad "${variedadNombre}" (perteneciente a la especie botánica "${especieNombre}") recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
+      const descriptionCtx = varietyVisualDescription ? `\nCaracterísticas visuales reales y fenotipo botánico verificado en internet para la variedad "${variedadNombre}":\n${varietyVisualDescription}\n` : '';
+      
+      finalPrompt = `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.
+Sujeto principal: La variedad "${variedadNombre}" de la especie botánica "${especieNombre}" (hortaliza/planta comestible de huerto).${sciNameContext}${familyContext}${descriptionCtx}
+Escena concreta: ${concept || defaultConcept}.
+Composición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.
+REGLAS ESTRICTAS E INQUEBRANTABLES:
+1. El sujeto es SIEMPRE la variedad "${variedadNombre}" perteneciente a la especie botánica "${especieNombre}". Es obligatorio y crítico que la imagen contemple e ilustre fielmente las características específicas de esta variedad botánica, basándose rigurosamente en la descripción física real proporcionada.${descriptionCtx ? ' Debes apegarte con precisión a los colores, formas y texturas indicados en dicha descripción.' : ''}
+2. EVITA CONFUSIONES DE FORMA: Si la variedad "${variedadNombre}" pertenece a la especie "${especieNombre}" (ej. Calabacín / Zucchini / Cucurbita pepo), el fruto DEBE ser de forma alargada, cilíndrica y recta (como un calabacín clásico de mercado) y de color verde muy oscuro brillante, con piel lisa. NO dibujes frutos redondos, esféricos, estriados ni con forma de calabaza redonda (como en la segunda imagen que parecía una calabaza verde pequeña), a menos que la descripción web indique explícitamente que es redonda. Si es un calabacín estándar, debe ser largo y cilíndrico.
+3. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura, con colores naturales muy realistas y texturas detalladas, sin parecer artificial.
+4. El entorno debe ser obligatoriamente agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica. Nunca fondos abstractos ni estudios fotográficos.
+5. NO incluir personas, manos, texto, logotipos ni marcas de agua.
+6. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible, con gotas de rocío o tierra suelta si es apropiado.`;
     } else {
       // Por defecto 'especie'
       const defaultConcept = `varios ejemplares de ${especieNombre} recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
@@ -74,6 +116,9 @@ REGLAS ESTRICTAS:
     // Si el usuario envía un prompt personalizado, usarlo directamente
     if (customPrompt && typeof customPrompt === 'string' && customPrompt.trim()) {
       finalPrompt = customPrompt.trim();
+      if (varietyVisualDescription) {
+        finalPrompt += `\n[BOTANICAL PHENOTYPE DETECTED FOR "${variedadNombre}": ${varietyVisualDescription}. Respect this color, skin texture, exact fruit shape, and leaves shape precisely. Reject other generic visual representations. Avoid drawing round pumpkins or round shapes for elongated squashes/zucchinis.]`;
+      }
     }
 
     const payload = {

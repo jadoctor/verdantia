@@ -39,152 +39,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const idespecies = resolvedParams.id;
     const body = await request.json();
-    const {
-      especiesnombre,
-      especiesnombrecientifico,
-      especiesfamilia,
-      especiestipo,
-      especiesciclo,
-      especiesdiasgerminacion,
-      especiesdiashastatrasplante,
-      especiesviabilidadsemilla,
-      especiespeso1000semillas,
-      especiesdiashastafructificacion,
-      especiesdiascrecimientofirme,
-      especiesduraciontotal,
-      especiestemperaturaminima,
-      especiestemperaturaoptima,
-      especiesmarcoplantas,
-      especiesmarcofilas,
-      especiesprofundidadsiembra,
-      especieshistoria,
-      especiesdescripcion,
-      especiescolor,
-      especiestamano,
-      especiesfechasemillerodesde,
-      especiesfechasemillerohasta,
-      especiesfechasiembradirectadesde,
-      especiesfechasiembradirectahasta,
-      especiestrasplantedesde,
-      especiestrasplantehasta,
-      especiesfecharecolecciondesde,
-      especiesfecharecoleccionhasta,
-      especiesvisibilidadsino,
-      especiesfuentesinformacion,
-      especiesautosuficiencia,
-      especiesautosuficienciaparcial,
-      especiesautosuficienciaconserva,
-      especiesicono,
-      especiesbiodinamicacategoria,
-      especiesbiodinamicanotas,
-      especiesprofundidadtrasplante,
-      especiesphsuelo,
-      especiesnecesidadriego,
-      especiestiposiembra,
-      especiestiposiembrapreferente,
-      especiesvolumenmaceta,
-      especiesluzsolar,
-      especiescaracteristicassuelo,
-      especiesdificultad,
-      especiestemperaturamaxima,
-      especiesdiashastarecoleccion,
-      especieslunarfasesiembra,
-      especieslunarfasetrasplante,
-      especieslunarobservaciones,
-      especiesbiodinamicafasesiembra,
-      especiesbiodinamicafasetrasplante,
-      especiesemillerovolumendesde,
-      especiesemillerovolumenhasta,
-      especiesmarcomargen
-    } = body;
 
-    if (!especiesnombre) {
-      return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
+    if (Object.keys(body).length === 0) {
+      return NextResponse.json({ success: true });
     }
 
-    const query = `
-      UPDATE especies SET
-        especiesnombre = ?, especiesnombrecientifico = ?, especiesfamilia = ?, especiestipo = ?, especiesciclo = ?, 
-        especiesdiasgerminacion = ?, especiesdiashastatrasplante = ?, especiesviabilidadsemilla = ?, especiespeso1000semillas = ?, 
-        especiesdiashastafructificacion = ?,
-        especiesdiascrecimientofirme = ?,
-        especiesduraciontotal = ?,
-        especiestemperaturaminima = ?, especiestemperaturaoptima = ?, especiesmarcoplantas = ?, especiesmarcofilas = ?, 
-        especiesprofundidadsiembra = ?, especieshistoria = ?, especiesdescripcion = ?, especiescolor = ?, especiestamano = ?, 
-        especiesfechasemillerodesde = ?, especiesfechasemillerohasta = ?, especiesfechasiembradirectadesde = ?, 
-        especiesfechasiembradirectahasta = ?, especiestrasplantedesde = ?, especiestrasplantehasta = ?, 
-        especiesfecharecolecciondesde = ?, especiesfecharecoleccionhasta = ?, especiesvisibilidadsino = ?, 
-        especiesfuentesinformacion = ?, especiesautosuficiencia = ?, especiesautosuficienciaparcial = ?, especiesautosuficienciaconserva = ?, especiesicono = ?,
-        especiesbiodinamicacategoria = ?, especiesbiodinamicanotas = ?,
-        especiesprofundidadtrasplante = ?, especiesphsuelo = ?, especiesnecesidadriego = ?, especiestiposiembra = ?, especiestiposiembrapreferente = ?,
-        especiesvolumenmaceta = ?, especiesluzsolar = ?, especiescaracteristicassuelo = ?, especiesdificultad = ?,
-        especiestemperaturamaxima = ?, especiesdiashastarecoleccion = ?,
-        especieslunarfasesiembra = ?, especieslunarfasetrasplante = ?, especieslunarobservaciones = ?,
-        especiesbiodinamicafasesiembra = ?, especiesbiodinamicafasetrasplante = ?,
-        especiesemillerovolumendesde = ?, especiesemillerovolumenhasta = ?, especiesmarcomargen = ?
-      WHERE idespecies = ?
-    `;
+    const setClauses: string[] = [];
+    const queryParams: any[] = [];
 
-    const queryParams = [
-      especiesnombre,
-      especiesnombrecientifico || null,
-      especiesfamilia || null,
-      Array.isArray(especiestipo) ? especiestipo.join(',') : (especiestipo || null),
-      Array.isArray(especiesciclo) ? especiesciclo.join(',') : (especiesciclo || null),
-      especiesdiasgerminacion || null,
-      especiesdiashastatrasplante || null,
-      especiesviabilidadsemilla || null,
-      especiespeso1000semillas || null,
-      especiesdiashastafructificacion || null,
-      especiesdiascrecimientofirme || null,
-      especiesduraciontotal || null,
-      especiestemperaturaminima || null,
-      especiestemperaturaoptima || null,
-      especiesmarcoplantas || null,
-      especiesmarcofilas || null,
-      especiesprofundidadsiembra || null,
-      especieshistoria || null,
-      especiesdescripcion || null,
-      especiescolor || null,
-      especiestamano || 'mediano',
-      especiesfechasemillerodesde || null,
-      especiesfechasemillerohasta || null,
-      especiesfechasiembradirectadesde || null,
-      especiesfechasiembradirectahasta || null,
-      especiestrasplantedesde || null,
-      especiestrasplantehasta || null,
-      especiesfecharecolecciondesde || null,
-      especiesfecharecoleccionhasta || null,
-      especiesvisibilidadsino !== undefined ? especiesvisibilidadsino : 1,
-      especiesfuentesinformacion || null,
-      especiesautosuficiencia || null,
-      especiesautosuficienciaparcial || null,
-      especiesautosuficienciaconserva || null,
-      especiesicono || null,
-      especiesbiodinamicacategoria || null,
-      especiesbiodinamicanotas || null,
-      especiesprofundidadtrasplante || null,
-      especiesphsuelo || null,
-      especiesnecesidadriego || null,
-      Array.isArray(especiestiposiembra) ? especiestiposiembra.join(',') : (especiestiposiembra || null),
-      Array.isArray(especiestiposiembrapreferente) ? especiestiposiembrapreferente.join(',') : (especiestiposiembrapreferente || null),
-      especiesvolumenmaceta || null,
-      especiesluzsolar || null,
-      especiescaracteristicassuelo || null,
-      especiesdificultad || null,
-      especiestemperaturamaxima || null,
-      especiesdiashastarecoleccion || null,
-      especieslunarfasesiembra || null,
-      especieslunarfasetrasplante || null,
-      especieslunarobservaciones || null,
-      especiesbiodinamicafasesiembra || null,
-      especiesbiodinamicafasetrasplante || null,
-      especiesemillerovolumendesde || null,
-      especiesemillerovolumenhasta || null,
-      especiesmarcomargen || null,
-      idespecies
-    ];
+    for (const [key, value] of Object.entries(body)) {
+      setClauses.push(`${key} = ?`);
+      if (Array.isArray(value)) {
+        queryParams.push(value.join(','));
+      } else {
+        queryParams.push(value === '' ? null : value);
+      }
+    }
+    queryParams.push(idespecies);
 
+    const query = `UPDATE especies SET ${setClauses.join(', ')} WHERE idespecies = ?`;
     await pool.query(query, queryParams);
 
     return NextResponse.json({ success: true });
@@ -206,10 +79,87 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   try {
     const idespecies = resolvedParams.id;
-    // La base de datos asume borrado en cascada para variedades y datos adjuntos 
-    // o deberíamos borrarlos a mano si no existe la restricción en la base de datos.
+
+    // Check if the species has non-generic varieties
+    const [vars]: any = await pool.query(
+      'SELECT 1 FROM variedades WHERE xvariedadesidespecies = ? AND variedadesesgenerica = 0 LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species has any seeds associated with its varieties
+    const [seeds]: any = await pool.query(
+      'SELECT 1 FROM semillas s JOIN variedades v ON s.xsemillasidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ? LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species has any crops associated with its varieties
+    const [cultivos]: any = await pool.query(
+      'SELECT 1 FROM cultivos c JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ? LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species belongs directly to a user
+    const [owner]: any = await pool.query(
+      'SELECT 1 FROM especies WHERE idespecies = ? AND xespeciesidusuarios IS NOT NULL LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species is customized by any user in especiesusuarios
+    const [espUsers]: any = await pool.query(
+      'SELECT 1 FROM especiesusuarios WHERE xespeciesusuariosidespecies = ? LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if any varieties of the species are customized in variedadesusuarios
+    const [varUsers]: any = await pool.query(
+      'SELECT 1 FROM variedadesusuarios vu JOIN variedades v ON vu.xvariedadesusuariosidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ? LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species has any associated pests
+    const [plagas]: any = await pool.query(
+      'SELECT 1 FROM especiesplagas WHERE xespeciesplagasidespecies = ? LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species has any beneficial associations
+    const [beneficiosas]: any = await pool.query(
+      'SELECT 1 FROM asociacionesbeneficiosas WHERE xasociacionesbeneficiosasidespecieorigen = ? OR xasociacionesbeneficiosasidespeciedestino = ? LIMIT 1',
+      [idespecies]
+    );
+
+    // Check if the species has any harmful associations
+    const [perjudiciales]: any = await pool.query(
+      'SELECT 1 FROM asociacionesperjudiciales WHERE xasociacionesperjudicialesidespecieorigen = ? OR xasociacionesperjudicialesidespeciedestino = ? LIMIT 1',
+      [idespecies]
+    );
+
+    if (
+      vars.length > 0 || 
+      seeds.length > 0 || 
+      cultivos.length > 0 || 
+      owner.length > 0 || 
+      espUsers.length > 0 || 
+      varUsers.length > 0 || 
+      plagas.length > 0 || 
+      beneficiosas.length > 0 || 
+      perjudiciales.length > 0
+    ) {
+      // Inactivate instead of physical delete
+      await pool.query('UPDATE especies SET especiesvisibilidadsino = 0 WHERE idespecies = ?', [idespecies]);
+      return NextResponse.json({ 
+        success: true, 
+        inactivated: true, 
+        message: 'La especie cuenta con dependencias activas (variedades, semillas, cultivos, personalizaciones de usuarios, plagas o asociaciones), por lo que ha sido inhabilitada en lugar de eliminada.' 
+      });
+    }
+
+    // Delete associated generic varieties first to satisfy foreign key constraints
+    await pool.query('DELETE FROM variedades WHERE xvariedadesidespecies = ?', [idespecies]);
+
+    // Otherwise, perform physical delete
     await pool.query('DELETE FROM especies WHERE idespecies = ?', [idespecies]);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, inactivated: false, message: 'Especie eliminada correctamente.' });
   } catch (error: any) {
     console.error('Error deleting especie:', error);
     return NextResponse.json({ error: 'Error al eliminar especie. Posible violación de integridad referencial.' }, { status: 500 });

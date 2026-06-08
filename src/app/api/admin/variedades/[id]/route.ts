@@ -82,12 +82,41 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { id } = resolvedParams;
 
   try {
-    // Delete the variety
-    await pool.query('DELETE FROM variedades WHERE idvariedades = ?', [resolvedParams.id]);
+    // 1. Check direct/indirect seeds
+    const [seeds]: any = await pool.query(`
+      SELECT 1 FROM semillas WHERE xsemillasidvariedades = ? 
+      UNION 
+      SELECT 1 FROM semillas s JOIN variedades v ON s.xsemillasidvariedades = v.idvariedades WHERE v.xvariedadesidvariedadorigen = ?
+      LIMIT 1
+    `, [id, id]);
+
+    // 2. Check direct/indirect crops
+    const [crops]: any = await pool.query(`
+      SELECT 1 FROM cultivos WHERE xcultivosidvariedades = ? 
+      UNION 
+      SELECT 1 FROM cultivos c JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades WHERE v.xvariedadesidvariedadorigen = ?
+      LIMIT 1
+    `, [id, id]);
+
+    // 3. Check if assumed by a user (has user-created varieties referring to this as origin)
+    const [assumed]: any = await pool.query(`
+      SELECT 1 FROM variedades WHERE xvariedadesidvariedadorigen = ? LIMIT 1
+    `, [id]);
+
+    const hasSeeds = seeds.length > 0;
+    const hasCrops = crops.length > 0;
+    const isAssumed = assumed.length > 0;
+
+    if (hasSeeds || hasCrops || isAssumed) {
+      // Inactivate instead of physical delete
+      await pool.query('UPDATE variedades SET variedadesvisibilidadsino = 0 WHERE idvariedades = ?', [id]);
+      return NextResponse.json({ success: true, inactivated: true, message: 'La variedad está asociada a usuarios, cultivos o semillas, por lo que ha sido inhabilitada en lugar de eliminada.' });
+    }
+
+    // Otherwise, perform physical delete
+    await pool.query('DELETE FROM variedades WHERE idvariedades = ?', [id]);
     
-    // Also delete any seeds or other dependencies here if needed, but usually foreign keys with CASCADE handle it
-    
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, inactivated: false, message: 'Variedad eliminada correctamente.' });
   } catch (error: any) {
     console.error('Error deleting variedad:', error);
     // If it's a foreign key constraint error, provide a nicer message

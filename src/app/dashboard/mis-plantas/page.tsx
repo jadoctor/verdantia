@@ -10,6 +10,7 @@ import DashboardAlertsWidget from '@/components/user/DashboardAlertsWidget';
 import { processAlertas } from '@/lib/alertas-utils';
 import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 import { SeedWizardModal } from '@/components/SeedWizardModal';
+import { PlantWizardModal } from '@/components/PlantWizardModal';
 
 interface Planta {
   idvariedades: number;
@@ -29,6 +30,8 @@ interface Planta {
   semillas_lista?: any;
   semillas_count?: number;
   semillas_colecciones?: string | null;
+  variedadesvisibilidadsino?: number;
+  origen_visibilidad?: number;
 }
 
 interface CatalogoEspecie {
@@ -54,6 +57,17 @@ interface CatalogoVariedad {
   foto: string | null;
 }
 
+const FILTER_TAGS = [
+  { id: 'all', label: '📋 Todas' },
+  { id: 'activas', label: '✅ Activas' },
+  { id: 'inactivas', label: '💤 Inactivas' },
+  { id: 'has_cultivos', label: '🌱 Con Cultivos' },
+  { id: 'has_semillas', label: '🎒 Con Semillas' },
+  { id: 'dif_facil', label: '🟢 Fácil' },
+  { id: 'dif_media', label: '🟡 Media' },
+  { id: 'dif_dificil', label: '🔴 Difícil' }
+];
+
 export default function MisPlantasPage() {
   const [plantas, setPlantas] = useState<Planta[]>([]);
   const [alertasHoy, setAlertasHoy] = useState<any[]>([]);
@@ -62,15 +76,8 @@ export default function MisPlantasPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Wizard state
+  // Wizard state (now delegated to PlantWizardModal)
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [catalogoEspecies, setCatalogoEspecies] = useState<CatalogoEspecie[]>([]);
-  const [catalogoVariedades, setCatalogoVariedades] = useState<CatalogoVariedad[]>([]);
-  const [selectedEspecie, setSelectedEspecie] = useState<CatalogoEspecie | null>(null);
-  const [selectedVariedad, setSelectedVariedad] = useState<CatalogoVariedad | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [acquiring, setAcquiring] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
   
   // State for new crop modal
@@ -79,6 +86,68 @@ export default function MisPlantasPage() {
 
   const [showSeedWizard, setShowSeedWizard] = useState(false);
   const [modalNuevoSemillaPlanta, setModalNuevoSemillaPlanta] = useState<Planta | null>(null);
+
+  // Filter and search states
+  const [filterSearch, setFilterSearch] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('activas');
+
+  const filteredPlantas = plantas.filter(p => {
+    // 1. Search text filter
+    const searchLower = filterSearch.toLowerCase().trim();
+    if (searchLower) {
+      const matchNombre = p.nombre && p.nombre.toLowerCase().includes(searchLower);
+      const matchEspecie = p.especiesnombre && p.especiesnombre.toLowerCase().includes(searchLower);
+      const matchNombreGold = p.nombre_gold && p.nombre_gold.toLowerCase().includes(searchLower);
+      if (!matchNombre && !matchEspecie && !matchNombreGold) {
+        return false;
+      }
+    }
+
+    // 2. Active/Inactive base filter
+    const isActive = Number(p.variedadesvisibilidadsino ?? 1) !== 0;
+    if (selectedFilter === 'inactivas') {
+      if (isActive) return false;
+    } else if (selectedFilter === 'all') {
+      // Mostrar tanto activas como inactivas
+    } else {
+      if (!isActive) return false;
+    }
+
+    // 3. Tag category filter
+    if (selectedFilter === 'all' || selectedFilter === 'activas' || selectedFilter === 'inactivas') return true;
+
+    if (selectedFilter === 'has_cultivos') {
+      let cultivos: any[] = [];
+      try {
+        if (typeof p.cultivos_lista === 'string') cultivos = JSON.parse(p.cultivos_lista);
+        else if (Array.isArray(p.cultivos_lista)) cultivos = p.cultivos_lista;
+      } catch (e) {}
+      return cultivos.length > 0;
+    }
+
+    if (selectedFilter === 'has_semillas') {
+      let seeds: any[] = [];
+      try {
+        if (typeof p.semillas_lista === 'string') seeds = JSON.parse(p.semillas_lista);
+        else if (Array.isArray(p.semillas_lista)) seeds = p.semillas_lista;
+      } catch (e) {}
+      return seeds.length > 0;
+    }
+
+    if (selectedFilter === 'dif_facil') {
+      return p.dificultad?.toLowerCase() === 'fácil' || p.dificultad?.toLowerCase() === 'facil';
+    }
+
+    if (selectedFilter === 'dif_media') {
+      return p.dificultad?.toLowerCase() === 'media';
+    }
+
+    if (selectedFilter === 'dif_dificil') {
+      return p.dificultad?.toLowerCase() === 'difícil' || p.dificultad?.toLowerCase() === 'dificil';
+    }
+
+    return true;
+  });
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -93,7 +162,7 @@ export default function MisPlantasPage() {
       loadPlantas();
       // Abrir wizard automáticamente si viene de ?wizard=true
       if (searchParams.get('wizard') === 'true') {
-        openWizard();
+        setWizardOpen(true);
       }
     }
   }, [userEmail]);
@@ -114,67 +183,8 @@ export default function MisPlantasPage() {
     finally { setLoading(false); }
   };
 
-  const openWizard = async () => {
+  const openWizard = () => {
     setWizardOpen(true);
-    setWizardStep(1);
-    setSelectedEspecie(null);
-    setSelectedVariedad(null);
-    setSearchTerm('');
-    try {
-      const res = await fetch('/api/user/catalogo', { headers: { 'x-user-email': userEmail! } });
-      if (res.ok) {
-        const data = await res.json();
-        setCatalogoEspecies(data.especies || []);
-      }
-    } catch (e) { console.error('Error loading catalogo:', e); }
-  };
-
-  const selectEspecie = async (esp: CatalogoEspecie) => {
-    setSelectedEspecie(esp);
-    setWizardStep(2);
-    try {
-      const res = await fetch(`/api/user/catalogo/${esp.idespecies}/variedades`, { headers: { 'x-user-email': userEmail! } });
-      if (res.ok) {
-        const data = await res.json();
-        const vars = data.variedades || [];
-        setCatalogoVariedades(vars);
-        // Si solo hay Gold, preseleccionar y saltar al paso 3
-        if (vars.length === 1) {
-          setSelectedVariedad(vars[0]);
-          setWizardStep(3);
-        } else if (vars.length > 0) {
-          // Preseleccionar la genérica (Gold)
-          const gold = vars.find((v: CatalogoVariedad) => v.variedadesesgenerica === 1);
-          if (gold) setSelectedVariedad(gold);
-        }
-      }
-    } catch (e) { console.error('Error loading variedades:', e); }
-  };
-
-  const confirmAcquisition = async (startCultivo: boolean) => {
-    if (!selectedEspecie || acquiring) return;
-    setAcquiring(true);
-    try {
-      const res = await fetch('/api/user/plantas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
-        body: JSON.stringify({
-          especieId: selectedEspecie.idespecies,
-          variedadId: selectedVariedad?.idvariedades || null
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWizardOpen(false);
-        await loadPlantas();
-        // Redirigir al detalle con o sin la intención de iniciar cultivo
-        router.push(`/dashboard/mis-plantas/${data.id}${startCultivo ? '?startCultivo=true' : ''}`);
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Error al adquirir la planta');
-      }
-    } catch (e) { console.error('Error acquiring:', e); }
-    finally { setAcquiring(false); }
   };
 
   const deletePlanta = async (id: number, forceInactivate?: boolean) => {
@@ -193,13 +203,39 @@ export default function MisPlantasPage() {
         headers: { 'x-user-email': userEmail! }
       });
       if (res.ok) {
-        setPlantas(prev => prev.filter(p => p.idvariedades !== id));
+        await loadPlantas();
       } else {
         const data = await res.json();
         alert(data.error || 'Error al procesar la solicitud');
       }
     } catch (e) { console.error('Error deleting:', e); }
     finally { setDeleting(null); }
+  };
+
+  const reactivatePlanta = async (id: number) => {
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/user/plantas/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail!
+        },
+        body: JSON.stringify({
+          variedadesvisibilidadsino: 1
+        })
+      });
+      if (res.ok) {
+        await loadPlantas();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al reactivar la planta');
+      }
+    } catch (e) {
+      console.error('Error reactivating plant:', e);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const inactivateSemilla = async (id: number, numero: any) => {
@@ -264,38 +300,65 @@ export default function MisPlantasPage() {
     finally { setDeleting(null); }
   };
 
-  const filteredEspecies = catalogoEspecies.filter(e =>
-    !searchTerm || e.especiesnombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (e.especiesnombrecientifico && e.especiesnombrecientifico.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+
 
   if (loading) return <p className="loading-text">Cargando tus plantas...</p>;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.6rem', color: 'var(--text-primary)' }}>🌱 Mis Hortalizas</h1>
-          <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            {plantas.length} {plantas.length === 1 ? 'planta' : 'plantas'} en tu huerto
-          </p>
-        </div>
+    <div style={{ width: '100%' }}>
+      {/* ── Botonera superior de Navegación (Gold Standard) ── */}
+      <div style={{ marginBottom: '16px' }}>
         <button
-          onClick={openWizard}
+          onClick={() => router.push('/dashboard')}
           style={{
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            color: 'white', border: 'none', padding: '12px 24px',
-            borderRadius: '12px', fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            fontSize: '0.95rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-            transition: 'all 0.2s'
+            background: 'white', border: '1px solid #cbd5e1', color: '#475569',
+            padding: '6px 14px', borderRadius: '8px', cursor: 'pointer',
+            fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex',
+            alignItems: 'center', gap: '6px', transition: 'all 0.2s'
           }}
-          onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+          onMouseOver={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+          onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
         >
-          ➕ Añadir nueva planta
+          🏠 Volver al Inicio
         </button>
+      </div>
+
+      {/* ── Subheader Integrado con Degradado y Acciones (Gold Standard) ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #065f46, #10b981)',
+        borderRadius: '16px', padding: '24px 28px', marginBottom: '24px',
+        color: 'white', boxShadow: '0 4px 15px rgba(6, 95, 70, 0.15)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', flexWrap: 'wrap', gap: '32px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🌱</span> Mis Hortalizas
+            </h1>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+              {plantas.length} {plantas.length === 1 ? 'planta' : 'plantas'} en tu huerto
+            </p>
+          </div>
+          <button
+            onClick={openWizard}
+            style={{
+              background: 'white', color: '#065f46', border: 'none',
+              padding: '12px 24px', borderRadius: '12px', fontWeight: 800,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+              fontSize: '0.95rem', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+            }}
+          >
+            ➕ Añadir nueva planta
+          </button>
+        </div>
       </div>
 
       {/* Estado vacío */}
@@ -323,11 +386,137 @@ export default function MisPlantasPage() {
         </div>
       )}
 
-      {/* Grid de plantas agrupado por especies */}
+      {/* Barra de Filtros y Búsqueda */}
       {plantas.length > 0 && (
+        <div style={{
+          background: 'white',
+          border: '1px solid #e2e8f0',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          marginBottom: '28px',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          {/* Fila 1: Búsqueda */}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', color: '#94a3b8' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Buscar plantas por nombre, variedad original o hortaliza..."
+              value={filterSearch}
+              onChange={e => setFilterSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px 12px 42px',
+                borderRadius: '12px',
+                border: '2px solid #e2e8f0',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                color: '#1e293b',
+                outline: 'none',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box'
+              }}
+              onFocus={e => e.target.style.borderColor = '#10b981'}
+              onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+            />
+            {filterSearch && (
+              <button
+                onClick={() => setFilterSearch('')}
+                style={{
+                  position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1rem',
+                  fontWeight: 'bold', padding: '4px'
+                }}
+              >
+                ✖
+              </button>
+            )}
+          </div>
+
+          {/* Fila 2: Filtros de Tags */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginRight: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Filtrar:
+            </span>
+            {FILTER_TAGS.map(tag => {
+              const isActive = selectedFilter === tag.id;
+              
+              // Colores premium según el tipo de tag y estado activo
+              let badgeBg = '#f1f5f9';
+              let badgeColor = '#475569';
+              let activeBg = '#065f46';
+              let activeColor = 'white';
+
+              if (tag.id === 'dif_facil') {
+                badgeBg = '#f0fdf4';
+                badgeColor = '#166534';
+                activeBg = '#166534';
+              } else if (tag.id === 'dif_media') {
+                badgeBg = '#fef9c3';
+                badgeColor = '#854d0e';
+                activeBg = '#854d0e';
+              } else if (tag.id === 'dif_dificil') {
+                badgeBg = '#fef2f2';
+                badgeColor = '#991b1b';
+                activeBg = '#991b1b';
+              } else if (tag.id === 'activas') {
+                badgeBg = '#f0fdf4';
+                badgeColor = '#166534';
+                activeBg = '#059669';
+              } else if (tag.id === 'inactivas') {
+                badgeBg = '#f8fafc';
+                badgeColor = '#64748b';
+                activeBg = '#475569';
+              }
+
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => setSelectedFilter(tag.id)}
+                  style={{
+                    background: isActive ? activeBg : badgeBg,
+                    color: isActive ? activeColor : badgeColor,
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '9999px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isActive ? '0 4px 10px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                  onMouseOver={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.filter = 'brightness(0.95)';
+                    }
+                  }}
+                  onMouseOut={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.filter = 'none';
+                    }
+                  }}
+                >
+                  {tag.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Grid de plantas agrupado por especies */}
+      {plantas.length > 0 && filteredPlantas.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-          {Array.from(new Set(plantas.map(p => p.especiesnombre))).sort().map(especieNombre => {
-            const plantasDeEspecie = plantas.filter(p => p.especiesnombre === especieNombre);
+          {Array.from(new Set(filteredPlantas.map(p => p.especiesnombre))).sort().map(especieNombre => {
+            const plantasDeEspecie = filteredPlantas.filter(p => p.especiesnombre === especieNombre);
             const especieIcono = plantasDeEspecie[0].especiesicono || '🌱';
             return (
               <div key={especieNombre}>
@@ -356,9 +545,21 @@ export default function MisPlantasPage() {
                     >
                       {/* Header de la tarjeta */}
                       <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '40px' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
-                          {p.especiesnombre}
-                        </span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                          <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
+                            {p.especiesnombre}
+                          </span>
+                          {Number(p.variedadesvisibilidadsino ?? 1) === 0 && (
+                            <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                              💤 Inactiva
+                            </span>
+                          )}
+                          {Number(p.origen_visibilidad ?? 1) === 0 && (
+                            <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#dc2626', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }} title="Esta variedad ha sido descatalogada del catálogo general por el administrador.">
+                              🚫 Descatalogada
+                            </span>
+                          )}
+                        </div>
                         {!p.es_generica && (
                           <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                             🏷️ {p.nombre_gold}
@@ -615,8 +816,53 @@ export default function MisPlantasPage() {
                         </button>
                       )}
 
-                      {/* Delete / Inactivate buttons */}
-                      {!hasCultivos ? (
+                      {/* Delete / Inactivate / Reactivate buttons */}
+                      {Number(p.variedadesvisibilidadsino ?? 1) === 0 ? (
+                        <>
+                          {/* Reactivate button (🔋): shown for inactive plants */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); reactivatePlanta(p.idvariedades); }}
+                            disabled={deleting === p.idvariedades}
+                            style={{
+                              position: 'absolute', top: 8,
+                              right: (p.semillas_count || 0) === 0 ? 48 : 8,
+                              background: '#ffffff', color: '#10b981', border: '1px solid #a7f3d0',
+                              width: 32, height: 32, borderRadius: '50%',
+                              cursor: 'pointer', fontSize: '0.9rem', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#86efac'; }}
+                            onMouseOut={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#a7f3d0'; }}
+                            title="Reactivar en el huerto"
+                          >
+                            🔋
+                          </button>
+
+                          {/* Delete button (🗑️): only shown if it has no seeds */}
+                          {(p.semillas_count || 0) === 0 && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedades, false); }}
+                              disabled={deleting === p.idvariedades}
+                              style={{
+                                position: 'absolute', top: 8, right: 8,
+                                background: '#ffffff', color: '#ef4444', border: '1px solid #fca5a5',
+                                width: 32, height: 32, borderRadius: '50%',
+                                cursor: 'pointer', fontSize: '0.9rem', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.borderColor = '#f87171'; }}
+                              onMouseOut={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+                              title="Eliminar del huerto"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </>
+                      ) : !hasCultivos ? (
                         <>
                           {/* Inactivate button (💤): always shown if no active crops */}
                           <button
@@ -689,214 +935,50 @@ export default function MisPlantasPage() {
         </div>
       )}
 
+      {/* Sin resultados al aplicar filtros */}
+      {plantas.length > 0 && filteredPlantas.length === 0 && (
+        <div style={{
+          textAlign: 'center', padding: '4rem 2rem',
+          background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+          borderRadius: '16px', border: '2px dashed #cbd5e1',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+          animation: 'fadeInDown 0.3s'
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔍</div>
+          <h2 style={{ color: '#475569', margin: '0 0 8px', fontWeight: 800 }}>Sin resultados para tu búsqueda</h2>
+          <p style={{ color: '#94a3b8', maxWidth: 460, margin: '0 auto 1.5rem', lineHeight: 1.6, fontSize: '0.95rem' }}>
+            No encontramos ninguna planta en tu huerto que coincida con el término "{filterSearch}" o con el filtro seleccionado.
+          </p>
+          <button
+            onClick={() => { setFilterSearch(''); setSelectedFilter('all'); }}
+            style={{
+              background: '#065f46', color: 'white', border: 'none',
+              padding: '12px 24px', borderRadius: '12px', fontWeight: 700,
+              cursor: 'pointer', fontSize: '0.95rem',
+              boxShadow: '0 4px 12px rgba(6, 95, 70, 0.2)',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            Resetear filtros
+          </button>
+        </div>
+      )}
+
       {/* ═══════════════════════════════════════ */}
       {/* WIZARD: Añadir nueva planta             */}
       {/* ═══════════════════════════════════════ */}
-      {wizardOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '20px'
-        }} onClick={() => setWizardOpen(false)}>
-          <div style={{
-            background: 'white', borderRadius: '20px', maxWidth: 700, width: '100%',
-            maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-          }} onClick={e => e.stopPropagation()}>
-
-            {/* Wizard header */}
-            <div style={{
-              padding: '20px 24px', borderBottom: '1px solid #e2e8f0',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)'
-            }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#166534' }}>🌱 Añadir nueva planta</h2>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  {[1, 2, 3].map(s => (
-                    <div key={s} style={{
-                      width: 80, height: 4, borderRadius: 2,
-                      background: s <= wizardStep ? '#10b981' : '#d1d5db',
-                      transition: 'background 0.3s'
-                    }} />
-                  ))}
-                </div>
-                <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-                  Paso {wizardStep} de 3: {wizardStep === 1 ? 'Elige especie' : wizardStep === 2 ? 'Elige variedad' : 'Confirmar'}
-                </p>
-              </div>
-              <button onClick={() => setWizardOpen(false)} style={{
-                background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8'
-              }}>✕</button>
-            </div>
-
-            {/* Wizard body */}
-            <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-
-              {/* PASO 1: Elegir especie */}
-              {wizardStep === 1 && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar especie..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    style={{
-                      width: '100%', padding: '12px 16px', borderRadius: '12px',
-                      border: '2px solid #e2e8f0', fontSize: '0.95rem',
-                      marginBottom: '16px', boxSizing: 'border-box',
-                      outline: 'none', transition: 'border-color 0.2s'
-                    }}
-                    onFocus={e => e.target.style.borderColor = '#10b981'}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                  />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                    {filteredEspecies.map(esp => (
-                      <button key={esp.idespecies} onClick={() => selectEspecie(esp)} style={{
-                        background: 'white', border: '2px solid #e2e8f0', borderRadius: '12px',
-                        padding: '16px', cursor: 'pointer', textAlign: 'left',
-                        transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '8px'
-                      }}
-                        onMouseOver={e => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = '#f0fdf4'; }}
-                        onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; }}
-                      >
-                        {esp.foto ? (
-                          <div style={{ width: '64px', height: '64px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                            <img src={getMediaUrl(esp.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                          </div>
-                        ) : (
-                          <SpeciesIcon icon={esp.especiesicono} size="2.5rem" />
-                        )}
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{esp.especiesnombre}</span>
-                        {esp.especiesnombrecientifico && (
-                          <span style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>{esp.especiesnombrecientifico}</span>
-                        )}
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                          {esp.total_variedades} variedad{esp.total_variedades !== 1 ? 'es' : ''}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  {filteredEspecies.length === 0 && (
-                    <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No se encontraron especies</p>
-                  )}
-                </>
-              )}
-
-              {/* PASO 2: Elegir variedad */}
-              {wizardStep === 2 && selectedEspecie && (
-                <>
-                  <button onClick={() => { setWizardStep(1); setSelectedVariedad(null); }}
-                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '12px', fontSize: '0.85rem' }}>
-                    ← Volver a especies
-                  </button>
-                  <h3 style={{ margin: '0 0 16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <SpeciesIcon icon={selectedEspecie.especiesicono} size="1.5rem" /> {selectedEspecie.especiesnombre} — Elige variedad
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                    {catalogoVariedades.map(v => (
-                      <button key={v.idvariedades} onClick={() => { setSelectedVariedad(v); setWizardStep(3); }}
-                        style={{
-                          background: selectedVariedad?.idvariedades === v.idvariedades ? '#f0fdf4' : 'white',
-                          border: `2px solid ${selectedVariedad?.idvariedades === v.idvariedades ? '#10b981' : '#e2e8f0'}`,
-                          borderRadius: '12px', padding: '16px', cursor: 'pointer',
-                          textAlign: 'left', transition: 'all 0.2s',
-                          display: 'flex', flexDirection: 'column', gap: '6px'
-                        }}
-                        onMouseOver={e => e.currentTarget.style.borderColor = '#10b981'}
-                        onMouseOut={e => { if (selectedVariedad?.idvariedades !== v.idvariedades) e.currentTarget.style.borderColor = '#e2e8f0'; }}
-                      >
-                        {v.variedadesesgenerica === 1 && <span style={{ fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '8px', fontWeight: 700, alignSelf: 'flex-start' }}>🏅 Recomendada</span>}
-                        {v.foto ? (
-                          <div style={{ width: '56px', height: '56px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                            <img src={getMediaUrl(v.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                          </div>
-                        ) : selectedEspecie.foto ? (
-                          <div style={{ width: '56px', height: '56px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
-                            <img src={getMediaUrl(selectedEspecie.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                          </div>
-                        ) : (
-                          <SpeciesIcon icon={v.variedadesicono || selectedEspecie.especiesicono} size="2rem" />
-                        )}
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{v.variedadesnombre}</span>
-                        {v.variedadesdescripcion && <span style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>{v.variedadesdescripcion.substring(0, 80)}...</span>}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* PASO 3: Confirmar */}
-              {wizardStep === 3 && selectedEspecie && (
-                <>
-                  <button onClick={() => setWizardStep(catalogoVariedades.length > 1 ? 2 : 1)}
-                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '12px', fontSize: '0.85rem' }}>
-                    ← Volver
-                  </button>
-                  <div style={{
-                    textAlign: 'center', padding: '2rem',
-                    background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
-                    borderRadius: '16px', border: '1px solid #bbf7d0'
-                  }}>
-                    <div style={{ fontSize: '5rem', marginBottom: '16px' }}>
-                      {selectedVariedad?.foto ? (
-                        <div style={{ width: '120px', height: '120px', borderRadius: '24px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
-                          <img src={getMediaUrl(selectedVariedad.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                        </div>
-                      ) : selectedEspecie.foto ? (
-                        <div style={{ width: '120px', height: '120px', borderRadius: '24px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
-                          <img src={getMediaUrl(selectedEspecie.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                        </div>
-                      ) : (
-                        <SpeciesIcon icon={selectedVariedad?.variedadesicono || selectedEspecie.especiesicono} size="5rem" />
-                      )}
-                    </div>
-                    <h3 style={{ margin: '0 0 4px', color: '#166534', fontSize: '1.3rem' }}>
-                      {selectedVariedad?.variedadesnombre || selectedEspecie.especiesnombre}
-                    </h3>
-                    <p style={{ color: '#15803d', margin: '0 0 20px', fontSize: '0.9rem' }}>
-                      Especie: {selectedEspecie.especiesnombre}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: 350, margin: '0 auto 24px', textAlign: 'left' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#166534' }}>
-                        <span>✅</span> Datos agronómicos heredados de la especie
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#166534' }}>
-                        <span>✅</span> Pautas de labores predefinidas
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#166534' }}>
-                        <span>✅</span> Personalizable en cualquier momento
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      <button onClick={() => confirmAcquisition(false)} disabled={acquiring}
-                        style={{
-                          background: 'white', color: '#10b981', border: '2px solid #10b981', padding: '12px 24px',
-                          borderRadius: '12px', fontWeight: 600, cursor: acquiring ? 'not-allowed' : 'pointer',
-                          fontSize: '0.95rem'
-                        }}
-                      >
-                        {acquiring ? '⏳' : 'Guardar para luego'}
-                      </button>
-                      <button onClick={() => confirmAcquisition(true)} disabled={acquiring}
-                        style={{
-                          background: acquiring ? '#94a3b8' : 'linear-gradient(135deg, #10b981, #059669)',
-                          color: 'white', border: 'none', padding: '12px 24px',
-                          borderRadius: '12px', fontWeight: 700, cursor: acquiring ? 'not-allowed' : 'pointer',
-                          fontSize: '0.95rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                        }}
-                      >
-                        {acquiring ? '⏳ Añadiendo...' : '🌱 Añadir e Iniciar Cultivo Ahora'}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <PlantWizardModal
+        show={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        userEmail={userEmail || undefined}
+        onSuccess={async ({ id, startCultivo }) => {
+          setWizardOpen(false);
+          await loadPlantas();
+          router.push(`/dashboard/mis-plantas/${id}${startCultivo ? '?startCultivo=true' : ''}`);
+        }}
+      />
 
       {/* Modal Añadir Cultivo */}
       {modalNuevoCultivoPlanta !== null && userEmail && (

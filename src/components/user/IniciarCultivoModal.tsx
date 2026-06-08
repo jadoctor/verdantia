@@ -290,8 +290,8 @@ export default function IniciarCultivoModal({
         .then(res => res.json())
         .then(data => {
           const seeds = (data.semillas || []).filter((s: any) => 
-            (s.xsemillasidvariedades === plantaId || s.xsemillasidvariedades === xvariedadesidvariedadorigen) && 
-            s.semillasstockactual > 0 && 
+            (Number(s.xsemillasidvariedades) === Number(plantaId) || Number(s.xsemillasidvariedades) === Number(xvariedadesidvariedadorigen)) && 
+            (s.semillasstockactual === null || s.semillasstockactual > 0) && 
             s.semillasactivosino !== 0
           );
           if (seeds.length > 0) {
@@ -803,7 +803,13 @@ END:VCALENDAR`;
                       alignItems: 'center',
                       gap: '4px'
                     }}>
-                      ✅ Tienes {stockInfo.totalStock} semillas disponibles ({stockInfo.lotesCount} {stockInfo.lotesCount === 1 ? 'lote' : 'lotes'}) en tu banco digital.
+                      {(() => {
+                        const hasUnquantified = stockInfo.seedsList.some(s => s.semillasstockactual === null);
+                        const totalText = hasUnquantified 
+                          ? (stockInfo.totalStock > 0 ? `más de ${stockInfo.totalStock}` : 'algunas')
+                          : `${stockInfo.totalStock}`;
+                        return `✅ Tienes ${totalText} semillas disponibles (${stockInfo.lotesCount} ${stockInfo.lotesCount === 1 ? 'lote' : 'lotes'}) en tu banco digital.`;
+                      })()}
                     </div>
                   </StepCard>
                 ) : (
@@ -1066,7 +1072,7 @@ END:VCALENDAR`;
                       >
                         {stockInfo.seedsList.map(s => (
                           <option key={s.idsemillas} value={s.idsemillas}>
-                            Semilla Nº {s.semillasnumerocoleccion || s.idsemillas} ({s.semillasmarca || 'Sin marca'}) — {s.semillasstockactual} uds. disponibles
+                            Semilla Nº {s.semillasnumerocoleccion || s.idsemillas} ({s.semillasmarca || 'Sin marca'}) — {s.semillasstockactual !== null ? `${s.semillasstockactual} uds. disponibles` : 'disponible (cant. no especificada)'}
                           </option>
                         ))}
                       </select>

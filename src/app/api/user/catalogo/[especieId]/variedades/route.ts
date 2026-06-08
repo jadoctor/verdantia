@@ -24,6 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ espe
       FROM variedades v
       WHERE v.xvariedadesidespecies = ? 
         AND v.xvariedadesidusuarios IS NULL
+        AND v.variedadesvisibilidadsino = 1
       ORDER BY v.variedadesesgenerica DESC, v.variedadesnombre
     `, [especieId]);
 

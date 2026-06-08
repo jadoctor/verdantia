@@ -25,7 +25,8 @@ export async function GET(request: Request) {
              (SELECT COUNT(*) FROM variedades v 
               WHERE v.xvariedadesidespecies = e.idespecies 
               AND v.xvariedadesidusuarios IS NULL 
-              AND v.variedadesesgenerica = 0) as total_variedades
+              AND v.variedadesesgenerica = 0
+              AND v.variedadesvisibilidadsino = 1) as total_variedades
       FROM especies e 
       WHERE e.especiesvisibilidadsino = 1
     `;
@@ -48,7 +49,8 @@ export async function GET(request: Request) {
     const [variedades]: any = await pool.query(`
       SELECT idvariedades, xvariedadesidespecies, variedadesnombre, variedadesesgenerica, variedadespeso1000semillas, xvariedadesidusuarios
       FROM variedades
-      WHERE xvariedadesidusuarios IS NULL OR xvariedadesidusuarios = ?
+      WHERE (xvariedadesidusuarios IS NULL OR xvariedadesidusuarios = ?)
+        AND variedadesvisibilidadsino = 1
       ORDER BY variedadesesgenerica DESC, variedadesnombre ASC
     `, [user.id]);
 

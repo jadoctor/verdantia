@@ -25,6 +25,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiespeso1000semillas) AS especiespeso1000semillas,
         vg.variedadesnombre AS nombre_gold,
         vg.variedadesesgenerica AS es_generica,
+        vu.variedadesvisibilidadsino AS variedadesvisibilidadsino,
+        vg.variedadesvisibilidadsino AS origen_visibilidad,
 
         -- Campos con herencia triple: usuario → gold → especie
         COALESCE(vu.variedadesnombre, vg.variedadesnombre) AS nombre,
@@ -79,9 +81,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vu.variedadescolor IS NOT NULL AS _p_color,
         vu.variedadestamano IS NOT NULL AS _p_tamano,
         vu.variedadesdiasgerminacion IS NOT NULL AS _p_diasgerminacion,
+        vu.variedadesviabilidadsemilla IS NOT NULL AS _p_viabilidadsemilla,
+        vu.variedadesdiashastafructificacion IS NOT NULL AS _p_diashastafructificacion,
         vu.variedadestemperaturaminima IS NOT NULL AS _p_temperaturaminima,
         vu.variedadestemperaturaoptima IS NOT NULL AS _p_temperaturaoptima,
         vu.variedadestemperaturamaxima IS NOT NULL AS _p_temperaturamaxima,
+        vu.variedadesmarcoplantas IS NOT NULL AS _p_marcoplantas,
+        vu.variedadesmarcofilas IS NOT NULL AS _p_marcofilas,
+        vu.variedadesmarcomargen IS NOT NULL AS _p_marcomargen,
+        vu.variedadesprofundidadsiembra IS NOT NULL AS _p_profundidadsiembra,
+        vu.variedadesprofundidadtrasplante IS NOT NULL AS _p_profundidadtrasplante,
+        vu.variedadeshistoria IS NOT NULL AS _p_historia,
         vu.variedadessemillerodesde IS NOT NULL AS _p_semillerodesde,
         vu.variedadessemillerohasta IS NOT NULL AS _p_semillerohasta,
         vu.variedadessiembradirectadesde IS NOT NULL AS _p_siembradirectadesde,
@@ -89,16 +99,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vu.variedadestrasplantedesde IS NOT NULL AS _p_trasplantedesde,
         vu.variedadestrasplantehasta IS NOT NULL AS _p_trasplantehasta,
         vu.variedadesrecolecciondesde IS NOT NULL AS _p_recolecciondesde,
-        vu.variedadesrecolecciondesde IS NOT NULL AS _p_recolecciondesde,
         vu.variedadesrecoleccionhasta IS NOT NULL AS _p_recoleccionhasta,
+        vu.variedadesautosuficiencia IS NOT NULL AS _p_autosuficiencia,
+        vu.variedadesautosuficienciaparcial IS NOT NULL AS _p_autosuficienciaparcial,
+        vu.variedadesautosuficienciaconserva IS NOT NULL AS _p_autosuficienciaconserva,
+        vu.variedadesdiashastatrasplante IS NOT NULL AS _p_diashastatrasplante,
+        vu.variedadesdiashastarecoleccion IS NOT NULL AS _p_diashastarecoleccion,
+        vu.variedadesicono IS NOT NULL AS _p_icono,
+        vu.variedadesbiodinamicacategoria IS NOT NULL AS _p_biodinamicacategoria,
+        vu.variedadesbiodinamicanotas IS NOT NULL AS _p_biodinamicanotas,
         vu.variedadeslunarfasesiembra IS NOT NULL AS _p_lunarfasesiembra,
         vu.variedadeslunarfasetrasplante IS NOT NULL AS _p_lunarfasetrasplante,
         vu.variedadeslunarobservaciones IS NOT NULL AS _p_lunarobservaciones,
-        vu.variedadesbiodinamicacategoria IS NOT NULL AS _p_biodinamicacategoria,
         vu.variedadesbiodinamicafasesiembra IS NOT NULL AS _p_biodinamicafasesiembra,
         vu.variedadesbiodinamicafasetrasplante IS NOT NULL AS _p_biodinamicafasetrasplante,
-        vu.variedadesbiodinamicanotas IS NOT NULL AS _p_biodinamicanotas,
-        vu.variedadesmarcomargen IS NOT NULL AS _p_marcomargen
+        vu.variedadesphsuelo IS NOT NULL AS _p_phsuelo,
+        vu.variedadesnecesidadriego IS NOT NULL AS _p_necesidadriego,
+        vu.variedadesvolumenmaceta IS NOT NULL AS _p_volumenmaceta,
+        vu.variedadesluzsolar IS NOT NULL AS _p_luzsolar,
+        vu.variedadescaracteristicassuelo IS NOT NULL AS _p_caracteristicassuelo,
+        vu.variedadesdificultad IS NOT NULL AS _p_dificultad
 
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
@@ -161,7 +181,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       'variedadesvolumenmaceta', 'variedadesluzsolar', 'variedadescaracteristicassuelo',
       'variedadesdificultad',
       'variedadeslunarfasesiembra', 'variedadeslunarfasetrasplante', 'variedadeslunarobservaciones',
-      'variedadesbiodinamicafasesiembra', 'variedadesbiodinamicafasetrasplante'
+      'variedadesbiodinamicafasesiembra', 'variedadesbiodinamicafasetrasplante',
+      'variedadesvisibilidadsino'
     ];
 
     const setClauses: string[] = [];

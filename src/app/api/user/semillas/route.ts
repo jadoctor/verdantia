@@ -15,6 +15,7 @@ export async function GET(request: Request) {
       SELECT 
         s.idsemillas,
         s.xsemillasidvariedades,
+        COALESCE(vu.xvariedadesidvariedadorigen, vu.idvariedades) AS global_variedad_id,
         s.semillasnumerocoleccion,
         s.semillasorigen,
         s.semillaslugarcompra,

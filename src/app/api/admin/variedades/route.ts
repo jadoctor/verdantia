@@ -19,15 +19,28 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const especieId = searchParams.get('especieId');
+  const includeHidden = searchParams.get('includeHidden') === 'true';
+  const filter = searchParams.get('filter') || (includeHidden ? 'todas' : 'activas');
 
   try {
     let query = `
-      SELECT v.*, e.especiesnombre, e.especiesicono
+      SELECT v.*, e.especiesnombre, e.especiesicono,
+        (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedades = v.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_ruta,
+        (SELECT datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidvariedades = v.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_resumen,
+        (SELECT COUNT(*) FROM variedades WHERE xvariedadesidvariedadorigen = v.idvariedades) as total_asociaciones,
+        ((SELECT COUNT(*) FROM semillas WHERE xsemillasidvariedades = v.idvariedades) + (SELECT COUNT(*) FROM semillas s JOIN variedades vu ON s.xsemillasidvariedades = vu.idvariedades WHERE vu.xvariedadesidvariedadorigen = v.idvariedades)) as total_semillas,
+        ((SELECT COUNT(*) FROM cultivos WHERE xcultivosidvariedades = v.idvariedades) + (SELECT COUNT(*) FROM cultivos c JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades WHERE vu.xvariedadesidvariedadorigen = v.idvariedades)) as total_cultivos
       FROM variedades v
       LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies
       WHERE v.variedadesesgenerica = 0 AND v.xvariedadesidusuarios IS NULL
     `;
     const params: any[] = [];
+
+    if (filter === 'activas') {
+      query += ` AND v.variedadesvisibilidadsino = 1`;
+    } else if (filter === 'inactivas') {
+      query += ` AND v.variedadesvisibilidadsino = 0`;
+    }
 
     if (especieId) {
       query += ` AND v.xvariedadesidespecies = ?`;

@@ -135,6 +135,7 @@ export default function DashboardLayout({
     '/dashboard/admin/asuntos-pendientes': { label: 'Asuntos Pendientes', icon: '📋' },
     '/dashboard/admin/asuntos-realizados': { label: 'Asuntos Realizados', icon: '✅' },
     '/dashboard/admin/blog': { label: 'Gestor Blog IA', icon: '📝' },
+    '/dashboard/admin/ajustes/mantenimiento': { label: 'Mantenimiento', icon: '🔧' },
   };
 
   const getBreadcrumbs = () => {
@@ -619,6 +620,7 @@ export default function DashboardLayout({
                       <a href="/dashboard/admin/ajustes/paises" className={`nav-item ${pathname.includes('/admin/ajustes/paises') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌎 Países</a>
                       <a href="/dashboard/admin/ajustes/avisos" className={`nav-item ${pathname.includes('/admin/ajustes/avisos') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔔 Avisos y Reglas</a>
                       <a href="/dashboard/admin/ajustes/logros" className={`nav-item ${pathname.includes('/admin/ajustes/logros') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🏆 Sistema de Rangos</a>
+                      <a href="/dashboard/admin/ajustes/mantenimiento" className={`nav-item ${pathname.includes('/admin/ajustes/mantenimiento') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔧 Mantenimiento</a>
                     </div>
                   </div>
                 </nav>

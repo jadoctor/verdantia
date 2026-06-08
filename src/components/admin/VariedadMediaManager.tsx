@@ -10,9 +10,13 @@ interface VariedadMediaManagerProps {
   userEmail: string;
   variedadNombre?: string;
   especieNombre?: string;
+  especieNombreCientifico?: string;
+  especieFamilia?: string;
+  section?: 'photos' | 'pdfs' | 'all';
+  onMediaChange?: () => void;
 }
 
-export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie' }: VariedadMediaManagerProps) {
+export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange }: VariedadMediaManagerProps) {
   const [photos, setPhotos] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -22,6 +26,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
   const [showAiImageModal, setShowAiImageModal] = useState(false);
   const [aiImageConcept, setAiImageConcept] = useState('');
   const [aiImageLoading, setAiImageLoading] = useState(false);
+  const [aiImageTimer, setAiImageTimer] = useState(0);
   const [aiImageResult, setAiImageResult] = useState<string | null>(null);
   const [aiImageDescription, setAiImageDescription] = useState('');
   const [aiImagePromptPreview, setAiImagePromptPreview] = useState('');
@@ -54,6 +59,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
 
   // Drag states
   const [dragOverPdfs, setDragOverPdfs] = useState(false);
+  const [dragOverPhotos, setDragOverPhotos] = useState(false);
 
   // Photo Editor States
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
@@ -64,7 +70,8 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
   const [editorContrast, setEditorContrast] = useState(100);
   const [editorStyle, setEditorStyle] = useState('');
   const [editorSeoAlt, setEditorSeoAlt] = useState('');
-  const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [editorInitialState, setEditorInitialState] = useState('');
+  const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
 
   const STYLE_FILTERS: Record<string, string> = {
     '': 'none',
@@ -100,6 +107,19 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
     return () => clearInterval(interval);
   }, [pdfSearchLoading]);
 
+  useEffect(() => {
+    let interval: any;
+    if (aiImageLoading) {
+      setAiImageTimer(0);
+      interval = setInterval(() => {
+        setAiImageTimer(prev => prev + 1);
+      }, 1000);
+    } else {
+      setAiImageTimer(0);
+    }
+    return () => clearInterval(interval);
+  }, [aiImageLoading]);
+
   const loadMedia = async () => {
     try {
       const [resPhotos, resPdfs, resBlogs] = await Promise.all([
@@ -113,6 +133,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
       setPhotos(dataPhotos.photos || []);
       setPdfs(dataPdfs.pdfs || []);
       setBlogs(dataBlogs.blogs || []);
+      onMediaChange?.();
     } catch (e) {
       console.error('Error loading media:', e);
     }
@@ -231,8 +252,9 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({
           tipoEntidad: 'documento',
-          especieNombre: variedadNombre,
-          concept: `Portada del documento titulado "${pdf.titulo}". Estilo limpio, académico, con ilustración botánica. Contenido principal: ${pdf.resumen}`
+          especieNombre: especieNombre,
+          variedadNombre: variedadNombre,
+          concept: `Portada del documento titulado "${pdf.titulo}" sobre la variedad de ${especieNombre} llamada "${variedadNombre}". Estilo limpio, académico, con ilustración botánica. Contenido principal: ${pdf.resumen}`
         })
       });
       const data = await res.json();
@@ -391,65 +413,127 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
     }
   };
 
+  // ── Drag-to-Pan en el editor de fotos ──
+  const editorDragRef = React.useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
+    dragging: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50
+  });
+
+  const onEditorMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editorDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, startPosX: editorX, startPosY: editorY };
+    const onMove = (ev: MouseEvent) => {
+      if (!editorDragRef.current.dragging) return;
+      const dx = ev.clientX - editorDragRef.current.startX;
+      const dy = ev.clientY - editorDragRef.current.startY;
+      const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+      setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+      setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
+    };
+    const onUp = () => {
+      editorDragRef.current.dragging = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const onEditorTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    editorDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, startPosX: editorX, startPosY: editorY };
+  };
+
+  const onEditorTouchMove = (e: React.TouchEvent) => {
+    if (!editorDragRef.current.dragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - editorDragRef.current.startX;
+    const dy = t.clientY - editorDragRef.current.startY;
+    const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
+    setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
+    setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
+  };
+
   const openPhotoEditor = (photo: any) => {
-    let meta: any = {};
-    try { meta = JSON.parse(photo.resumen || '{}'); } catch(e){}
+    try {
+      const meta = JSON.parse(photo.resumen || '{}');
+      const initial = {
+        x: meta.profile_object_x ?? 50,
+        y: meta.profile_object_y ?? 50,
+        zoom: meta.profile_object_zoom ?? 100,
+        brightness: meta.profile_brightness ?? 100,
+        contrast: meta.profile_contrast ?? 100,
+        style: meta.profile_style ?? '',
+        seo_alt: meta.seo_alt ?? ''
+      };
+      setEditorX(initial.x);
+      setEditorY(initial.y);
+      setEditorZoom(initial.zoom);
+      setEditorBrightness(initial.brightness);
+      setEditorContrast(initial.contrast);
+      setEditorStyle(initial.style);
+      setEditorSeoAlt(initial.seo_alt);
+      setEditorInitialState(JSON.stringify(initial));
+    } catch {
+      setEditorX(50); setEditorY(50); setEditorZoom(100);
+      setEditorBrightness(100); setEditorContrast(100); setEditorStyle(''); setEditorSeoAlt('');
+      setEditorInitialState(JSON.stringify({ x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: '' }));
+    }
     setEditingPhoto(photo);
-    setEditorX(meta.profile_object_x ?? 50);
-    setEditorY(meta.profile_object_y ?? 50);
-    setEditorZoom(meta.profile_object_zoom ?? 100);
-    setEditorBrightness(meta.profile_brightness ?? 100);
-    setEditorContrast(meta.profile_contrast ?? 100);
-    setEditorStyle(meta.profile_style || '');
-    setEditorSeoAlt(meta.seo_alt || '');
-    setPhotoEditorSaveStatus('idle');
   };
 
   const savePhotoEdits = async () => {
     if (!editingPhoto) return;
     setPhotoEditorSaveStatus('saving');
+    const resumen = JSON.stringify({
+      profile_object_x: editorX,
+      profile_object_y: editorY,
+      profile_object_zoom: editorZoom,
+      profile_brightness: editorBrightness,
+      profile_contrast: editorContrast,
+      profile_style: editorStyle,
+      seo_alt: editorSeoAlt
+    });
     try {
-      let meta: any = {};
-      try { meta = JSON.parse(editingPhoto.resumen || '{}'); } catch(e){}
-      
-      const newMeta = {
-        ...meta,
-        profile_object_x: editorX,
-        profile_object_y: editorY,
-        profile_object_zoom: editorZoom,
-        profile_brightness: editorBrightness,
-        profile_contrast: editorContrast,
-        profile_style: editorStyle,
-        seo_alt: editorSeoAlt
-      };
-
       const res = await fetch(`/api/admin/variedades/${variedadId}/photos`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({ 
           action: 'updateMeta', 
           photoId: editingPhoto.id, 
-          resumen: JSON.stringify(newMeta) 
+          resumen 
         })
       });
 
       if (res.ok) {
-        setPhotoEditorSaveStatus('saved');
+        setEditingPhoto(null);
         await loadMedia();
-        setTimeout(() => {
-          setEditingPhoto(null);
-          setPhotoEditorSaveStatus('idle');
-        }, 1000);
+      } else {
+        alert('❌ Error guardando ajustes');
       }
     } catch (e) {
       console.error('Error saving photo edits:', e);
       alert('Error al guardar los cambios de la foto');
+    } finally {
+      setPhotoEditorSaveStatus('idle');
     }
   };
 
   const buildPromptPreview = () => {
-    const defaultConcept = `varios ejemplares de la variedad ${variedadNombre} (perteneciente a la especie ${especieNombre}) recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
-    return `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.\\nSujeto principal: La variedad ${variedadNombre} de la especie ${especieNombre} (hortaliza/planta comestible de huerto).\\nEscena concreta: ${aiImageConcept || defaultConcept}.\\nComposición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.\\nREGLAS ESTRICTAS:\\n1. El sujeto es SIEMPRE una planta, hortaliza, fruto o semilla comestible de huerto (específicamente de la especie ${especieNombre}).\\n2. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura.\\n3. El entorno debe ser siempre agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica.\\n4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\\n5. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible.`;
+    const defaultConcept = `varios ejemplares de la variedad "${variedadNombre}" (perteneciente a la especie botánica "${especieNombre}") recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
+    const sciNameContext = especieNombreCientifico ? ` Nombre científico: ${especieNombreCientifico}.` : '';
+    const familyContext = especieFamilia ? ` Familia botánica: ${especieFamilia}.` : '';
+
+    return `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.\\n` +
+      `Sujeto principal: La variedad "${variedadNombre}" de la especie botánica "${especieNombre}" (hortaliza/planta comestible de huerto).${sciNameContext}${familyContext}\\n` +
+      `Escena concreta: ${aiImageConcept || defaultConcept}.\\n` +
+      `Composición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.\\n` +
+      `REGLAS ESTRICTAS E INQUEBRANTABLES:\\n` +
+      `1. El sujeto de la fotografía es SIEMPRE la variedad "${variedadNombre}" perteneciente a la especie "${especieNombre}". Es obligatorio y sumamente crítico que la imagen contemple e ilustre fielmente las características específicas de esta variedad botánica y de su especie progenitora. La representación visual debe centrarse en mostrar con absoluta fidelidad y exactitud botánica los rasgos fenotípicos de la especie "${especieNombre}" y los atributos característicos de la variedad "${variedadNombre}" (color del fruto o follaje, forma, tamaño, textura y apariencia foliar/fruto).\\n` +
+      `2. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura, con colores naturales muy realistas y texturas detalladas, sin parecer artificial.\\n` +
+      `3. El entorno debe ser obligatoriamente agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica.\\n` +
+      `4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\\n` +
+      `5. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible, con gotas de rocío o tierra suelta si es apropiado.\\n` +
+      `6. Buscar fotos, imágenes y descripciones reales de la variedad de ${especieNombre} llamada "${variedadNombre}" en internet para ver cómo es físicamente. A partir de lo que observes en las imágenes y la información, describe con detalle sus características visuales reales y fenotipo (color exacto, forma, tamaño, hojas y aspecto general) para que un generador de imágenes de IA pueda ilustrarla con total fidelidad botánica y no se la invente.`;
   };
 
   const generateAiImage = async () => {
@@ -458,7 +542,11 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
     setAiImageDescription('');
     try {
       const body: any = { 
-        especieNombre: variedadNombre,
+        tipoEntidad: 'variedad',
+        especieNombre: especieNombre,
+        variedadNombre: variedadNombre,
+        especieNombreCientifico: especieNombreCientifico,
+        especieFamilia: especieFamilia,
         concept: aiImageConcept 
       };
       if (aiImagePromptEdited && aiImagePromptPreview.trim()) {
@@ -538,6 +626,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
       <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
         
         {/* PHOTOS */}
+        {(section === 'all' || section === 'photos') && (
         <div className="form-group full" style={{ marginBottom: '30px' }}>
         <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -608,7 +697,20 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
           })}
           
           {photos.length < 4 && (
-            <div className={`custom-file-upload drop-zone inline-drop-zone ${uploading ? 'drag-over' : ''}`}>
+            <div
+              className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragOverPhotos(false);
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  handleFileUpload({ target: { files: e.dataTransfer.files } } as any, 'photos');
+                }
+              }}
+            >
               <input type="file" id="upload-photos-variedad" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploading} />
               
               {uploading ? (
@@ -636,8 +738,10 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
           )}
         </div>
       </div>
+      )}
 
       {/* PDFS Y BLOGS */}
+      {(section === 'all' || section === 'pdfs') && (
       <div className="form-group full" style={{ marginTop: '20px' }}>
         <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
           <span style={{ margin: 0, fontWeight: 'bold' }}>📄 Documentos Adicionales (PDF)</span>
@@ -756,6 +860,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
         </div>
 
       </div>
+    )}
     </div>
 
       {showAiImageModal && (
@@ -856,7 +961,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
                       marginTop: '10px'
                     }}
                   >
-                    {aiImageLoading ? 'Generando Imagen...' : '✨ Generar Ahora'}
+                    {aiImageLoading ? `⏳ Generando Imagen... (${aiImageTimer}s)` : '✨ Generar Ahora'}
                   </button>
                 </>
               ) : (
@@ -1251,93 +1356,174 @@ JSON de salida obligatorio:
       {editingPhoto && (
         <div className="photo-editor-overlay">
           <div className="photo-editor-content">
-            <div className="photo-editor-header">
-              <h3>🎨 Editor de Imagen: {variedadNombre}</h3>
-              <button className="photo-editor-close" onClick={() => setEditingPhoto(null)}>&times;</button>
+            <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Ajustar Fotografía y SEO</h3>
+                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
+                  📄 {editingPhoto.ruta.split('/').pop()}
+                </small>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button type="button" onClick={() => setEditingPhoto(null)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
+                {(() => {
+                  const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
+                  if (currentState !== editorInitialState) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={savePhotoEdits}
+                        className={`btn-primary ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
+                        style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
+                        disabled={photoEditorSaveStatus === 'saving'}
+                      >
+                        {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Cambios'}
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
             </div>
             
             <div className="photo-editor-body">
               <div 
                 className="photo-editor-preview-container"
-                style={{ position: 'relative', overflow: 'hidden', height: '300px' }}
-                onMouseDown={(e) => {
-                  const startX = e.clientX;
-                  const startY = e.clientY;
-                  const startPosX = editorX;
-                  const startPosY = editorY;
-                  const onMove = (moveEvent: MouseEvent) => {
-                    const dx = moveEvent.clientX - startX;
-                    const dy = moveEvent.clientY - startY;
-                    setEditorX(Math.max(0, Math.min(100, startPosX - dx / 5)));
-                    setEditorY(Math.max(0, Math.min(100, startPosY - dy / 5)));
-                  };
-                  const onUp = () => {
-                    window.removeEventListener('mousemove', onMove);
-                    window.removeEventListener('mouseup', onUp);
-                  };
-                  window.addEventListener('mousemove', onMove);
-                  window.addEventListener('mouseup', onUp);
-                }}
+                onMouseDown={onEditorMouseDown}
+                onTouchStart={onEditorTouchStart}
+                onTouchMove={onEditorTouchMove}
               >
-                <img 
-                  src={getMediaUrl(editingPhoto.ruta)} 
-                  alt="Preview" 
-                  className="photo-editor-image"
-                  style={{
-                    objectPosition: `${editorX}% ${editorY}%`,
-                    filter: `${STYLE_FILTERS[editorStyle] || 'none'} brightness(${editorBrightness}%) contrast(${editorContrast}%)`,
-                    transform: `scale(${editorZoom / 100})`
-                  }}
-                  crossOrigin="anonymous"
-                />
-                <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem' }}>
-                  Posición: {Math.round(editorX)}% / {Math.round(editorY)}%
+                <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
+                  <img 
+                    src={getMediaUrl(editingPhoto.ruta)} 
+                    alt="preview" 
+                    className="photo-editor-image"
+                    draggable="false"
+                    style={{
+                      objectPosition: `${editorX}% ${editorY}%`,
+                      transformOrigin: `${editorX}% ${editorY}%`,
+                      transform: `scale(${editorZoom / 100})`,
+                      filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
+                    }}
+                    crossOrigin="anonymous"
+                  />
+                </div>
+                <div className="photo-editor-hint">
+                  <span>Arrastra para encuadrar</span>
                 </div>
               </div>
 
               <div className="photo-editor-controls">
                 <div className="editor-control-group">
-                  <label>Zoom <span>{editorZoom}%</span></label>
-                  <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(parseInt(e.target.value))} />
+                  <label>
+                    <span className="control-label">🔍 Zoom ({editorZoom}%)</span>
+                    <button type="button" className="reset-btn" onClick={() => setEditorZoom(100)}>↻</button>
+                  </label>
+                  <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(Number(e.target.value))} />
+                </div>
+                
+                <div className="editor-control-group">
+                  <label>
+                    <span className="control-label">☀️ Brillo ({editorBrightness}%)</span>
+                  </label>
+                  <input type="range" min="50" max="150" value={editorBrightness} onChange={e => setEditorBrightness(Number(e.target.value))} />
                 </div>
 
                 <div className="editor-control-group">
-                  <label>Estilo Visual</label>
-                  <div className="style-filters-grid">
-                    {Object.keys(STYLE_FILTERS).map(filter => (
-                      <button 
-                        key={filter} 
-                        className={`style-filter-btn ${editorStyle === filter ? 'active' : ''}`}
-                        onClick={() => setEditorStyle(filter)}
-                      >
-                        {filter || 'Original'}
-                      </button>
-                    ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ margin: 0 }}>
+                      <span className="control-label" style={{ margin: 0 }}>🌗 Contraste ({editorContrast}%)</span>
+                    </label>
                   </div>
+                  <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
+                </div>
+
+                <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditorBrightness(110);
+                      setEditorContrast(115);
+                      setEditorStyle('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    ✨ Auto Color
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditorBrightness(100);
+                      setEditorContrast(100);
+                      setEditorStyle('');
+                      setEditorZoom(100);
+                      setEditorX(50);
+                      setEditorY(50);
+                    }}
+                    style={{
+                      padding: '10px 15px',
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    ↺ Reset
+                  </button>
+                </div>
+
+                <div className="editor-control-group" style={{ marginBottom: '15px' }}>
+                  <label>
+                    <span className="control-label">🎨 Estilos y Filtros de IA</span>
+                  </label>
+                  <select
+                    value={editorStyle}
+                    onChange={e => setEditorStyle(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
+                  >
+                    <option value="">Sin Filtro (Original)</option>
+                    <option value="vibrant">Saturado (Vibrant)</option>
+                    <option value="vintage">Vintage (Cálido)</option>
+                    <option value="cinematic">Cinemático (Dramatic)</option>
+                    <option value="bnw">Blanco y Negro (Clásico)</option>
+                    <option value="fade">Desaturado (Fade)</option>
+                    <option value="comic">Comic (Vibrante)</option>
+                    <option value="manga">Manga (B/N Intenso)</option>
+                    <option value="watercolor">Acuarela (Suave)</option>
+                  </select>
                 </div>
 
                 <div className="editor-control-group">
-                  <label>SEO Alt Text</label>
+                  <label style={{ margin: 0 }}><span className="control-label">🏷️ Descripción SEO (Alt Text)</span></label>
                   <input 
                     type="text" 
                     value={editorSeoAlt} 
                     onChange={e => setEditorSeoAlt(e.target.value)}
                     placeholder="Descripción para buscadores..."
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.9rem' }}
                   />
+                  <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Ayuda al posicionamiento en buscadores.</small>
                 </div>
               </div>
-            </div>
-
-            <div className="photo-editor-footer">
-              <button className="btn-secondary" onClick={() => setEditingPhoto(null)}>Cancelar</button>
-              <button 
-                className={`btn-primary ${photoEditorSaveStatus === 'saved' ? 'success' : ''}`} 
-                onClick={savePhotoEdits}
-                disabled={photoEditorSaveStatus === 'saving'}
-              >
-                {photoEditorSaveStatus === 'saving' ? 'Guardando...' : photoEditorSaveStatus === 'saved' ? '¡Guardado!' : 'Guardar Cambios'}
-              </button>
             </div>
           </div>
         </div>

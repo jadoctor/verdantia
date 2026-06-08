@@ -1,19 +1,12 @@
-const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 
-async function run() {
-  const connection = await mysql.createConnection({
-    host: 'srv2070.hstgr.io',
-    user: 'u117557593_Verdantia',
-    password: 'Hostingerja0334&',
-    database: 'u117557593_Verdantia'
-  });
-  try {
-    const [cols] = await connection.query("SHOW COLUMNS FROM semillas LIKE 'semillasorigen'");
-    console.log('COLUMN DEFINITION:', cols);
-  } catch (e) {
-    console.error('Error querying columns:', e);
+const filePath = path.join(__dirname, 'src', 'components', 'admin', 'EspecieForm.tsx');
+const content = fs.readFileSync(filePath, 'utf8');
+const lines = content.split('\n');
+
+for (let i = 480; i < 580; i++) {
+  if (lines[i] !== undefined) {
+    console.log(`${i + 1}: ${lines[i]}`);
   }
-  await connection.end();
-  process.exit(0);
 }
-run();

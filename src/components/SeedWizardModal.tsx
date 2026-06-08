@@ -312,7 +312,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                        <span style={{fontSize: '1.5rem'}}>✅</span>
                        <h3 style={{ margin: 0, color: '#115e59', fontSize: '1.1rem', fontWeight: 800 }}>Hortaliza: {selectedEspecie.especiesnombre}</h3>
                     </div>
-                    <button onClick={() => { setSelectedEspecie(null); setSelectedVariedad(null); }} style={{ background: 'white', border: '1px solid #99f6e4', color: '#0d9488', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
+                    <button onClick={() => { setSelectedEspecie(null); setSelectedVariedad(null); setSeedStep(1); }} style={{ background: 'white', border: '1px solid #99f6e4', color: '#0d9488', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
                   </div>
                 ) : (
                   <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
@@ -368,7 +368,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                          <span style={{fontSize: '1.5rem'}}>✅</span>
                          <h3 style={{ margin: 0, color: '#1e40af', fontSize: '1.1rem', fontWeight: 800 }}>Variedad: {selectedVariedad.variedadesnombre}</h3>
                       </div>
-                      <button onClick={() => setSelectedVariedad(null)} style={{ background: 'white', border: '1px solid #bfdbfe', color: '#3b82f6', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
+                      <button onClick={() => { setSelectedVariedad(null); setSeedStep(2); }} style={{ background: 'white', border: '1px solid #bfdbfe', color: '#3b82f6', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
                     </div>
                   ) : (
                     <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeInDown 0.3s' }}>
@@ -443,7 +443,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             }
                           </h3>
                        </div>
-                       <button onClick={() => setSeedFormData({ ...seedFormData, semillasorigen: '' })} style={{ background: 'white', border: '1px solid #a7f3d0', color: '#10b981', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
+                       <button onClick={() => { setSeedFormData({ ...seedFormData, semillasorigen: '' }); setSeedStep(3); }} style={{ background: 'white', border: '1px solid #a7f3d0', color: '#10b981', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
                      </div>
                    ) : (
                      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeInDown 0.3s' }}>

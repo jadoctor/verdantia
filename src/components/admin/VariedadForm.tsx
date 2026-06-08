@@ -104,6 +104,16 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
   const [calcPersonas, setCalcPersonas] = useState<number>(1);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'no-changes'>('idle');
 
+  // -- AI Assistant State --
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiProposal, setAiProposal] = useState<any>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [showAiConfig, setShowAiConfig] = useState(false);
+  const [aiConfigPromptOpen, setAiConfigPromptOpen] = useState(false);
+  const [aiExtraInstructions, setAiExtraInstructions] = useState('Busca datos específicos de esta variedad. Si tiene características propias distintas a la especie genérica (tamaño, color, precocidad, etc.), refléjalas con precisión.');
+  const [aiSeconds, setAiSeconds] = useState(0);
+  const aiTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.email) {
@@ -286,6 +296,163 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
       const updatedData = { ...formData, [field]: newVal };
       saveVariedad(updatedData);
     }, 50);
+  };
+
+  // -- AI Assistant Functions --
+  const openAiConfig = () => {
+    if (!formData.variedadesnombre) {
+      alert('Introduce primero el nombre de la variedad.');
+      return;
+    }
+    setShowAiConfig(true);
+  };
+
+  const callVariedadAI = async () => {
+    if (!formData.variedadesnombre) return;
+    setAiLoading(true);
+    setAiSeconds(0);
+    aiTimerRef.current = setInterval(() => setAiSeconds(s => s + 1), 1000);
+    try {
+      const especieNombre = especies.find((e: any) => e.idespecies == formData.xvariedadesidespecies)?.especiesnombre || genericData?.especiesnombre || '';
+      const res = await fetch('/api/ai/variedad-assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail || ''
+        },
+        body: JSON.stringify({ 
+          nombreVariedad: formData.variedadesnombre, 
+          nombreEspecie: especieNombre,
+          customPrompt: aiExtraInstructions 
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAiProposal(data.data);
+        setShowAiConfig(false);
+        setShowAiModal(true);
+      } else {
+        alert('Error IA: ' + data.error);
+      }
+    } catch (err) {
+      alert('Error llamando a la IA');
+    } finally {
+      setAiLoading(false);
+      if (aiTimerRef.current) { clearInterval(aiTimerRef.current); aiTimerRef.current = null; }
+    }
+  };
+
+  const aiGroups = [
+    {
+      id: 'taxonomia',
+      title: '\uD83E\uDDEC Taxonomía',
+      keys: ['variedadesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo', 'variedadescolor', 'variedadestamano', 'variedadesdificultad', 'variedadesluzsolar', 'variedadesnecesidadriego', 'variedadesvolumenmaceta'],
+      labels: {
+        variedadesnombrecientifico: 'Nombre Científico',
+        variedadesfamilia: 'Familia',
+        variedadestipo: 'Tipos',
+        variedadesciclo: 'Ciclo',
+        variedadescolor: 'Color',
+        variedadestamano: 'Tamaño',
+        variedadesdificultad: 'Dificultad',
+        variedadesluzsolar: 'Luz Solar',
+        variedadesnecesidadriego: 'Nec. Riego',
+        variedadesvolumenmaceta: 'Vol. Maceta (L)'
+      }
+    },
+    {
+      id: 'fisiologia',
+      title: '\uD83C\uDF31 Fisiología',
+      keys: ['variedadesdiasgerminacion', 'variedadesviabilidadsemilla', 'variedadespeso1000semillas', 'variedadesdiashastatrasplante', 'variedadesdiascrecimientofirme', 'variedadesdiashastafructificacion', 'variedadesdiashastarecoleccion', 'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima', 'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesprofundidadsiembra', 'variedadesprofundidadtrasplante'],
+      labels: {
+        variedadesdiasgerminacion: 'Días Germinación',
+        variedadesviabilidadsemilla: 'Viabilidad Semilla (Años)',
+        variedadespeso1000semillas: 'Peso 1.000 Semillas (g)',
+        variedadesdiashastatrasplante: 'Días a Trasplante',
+        variedadesdiascrecimientofirme: 'Días a Crec. Firme',
+        variedadesdiashastafructificacion: 'Días a Fructificación',
+        variedadesdiashastarecoleccion: 'Días a Recolección',
+        variedadestemperaturaminima: 'Temp. Mínima (°C)',
+        variedadestemperaturaoptima: 'Temp. Óptima (°C)',
+        variedadestemperaturamaxima: 'Temp. Máxima (°C)',
+        variedadesmarcoplantas: 'Marco Plantas (cm)',
+        variedadesmarcofilas: 'Marco Filas (cm)',
+        variedadesprofundidadsiembra: 'Profundidad Siembra (cm)',
+        variedadesprofundidadtrasplante: 'Profundidad Trasplante (cm)'
+      }
+    },
+    {
+      id: 'calendarios',
+      title: '\uD83D\uDCC5 Calendarios',
+      keys: ['variedadessemillerodesde', 'variedadessemillerohasta', 'variedadessiembradirectadesde', 'variedadessiembradirectahasta', 'variedadestrasplantedesde', 'variedadestrasplantehasta', 'variedadesrecolecciondesde', 'variedadesrecoleccionhasta'],
+      labels: {
+        variedadessemillerodesde: 'Semillero (Desde)',
+        variedadessemillerohasta: 'Semillero (Hasta)',
+        variedadessiembradirectadesde: 'Siembra Dir. (Desde)',
+        variedadessiembradirectahasta: 'Siembra Dir. (Hasta)',
+        variedadestrasplantedesde: 'Trasplante (Desde)',
+        variedadestrasplantehasta: 'Trasplante (Hasta)',
+        variedadesrecolecciondesde: 'Recolección (Desde)',
+        variedadesrecoleccionhasta: 'Recolección (Hasta)'
+      }
+    },
+    {
+      id: 'autosuficiencia',
+      title: '\u2696\uFE0F Autosuficiencia',
+      keys: ['variedadesautosuficienciaparcial', 'variedadesautosuficiencia', 'variedadesautosuficienciaconserva', 'variedadesmarcomargen'],
+      labels: {
+        variedadesautosuficienciaparcial: 'Autosuf. Parcial',
+        variedadesautosuficiencia: 'Autosuf. Completa',
+        variedadesautosuficienciaconserva: 'Autosuf. Conserva',
+        variedadesmarcomargen: 'Margen al Borde (cm)'
+      }
+    },
+    {
+      id: 'suelo',
+      title: '\uD83D\uDEDC Suelo',
+      keys: ['variedadesphsuelo', 'variedadescaracteristicassuelo', 'variedadestiposiembra'],
+      labels: {
+        variedadesphsuelo: 'pH Suelo',
+        variedadescaracteristicassuelo: 'Tipo de Suelo',
+        variedadestiposiembra: 'Tipo Siembra'
+      }
+    },
+    {
+      id: 'textos',
+      title: '\uD83D\uDCDD Textos',
+      keys: ['variedadeshistoria', 'variedadesdescripcion'],
+      labels: {
+        variedadeshistoria: 'Historia',
+        variedadesdescripcion: 'Descripción'
+      }
+    }
+  ];
+
+  const assimilateGroup = (keys: string[]) => {
+    if (!aiProposal) return;
+    const updates: any = {};
+    keys.forEach(k => {
+      if (aiProposal[k] !== undefined && aiProposal[k] !== null) {
+        updates[k] = aiProposal[k];
+      }
+    });
+    setFormData((prev: any) => ({ ...prev, ...updates }));
+    // Trigger save after state update
+    setTimeout(() => saveVariedad({ ...formData, ...updates }), 100);
+  };
+
+  const assimilateAll = () => {
+    if (!aiProposal) return;
+    const allKeys = aiGroups.flatMap(g => g.keys);
+    const updates: any = {};
+    allKeys.forEach(k => {
+      if (aiProposal[k] !== undefined && aiProposal[k] !== null) {
+        updates[k] = aiProposal[k];
+      }
+    });
+    setFormData((prev: any) => ({ ...prev, ...updates }));
+    setTimeout(() => saveVariedad({ ...formData, ...updates }), 100);
+    setShowAiModal(false);
   };
 
   const handleBlurSave = () => {
@@ -663,7 +830,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
             overflow: 'hidden'
           }}>
             {photos.length > 0 ? (
-              <div style={{ display: 'flex', gap: 0 }}>
+              <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
                 {/* Hero photo */}
                 {(() => {
                   const sortedPhotos = [...photos].sort((a, b) => (b.esPrincipal || 0) - (a.esPrincipal || 0));
@@ -677,7 +844,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
 
                   return (
                     <>
-                      <div style={{ position: 'relative', flexShrink: 0, width: '180px', height: '180px', overflow: 'hidden' }}>
+                      <div style={{ position: 'relative', flexShrink: 0, width: '180px', height: '220px', overflow: 'hidden' }}>
                         <img 
                           src={getMediaUrl(heroPhoto.ruta)}
                           alt={heroMeta.seo_alt || formData.variedadesnombre}
@@ -691,9 +858,8 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                         />
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', justifyContent: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {sortedPhotos.slice(1, 5).map((p) => {
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '0 12px' }}>
+                          {sortedPhotos.slice(1, 4).map((p) => {
                             let tMeta: any = {};
                             try { tMeta = JSON.parse(p.resumen || '{}'); } catch (e) { }
                             return (
@@ -701,17 +867,18 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                                 key={p.id} 
                                 onClick={() => setPrimaryPhoto(p.id)}
                                 style={{ 
-                                  width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer',
+                                  width: '52px', height: '70px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer',
                                   border: '2px solid rgba(0,0,0,0.08)', transition: 'all 0.2s ease'
                                 }}
+                                onMouseOver={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                                onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1)'; }}
                               >
                                 <img 
                                   src={getMediaUrl(p.ruta)}
                                   alt=""
                                   style={{ 
                                     width: '100%', height: '100%', objectFit: 'cover',
-                                    objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
-                                    transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` 
+                                    objectPosition: 'center center'
                                   }} 
                                   crossOrigin="anonymous" 
                                 />
@@ -719,10 +886,6 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                             );
                           })}
                         </div>
-                        <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
-                          Haz clic en una miniatura para establecerla como portada principal.
-                        </p>
-                      </div>
                     </>
                   );
                 })()}
@@ -765,6 +928,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: saveStatus === 'idle' ? '0' : '6px 12px', background: saveStatus === 'idle' ? 'transparent' : '#f1f5f9', borderRadius: '20px', border: saveStatus === 'idle' ? 'none' : '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: saveStatus === 'saved' ? '#10b981' : saveStatus === 'saving' ? '#3b82f6' : 'transparent' }}>
                   {saveStatus === 'saving' ? '⏳ Guardando...' : saveStatus === 'saved' ? '✓ Guardado' : ''}
@@ -776,6 +940,19 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
 
           {isVariedadOpen && (
             <div className="collapsible-content" style={{ padding: '24px', border: '1px solid #e2e8f0', borderTop: 'none', borderRadius: '0 0 16px 16px' }}>
+              {variedadId && formData.variedadesnombre && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}>
+                  <button 
+                    type="button" 
+                    onClick={openAiConfig} 
+                    className="btn-ai" 
+                    disabled={aiLoading} 
+                    style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  >
+                    {aiLoading ? '⏳ Pensando...' : '✨ Asistente IA'}
+                  </button>
+                </div>
+              )}
               <div className="form-tabs">
                 <button type="button" className={activeTab === 'taxonomia' ? 'active' : ''} onClick={() => setActiveTab('taxonomia')}>
                   🧬 Taxonomía {hasOverrides('taxonomia') && <span style={{ marginLeft: '4px', width: '8px', height: '8px', background: '#7c3aed', borderRadius: '50%', display: 'inline-block' }} title="Contiene sobrescritos"></span>}
@@ -789,7 +966,8 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                 <button type="button" className={activeTab === 'autosuficiencia' ? 'active' : ''} onClick={() => setActiveTab('autosuficiencia')}>
                   ⚖️ Autosuficiencia {hasOverrides('autosuficiencia') && <span style={{ marginLeft: '4px', width: '8px', height: '8px', background: '#7c3aed', borderRadius: '50%', display: 'inline-block' }} title="Contiene sobrescritos"></span>}
                 </button>
-                <button type="button" className={activeTab === 'adjuntos' ? 'active' : ''} onClick={() => setActiveTab('adjuntos')}>📎 Adjuntos</button>
+                <button type="button" className={activeTab === 'fotos' ? 'active' : ''} onClick={() => setActiveTab('fotos')}>📷 Fotos</button>
+                <button type="button" className={activeTab === 'pdfs' ? 'active' : ''} onClick={() => setActiveTab('pdfs')}>📄 PDFs</button>
               </div>
 
               <div className="form-tab-content">
@@ -1403,21 +1581,290 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                   </div>
                 )}
 
-                {activeTab === 'adjuntos' && (
-                  <div className="grid-form">
-                    <VariedadMediaManager 
-                      variedadId={variedadId!} 
-                      userEmail={userEmail!} 
-                      variedadNombre={formData.variedadesnombre}
-                      especieNombre={especies.find(e => e.idespecies == formData.xvariedadesidespecies)?.especiesnombre || genericData?.especiesnombre || 'Especie'}
-                    />
-                  </div>
-                )}
+                {/* Contenido de Fotos y PDFs siempre montado si existe variedadId para evitar parpadeos y retrasos al cambiar de pestaña */}
+                {(() => {
+                  if (!variedadId) {
+                    return (
+                      <>
+                        {activeTab === 'fotos' && (
+                          <p style={{ color: '#64748b', fontStyle: 'italic', padding: '20px' }}>Guarda la variedad primero para subir fotos.</p>
+                        )}
+                        {activeTab === 'pdfs' && (
+                          <p style={{ color: '#64748b', fontStyle: 'italic', padding: '20px' }}>Guarda la variedad primero para subir documentos PDF.</p>
+                        )}
+                      </>
+                    );
+                  }
+
+                  const selectedEspecie = especies.find(e => e.idespecies == formData.xvariedadesidespecies) || genericData;
+                  const espNombre = selectedEspecie?.especiesnombre || 'Especie';
+                  const espCientifico = selectedEspecie?.especiesnombrecientifico || '';
+                  const espFamilia = selectedEspecie?.especiesfamilia || '';
+
+                  return (
+                    <>
+                      <div className="grid-form" style={{ display: activeTab === 'fotos' ? 'grid' : 'none' }}>
+                        <VariedadMediaManager 
+                          variedadId={variedadId} 
+                          userEmail={userEmail!} 
+                          variedadNombre={formData.variedadesnombre}
+                          especieNombre={espNombre}
+                          especieNombreCientifico={espCientifico}
+                          especieFamilia={espFamilia}
+                          section="photos"
+                          onMediaChange={loadPhotos}
+                        />
+                      </div>
+
+                      <div className="grid-form" style={{ display: activeTab === 'pdfs' ? 'grid' : 'none' }}>
+                        <VariedadMediaManager 
+                          variedadId={variedadId} 
+                          userEmail={userEmail!} 
+                          variedadNombre={formData.variedadesnombre}
+                          especieNombre={espNombre}
+                          especieNombreCientifico={espCientifico}
+                          especieFamilia={espFamilia}
+                          section="pdfs"
+                          onMediaChange={loadPhotos}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
         </form>
       </div>
+      {/* AI CONFIG MODAL — Ventana intermedia */}
+      {showAiConfig && (
+        <div className="ai-modal-overlay">
+          <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
+              <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>✨ Asistente IA de Variedades</h2>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  disabled={aiLoading || !aiExtraInstructions.trim()}
+                  onClick={callVariedadAI}
+                  style={{
+                    padding: '8px 16px', background: aiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)',
+                    color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold',
+                    cursor: aiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
+                    opacity: !aiExtraInstructions.trim() ? 0.4 : 1,
+                    transition: 'all 0.2s', whiteSpace: 'nowrap'
+                  }}
+                >
+                  {aiLoading ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
+                      {aiSeconds}s
+                    </span>
+                  ) : '🚀 Buscar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAiConfig(false)}
+                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                >
+                  ✖
+                </button>
+              </div>
+            </div>
+
+            <div className="ai-modal-body">
+              {/* Datos básicos */}
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
+                  Objetivo: Completar la ficha técnica de <span style={{ color: '#7c3aed' }}>"{formData.variedadesnombre}"</span>
+                </p>
+                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                    🌱 <strong>Especie:</strong> {especies.find((e: any) => e.idespecies == formData.xvariedadesidespecies)?.especiesnombre || 'No seleccionada'}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                    🧬 <strong>Variedad:</strong> {formData.variedadesnombre}
+                  </div>
+                  {formData.variedadesnombrecientifico && (
+                    <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                      🔬 <strong>Científico:</strong> <em>{formData.variedadesnombrecientifico}</em>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Prompt colapsable */}
+              <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => setAiConfigPromptOpen(!aiConfigPromptOpen)}
+                  style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
+                >
+                  <span>📋 Prompt utilizado (técnico)</span>
+                  <span style={{ transform: aiConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </button>
+                {aiConfigPromptOpen && (
+                  <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
+                    La IA recibirá el nombre de la variedad ({formData.variedadesnombre}) y su especie ({especies.find((e: any) => e.idespecies == formData.xvariedadesidespecies)?.especiesnombre || '—'}).
+                    Buscará datos específicos de esta variedad: taxonomía, fisiología, calendarios, autosuficiencia, suelo y textos descriptivos.
+                    Los resultados se mostrarán en una tabla comparativa contra los valores actuales para que puedas decidir qué asimilar.
+                  </div>
+                )}
+              </div>
+
+              {/* Textarea — Instrucciones personalizadas */}
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones específicas para la IA</h4>
+                <textarea
+                  value={aiExtraInstructions}
+                  onChange={e => setAiExtraInstructions(e.target.value)}
+                  placeholder="Escribe instrucciones adicionales para la IA..."
+                  rows={4}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5', boxSizing: 'border-box' }}
+                />
+                <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>
+                  Puedes modificar el texto libremente. La IA leerá exactamente lo que esté escrito aquí junto al prompt base.
+                </p>
+              </div>
+
+              {/* Estado actual resumen */}
+              <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.9rem' }}>
+                  📊 Campos que se analizarán:
+                </span>
+                <span style={{ color: '#15803d', fontSize: '0.85rem', marginLeft: '8px' }}>
+                  Taxonomía, Fisiología, Calendarios, Autosuficiencia, Suelo y Textos
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI ASSISTANT MODAL */}
+      {showAiModal && aiProposal && (
+        <div className="ai-modal-overlay">
+          <div className="ai-modal-content">
+            <div className="ai-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>✨ Revisión de Inteligencia Artificial — {formData.variedadesnombre}</h2>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                <button 
+                  type="button" 
+                  className="btn-ai" 
+                  onClick={assimilateAll} 
+                  style={{ padding: '8px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                >
+                  ✨ Asimilar Todo
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-close-modal" 
+                  onClick={() => setShowAiModal(false)}
+                  style={{ padding: '8px 16px', fontSize: '0.9rem', whiteSpace: 'nowrap', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', color: '#475569', fontWeight: 'bold' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+            <div className="ai-modal-body">
+              <p style={{ marginBottom: '20px', color: '#475569' }}>
+                La IA ha sugerido los siguientes datos específicos para la variedad <strong>{formData.variedadesnombre}</strong>.
+                Revisa cada bloque y asimila los cambios propuestos donde estés de acuerdo.
+                Los datos que difieren de tu versión actual están resaltados.
+              </p>
+
+              {aiGroups.map(group => {
+                const hasDifferences = group.keys.some(k => {
+                  let currentVal = formData[k] != null ? formData[k] : '';
+                  let aiVal = aiProposal[k] != null ? aiProposal[k] : '';
+                  
+                  if (Array.isArray(currentVal)) currentVal = [...currentVal].sort().join(',');
+                  else currentVal = String(currentVal);
+                  
+                  if (Array.isArray(aiVal)) aiVal = [...aiVal].sort().join(',');
+                  else aiVal = String(aiVal);
+
+                  return aiVal !== '' && currentVal !== aiVal;
+                });
+
+                return (
+                  <div key={group.id} className="ai-group-section">
+                    <div className="ai-group-header">
+                      <h3>{group.title} {hasDifferences && <span style={{ fontSize: '0.8rem', background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', marginLeft: '10px' }}>Cambios detectados</span>}</h3>
+                      <button type="button" className="btn-assimilate-group" onClick={() => assimilateGroup(group.keys)}>
+                        ✨ Asimilar este bloque
+                      </button>
+                    </div>
+
+                    <div className="ai-comparison-grid header">
+                      <div>Campo</div>
+                      <div>Valor Actual</div>
+                      <div>Propuesta IA</div>
+                    </div>
+
+                    {group.keys.map(k => {
+                      const rawCurrent = formData[k];
+                      const rawAi = aiProposal[k];
+                      
+                      // Check if variety field is empty and we're falling back to species
+                      const isVarietyEmpty = rawCurrent === '' || rawCurrent === null || rawCurrent === undefined || (Array.isArray(rawCurrent) && rawCurrent.length === 0);
+                      const rawGeneric = genericData ? genericData[k] : null;
+                      const hasGenericFallback = isVarietyEmpty && rawGeneric != null && rawGeneric !== '' && !(Array.isArray(rawGeneric) && rawGeneric.length === 0);
+                      
+                      // Use the effective value (variety or species fallback) for comparison
+                      const effectiveRaw = isVarietyEmpty ? rawGeneric : rawCurrent;
+                      
+                      let currentStr = Array.isArray(effectiveRaw) ? [...effectiveRaw].sort().join(',') : (effectiveRaw != null ? String(effectiveRaw) : '');
+                      let aiStr = Array.isArray(rawAi) ? [...rawAi].sort().join(',') : (rawAi != null ? String(rawAi) : '');
+                      
+                      if (!Array.isArray(effectiveRaw) && !isNaN(Number(effectiveRaw)) && effectiveRaw !== '' && effectiveRaw != null) {
+                        currentStr = parseFloat(String(effectiveRaw)).toString();
+                      }
+                      if (!Array.isArray(rawAi) && !isNaN(Number(rawAi)) && rawAi !== '' && rawAi != null) {
+                        aiStr = parseFloat(String(rawAi)).toString();
+                      }
+
+                      if (!aiStr) return null;
+
+                      const isDifferent = currentStr !== aiStr;
+                      const displayCurrent = Array.isArray(effectiveRaw) ? (typeof effectiveRaw === 'string' ? effectiveRaw : [...effectiveRaw]).join(', ') : currentStr;
+                      const displayAi = Array.isArray(rawAi) ? rawAi.join(', ') : aiStr;
+
+                      return (
+                        <div key={k} className={`ai-comparison-grid ${isDifferent ? 'ai-row-diff' : 'ai-row-same'}`}>
+                          <div style={{ fontWeight: '600', color: '#475569' }}>{(group.labels as any)[k]}</div>
+                          <div style={{ color: '#64748b' }}>
+                            {displayCurrent ? (
+                              <>
+                                {displayCurrent}
+                                {hasGenericFallback && (
+                                  <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', padding: '1px 6px', borderRadius: '8px', fontWeight: '600', verticalAlign: 'middle' }}>
+                                    🌱 Especie
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <em style={{ opacity: 0.5 }}>Vacío</em>
+                            )}
+                          </div>
+                          <div>
+                            <span className={isDifferent ? 'ai-value-changed' : ''}>
+                              {displayAi} {isDifferent && ' ✨'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+
+              
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
