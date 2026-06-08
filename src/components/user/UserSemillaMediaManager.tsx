@@ -15,12 +15,11 @@ interface UserSemillaMediaManagerProps {
 }
 
 function getMaxPhotos(suscripcion: string): number {
-  switch (suscripcion) {
-    case 'Premium': return 4;
-    case 'Profesional': return 3;
-    case 'Avanzada': return 2;
-    default: return 1; // Básica
-  }
+  const cleanName = (suscripcion || '').toLowerCase();
+  if (cleanName.includes('premium')) return 4;
+  if (cleanName.includes('avanzado') || cleanName.includes('profesional')) return 3;
+  if (cleanName.includes('esencial') || cleanName.includes('avanzada')) return 2;
+  return 1; // Gratuito / Básica
 }
 
 export default function UserSemillaMediaManager({ semillaId, userEmail, suscripcion = 'Básica', onMediaChange, initialPhotos = [] }: UserSemillaMediaManagerProps) {

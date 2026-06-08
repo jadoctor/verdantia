@@ -3037,9 +3037,9 @@ function PerfilContent() {
             const isGratuito = !isPremium && !isAvanzado && !isEsencial;
 
             const segments = [
-              { key: 'premium',  label: 'Premium',  icon: '🌳', color: '#d97706', bg: '#fffbeb', price: '14,99€' },
-              { key: 'avanzado', label: 'Avanzado', icon: '🌿', color: '#2563eb', bg: '#eff6ff', price: '9,99€' },
-              { key: 'esencial', label: 'Esencial', icon: '🌱', color: '#059669', bg: '#f0fdf4', price: '4,99€' },
+              { key: 'premium',  label: 'Premium',  icon: '🌳', color: '#d97706', bg: '#fffbeb', price: '9,99€' },
+              { key: 'avanzado', label: 'Avanzado', icon: '🌿', color: '#2563eb', bg: '#eff6ff', price: '5,99€' },
+              { key: 'esencial', label: 'Esencial', icon: '🌱', color: '#059669', bg: '#f0fdf4', price: '2,99€' },
               { key: 'gratuito', label: 'Gratuito', icon: '🌾', color: '#94a3b8', bg: '#f8fafc', price: 'Gratis' },
             ];
 
@@ -3218,9 +3218,9 @@ function PerfilContent() {
                     {profile?.fechaCaducidadSuscripcion && diasRestantes !== null && <small style={{ color: '#0369a1' }}>{diasRestantes >= 0 ? `Quedan ${diasRestantes} días` : 'Periodo finalizado'}</small>}
                   </div>
                   {/* Opciones de upgrade */}
-                  {[{ plan: 'Esencial / Plus', price: '4,99 €/mes', icon: '🌱', color: '#059669', features: ['2 fotos de perfil', 'Calendario Lunar', '3 ofertas de semillas'] },
-                    { plan: 'Avanzado / Pro', price: '9,99 €/mes', icon: '🌿', color: '#2563eb', features: ['3 fotos de perfil', 'Calendario Biod.', '10 ofertas de semillas'] },
-                    { plan: 'Premium', price: '14,99 €/mes', icon: '🌳', color: '#d97706', features: ['4 fotos de perfil', 'Todos los calendarios', 'Ofertas ilimitadas', 'IA avanzada'] },
+                  {[{ plan: 'Esencial', price: '2,99 €/mes', icon: '🌱', color: '#059669', features: ['Hasta 20 semillas/especies activas', '2 fotos de perfil', 'Hasta 2 fotos por galería/labor', 'Calendario Lunar Simple'] },
+                    { plan: 'Avanzado', price: '5,99 €/mes', icon: '🌿', color: '#2563eb', features: ['Hasta 50 semillas/especies activas', '3 fotos de perfil', 'Hasta 3 fotos por galería/labor', 'Chat Básico IA (Consultas limitadas)', 'Calendario Lunar y Biodinámico Básico'] },
+                    { plan: 'Premium', price: '9,99 €/mes', icon: '🌳', color: '#d97706', features: ['Semillas/especies activas ilimitadas', '4 fotos de perfil', 'Hasta 4 fotos por galería/labor', 'Acceso ilimitado al Chat IA y generación', 'Calendarios completos (Agrícola, Biodinámico Avanzado e IA)'] },
                   ].map(({ plan, price, icon, color, features }) => (
                     <div key={plan} style={{ padding: '14px', borderRadius: '12px', border: `1.5px solid ${color}30`, background: `${color}08`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
                       <div>
@@ -3266,9 +3266,9 @@ function PerfilContent() {
                       <tr>
                         {[{ label: 'Característica', color: '#f8fafc', textColor: '#64748b' },
                           { label: '🌾 Gratuito\n0 €', color: '#f8fafc', textColor: '#64748b' },
-                          { label: '🌱 Esencial\n4,99 €/mes', color: '#f0fdf4', textColor: '#059669' },
-                          { label: '🌿 Avanzado\n9,99 €/mes', color: '#eff6ff', textColor: '#2563eb' },
-                          { label: '🌳 Premium\n14,99 €/mes', color: '#fffbeb', textColor: '#d97706' },
+                          { label: '🌱 Esencial\n2,99 €/mes', color: '#f0fdf4', textColor: '#059669' },
+                          { label: '🌿 Avanzado\n5,99 €/mes', color: '#eff6ff', textColor: '#2563eb' },
+                          { label: '🌳 Premium\n9,99 €/mes', color: '#fffbeb', textColor: '#d97706' },
                         ].map(({ label, color, textColor }, i) => (
                           <th key={i} style={{ background: color, color: textColor, padding: '10px 12px', textAlign: i === 0 ? 'left' : 'center', fontWeight: 700, borderBottom: '2px solid #e2e8f0', whiteSpace: 'pre-line', fontSize: i === 0 ? '0.78rem' : '0.82rem' }}>{label}</th>
                         ))}
@@ -3277,13 +3277,11 @@ function PerfilContent() {
                     <tbody>
                       {[
                         ['Fotos de perfil', '1', '2', '3', '4'],
-                        ['Plantas activas', '10', '25', '50', 'Ilimitadas'],
-                        ['Ofertas de semillas', '1', '3', '10', 'Ilimitadas'],
-                        ['Calendario Normal', '✅', '✅', '✅', '✅'],
-                        ['Calendario Lunar', '❌', '✅', '✅', '✅'],
-                        ['Calendario Biod.', '❌', '❌', '✅', '✅'],
-                        ['Generador IA imágenes', '❌', '❌', '5/mes', 'Ilimitado'],
-                        ['Chat Comunidad', '✅', '✅', '✅', '✅'],
+                        ['Semillas/especies activas', '5', '20', '50', 'Ilimitadas'],
+                        ['Fotos por galería/labor', '1', '2', '3', '4'],
+                        ['Chat IA y generación', '❌', '❌', 'Básico (Limitado)', 'Ilimitado'],
+                        ['Calendario Lunar', '❌', '✅ (Simple)', '✅ (Básico)', '✅ (Completo)'],
+                        ['Calendario Biodinámico', '❌', '❌', '✅ (Básico)', '✅ (Avanzado e IA)'],
                         ['Soporte prioritario', '❌', '❌', '✅', '✅'],
                         ['Sin publicidad', '❌', '✅', '✅', '✅'],
                       ].map((row, i) => (

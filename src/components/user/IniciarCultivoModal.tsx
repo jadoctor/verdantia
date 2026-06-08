@@ -109,32 +109,36 @@ export default function IniciarCultivoModal({
   isOpen,
   onClose,
   plantaId,
+  xvariedadesidvariedadorigen,
   plantaNombre,
   userEmail,
   calendarioSolar,
   viabilidadSemilla,
   tiposiembra,
-  peso1000semillas
+  peso1000semillas,
+  initialSeedId
 }: {
   isOpen: boolean;
   onClose: () => void;
   plantaId: number;
+  xvariedadesidvariedadorigen?: number;
   plantaNombre: string;
   userEmail: string;
   calendarioSolar?: any;
   viabilidadSemilla?: number;
   tiposiembra?: string;
   peso1000semillas?: number | string;
+  initialSeedId?: number;
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialSeedId ? 3 : 1);
   
   // Opciones temporales del wizard
-  const [tipoPartida, setTipoPartida] = useState<'semilla' | 'plantel' | 'esqueje' | null>(null);
+  const [tipoPartida, setTipoPartida] = useState<'semilla' | 'plantel' | 'esqueje' | null>(initialSeedId ? 'semilla' : null);
   
   const [formData, setFormData] = useState({
-    origen: '',
+    origen: initialSeedId ? 'semilla_inventario' : '',
     metodo: 'semillero',
     cantidad: 1,
     ubicacion: '',
@@ -150,7 +154,7 @@ export default function IniciarCultivoModal({
     semillasfechacaducidad: '',
     semillascantidad: '',
     fechaInicio: new Date().toISOString().split('T')[0],
-    xcultivosidsemillas: '' as string | number,
+    xcultivosidsemillas: initialSeedId || '' as string | number,
     xcultivosidbancales: '' as string | number
   });
   
@@ -285,7 +289,11 @@ export default function IniciarCultivoModal({
       fetch('/api/user/semillas', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => {
-          const seeds = (data.semillas || []).filter((s: any) => s.xsemillasidvariedades === plantaId && s.semillasstockactual > 0 && s.semillasactivosino !== 0);
+          const seeds = (data.semillas || []).filter((s: any) => 
+            (s.xsemillasidvariedades === plantaId || s.xsemillasidvariedades === xvariedadesidvariedadorigen) && 
+            s.semillasstockactual > 0 && 
+            s.semillasactivosino !== 0
+          );
           if (seeds.length > 0) {
             const total = seeds.reduce((acc: number, s: any) => acc + (s.semillasstockactual || 0), 0);
             setStockInfo({
@@ -293,14 +301,15 @@ export default function IniciarCultivoModal({
               lotesCount: seeds.length,
               seedsList: seeds
             });
-            handleNext({ xcultivosidsemillas: seeds[0].idsemillas });
+            const firstSeed = seeds.find((s: any) => s.idsemillas === initialSeedId) || seeds[0];
+            handleNext({ xcultivosidsemillas: firstSeed.idsemillas });
           } else {
             setStockInfo(null);
           }
         })
         .catch(console.error);
     }
-  }, [isOpen, userEmail, plantaId]);
+  }, [isOpen, userEmail, plantaId, xvariedadesidvariedadorigen, initialSeedId]);
 
   useEffect(() => {
     if (isOpen && userEmail) {

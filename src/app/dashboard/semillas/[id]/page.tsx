@@ -704,30 +704,36 @@ export default function EditarSemillaPage() {
                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', zIndex: 50,
                     maxHeight: '200px', overflowY: 'auto'
                   }}>
-                    {catalogo.find(esp => esp.idespecies.toString() === selectedEspecieId)?.variedades?.map((v: any) => (
-                      <div 
-                        key={v.idvariedades}
-                        onClick={() => {
-                          setFormData({ ...formData, xsemillasidvariedades: v.idvariedades.toString() });
-                          setIsVariedadOpen(false);
-                        }}
-                        style={{
-                          padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
-                          background: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#f0fdf4' : 'white',
-                          color: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#166534' : '#334155',
-                          fontWeight: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? 600 : 400,
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#f0fdf4' : 'white')}
-                      >
-                        {v.variedadesnombre || 'Variedad estándar'}
-                      </div>
-                    ))}
-                    {(!catalogo.find(esp => esp.idespecies.toString() === selectedEspecieId)?.variedades?.length) && (
-                      <div style={{ padding: '10px 12px', color: '#94a3b8', fontStyle: 'italic' }}>
-                        No hay variedades disponibles
-                      </div>
-                    )}
+                    {(() => {
+                      const vars = catalogo.find(esp => esp.idespecies.toString() === selectedEspecieId)?.variedades || [];
+                      const globalVars = vars.filter((v: any) => !v.xvariedadesidusuarios);
+                      if (globalVars.length === 0) {
+                        return (
+                          <div style={{ padding: '10px 12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                            No hay variedades disponibles
+                          </div>
+                        );
+                      }
+                      return globalVars.map((v: any) => (
+                        <div 
+                          key={v.idvariedades}
+                          onClick={() => {
+                            setFormData({ ...formData, xsemillasidvariedades: v.idvariedades.toString() });
+                            setIsVariedadOpen(false);
+                          }}
+                          style={{
+                            padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                            background: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#f0fdf4' : 'white',
+                            color: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#166534' : '#334155',
+                            fontWeight: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? 600 : 400,
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#f0fdf4' : 'white')}
+                        >
+                          {v.variedadesnombre || 'Variedad estándar'}
+                        </div>
+                      ));
+                    })()}
                   </div>
                 )}
               </div>

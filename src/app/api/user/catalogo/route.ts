@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     const [especies]: any = await pool.query(especiesQuery, params);
 
     const [variedades]: any = await pool.query(`
-      SELECT idvariedades, xvariedadesidespecies, variedadesnombre, variedadesesgenerica, variedadespeso1000semillas
+      SELECT idvariedades, xvariedadesidespecies, variedadesnombre, variedadesesgenerica, variedadespeso1000semillas, xvariedadesidusuarios
       FROM variedades
       WHERE xvariedadesidusuarios IS NULL OR xvariedadesidusuarios = ?
       ORDER BY variedadesesgenerica DESC, variedadesnombre ASC

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Ruler, Sparkles, MapPin, Layers, Calendar, Info } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media-url';
+import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 
 interface GardenMapProps {
   misCultivos: any[];
@@ -333,7 +334,7 @@ export default function GardenMap({ misCultivos, profile }: GardenMapProps) {
                           fontSize={`${r * 1.1}px`}
                           style={{ userSelect: 'none', pointerEvents: 'none' }}
                         >
-                          {c.especiesicono || '🌱'}
+                          {c.especiesicono && !c.especiesicono.startsWith('/') ? c.especiesicono : '🌱'}
                         </text>
 
                         {/* Mini Collection Number Badge */}
@@ -411,7 +412,7 @@ export default function GardenMap({ misCultivos, profile }: GardenMapProps) {
         }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '6px', marginBottom: '6px' }}>
-            <span style={{ fontSize: '1.5rem' }}>{hoveredCrop.especiesicono || '🌱'}</span>
+            <SpeciesIcon icon={hoveredCrop.especiesicono || '🌱'} size="1.5rem" />
             <div>
               <div style={{ fontSize: '0.65rem', color: '#34d399', fontWeight: 800, textTransform: 'uppercase' }}>
                 Nº {hoveredCrop.cultivosnumerocoleccion || hoveredCrop.idcultivos}

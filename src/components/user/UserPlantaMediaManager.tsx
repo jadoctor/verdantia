@@ -9,12 +9,36 @@ import ConsentimientoFotoModal from '@/components/user/ConsentimientoFotoModal';
 interface UserPlantaMediaManagerProps {
   plantaId: string;
   userEmail: string;
+  suscripcion?: string;
   onMediaChange?: () => void;
 }
 
-export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaChange }: UserPlantaMediaManagerProps) {
+function getMaxPhotos(suscripcion: string): number {
+  const cleanName = (suscripcion || '').toLowerCase();
+  if (cleanName.includes('premium')) return 4;
+  if (cleanName.includes('avanzado') || cleanName.includes('profesional')) return 3;
+  if (cleanName.includes('esencial') || cleanName.includes('avanzada')) return 2;
+  return 1; // Gratuito / Básica
+}
+
+export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcion, onMediaChange }: UserPlantaMediaManagerProps) {
+  const [suscripcionState, setSuscripcionState] = useState(suscripcion || 'Básica');
+  const maxPhotos = getMaxPhotos(suscripcionState);
   const [photos, setPhotos] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (userEmail && !suscripcion) {
+      fetch('/api/perfil', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile?.suscripcion) {
+            setSuscripcionState(data.profile.suscripcion);
+          }
+        })
+        .catch(err => console.error('Error fetching profile in UserPlantaMediaManager:', err));
+    }
+  }, [userEmail, suscripcion]);
 
   // Consentimiento de fotos
   const [consentimiento, setConsentimiento] = useState<number | null | undefined>(undefined); // undefined=cargando
@@ -246,13 +270,13 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
     <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
       <div className="form-group full" style={{ marginBottom: '30px' }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-          <small style={{ color: userPhotos.length >= 4 ? '#ef4444' : '#64748b', fontWeight: 'bold' }}>
-            {userPhotos.length} / 4 permitidas
+          <small style={{ color: userPhotos.length >= maxPhotos ? '#ef4444' : '#64748b', fontWeight: 'bold' }}>
+            {userPhotos.length} / {maxPhotos} permitidas
           </small>
         </div>
         
         <div className="gallery">
-          {userPhotos.map(p => {
+          {userPhotos.map((p, photoIndex) => {
             // ── Placeholder: foto eliminada por sanción ──
             if (p.tipo === 'sancionada') {
               return (
@@ -294,6 +318,7 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
             let meta: any = {};
             try { meta = JSON.parse(p.resumen || '{}'); } catch(e){}
             const isUser = p.origen === 'usuario';
+            const isLocked = photoIndex >= maxPhotos;
 
             return (
               <div 
@@ -305,9 +330,9 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
                   transform: dragOverId === p.id ? 'scale(1.05)' : 'none',
                   boxShadow: dragOverId === p.id ? '0 10px 15px -3px rgba(16,185,129,0.3)' : 'none'
                 }}
-                draggable={isUser && p.resultadoValidacion !== 'rechazado'}
+                draggable={isUser && !isLocked && p.resultadoValidacion !== 'rechazado'}
                 onDragStart={(e) => {
-                  if (p.resultadoValidacion !== 'rechazado') {
+                  if (!isLocked && p.resultadoValidacion !== 'rechazado') {
                     handleDragStart(e, p.id);
                   } else {
                     e.preventDefault();
@@ -316,7 +341,7 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
                 onDragOver={(e) => handleDragOver(e, p.id)}
                 onDragLeave={() => setDragOverId(null)}
                 onDrop={(e) => {
-                  if (p.resultadoValidacion !== 'rechazado') {
+                  if (!isLocked && p.resultadoValidacion !== 'rechazado') {
                     handleDrop(e, p.id);
                   }
                 }}
@@ -356,9 +381,16 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
                   </div>
                 ) : null}
                 
+                {isLocked && (
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)', zIndex: 10, background: 'rgba(0,0,0,0.4)' }}>
+                    <span style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🔒</span>
+                    <small style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '0.65rem' }}>Excede límite</small>
+                  </div>
+                )}
+
                 {isUser && (
                   <div className="photo-actions" style={{ zIndex: 20 }}>
-                    {p.resultadoValidacion !== 'rechazado' && (
+                    {!isLocked && p.resultadoValidacion !== 'rechazado' && (
                       <button 
                         type="button"
                         className={`photo-action-btn btn-photo-primary ${isPrimary ? 'is-active' : ''}`}
@@ -368,7 +400,7 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
                         {isPrimary ? '★' : '☆'}
                       </button>
                     )}
-                    {p.resultadoValidacion !== 'rechazado' && (
+                    {!isLocked && p.resultadoValidacion !== 'rechazado' && (
                       <button 
                         type="button"
                         className="photo-action-btn btn-photo-edit"
@@ -397,7 +429,7 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, onMediaCha
             );
           })}
           
-          {userPhotos.length < 4 && (
+          {userPhotos.length < maxPhotos && (
             <div className={`custom-file-upload drop-zone inline-drop-zone`}>
               {/* Input oculto — se activa solo tras comprobar consentimiento */}
               <input

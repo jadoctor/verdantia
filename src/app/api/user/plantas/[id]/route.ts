@@ -207,12 +207,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     // Verificar propiedad antes de borrar
     const [ownerCheck]: any = await pool.query(
-      `SELECT idvariedades FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `SELECT idvariedades, xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
       [plantaId, user.id]
     );
     if (ownerCheck.length === 0) {
       return NextResponse.json({ error: 'Planta no encontrada o no te pertenece' }, { status: 404 });
     }
+
+    const { idvariedades, xvariedadesidvariedadorigen } = ownerCheck[0];
 
     // Verificar si tiene cultivos asociados
     const [cropsCheck]: any = await pool.query(
@@ -221,6 +223,27 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     );
     if (cropsCheck.length > 0) {
       return NextResponse.json({ error: 'No se puede eliminar la planta porque tiene cultivos activos. Elimina o finaliza los cultivos primero.' }, { status: 400 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const forceInactivate = searchParams.get('inactivate') === 'true';
+
+    // Verificar si tiene semillas asociadas
+    const [seedsCheck]: any = await pool.query(
+      `SELECT idsemillas FROM semillas 
+       WHERE (xsemillasidvariedades = ? OR xsemillasidvariedades = ?) 
+         AND xsemillasidusuarios = ? 
+         AND semillasactivosino = 1 LIMIT 1`,
+      [idvariedades, xvariedadesidvariedadorigen, user.id]
+    );
+
+    if (seedsCheck.length > 0 || forceInactivate) {
+      // Si tiene semillas o se solicita inactivación, no se elimina físicamente, se inactiva (variedadesvisibilidadsino = 0)
+      await pool.query(
+        `UPDATE variedades SET variedadesvisibilidadsino = 0 WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+        [plantaId, user.id]
+      );
+      return NextResponse.json({ success: true, message: 'Planta inactivada de tu huerto.', inactivated: true });
     }
 
     // Eliminar overrides de pautas del usuario para esta planta
@@ -235,7 +258,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       [plantaId, user.id]
     );
 
-    return NextResponse.json({ success: true, message: 'Planta eliminada de tu huerto' });
+    return NextResponse.json({ success: true, message: 'Planta eliminada de tu huerto', inactivated: false });
   } catch (error: any) {
     console.error('Error deleting planta:', error);
     return NextResponse.json({ error: 'Error al eliminar la planta' }, { status: 500 });

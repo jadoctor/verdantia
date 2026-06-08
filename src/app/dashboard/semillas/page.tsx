@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
 import { SeedWizardModal } from '@/components/SeedWizardModal';
+import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 
 export default function SemillasDashboard() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function SemillasDashboard() {
   const [showSeedModal, setShowSeedModal] = useState(false);
   
   // Custom Modal State
-  const [uiModal, setUiModal] = useState<{ show: boolean, type: 'confirm' | 'error', title: string, message: string, onConfirm?: () => void }>({
+  const [uiModal, setUiModal] = useState<{ show: boolean, type: 'confirm' | 'error', title: string, message: string, confirmText?: string, onConfirm?: () => void }>({
     show: false, type: 'error', title: '', message: ''
   });
 
@@ -50,10 +51,9 @@ export default function SemillasDashboard() {
       const listaCultivos = s.cultivos_activos_lista ? s.cultivos_activos_lista.split('|') : [];
       setUiModal({
         show: true,
-        type: 'confirm', // Changed to confirm so they can still proceed
-        title: 'Cultivos Asociados',
-        message: `Esta semilla no se puede eliminar definitivamente de la base de datos porque rompería el historial de los siguientes cultivos activos:\n\n${listaCultivos.map((c: string) => `• Cultivo ${c}`).join('\n')}\n\nEn todo caso, sí puedes Inactivarla para que deje de aparecer en tu banco activo. ¿Deseas inactivarla?`,
-        onConfirm: () => executeDelete(s.idsemillas)
+        type: 'error',
+        title: 'Semilla con Cultivos Asociados',
+        message: `No se puede eliminar esta semilla porque tiene los siguientes cultivos asociados:\n\n${listaCultivos.map((c: string) => `• Cultivo ${c}`).join('\n')}\n\nDebes eliminar primero los cultivos asociados para poder borrar esta semilla de tu inventario.`,
       });
       return;
     }
@@ -61,8 +61,9 @@ export default function SemillasDashboard() {
     setUiModal({
       show: true,
       type: 'confirm',
-      title: 'Inactivar Semilla',
-      message: '¿Estás seguro de que quieres archivar este lote? Desaparecerá de tu banco activo, pero el historial se mantendrá intacto.',
+      title: 'Eliminar Semilla',
+      message: '¿Estás seguro de que quieres eliminar este lote de semillas de tu inventario? Esta acción lo borrará de forma permanente.',
+      confirmText: 'Sí, Eliminar',
       onConfirm: () => executeDelete(s.idsemillas)
     });
   };
@@ -79,13 +80,13 @@ export default function SemillasDashboard() {
       } else {
         const errorData = await res.json().catch(() => ({}));
         setUiModal({
-          show: true, type: 'error', title: 'Error', message: errorData.error || 'Error al inactivar la semilla'
+          show: true, type: 'error', title: 'Error', message: errorData.error || 'Error al eliminar la semilla'
         });
       }
     } catch (e) {
       console.error(e);
       setUiModal({
-        show: true, type: 'error', title: 'Error', message: 'Error de red al inactivar la semilla'
+        show: true, type: 'error', title: 'Error', message: 'Error de red al eliminar la semilla'
       });
     }
   };
@@ -165,7 +166,7 @@ export default function SemillasDashboard() {
                       {s.foto ? (
                         <img src={getMediaUrl(s.foto)} alt={s.variedad_nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" loading="lazy" />
                       ) : (
-                        <span style={{ fontSize: '1.5rem' }}>{s.especiesicono || '🌱'}</span>
+                        <SpeciesIcon icon={s.especiesicono || '🌱'} size="1.5rem" />
                       )}
                     </div>
                   </td>
@@ -272,7 +273,7 @@ export default function SemillasDashboard() {
                     Cancelar
                   </button>
                   <button onClick={uiModal.onConfirm} style={{ padding: '8px 16px', border: 'none', background: '#ef4444', color: 'white', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                    Sí, Inactivar
+                    {uiModal.confirmText || 'Sí, Eliminar'}
                   </button>
                 </>
               ) : (

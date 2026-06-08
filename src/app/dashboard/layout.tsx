@@ -116,7 +116,7 @@ export default function DashboardLayout({
     '/dashboard/calculadora': { label: 'Calculadora', icon: '🧮' },
     '/dashboard/mis-plantas': { label: 'Mis Hortalizas', icon: '🌱' },
     '/dashboard/semillas': { label: 'Semillas', icon: '🌾' },
-    '/dashboard/siembras': { label: 'Siembras', icon: '🌿' },
+    '/dashboard/cultivos': { label: 'Mis Cultivos', icon: '🌿' },
     '/dashboard/tareas': { label: 'Tareas', icon: '🔔' },
     '/dashboard/admin/especies': { label: 'Cuarentena de Especies', icon: '🌍' },
     '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '➕' },
@@ -655,9 +655,9 @@ export default function DashboardLayout({
                   <span className="nav-icon">🌾</span>
                   <span>Mis Semillas</span>
                 </a>
-                <a href="/dashboard/siembras" className={`nav-item ${isActive('/dashboard/siembras')}`} onClick={handleNavClick}>
+                <a href="/dashboard/cultivos" className={`nav-item ${isActive('/dashboard/cultivos')}`} onClick={handleNavClick}>
                   <span className="nav-icon">🌿</span>
-                  <span>Siembras</span>
+                  <span>Mis cultivos</span>
                 </a>
                 <a href="/dashboard/tareas" className={`nav-item ${isActive('/dashboard/tareas')}`} onClick={handleNavClick}>
                   <span className="nav-icon">🔔</span>

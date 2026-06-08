@@ -55,6 +55,31 @@ export async function GET(request: Request) {
         COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS trasplantehasta,
         COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
         (
+          SELECT COUNT(*) FROM semillas s 
+          WHERE (s.xsemillasidvariedades = vu.idvariedades OR s.xsemillasidvariedades = vu.xvariedadesidvariedadorigen)
+            AND s.xsemillasidusuarios = vu.xvariedadesidusuarios
+            AND s.semillasactivosino = 1
+        ) AS semillas_count,
+        (
+          SELECT GROUP_CONCAT(COALESCE(s.semillasnumerocoleccion, s.idsemillas) ORDER BY s.semillasnumerocoleccion ASC SEPARATOR ', ')
+          FROM semillas s 
+          WHERE (s.xsemillasidvariedades = vu.idvariedades OR s.xsemillasidvariedades = vu.xvariedadesidvariedadorigen)
+            AND s.xsemillasidusuarios = vu.xvariedadesidusuarios
+            AND s.semillasactivosino = 1
+        ) AS semillas_colecciones,
+        (
+          SELECT JSON_ARRAYAGG(JSON_OBJECT(
+            'id', idsemillas, 
+            'numero', COALESCE(semillasnumerocoleccion, idsemillas), 
+            'stock', semillasstockactual,
+            'cultivos_count', (SELECT COUNT(*) FROM cultivos c WHERE c.xcultivosidsemillas = s.idsemillas AND c.cultivosactivosino = 1)
+          ))
+          FROM semillas s
+          WHERE (s.xsemillasidvariedades = vu.idvariedades OR s.xsemillasidvariedades = vu.xvariedadesidvariedadorigen)
+            AND s.xsemillasidusuarios = vu.xvariedadesidusuarios
+            AND s.semillasactivosino = 1
+        ) AS semillas_lista,
+        (
           SELECT JSON_ARRAYAGG(JSON_OBJECT('id', idcultivos, 'numero', COALESCE(cultivosnumerocoleccion, idcultivos), 'estado', cultivosestado, 'cantidad', cultivoscantidad))
           FROM cultivos 
           WHERE (xcultivosidvariedades = vu.idvariedades OR xcultivosidvariedades = vu.xvariedadesidvariedadorigen) 
@@ -64,7 +89,7 @@ export async function GET(request: Request) {
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
-      WHERE vu.xvariedadesidusuarios = ?
+      WHERE vu.xvariedadesidusuarios = ? AND COALESCE(vu.variedadesvisibilidadsino, 1) = 1
       ORDER BY e.especiesnombre, COALESCE(vu.variedadesnombre, vg.variedadesnombre)
     `, [user.id]);
 
@@ -117,11 +142,24 @@ export async function POST(request: Request) {
 
     // Verificar que no la tenga ya adquirida (misma variedad origen para el mismo usuario)
     const [duplicateCheck]: any = await pool.query(
-      `SELECT idvariedades FROM variedades 
+      `SELECT idvariedades, variedadesvisibilidadsino FROM variedades 
        WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?`,
       [user.id, targetVariedadId]
     );
     if (duplicateCheck.length > 0) {
+      const existing = duplicateCheck[0];
+      if (existing.variedadesvisibilidadsino === 0) {
+        // Reactivar planta inactiva
+        await pool.query(
+          `UPDATE variedades SET variedadesvisibilidadsino = 1 WHERE idvariedades = ?`,
+          [existing.idvariedades]
+        );
+        return NextResponse.json({ 
+          success: true, 
+          id: existing.idvariedades,
+          message: '¡Planta reactivada en tu huerto!'
+        });
+      }
       return NextResponse.json({ error: 'Ya tienes esta variedad en tu huerto' }, { status: 409 });
     }
 

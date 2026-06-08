@@ -580,9 +580,64 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
             flexDirection: 'column',
             gap: '4px'
           }}>
-            <h1 style={{ margin: 0, color: '#1e1b4b', fontSize: '1.8rem', fontWeight: '800' }}>
-              {especies.find(e => e.idespecies == formData.xvariedadesidespecies)?.especiesnombre || 'Cargando...'} — <span style={{ color: '#7c3aed' }}>{formData.variedadesnombre || 'Nueva Variedad'}</span>
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <h1 style={{ margin: 0, color: '#1e1b4b', fontSize: '1.8rem', fontWeight: '800' }}>
+                {especies.find(e => e.idespecies == formData.xvariedadesidespecies)?.especiesnombre || 'Cargando...'} — <span style={{ color: '#7c3aed' }}>{formData.variedadesnombre || 'Nueva Variedad'}</span>
+              </h1>
+              {saveStatus !== 'idle' && (
+                <span style={{ 
+                  fontSize: '0.75rem', 
+                  fontWeight: 'bold', 
+                  color: saveStatus === 'saved' ? '#065f46' : '#1e3a8a',
+                  background: saveStatus === 'saved' ? '#d1fae5' : '#dbeafe',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  border: `1px solid ${saveStatus === 'saved' ? '#a7f3d0' : '#bfdbfe'}`
+                }}>
+                  {saveStatus === 'saving' ? '⏳ Guardando...' : '✓ Guardado'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '24px' }}>
+            <label style={{ fontWeight: 'bold', color: '#475569', fontSize: '1.05rem', display: 'block', marginBottom: '8px' }}>
+              Nombre de la Variedad <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <input 
+              type="text" 
+              name="variedadesnombre" 
+              required
+              value={formData.variedadesnombre || ''} 
+              onChange={handleChange} 
+              placeholder="Ej. Cherry, Roma, Kumato, Raf..."
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '2px solid #ddd6fe',
+                borderRadius: '10px',
+                fontSize: '1.1rem',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'all 0.2s ease',
+                fontWeight: '600',
+                color: '#1e1b4b',
+                background: '#fcfbfe',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+              }}
+              onFocus={e => {
+                e.target.style.borderColor = '#7c3aed';
+                e.target.style.background = '#ffffff';
+                e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.15), inset 0 1px 2px rgba(0,0,0,0.05)';
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = '#ddd6fe';
+                e.target.style.background = '#fcfbfe';
+                e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.05)';
+                handleBlurSave();
+              }}
+            />
           </div>
 
           <div style={{ background: formData.variedadesvisibilidadsino ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid ${formData.variedadesvisibilidadsino ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
@@ -758,13 +813,6 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                         <div style={{ padding: '12px 16px' }}>Variedad</div>
                       </div>
 
-
-                      <FieldCompare 
-                        label="Especie / Variedad" 
-                        field="variedadesnombre" 
-                        type="text" 
-                        hideRevert
-                      />
 
                       <FieldCompare label="Nombre Científico" field="variedadesnombrecientifico" type="text" />
                       <FieldCompare label="Familia" field="variedadesfamilia" type="text" />

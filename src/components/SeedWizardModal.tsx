@@ -9,9 +9,11 @@ interface SeedWizardModalProps {
   show: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialEspecieId?: number;
+  initialVariedadId?: number;
 }
 
-export function SeedWizardModal({ show, onClose, onSuccess }: SeedWizardModalProps) {
+export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, initialVariedadId }: SeedWizardModalProps) {
   const [seedStep, setSeedStep] = useState(1);
   const [catalogoEspecies, setCatalogoEspecies] = useState<any[]>([]);
   const [catalogoVariedades, setCatalogoVariedades] = useState<any[]>([]);
@@ -46,9 +48,6 @@ export function SeedWizardModal({ show, onClose, onSuccess }: SeedWizardModalPro
 
   useEffect(() => {
     if (show) {
-      setSeedStep(1);
-      setSelectedEspecie(null);
-      setSelectedVariedad(null);
       setSearchTerm('');
       setInputGramos('');
       setCustomSemillasPorGramo('');
@@ -72,7 +71,18 @@ export function SeedWizardModal({ show, onClose, onSuccess }: SeedWizardModalPro
           const res = await fetch('/api/user/catalogo', { headers: { 'x-user-email': email } });
           if (res.ok) {
             const data = await res.json();
-            setCatalogoEspecies(data.especies || []);
+            const especiesList = data.especies || [];
+            setCatalogoEspecies(especiesList);
+
+            if (initialEspecieId) {
+              const esp = especiesList.find((e: any) => e.idespecies === initialEspecieId);
+              if (esp) {
+                setSelectedEspecie(esp);
+              }
+            } else {
+              setSelectedEspecie(null);
+              setSeedStep(1);
+            }
           }
 
           const resNum = await fetch('/api/user/semillas/next-numero', { headers: { 'x-user-email': email } });
@@ -81,6 +91,29 @@ export function SeedWizardModal({ show, onClose, onSuccess }: SeedWizardModalPro
             setNextNumero(numData.nextNumero);
             setSeedFormData(prev => ({ ...prev, semillasnumerocoleccion: String(numData.nextNumero) }));
           }
+
+          if (initialEspecieId) {
+            const resVars = await fetch(`/api/user/catalogo/${initialEspecieId}/variedades`, { headers: { 'x-user-email': email } });
+            if (resVars.ok) {
+              const dataVars = await resVars.json();
+              const vars = dataVars.variedades || [];
+              setCatalogoVariedades(vars);
+              
+              const targetVar = vars.find((v: any) => 
+                v.idvariedades === initialVariedadId || 
+                v.xvariedadesidoriginal === initialVariedadId
+              );
+              if (targetVar) {
+                setSelectedVariedad(targetVar);
+                setSeedStep(3);
+              } else {
+                setSelectedVariedad(null);
+                setSeedStep(2);
+              }
+            }
+          } else {
+            setSelectedVariedad(null);
+          }
         } catch (e) {
           console.error('Error opening seed modal:', e);
         }
@@ -88,7 +121,7 @@ export function SeedWizardModal({ show, onClose, onSuccess }: SeedWizardModalPro
 
       loadCatalogData();
     }
-  }, [show]);
+  }, [show, initialEspecieId, initialVariedadId]);
 
   const selectSeedEspecie = async (esp: any) => {
     setSelectedEspecie(esp);

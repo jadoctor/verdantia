@@ -6,6 +6,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
 import UserPlantaMediaManager from '@/components/user/UserPlantaMediaManager';
 import IniciarCultivoModal from '@/components/user/IniciarCultivoModal';
+import { SeedWizardModal } from '@/components/SeedWizardModal';
+import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 import '@/components/admin/EspecieForm.css';
 
 const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'otra'];
@@ -41,15 +43,30 @@ export default function MiPlantaDetail() {
   const [photos, setPhotos] = useState<any[]>([]);
   const [primaryPhotoId, setPrimaryPhotoId] = useState<string | null>(null);
   const [mediaRefreshKey, setMediaRefreshKey] = useState(0);
+  const [suscripcion, setSuscripcion] = useState('Básica');
 
   // Cultivos
   const [cultivos, setCultivos] = useState<any[]>([]);
   const [loadingCultivos, setLoadingCultivos] = useState(false);
 
+  // Semillas
+  const [semillas, setSemillas] = useState<any[]>([]);
+  const [loadingSemillas, setLoadingSemillas] = useState(false);
+  const [semillasOpen, setSemillasOpen] = useState(true);
+  const [showSeedWizard, setShowSeedWizard] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user && user.email) {
         setUserEmail(user.email);
+        fetch('/api/perfil', { headers: { 'x-user-email': user.email } })
+          .then(res => res.json())
+          .then(data => {
+            if (data.profile?.suscripcion) {
+              setSuscripcion(data.profile.suscripcion);
+            }
+          })
+          .catch(err => console.error('Error fetching profile in mis-plantas:', err));
       } else {
         router.push('/login');
       }
@@ -97,6 +114,7 @@ export default function MiPlantaDetail() {
            p.tiposiembra = p.tiposiembra.split(',');
         }
         setPlanta(p);
+        loadSemillas(p);
         
         // El formData guardará solo lo que el usuario ha personalizado.
         // Pero para la UI necesitamos mostrar el valor COALESCE.
@@ -152,6 +170,27 @@ export default function MiPlantaDetail() {
       console.error('Error loading cultivos:', e);
     } finally {
       setLoadingCultivos(false);
+    }
+  };
+
+  const loadSemillas = async (currentPlanta?: any) => {
+    if (!userEmail) return;
+    try {
+      setLoadingSemillas(true);
+      const res = await fetch('/api/user/semillas', { headers: { 'x-user-email': userEmail } });
+      if (res.ok) {
+        const data = await res.json();
+        const targetPlanta = currentPlanta || planta;
+        const filtered = (data.semillas || []).filter((s: any) => 
+          s.xsemillasidvariedades === Number(plantaId) ||
+          (targetPlanta && s.xsemillasidvariedades === targetPlanta.xvariedadesidvariedadorigen)
+        );
+        setSemillas(filtered);
+      }
+    } catch (e) {
+      console.error('Error loading seeds:', e);
+    } finally {
+      setLoadingSemillas(false);
     }
   };
 
@@ -842,6 +881,7 @@ export default function MiPlantaDetail() {
                     key={`media-${mediaRefreshKey}`}
                     plantaId={plantaId} 
                     userEmail={userEmail!} 
+                    suscripcion={suscripcion}
                     onMediaChange={loadPhotos} 
                   />
                 )}
@@ -963,6 +1003,138 @@ export default function MiPlantaDetail() {
           </div>
         )}
       </div>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════ */}
+      {/* SECCIÓN: SEMILLAS DISPONIBLES           */}
+      {/* ═══════════════════════════════════════ */}
+      <div style={{ marginTop: '20px', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+        <button 
+          type="button"
+          onClick={() => setSemillasOpen(!semillasOpen)}
+          style={{ 
+            width: '100%', 
+            background: '#f8fafc', 
+            border: 'none', 
+            padding: '16px 24px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '1.1rem',
+            color: '#334155',
+            borderBottom: semillasOpen ? '1px solid #e2e8f0' : 'none',
+            transition: 'background 0.2s'
+          }}
+          onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+          onMouseOut={e => e.currentTarget.style.background = '#f8fafc'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.3rem' }}>🌰</span> Lotes de Semillas en Banco ({semillas.length})
+          </div>
+          <span style={{ transform: semillasOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>
+            ▼
+          </span>
+        </button>
+
+        {semillasOpen && (
+          <div style={{ background: 'white', padding: '24px', borderTop: '1px solid #e2e8f0' }}>
+            {loadingSemillas ? (
+              <p style={{ color: '#64748b' }}>Cargando semillas...</p>
+            ) : semillas.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                <span style={{ fontSize: '3rem', marginBottom: '10px', display: 'block' }}>🌰</span>
+                <h3 style={{ color: '#334155', margin: '0 0 8px' }}>No hay semillas activas</h3>
+                <p style={{ color: '#64748b', margin: '0 0 16px' }}>No tienes ningún lote de semillas de esta variedad en tu banco digital.</p>
+                <button 
+                  onClick={() => setShowSeedWizard(true)}
+                  style={{
+                    background: '#0f766e', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px',
+                    fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
+                  }}
+                >
+                  🌰 Añadir Semillas
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {semillas.map((s) => {
+                  const isExpired = s.semillasfechacaducidad && new Date(s.semillasfechacaducidad) < new Date();
+                  const isOutOfStock = s.semillasstockactual !== null && Number(s.semillasstockactual) <= 0;
+                  return (
+                    <div key={s.idsemillas} style={{
+                      border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      background: isExpired || isOutOfStock ? '#fef2f2' : '#f8fafc', transition: 'all 0.2s'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {s.foto ? (
+                            <img src={getMediaUrl(s.foto)} alt={s.variedad_nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                          ) : (
+                            <SpeciesIcon icon={s.especiesicono || '🌱'} size="1.5rem" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#0f766e', fontWeight: 'bold' }}>
+                            Semilla Nº {s.semillasnumerocoleccion || s.idsemillas}
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+                            <strong>Origen:</strong> {s.semillasorigen === 'por_definir' ? 'PENDIENTE DE ASIGNAR' : s.semillasorigen.replace('_', ' ').toUpperCase()}
+                            {s.semillasmarca && ` • Marca: ${s.semillasmarca}`}
+                            {s.semillaslugarcompra && ` • Comprado en: ${s.semillaslugarcompra}`}
+                          </p>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', alignItems: 'center' }}>
+                            {(isExpired || isOutOfStock) && (
+                              <span style={{ fontSize: '0.7rem', color: '#b91c1c', background: '#fee2e2', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                ⚠️ {isOutOfStock ? 'Sin Stock' : 'Caducada'}
+                              </span>
+                            )}
+                            {s.semillasfechacaducidad && (
+                              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                Caduca: {new Date(s.semillasfechacaducidad).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        {s.semillasstockinicial > 0 && s.semillasstockactual !== null && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <span style={{ 
+                              fontWeight: 'bold', 
+                              color: isOutOfStock ? '#b91c1c' : (s.semillasstockactual / s.semillasstockinicial) > 0.5 ? '#16a34a' : (s.semillasstockactual / s.semillasstockinicial) > 0.2 ? '#d97706' : '#dc2626'
+                            }}>
+                              {s.semillasstockactual} / {s.semillasstockinicial} uds
+                            </span>
+                            <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                              ({isOutOfStock ? '0%' : `${Math.round((s.semillasstockactual / s.semillasstockinicial) * 100)}%`})
+                            </small>
+                          </div>
+                        )}
+                        <button 
+                          type="button"
+                          onClick={() => router.push(`/dashboard/semillas/${s.idsemillas}`)}
+                          style={{
+                            background: 'white', color: '#0f766e', border: '1px solid #0f766e', padding: '8px 16px', borderRadius: '8px',
+                            fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                          onMouseOver={e => { e.currentTarget.style.background = '#0f766e'; e.currentTarget.style.color = 'white'; }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#0f766e'; }}
+                        >
+                          Ver Semilla ➔
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {/* END OF BIG WHITE BOX */}
       </div>
 
@@ -971,6 +1143,7 @@ export default function MiPlantaDetail() {
           isOpen={showCultivoModal}
           onClose={() => { setShowCultivoModal(false); loadCultivos(); }}
           plantaId={Number(plantaId)}
+          xvariedadesidvariedadorigen={planta.xvariedadesidvariedadorigen}
           plantaNombre={planta.nombre || planta.especiesnombre || 'Planta'}
           userEmail={userEmail!}
           calendarioSolar={{
@@ -983,6 +1156,14 @@ export default function MiPlantaDetail() {
           }}
           viabilidadSemilla={planta.viabilidadsemilla}
           tiposiembra={planta.tiposiembra}
+        />
+      )}
+
+      {showSeedWizard && (
+        <SeedWizardModal 
+          show={showSeedWizard}
+          onClose={() => { setShowSeedWizard(false); loadSemillas(planta); }}
+          onSuccess={() => { loadSemillas(planta); }}
         />
       )}
 

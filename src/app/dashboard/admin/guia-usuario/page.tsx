@@ -372,6 +372,32 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>08/06/2026 10:02 – Acciones de Inactivación y Eliminación de Variedades y Semillas en Hortalizas</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El usuario no podía eliminar o inactivar una variedad (planta) o semilla directamente desde la página de Mis Hortalizas (`/dashboard/mis-plantas`), limitando la administración rápida del huerto.</li>
+                  <li style={{ marginBottom: '8px' }}>Si una variedad de hortaliza tenía semillas vigentes en el banco de semillas, un borrado físico completo de la variedad causaba pérdidas de referencia e inconsistencias. Era necesario un mecanismo de soft-delete/inactivación que ocultara la planta pero mantuviera sus semillas.</li>
+                  <li style={{ marginBottom: '8px' }}>Los botones de acción en las tarjetas del huerto (eliminar, inactivar) tenían contrastes deficientes debido a fondos negros semitransparentes poco estéticos y tamaños reducidos.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/api/user/plantas/[id]/route.ts:</strong> Modificado el método `DELETE` para interceptar si la variedad a eliminar tiene semillas activas asociadas. Si las tiene, o si se indica el parámetro `?inactivate=true`, realiza un soft-delete actualizando `variedadesvisibilidadsino = 0` en lugar de borrarla físicamente.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/api/user/plantas/route.ts:</strong> Filtrado el listado para excluir plantas inactivadas (`variedadesvisibilidadsino = 0`) y añadido el campo `cultivos_count` a la lista de semillas JSON (`semillas_lista`).</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/dashboard/mis-plantas/page.tsx:</strong> Rediseñado el encabezado de las tarjetas del huerto para mostrar de manera premium los botones de acción (`💤` inactivar y `🗑️` eliminar) con bordes de color y fondos blancos adaptativos. Se integró el modal unificado de semillas `SeedWizardModal` en esta página con preselección automática de especie y variedad al hacer clic en `+ Añadir Semilla`.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/components/SeedWizardModal.tsx:</strong> Adaptado el componente unificado para aceptar `initialEspecieId` y `initialVariedadId`, permitiendo auto-seleccionar y saltar directamente al Paso 3 en flujos de adquisición asistidos.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Inactivación y eliminación seguras de plantas y semillas directamente desde la vista del huerto, previniendo pérdidas incidentales de inventario y manteniendo un diseño estético y moderno en todas las tarjetas de la plataforma.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
               <strong>07/06/2026 20:50 – Origen pendiente de asignar y mejoras del Asistente de Semillas</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
@@ -1260,7 +1286,7 @@ export default function GuiaUsuarioPage() {
                 <td style={{ padding: '16px', fontWeight: 'bold', color: '#15803d' }}>4 👑 Premium</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>9.99€ / mes</td>
                 <td style={{ padding: '16px' }}><strong>Ilimitadas.</strong> Múltiples huertos y control total.</td>
-                <td style={{ padding: '16px' }}>4 fotos de perfil. <strong>Fotos ilimitadas</strong> por galería/labor.</td>
+                <td style={{ padding: '16px' }}>4 fotos de perfil. Hasta 4 fotos por galería/labor.</td>
                 <td style={{ padding: '16px' }}>Acceso ilimitado al Chat IA y generación de posts.</td>
                 <td style={{ padding: '16px' }}>Completos (Agrícola, Biodinámico Avanzado e IA).</td>
               </tr>
@@ -1268,7 +1294,7 @@ export default function GuiaUsuarioPage() {
                 <td style={{ padding: '16px', fontWeight: 'bold', color: '#65a30d' }}>3 🌳 Avanzado</td>
                 <td style={{ padding: '16px', fontWeight: 'bold' }}>5.99€ / mes</td>
                 <td style={{ padding: '16px' }}>Hasta <strong>50 semillas/especies</strong> activas.</td>
-                <td style={{ padding: '16px' }}>3 fotos de perfil. Hasta 4 fotos por galería.</td>
+                <td style={{ padding: '16px' }}>3 fotos de perfil. Hasta 3 fotos por galería.</td>
                 <td style={{ padding: '16px' }}>Chat Básico IA (Consultas limitadas diarias).</td>
                 <td style={{ padding: '16px' }}>Lunar y Biodinámico Básico.</td>
               </tr>

@@ -230,7 +230,7 @@ export async function POST(request: Request) {
         // 2. Adquirir la variedad en la tabla 'variedades' (como planta propia del usuario para que aparezca en "Mis Plantas") si no la tiene ya
         if (especieId) {
           const [userOwnedVarCheck]: any = await pool.query(`
-            SELECT idvariedades FROM variedades 
+            SELECT idvariedades, variedadesvisibilidadsino FROM variedades 
             WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?
           `, [user.id, xsemillasidvariedades]);
 
@@ -243,6 +243,10 @@ export async function POST(request: Request) {
                 variedadesesgenerica
               ) VALUES (?, ?, ?, 0)
             `, [especieId, user.id, xsemillasidvariedades]);
+          } else if (userOwnedVarCheck[0].variedadesvisibilidadsino === 0) {
+            await pool.query(`
+              UPDATE variedades SET variedadesvisibilidadsino = 1 WHERE idvariedades = ?
+            `, [userOwnedVarCheck[0].idvariedades]);
           }
         }
 

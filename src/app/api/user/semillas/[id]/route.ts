@@ -25,13 +25,31 @@ export async function DELETE(
       return NextResponse.json({ error: 'Semilla no encontrada o no autorizada' }, { status: 404 });
     }
 
-    // Soft Delete: semillasactivosino = 0
-    await pool.query(
-      'UPDATE semillas SET semillasactivosino = 0 WHERE idsemillas = ?',
+    // Verificar si la semilla tiene cultivos asociados activos/existentes
+    const [crops]: any = await pool.query(
+      'SELECT COUNT(*) AS count FROM cultivos WHERE xcultivosidsemillas = ? AND cultivosactivosino = 1',
       [semillaId]
     );
 
-    return NextResponse.json({ success: true, message: 'Semilla eliminada correctamente' });
+    if (crops.length > 0 && crops[0].count > 0) {
+      return NextResponse.json(
+        { error: 'No se puede eliminar esta semilla porque tiene cultivos asociados activos o en historial.' },
+        { status: 400 }
+      );
+    }
+
+    // Hard Delete: Eliminar fotos asociadas de datosadjuntos y luego el registro de la semilla
+    await pool.query(
+      'DELETE FROM datosadjuntos WHERE xdatosadjuntosidsemillas = ?',
+      [semillaId]
+    );
+
+    await pool.query(
+      'DELETE FROM semillas WHERE idsemillas = ?',
+      [semillaId]
+    );
+
+    return NextResponse.json({ success: true, message: 'Semilla eliminada de forma permanente' });
   } catch (error: any) {
     console.error('Error eliminando semilla:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });

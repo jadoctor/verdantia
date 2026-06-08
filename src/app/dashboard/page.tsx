@@ -8,6 +8,7 @@ import { getMediaUrl } from '@/lib/media-url';
 import GardenMap from '@/components/user/GardenMap';
 import { Trash2 } from 'lucide-react';
 import { SeedWizardModal } from '@/components/SeedWizardModal';
+import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 
 interface UserProfile {
   id: number;
@@ -137,6 +138,31 @@ export default function DashboardHome() {
       console.error(err);
       alert('Error de conexión');
       setDeletingSeedId(null);
+    }
+  };
+
+  const executeInactivateSeed = async (seedId: number) => {
+    if (!profile?.email) return;
+    try {
+      const res = await fetch(`/api/user/semillas/${seedId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': profile.email
+        },
+        body: JSON.stringify({
+          semillasactivosino: 0
+        })
+      });
+      if (res.ok) {
+        loadProfile(profile.email, auth.currentUser?.uid || '');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al inactivar la semilla');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
     }
   };
 
@@ -418,6 +444,18 @@ export default function DashboardHome() {
     });
     return () => unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    if (!loading && profile) {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('startCrop') === 'true') {
+        openCropWizard();
+        const url = new URL(window.location.href);
+        url.searchParams.delete('startCrop');
+        window.history.replaceState({}, '', url.pathname + url.searchParams.toString());
+      }
+    }
+  }, [loading, profile]);
 
   if (loading) return <p className="loading-text">Cargando tu huerto...</p>;
 
@@ -787,20 +825,20 @@ export default function DashboardHome() {
             {(() => {
               const activeCrops = misCultivos.filter((c: any) => c.cultivosestado !== 'finalizado' && c.cultivosestado !== 'perdido');
               return (
-                <div className="stat-card" style={{ cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px' }} onClick={() => openCropWizard()}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div className="stat-card" style={{ cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'stretch' }} onClick={() => openCropWizard()}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <div className="card-icon">&#127807;</div>
-                    <div className="card-info" style={{ flex: 1 }}>
+                    <div className="card-info" style={{ flex: 1, minWidth: 0 }}>
                       <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Cultivos activos</h3>
                       <div className="value" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', width: '100%', marginTop: '4px' }}>
                         <span style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b' }}>{activeCrops.length}</span>
-                        <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>+ Sembrar</span>
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold', flexShrink: 0 }}>+ Sembrar</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Listado de especies y variedades */}
-                  <div style={{ borderTop: activeCrops.length > 0 ? '1px dashed #e2e8f0' : 'none', paddingTop: activeCrops.length > 0 ? '8px' : 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ borderTop: activeCrops.length > 0 ? '1px dashed #e2e8f0' : 'none', paddingTop: activeCrops.length > 0 ? '8px' : 0, display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
                     {activeCrops.length > 0 ? (
                       activeCrops.slice(0, 3).map((c: any, idx: number) => {
                         const isConfirming = deletingCropId === c.idcultivos;
@@ -820,6 +858,9 @@ export default function DashboardHome() {
                                 borderRadius: '8px',
                                 background: 'rgba(239, 68, 68, 0.08)',
                                 border: '1px solid rgba(239, 68, 68, 0.2)',
+                                width: '100%',
+                                minWidth: 0,
+                                boxSizing: 'border-box'
                               }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
@@ -891,7 +932,10 @@ export default function DashboardHome() {
                               cursor: 'pointer',
                               padding: '6px 8px',
                               borderRadius: '8px',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              width: '100%',
+                              minWidth: 0,
+                              boxSizing: 'border-box'
                             }}
                             onMouseOver={e => {
                               e.currentTarget.style.background = '#f0fdf4';
@@ -902,12 +946,21 @@ export default function DashboardHome() {
                               e.currentTarget.style.color = '#475569';
                             }}
                           >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '1rem', flexShrink: 0 }}>{c.especiesicono || '🌱'}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0, width: '100%' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', minWidth: 0 }}>
+                                <div style={{ flexShrink: 0, display: 'inline-flex' }}><SpeciesIcon icon={c.especiesicono || '🌱'} size="1rem" /></div>
                                 <span style={{ fontWeight: 800, color: '#065f46', background: '#d1fae5', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>
-                                <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.especiesnombre}</span>
-                                <span style={{ opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>({c.variedad_nombre || 'Común'})</span>
+                                <span style={{ 
+                                  fontWeight: 700, 
+                                  overflow: 'hidden', 
+                                  textOverflow: 'ellipsis', 
+                                  whiteSpace: 'nowrap', 
+                                  display: 'inline-block', 
+                                  minWidth: 0,
+                                  flex: 1
+                                }}>
+                                  {c.especiesnombre} <span style={{ fontWeight: 'normal', opacity: 0.85 }}>({c.variedad_nombre || 'Común'})</span>
+                                </span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '26px', flexWrap: 'wrap' }}>
                                 {c.cultivosfechainicio && (
@@ -986,20 +1039,20 @@ export default function DashboardHome() {
             {(() => {
               const activeSeeds = misSemillas.filter((s: any) => s.semillasstockactual > 0 && s.semillasactivosino !== 0);
               return (
-                <div className="stat-card" style={{ cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px' }} onClick={() => openSeedModal()}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div className="stat-card" style={{ cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'stretch' }} onClick={() => openSeedModal()}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
                     <div className="card-icon">&#128230;</div>
-                    <div className="card-info" style={{ flex: 1 }}>
+                    <div className="card-info" style={{ flex: 1, minWidth: 0 }}>
                       <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Semillas en banco</h3>
                       <div className="value" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', width: '100%', marginTop: '4px' }}>
                         <span style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b' }}>{activeSeeds.length}</span>
-                        <span style={{ fontSize: '0.75rem', background: 'rgba(13, 148, 136, 0.1)', color: '#0d9488', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>+ Añadir</span>
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(13, 148, 136, 0.1)', color: '#0d9488', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold', flexShrink: 0 }}>+ Añadir</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Listado de especies y variedades de semillas */}
-                  <div style={{ borderTop: activeSeeds.length > 0 ? '1px dashed #e2e8f0' : 'none', paddingTop: activeSeeds.length > 0 ? '8px' : 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ borderTop: activeSeeds.length > 0 ? '1px dashed #e2e8f0' : 'none', paddingTop: activeSeeds.length > 0 ? '8px' : 0, display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
                     {activeSeeds.length > 0 ? (
                       activeSeeds.slice(0, 3).map((s: any, idx: number) => {
                         const isConfirming = deletingSeedId === s.idsemillas;
@@ -1019,6 +1072,9 @@ export default function DashboardHome() {
                                 borderRadius: '8px',
                                 background: 'rgba(239, 68, 68, 0.08)',
                                 border: '1px solid rgba(239, 68, 68, 0.2)',
+                                width: '100%',
+                                minWidth: 0,
+                                boxSizing: 'border-box'
                               }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
@@ -1090,7 +1146,10 @@ export default function DashboardHome() {
                               cursor: 'pointer',
                               padding: '4px 8px',
                               borderRadius: '8px',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              width: '100%',
+                              minWidth: 0,
+                              boxSizing: 'border-box'
                             }}
                             onMouseOver={e => {
                               e.currentTarget.style.background = '#f0fdfa';
@@ -1101,11 +1160,20 @@ export default function DashboardHome() {
                               e.currentTarget.style.color = '#475569';
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>{s.especiesicono || '🌰'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, width: '100%' }}>
+                              <div style={{ flexShrink: 0, display: 'inline-flex' }}><SpeciesIcon icon={s.especiesicono || '🌰'} size="1rem" /></div>
                               <span style={{ fontWeight: 800, color: '#0f766e', background: '#ccfbf1', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Semilla Nº {s.semillasnumerocoleccion || s.idsemillas}</span>
-                              <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.especiesnombre}</span>
-                              <span style={{ opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>({s.variedad_nombre || 'Común'})</span>
+                              <span style={{ 
+                                fontWeight: 700, 
+                                overflow: 'hidden', 
+                                textOverflow: 'ellipsis', 
+                                whiteSpace: 'nowrap', 
+                                display: 'inline-block', 
+                                minWidth: 0,
+                                flex: 1
+                              }}>
+                                {s.especiesnombre} <span style={{ fontWeight: 'normal', opacity: 0.85 }}>({s.variedad_nombre || 'Común'})</span>
+                              </span>
                             </div>
                             
                             <button
@@ -1157,10 +1225,185 @@ export default function DashboardHome() {
                 </div>
               );
             })()}
-            <div className="stat-card">
-              <div className="card-icon">&#128203;</div>
-              <div className="card-info"><h3>Tareas Pendientes</h3><div className="value">&mdash;</div></div>
-            </div>
+            {(() => {
+              const problemSeeds = misSemillas.filter((s: any) => {
+                const esActiva = s.semillasactivosino !== 0 && s.semillasactivosino !== false;
+                if (!esActiva) return false;
+                const caducada = s.semillasfechacaducidad && new Date(s.semillasfechacaducidad) < new Date();
+                const sinStock = s.semillasstockactual !== null && s.semillasstockactual !== undefined && Number(s.semillasstockactual) <= 0;
+                return caducada || sinStock;
+              });
+
+              return (
+                <div 
+                  className="stat-card" 
+                  style={{ 
+                    position: 'relative', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '10px', 
+                    alignItems: 'stretch',
+                    border: problemSeeds.length > 0 ? '1px solid rgba(245, 158, 11, 0.5)' : undefined, 
+                    background: problemSeeds.length > 0 ? 'linear-gradient(135deg, var(--bg-card), rgba(254, 243, 199, 0.15))' : undefined 
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
+                    <div className="card-icon" style={{ background: problemSeeds.length > 0 ? '#fef3c7' : undefined }}>
+                      {problemSeeds.length > 0 ? '⚠️' : '📋'}
+                    </div>
+                    <div className="card-info" style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Tareas Pendientes</h3>
+                      <div className="value" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', width: '100%', marginTop: '4px' }}>
+                        {problemSeeds.length === 0 ? (
+                          <span style={{ fontSize: '1rem', fontWeight: 700, color: '#10b981' }}>Al día</span>
+                        ) : (
+                          <span style={{ fontSize: '2rem', fontWeight: 800, color: '#d97706' }}>{problemSeeds.length}</span>
+                        )}
+                        {problemSeeds.length > 0 && (
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold', flexShrink: 0 }}>
+                            Revisión necesaria
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {problemSeeds.length > 0 && (
+                    <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', minWidth: 0 }}>
+                      <div style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 700, marginBottom: '2px' }}>
+                        Semillas caducadas o sin stock:
+                      </div>
+                      {problemSeeds.slice(0, 3).map((s: any, idx: number) => {
+                        const caducada = s.semillasfechacaducidad && new Date(s.semillasfechacaducidad) < new Date();
+                        const sinStock = s.semillasstockactual !== null && s.semillasstockactual !== undefined && Number(s.semillasstockactual) <= 0;
+                        let motivo = '';
+                        if (caducada && sinStock) motivo = '📅 Caducada y 📦 sin stock';
+                        else if (caducada) motivo = '📅 Caducada';
+                        else motivo = '📦 Sin stock';
+
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '6px',
+                              fontSize: '0.78rem',
+                              color: '#475569',
+                              padding: '6px 8px',
+                              borderRadius: '8px',
+                              background: 'rgba(245, 158, 11, 0.05)',
+                              border: '1px solid rgba(245, 158, 11, 0.15)',
+                              width: '100%',
+                              minWidth: 0,
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%', minWidth: 0 }}>
+                                <span style={{ fontWeight: 800, color: '#b45309', background: '#fef3c7', padding: '1px 4px', borderRadius: '4px', fontSize: '0.62rem', flexShrink: 0 }}>
+                                  Nº {s.semillasnumerocoleccion || s.idsemillas}
+                                </span>
+                                <span style={{ 
+                                  fontWeight: 700, 
+                                  overflow: 'hidden', 
+                                  textOverflow: 'ellipsis', 
+                                  whiteSpace: 'nowrap', 
+                                  display: 'inline-block', 
+                                  minWidth: 0,
+                                  flex: 1
+                                }}>
+                                  {s.especiesnombre} <span style={{ fontWeight: 'normal', opacity: 0.8 }}>({s.variedad_nombre || 'Común'})</span>
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '0.65rem', color: '#d97706', paddingLeft: '2px' }}>
+                                {motivo}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                              {/* Ir a la semilla */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/dashboard/semillas/${s.idsemillas}?from=dashboard`);
+                                }}
+                                title="Ir a la semilla"
+                                style={{
+                                  background: 'white',
+                                  border: '1px solid #cbd5e1',
+                                  color: '#475569',
+                                  padding: '3px 6px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 'bold',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => {
+                                  e.currentTarget.style.background = '#f1f5f9';
+                                  e.currentTarget.style.borderColor = '#94a3b8';
+                                }}
+                                onMouseOut={e => {
+                                  e.currentTarget.style.background = 'white';
+                                  e.currentTarget.style.borderColor = '#cbd5e1';
+                                }}
+                              >
+                                Ir
+                              </button>
+
+                              {/* Inactivar directamente */}
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`¿Inactivar semilla Nº ${s.semillasnumerocoleccion || s.idsemillas}? Dejará de mostrarse como activa en tu banco.`)) {
+                                    await executeInactivateSeed(s.idsemillas);
+                                  }
+                                }}
+                                title="Inactivar directamente"
+                                style={{
+                                  background: '#ef4444',
+                                  border: '1px solid #ef4444',
+                                  color: 'white',
+                                  padding: '3px 6px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 'bold',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseOver={e => {
+                                  e.currentTarget.style.background = '#dc2626';
+                                  e.currentTarget.style.borderColor = '#dc2626';
+                                }}
+                                onMouseOut={e => {
+                                  e.currentTarget.style.background = '#ef4444';
+                                  e.currentTarget.style.borderColor = '#ef4444';
+                                }}
+                              >
+                                Inactivar
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {problemSeeds.length > 3 && (
+                        <div style={{ fontSize: '0.72rem', color: '#d97706', fontWeight: 'bold', paddingLeft: '4px' }}>
+                          + {problemSeeds.length - 3} tareas más...
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div className="stat-card">
               <div className="card-icon">&#127777;</div>
               <div className="card-info"><h3>Meteo Local</h3><div className="value">&mdash;</div></div>
@@ -1345,7 +1588,7 @@ export default function DashboardHome() {
                               <img src={getMediaUrl(esp.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                             </div>
                           ) : (
-                            <span style={{ fontSize: '2.2rem' }}>{esp.especiesicono || '🌱'}</span>
+                            <SpeciesIcon icon={esp.especiesicono || '🌱'} size="2.2rem" />
                           )}
                           <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesnombre}</span>
                         </button>
@@ -1361,8 +1604,8 @@ export default function DashboardHome() {
                     style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '16px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                     ← Volver a especies
                   </button>
-                  <h3 style={{ margin: '0 0 16px', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>
-                    {selectedCropEspecie.especiesicono} {selectedCropEspecie.especiesnombre} — Elige la variedad
+                  <h3 style={{ margin: '0 0 16px', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <SpeciesIcon icon={selectedCropEspecie.especiesicono} size="1.2rem" /> {selectedCropEspecie.especiesnombre} — Elige la variedad
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px' }}>
                     {cropWizardVariedades.map(v => {
@@ -1385,7 +1628,7 @@ export default function DashboardHome() {
                               <img src={getMediaUrl(v.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                             </div>
                           ) : (
-                            <span style={{ fontSize: '1.8rem' }}>{v.variedadesicono || selectedCropEspecie.especiesicono || '🌱'}</span>
+                            <SpeciesIcon icon={v.variedadesicono || selectedCropEspecie.especiesicono || '🌱'} size="1.8rem" />
                           )}
                           <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesnombre}</span>
                           
