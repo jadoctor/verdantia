@@ -2,19 +2,8 @@
 
 ## Reglas de Oro
 1. **Acceso Local:** Cuando se solicite "acceso local", iniciar únicamente el servidor en `localhost:3000`. **NUNCA** iniciar túneles (ngrok, pinggy, etc.) a menos que se pida de forma explícita.
-2. **Canal de Despliegue Exclusivo:** **NUNCA** realizar commits, push a GitHub ni despliegues a producción (Firebase) de forma manual a través de la terminal de comandos del agente. Todo el proceso de control de versiones y subida a producción **DEBE** realizarse única y exclusivamente a través de los botones específicos de la página de administración de mantenimiento (`/dashboard/admin/ajustes/mantenimiento`).
-   * **MANDATO ESTRICTO:** El asistente tiene **TOTALMENTE PROHIBIDO** lanzar comandos de despliegue (Build, Commit, Deploy) de forma autónoma.
-   * **Protocolo de Despliegue (Orden Estricto ejecutado por el Backend):** El backend de la aplicación, al ser activado desde la interfaz web, ejecuta de forma síncrona y en este orden estricto:
-     1. **Documentación Obligatoria:** Registrar la subida creando un nuevo bloque en el apartado **6.2. Despliegues** de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`). Cada entrada debe tener:
-        - **Encabezado:** Fecha, hora y título descriptivo.
-        - **A. Problemas detectados:** Causa raíz del fallo original.
-        - **B. Modificaciones realizadas:** Lista técnica de archivos tocados y lógicas refactorizadas.
-        - **C. Problemas resueltos:** Confirmación del estado final.
-     2. **Fase 0 - Estampado de Versión:** Modificar `src/app/page.tsx` con fecha y hora exacta del despliegue.
-     3. **Fase 1 - Test de Fuego Local:** `npm run build` (Debe compilar sin errores).
-     4. **Fase 2 - Control de Versiones:** `git add .`, `git commit -m "descripción del cambio"`, y `git push`.
-     5. **Fase 3 - Despliegue Final:** `firebase deploy`.
-   * **Referencia Técnica Obligatoria:** El asistente **DEBE** orientar al usuario para que use la interfaz y verificar que el historial de cambios y la sección 6 completa de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`) estén listos antes de cualquier despliegue, para verificar que se cumple con todos los estándares documentados.
+2. **Canal de Despliegue Exclusivo:** El asistente tiene permiso total para automatizar el proceso de subida a producción si el usuario da la orden explícita (ej. "sube a producción"). Al recibir esta orden, el agente realizará todo el proceso de compilación (`npm run build`), guardado de versiones en git (`git add`, `git commit`, `git push`) y despliegue a Firebase (`firebase deploy`) de forma autónoma.
+   * **Protocolo de Despliegue:** Aunque lo haga el agente, se debe seguir el orden estricto de documentar en la Guía de Usuario, estampar versión, compilar, hacer commit y desplegar.
 3. **Compatibilidad Next.js:** Prestar especial atención a las APIs y la estructura de archivos de la versión instalada de Next.js. Consultar los manuales de `node_modules/next/dist/docs/` ante cualquier cambio para evitar el uso de importaciones o funciones obsoletas.
 4. **Refresco Automático (MANDATO INQUEBRANTABLE):** El asistente tiene la **OBLIGACIÓN ABSOLUTA E INELUDIBLE** de actualizar la página del navegador de forma automática cada vez que finalice una tarea o instrucción. **Cualquier cambio aplicado que no sea visualizado instantáneamente por el usuario es un FRACASO CRÍTICO.** El asistente DEBE forzar la recarga en pantalla por sus propios medios sin esperar jamás a que el humano pulse una tecla. ¡CERO EXCUSAS!
 5. **Control de Copias de Seguridad (GitHub):** **NUNCA** extraerás ni descargarás una copia de seguridad de GitHub de forma espontánea o autónoma. Si por motivos de fuerza mayor consideras que es necesario restaurar o recurrir a una copia, **DEBES** pedir permiso explícito al usuario y explicar detalladamente el motivo y las consecuencias antes de ejecutar ninguna acción relacionada.

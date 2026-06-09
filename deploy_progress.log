@@ -1,4 +1,214 @@
-> ☁️ [SÓLO GIT] Iniciando subida a GitHub (sin despliegue a producción)...
-> 📖 [DOCUMENTACIÓN] Registrando los archivos modificados en el histórico de la Guía de Usuario...
-> ✅ Guía de Usuario actualizada con éxito.
-> 📦 [FASE 1 - GIT] Añadiendo archivos rastreados al entorno de preparación (git add -v .)...
+> Iniciando subida a GitHub y Despliegue en Red
+> 📝 [VERSIÓN] Actualizando número de versión en package.json (patch)...
+> Versión incrementada con éxito a v0.1.16.
+> 📖 [DOCUMENTACIÓN] Escribiendo el registro automático de este despliegue en la Guía de Usuario (Sección 6.2)...
+> Guía de Usuario actualizada con éxito.
+> 🕒 [FASE 0] Inyectando la fecha y hora exacta de este despliegue en la pantalla de inicio (src/app/page.tsx)...
+> Fecha y hora actualizadas con éxito.
+> ⚙️ [FASE 1] Ejecutando test de fuego de compilación (Next.js Turbopack: npm run build). Este paso verifica que no haya errores fatales...
+> verdantia-nextjs@0.1.16 build
+> next build
+
+▲ Next.js 16.2.4 (Turbopack)
+- Environments: .env.local, .env.production
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 16.7s
+  Running TypeScript ...
+  Finished TypeScript in 27.9s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/108) ...
+  Generating static pages using 3 workers (27/108) 
+  Generating static pages using 3 workers (54/108) 
+  Generating static pages using 3 workers (81/108) 
+✓ Generating static pages using 3 workers (108/108) in 1874ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/admin/ajustes/avisos
+├ ƒ /api/admin/ajustes/avisos/labores
+├ ƒ /api/admin/ajustes/idiomas
+├ ƒ /api/admin/ajustes/logros
+├ ƒ /api/admin/ajustes/paises
+├ ƒ /api/admin/ajustes/tiposavisos
+├ ƒ /api/admin/asuntos-pendientes
+├ ƒ /api/admin/asuntos-realizados
+├ ƒ /api/admin/blog
+├ ƒ /api/admin/blog/[id]
+├ ƒ /api/admin/blog/[id]/notify
+├ ƒ /api/admin/blog/[id]/notify-test
+├ ƒ /api/admin/contenedores
+├ ƒ /api/admin/contenedores/[id]
+├ ƒ /api/admin/contenedores/[id]/photos
+├ ƒ /api/admin/debug-error
+├ ƒ /api/admin/debug-incidencias
+├ ƒ /api/admin/especies
+├ ƒ /api/admin/especies/[id]
+├ ƒ /api/admin/especies/[id]/blogs
+├ ƒ /api/admin/especies/[id]/pautas
+├ ƒ /api/admin/especies/[id]/pautas/[idPauta]
+├ ƒ /api/admin/especies/[id]/pdfs
+├ ƒ /api/admin/especies/[id]/pdfs/link
+├ ƒ /api/admin/especies/[id]/photos
+├ ƒ /api/admin/especies/[id]/photos/reorder
+├ ƒ /api/admin/especies/[id]/relaciones
+├ ƒ /api/admin/especies/[id]/sinonimos
+├ ƒ /api/admin/especies/[id]/usuarios-vinculados
+├ ƒ /api/admin/fases
+├ ƒ /api/admin/fases/[id]
+├ ƒ /api/admin/incidencias
+├ ƒ /api/admin/labores
+├ ƒ /api/admin/labores/[id]
+├ ƒ /api/admin/labores/[id]/pdfs
+├ ƒ /api/admin/labores/[id]/pdfs/link
+├ ƒ /api/admin/labores/[id]/photos
+├ ƒ /api/admin/labores/[id]/photos/reorder
+├ ƒ /api/admin/mantenimiento/backup
+├ ƒ /api/admin/mantenimiento/logs
+├ ƒ /api/admin/mantenimiento/normas
+├ ƒ /api/admin/plagas
+├ ƒ /api/admin/plagas/[id]
+├ ƒ /api/admin/plagas/[id]/photos
+├ ƒ /api/admin/scripts/check-state
+├ ƒ /api/admin/scripts/downgrade
+├ ƒ /api/admin/scripts/migrate-avisos
+├ ƒ /api/admin/scripts/test-email
+├ ƒ /api/admin/scripts/watermark-legacy
+├ ƒ /api/admin/upload
+├ ƒ /api/admin/usuarios
+├ ƒ /api/admin/usuarios/[id]
+├ ƒ /api/admin/usuarios/[id]/fix-trial
+├ ƒ /api/admin/usuarios/[id]/purge
+├ ƒ /api/admin/variedades
+├ ƒ /api/admin/variedades/[id]
+├ ƒ /api/admin/variedades/[id]/blogs
+├ ƒ /api/admin/variedades/[id]/pdfs
+├ ƒ /api/admin/variedades/[id]/pdfs/link
+├ ƒ /api/admin/variedades/[id]/photos
+├ ƒ /api/admin/variedades/generica/[especieId]
+├ ƒ /api/ai/calendar-advice
+├ ƒ /api/ai/especie-assistant
+├ ƒ /api/ai/generate-blog
+├ ƒ /api/ai/generate-image
+├ ƒ /api/ai/pautas
+├ ƒ /api/ai/pdf-search
+├ ƒ /api/ai/proponer-sinonimos
+├ ƒ /api/ai/proponer-variedades
+├ ƒ /api/ai/semillas/ocr-compare
+├ ƒ /api/ai/variedad-assistant
+├ ƒ /api/auth/account-state
+├ ƒ /api/auth/check-plan-degradation
+├ ƒ /api/auth/on-verified
+├ ƒ /api/auth/profile
+├ ƒ /api/auth/register
+├ ƒ /api/auth/send-password-reset
+├ ƒ /api/auth/send-verification
+├ ƒ /api/auth/update-email
+├ ƒ /api/auth/webauthn/authenticate/generate
+├ ƒ /api/auth/webauthn/authenticate/verify
+├ ƒ /api/auth/webauthn/register/generate
+├ ƒ /api/auth/webauthn/register/verify
+├ ƒ /api/blog
+├ ƒ /api/blog/[slug]
+├ ƒ /api/dev/schema
+├ ƒ /api/inspect
+├ ƒ /api/location/search
+├ ƒ /api/location/sigpac
+├ ƒ /api/media
+├ ƒ /api/perfil
+├ ƒ /api/perfil/avisos
+├ ƒ /api/perfil/logros
+├ ƒ /api/perfil/photos
+├ ƒ /api/run-sql
+├ ƒ /api/run-sql/mis-plantas-migration
+├ ƒ /api/setup-admin
+├ ƒ /api/unsubscribe
+├ ƒ /api/user/bancales
+├ ƒ /api/user/catalogo
+├ ƒ /api/user/catalogo/[especieId]/variedades
+├ ƒ /api/user/conflictos
+├ ƒ /api/user/conflictos/reemplazar
+├ ƒ /api/user/consentimiento-foto
+├ ƒ /api/user/cultivos
+├ ƒ /api/user/cultivos/[id]
+├ ƒ /api/user/cultivos/[id]/ubicaciones
+├ ƒ /api/user/cultivos/[id]/ubicaciones/[idUbicacion]
+├ ƒ /api/user/cultivos/alertas-hoy
+├ ƒ /api/user/cultivos/avisos
+├ ƒ /api/user/cultivos/avisos/[id]/photos
+├ ƒ /api/user/cultivos/fix-numeros
+├ ƒ /api/user/debug-semilla
+├ ƒ /api/user/incidencias
+├ ƒ /api/user/migrate-stock
+├ ƒ /api/user/plantas
+├ ƒ /api/user/plantas/[id]
+├ ƒ /api/user/plantas/[id]/pautas
+├ ƒ /api/user/plantas/[id]/pautas/reset
+├ ƒ /api/user/plantas/[id]/photos
+├ ƒ /api/user/semillas
+├ ƒ /api/user/semillas/[id]
+├ ƒ /api/user/semillas/[id]/photos
+├ ƒ /api/user/semillas/next-numero
+├ ƒ /api/user/tareas/complete
+├ ƒ /api/user/tareas/pending
+├ ƒ /api/user/variedades/pautas
+├ ○ /auth/action
+├ ○ /blog
+├ ƒ /blog/[slug]
+├ ○ /dashboard
+├ ○ /dashboard/admin/ajustes
+├ ○ /dashboard/admin/ajustes/avisos
+├ ○ /dashboard/admin/ajustes/idiomas
+├ ○ /dashboard/admin/ajustes/logros
+├ ○ /dashboard/admin/ajustes/mantenimiento
+├ ○ /dashboard/admin/ajustes/paises
+├ ○ /dashboard/admin/asuntos-pendientes
+├ ○ /dashboard/admin/asuntos-realizados
+├ ○ /dashboard/admin/blog
+├ ƒ /dashboard/admin/blog/[id]
+├ ○ /dashboard/admin/chat
+├ ○ /dashboard/admin/especies
+├ ƒ /dashboard/admin/especies/[id]
+├ ○ /dashboard/admin/especies/nueva
+├ ○ /dashboard/admin/fases
+├ ƒ /dashboard/admin/fases/[id]
+├ ○ /dashboard/admin/guia-usuario
+├ ○ /dashboard/admin/labores
+├ ƒ /dashboard/admin/labores/[id]
+├ ○ /dashboard/admin/labores/nueva
+├ ○ /dashboard/admin/meteo
+├ ○ /dashboard/admin/plagas
+├ ○ /dashboard/admin/tareas/contenedores
+├ ƒ /dashboard/admin/tareas/contenedores/[id]
+├ ○ /dashboard/admin/usuarios
+├ ƒ /dashboard/admin/usuarios/[id]
+├ ○ /dashboard/admin/variedades
+├ ƒ /dashboard/admin/variedades/[id]
+├ ƒ /dashboard/bancales/[id]
+├ ○ /dashboard/cultivos
+├ ƒ /dashboard/cultivos/[id]
+├ ○ /dashboard/demo-rangos
+├ ○ /dashboard/meteo
+├ ○ /dashboard/mis-plantas
+├ ƒ /dashboard/mis-plantas/[id]
+├ ○ /dashboard/onboarding
+├ ○ /dashboard/perfil
+├ ○ /dashboard/semillas
+├ ƒ /dashboard/semillas/[id]
+├ ○ /dashboard/tareas
+├ ○ /login
+├ ○ /politica-privacidad
+└ ○ /registro
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+> ✅ Compilación exitosa a la primera.
+> 📦 [FASE 2 - GIT] Empaquetando los archivos modificados para su subida al repositorio...

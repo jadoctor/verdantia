@@ -48,7 +48,8 @@ function stampVersion() {
 
 async function runCommand(cmd: string, cwd: string): Promise<{ success: boolean; output: string }> {
   try {
-    const { stdout, stderr } = await execAsync(cmd, { cwd });
+    const env = { ...process.env, NODE_ENV: 'production' } as NodeJS.ProcessEnv;
+    const { stdout, stderr } = await execAsync(cmd, { cwd, env });
     return {
       success: true,
       output: (stdout + '\n' + stderr).trim()
@@ -523,10 +524,12 @@ export async function POST(request: Request) {
           const isHardError = out.includes('type error') || 
                               out.includes('syntax error') || 
                               out.includes('syntaxerror') ||
+                              out.includes('typeerror') ||
                               out.includes('module not found') ||
                               out.includes('parsing error') ||
                               out.includes('expression expected') ||
                               out.includes('failed to compile') ||
+                              out.includes('export encountered an error') ||
                               out.includes('eslint');
 
           if (isHardError) {
