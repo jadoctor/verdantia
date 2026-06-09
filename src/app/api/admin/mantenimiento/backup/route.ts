@@ -16,6 +16,14 @@ async function authenticateSuperadmin(request: Request) {
   return user;
 }
 
+function getTimestampedBackupDir(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  return path.join('C:\\Users\\jaill\\Documents\\VERDANTIAS COPIAS SEGURIDAD', `Copia_${dateStr}_${timeStr}`);
+}
+
 function stampVersion() {
   const pagePath = path.join(process.cwd(), 'src', 'app', 'page.tsx');
   if (!fs.existsSync(pagePath)) return;
@@ -276,12 +284,27 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { action } = await request.json();
+    const body = await request.json();
+    const { action, includeFullBackup } = body;
     const cwd = process.cwd();
 
     if (action === 'local_backup') {
       const sqlContent = await generateSqlDump();
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      
+      // Guardar una copia física local en una carpeta con la fecha y hora
+      const backupDir = getTimestampedBackupDir();
+      try {
+        if (!fs.existsSync(backupDir)) {
+          fs.mkdirSync(backupDir, { recursive: true });
+        }
+        
+        // Guardar volcado de base de datos SQL individual en la carpeta con la fecha
+        const filePath = path.join(backupDir, `verdantia-backup.sql`);
+        fs.writeFileSync(filePath, sqlContent, 'utf8');
+      } catch (err: any) {
+        console.error('Error al guardar copia física local:', err);
+      }
       
       return new NextResponse(sqlContent, {
         headers: {
@@ -291,43 +314,106 @@ export async function POST(request: Request) {
       });
     }
 
+    if (action === 'project_backup') {
+      const backupDir = getTimestampedBackupDir();
+      const destinationZip = path.join(backupDir, `verdantia-codigo.zip`);
+      
+      try {
+        if (!fs.existsSync(backupDir)) {
+          fs.mkdirSync(backupDir, { recursive: true });
+        }
+        
+        // 1. Generar la última base de datos SQL y guardarla en la raíz del proyecto y en la carpeta con la fecha
+        let sqlContent = '';
+        try {
+          sqlContent = await generateSqlDump();
+          fs.writeFileSync(path.join(cwd, 'semillas_db_backup.sql'), sqlContent, 'utf8');
+          // Guardar también una copia del SQL en la misma carpeta junto al ZIP
+          fs.writeFileSync(path.join(backupDir, `verdantia-backup.sql`), sqlContent, 'utf8');
+        } catch (dbErr) {
+          console.error('Error al actualizar semillas_db_backup.sql antes de comprimir:', dbErr);
+        }
+        
+        // 2. Ejecutar comando PowerShell Compress-Archive
+        const cmd = `powershell -Command "Compress-Archive -Path (Get-ChildItem -Path '${cwd}' -Exclude 'node_modules', '.next', '.git', '.vercel', '.firebase') -DestinationPath '${destinationZip}' -Force"`;
+        const execResult = await runCommand(cmd, cwd);
+        
+        if (execResult.success) {
+          return NextResponse.json({ 
+            success: true, 
+            log: `✅ [Copia de Código Exitosa]\n💾 Archivos guardados en la carpeta:\n${backupDir}\n(Contiene verdantia-codigo.zip y verdantia-backup.sql)` 
+          });
+        } else {
+          return NextResponse.json({ 
+            success: false, 
+            error: `Error al comprimir el código: ${execResult.output}` 
+          }, { status: 500 });
+        }
+      } catch (err: any) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Error de servidor: ${err.message}` 
+        }, { status: 500 });
+      }
+    }
+
+    if (action === 'open_backups_folder') {
+      const backupDir = 'C:\\Users\\jaill\\Documents\\VERDANTIAS COPIAS SEGURIDAD';
+      try {
+        if (!fs.existsSync(backupDir)) {
+          fs.mkdirSync(backupDir, { recursive: true });
+        }
+        await execAsync(`explorer.exe "${backupDir}"`);
+        return NextResponse.json({ success: true });
+      } catch (err: any) {
+        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+      }
+    }
+
     if (action === 'git_only') {
       const logs: string[] = [];
-      logs.push(`> Iniciando subida a GitHub (solo repositorio)`);
+      const logFile = path.join(cwd, 'deploy_progress.log');
+      try { fs.writeFileSync(logFile, '', 'utf8'); } catch(e){}
+      const originalPushGitOnly = logs.push.bind(logs);
+      logs.push = function(...args: string[]) {
+        try { fs.appendFileSync(logFile, args.join(' ') + '\n', 'utf8'); } catch(e) {}
+        return originalPushGitOnly(...args);
+      };
+      logs.push(`> ☁️ [SÓLO GIT] Iniciando subida a GitHub (sin despliegue a producción)...`);
       
       // 1. Obtener información de cambios y generar commit message
       const { added, modified, commitMessage } = await getChangesInfo(cwd);
       
       if (added.length === 0 && modified.length === 0) {
-        logs.push(`> El directorio de trabajo está limpio. No hay cambios para commit.`);
-        logs.push(`> Ejecutando git push por si hay commits locales pendientes...`);
-        const pushRes = await runCommand('git push', cwd);
+        logs.push(`> 🟢 El directorio de trabajo está limpio. No hay cambios pendientes para empaquetar.`);
+        logs.push(`> 🔄 Ejecutando sincronización de seguridad por si existen commits locales atrasados (git push -v)...`);
+        const pushRes = await runCommand('git push -v', cwd);
         logs.push(pushRes.output);
         return NextResponse.json({ success: pushRes.success, log: logs.join('\n') });
       }
 
       // 2. Reflejar cambios en la guía de usuario antes de hacer git add
-      logs.push(`> Registrando modificaciones en la Guía de Usuario...`);
+      logs.push(`> 📖 [DOCUMENTACIÓN] Registrando los archivos modificados en el histórico de la Guía de Usuario...`);
       try {
         reflectInUserGuide("Copia de seguridad en GitHub", added, modified);
-        logs.push(`> Guía de Usuario actualizada con éxito.`);
+        logs.push(`> ✅ Guía de Usuario actualizada con éxito.`);
       } catch (err: any) {
-        logs.push(`> Advertencia al actualizar guía: ${err.message}`);
+        logs.push(`> ⚠️ Advertencia al actualizar guía: ${err.message}`);
       }
 
       // 3. Agregar cambios
-      logs.push(`> Agregando cambios a git...`);
-      const addRes = await runCommand('git add .', cwd);
+      logs.push(`> 📦 [FASE 1 - GIT] Añadiendo archivos rastreados al entorno de preparación (git add -v .)...`);
+      const addRes = await runCommand('git add -v .', cwd);
       logs.push(addRes.output);
 
       // 4. Crear commit con mensaje auto-generado
-      logs.push(`> Creando commit auto-generado: "${commitMessage}"...`);
-      const commitRes = await runCommand(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, cwd);
+      logs.push(`> 🏷️ [FASE 2 - GIT] Creando cápsula de commit auto-generada: "${commitMessage}"...`);
+      const commitRes = await runCommand(`git commit -v -m "${commitMessage.replace(/"/g, '\\"')}"`, cwd);
       logs.push(commitRes.output);
 
       // 5. Push
-      logs.push(`> Subiendo a GitHub...`);
-      const pushRes = await runCommand('git push', cwd);
+      logs.push(`> ☁️ [FASE 3 - GIT] Sincronizando y subiendo la cápsula al repositorio maestro en GitHub (git push -v)...`);
+      const pushRes = await runCommand('git push -v', cwd);
       logs.push(pushRes.output);
 
       return NextResponse.json({ success: commitRes.success && pushRes.success, log: logs.join('\n') });
@@ -335,13 +421,49 @@ export async function POST(request: Request) {
 
     if (action === 'git_and_deploy') {
       const logs: string[] = [];
+      const logFile = path.join(cwd, 'deploy_progress.log');
+      try { fs.writeFileSync(logFile, '', 'utf8'); } catch(e){}
+      const originalPushDeploy = logs.push.bind(logs);
+      logs.push = function(...args: string[]) {
+        try { fs.appendFileSync(logFile, args.join(' ') + '\n', 'utf8'); } catch(e) {}
+        return originalPushDeploy(...args);
+      };
       logs.push(`> Iniciando subida a GitHub y Despliegue en Red`);
       
+      // Si está activo el backup completo previo, realizarlo antes de compilar/desplegar
+      if (includeFullBackup) {
+        logs.push(`> [Copia Completa] Iniciando respaldos previos de base de datos y código del proyecto...`);
+        try {
+          const sqlContent = await generateSqlDump();
+          const backupDir = getTimestampedBackupDir();
+          
+          if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+          }
+          
+          // 1. Actualizar el archivo semillas_db_backup.sql en la raíz del proyecto para que vaya en el ZIP
+          fs.writeFileSync(path.join(cwd, 'semillas_db_backup.sql'), sqlContent, 'utf8');
+
+          // 2. Guardar volcado de base de datos SQL individual en la carpeta con la fecha
+          const filePath = path.join(backupDir, `verdantia-backup.sql`);
+          fs.writeFileSync(filePath, sqlContent, 'utf8');
+
+          // 3. Guardar copia comprimida del código del proyecto (ZIP) en la carpeta con la fecha
+          const destinationZip = path.join(backupDir, `verdantia-codigo.zip`);
+          const zipCmd = `powershell -Command "Compress-Archive -Path (Get-ChildItem -Path '${cwd}' -Exclude 'node_modules', '.next', '.git', '.vercel', '.firebase') -DestinationPath '${destinationZip}' -Force"`;
+          await runCommand(zipCmd, cwd);
+          
+          logs.push(`> ✅ Copias de seguridad locales (verdantia-backup.sql y verdantia-codigo.zip) generadas en: ${backupDir}`);
+        } catch (backupErr: any) {
+          logs.push(`> ⚠️ Advertencia/Error al generar copias de seguridad previas: ${backupErr.message}`);
+        }
+      }
+
       // 1. Obtener información de cambios y generar commit message
       const { added, modified, commitMessage } = await getChangesInfo(cwd);
 
       // 2. Modificar número de versión en package.json
-      logs.push(`> Modificando número de versión en package.json...`);
+      logs.push(`> 📝 [VERSIÓN] Actualizando número de versión en package.json (patch)...`);
       let newVersion = '0.1.0';
       try {
         newVersion = incrementVersion();
@@ -352,7 +474,7 @@ export async function POST(request: Request) {
       }
       
       // 3. Reflejar cambios en la guía de usuario
-      logs.push(`> Registrando modificaciones en la Guía de Usuario...`);
+      logs.push(`> 📖 [DOCUMENTACIÓN] Escribiendo el registro automático de este despliegue en la Guía de Usuario (Sección 6.2)...`);
       try {
         reflectInUserGuide(`Despliegue v${newVersion} - Mantenimiento y Copias`, added, modified);
         logs.push(`> Guía de Usuario actualizada con éxito.`);
@@ -361,7 +483,7 @@ export async function POST(request: Request) {
       }
 
       // 4. Fase 0: Estampado de versión
-      logs.push(`> Fase 0: Estampando fecha y hora de versión en src/app/page.tsx...`);
+      logs.push(`> 🕒 [FASE 0] Inyectando la fecha y hora exacta de este despliegue en la pantalla de inicio (src/app/page.tsx)...`);
       try {
         stampVersion();
         logs.push(`> Fecha y hora actualizadas con éxito.`);
@@ -371,30 +493,72 @@ export async function POST(request: Request) {
       }
 
       // 5. Fase 1: Compilación local de validación
-      logs.push(`> Fase 1: Ejecutando test de fuego de compilación (npm run build)...`);
-      const buildRes = await runCommand('npm run build', cwd);
-      logs.push(buildRes.output);
-      if (!buildRes.success) {
-        logs.push(`> ❌ Compilación fallida. Se aborta la subida.`);
-        return NextResponse.json({ success: false, log: logs.join('\n') });
+      logs.push(`> ⚙️ [FASE 1] Ejecutando test de fuego de compilación (Next.js Turbopack: npm run build). Este paso verifica que no haya errores fatales...`);
+      
+      let buildRes: { success: boolean; output: string } = { success: false, output: '' };
+      let buildAttempts = 0;
+      const MAX_BUILD_ATTEMPTS = 10;
+      
+      while (buildAttempts < MAX_BUILD_ATTEMPTS) {
+        buildAttempts++;
+        if (buildAttempts > 1) {
+          logs.push(`> ⚠️ Intento de compilación ${buildAttempts}/${MAX_BUILD_ATTEMPTS} para descartar bloqueos de archivos en caché...`);
+        }
+        
+        buildRes = await runCommand('npm run build', cwd);
+        
+        if (buildRes.success) {
+          if (buildAttempts > 1) {
+            logs.push(`> ✅ Compilación exitosa en el intento ${buildAttempts}. Continuando el despliegue...`);
+          } else {
+            logs.push(buildRes.output);
+            logs.push(`> ✅ Compilación exitosa a la primera.`);
+          }
+          break; // Salimos del bucle si tuvo éxito
+        } else {
+          logs.push(buildRes.output);
+          
+          // Detectar errores duros de código para no entrar en bucle tontamente
+          const out = buildRes.output.toLowerCase();
+          const isHardError = out.includes('type error') || 
+                              out.includes('syntax error') || 
+                              out.includes('syntaxerror') ||
+                              out.includes('module not found') ||
+                              out.includes('parsing error') ||
+                              out.includes('expression expected') ||
+                              out.includes('failed to compile') ||
+                              out.includes('eslint');
+
+          if (isHardError) {
+            logs.push(`> 🛑 Error crítico de código detectado en la compilación. Se aborta la subida definitivamente sin reintentar.`);
+            return NextResponse.json({ success: false, log: logs.join('\n') });
+          }
+
+          if (buildAttempts === MAX_BUILD_ATTEMPTS) {
+            logs.push(`> ❌ Compilación fallida tras ${MAX_BUILD_ATTEMPTS} intentos. Se aborta la subida definitivamente.`);
+            return NextResponse.json({ success: false, log: logs.join('\n') });
+          }
+          // Esperamos 2 segundos antes de volver a intentarlo para que Windows libere los archivos
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
 
       // 6. Fase 2: Control de versiones
-      logs.push(`> Fase 2: Agregando cambios a git...`);
-      const addRes = await runCommand('git add .', cwd);
+      logs.push(`> 📦 [FASE 2 - GIT] Empaquetando los archivos modificados para su subida al repositorio...`);
+      const addRes = await runCommand('git add -v .', cwd);
       logs.push(addRes.output);
 
       const fullCommitMsg = `Despliegue v${newVersion}: ${commitMessage}`;
-      logs.push(`> Creando commit de despliegue: "${fullCommitMsg}"...`);
-      const commitRes = await runCommand(`git commit -m "${fullCommitMsg.replace(/"/g, '\\"')}"`, cwd);
+      logs.push(`> 🏷️ [FASE 2 - GIT] Sellando los cambios con el mensaje: "${fullCommitMsg}"...`);
+      const commitRes = await runCommand(`git commit -v -m "${fullCommitMsg.replace(/"/g, '\\"')}"`, cwd);
       logs.push(commitRes.output);
 
-      logs.push(`> Enviando commits a GitHub...`);
-      const pushRes = await runCommand('git push', cwd);
+      logs.push(`> ☁️ [FASE 2 - GIT] Sincronizando repositorio local con la nube de GitHub...`);
+      const pushRes = await runCommand('git push -v', cwd);
       logs.push(pushRes.output);
 
       // 7. Fase 3: Despliegue Firebase
-      logs.push(`> Fase 3: Iniciando despliegue final (firebase deploy)...`);
+      logs.push(`> 🔥 [FASE 3 - FIREBASE] Construyendo los assets estáticos y empaquetando para subir a la CDN de Firebase Hosting...`);
       const deployRes = await runCommand('firebase deploy', cwd);
       logs.push(deployRes.output);
 

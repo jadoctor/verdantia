@@ -1,36 +1,37 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
-
 # LA BIBLIA - Verdantia (Normas Inquebrantables)
 
 ## Reglas de Oro
-- **NUNCA** poner el proyecto en OneDrive, Google Drive, Dropbox, etc.
-- **SIEMPRE** usar Git + GitHub para sincronizar entre dispositivos.
-
-## Flujo de Trabajo y Despliegue Obligatorio
-
-### MANDATO ESTRICTO
-El asistente tiene **TOTALMENTE PROHIBIDO** lanzar comandos de despliegue (Build, Commit, Deploy) de forma autónoma, **A MENOS** que el usuario pronuncie exactamente las palabras mágicas: **"SUBE A PRODUCCION"**. Si el usuario no dice esta frase literal, el asistente no subirá nada bajo ninguna circunstancia. Cualquier otra variante ("súbelo", "haz deploy", "adelante") **NO es suficiente**.
-
-### Protocolo de Despliegue (Orden Estricto)
-Antes de ejecutar los comandos, el asistente debe documentar **obligatoriamente** la subida creando un nuevo bloque en el apartado **6.2. Despliegues** de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`). Cada entrada debe tener:
-- **Encabezado:** Fecha, hora y título descriptivo.
-- **A. Problemas detectados:** Causa raíz del fallo original.
-- **B. Modificaciones realizadas:** Lista técnica de archivos tocados y lógicas refactorizadas.
-- **C. Problemas resueltos:** Confirmación del estado final.
-
-Una vez documentado y con las palabras mágicas recibidas, ejecutar en este orden estricto:
-
-1. **Fase 0 - Estampado de Versión:** Modificar `src/app/page.tsx` con fecha y hora exacta del despliegue.
-2. **Fase 1 - Test de Fuego Local:** `npm run build` (Debe compilar sin errores).
-3. **Fase 2 - Control de Versiones:**
-   `git add .`
-   `git commit -m "descripción del cambio"`
-   `git push`
-4. **Fase 3 - Despliegue Final:** `firebase deploy`
-
-### Referencia Técnica Obligatoria
-El asistente **DEBE leer** la sección 6 completa de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`) antes de cualquier despliegue, para verificar que cumple con todos los estándares documentados.
+1. **Acceso Local:** Cuando se solicite "acceso local", iniciar únicamente el servidor en `localhost:3000`. **NUNCA** iniciar túneles (ngrok, pinggy, etc.) a menos que se pida de forma explícita.
+2. **Canal de Despliegue Exclusivo:** **NUNCA** realizar commits, push a GitHub ni despliegues a producción (Firebase) de forma manual a través de la terminal de comandos del agente. Todo el proceso de control de versiones y subida a producción **DEBE** realizarse única y exclusivamente a través de los botones específicos de la página de administración de mantenimiento (`/dashboard/admin/ajustes/mantenimiento`).
+   * **MANDATO ESTRICTO:** El asistente tiene **TOTALMENTE PROHIBIDO** lanzar comandos de despliegue (Build, Commit, Deploy) de forma autónoma.
+   * **Protocolo de Despliegue (Orden Estricto ejecutado por el Backend):** El backend de la aplicación, al ser activado desde la interfaz web, ejecuta de forma síncrona y en este orden estricto:
+     1. **Documentación Obligatoria:** Registrar la subida creando un nuevo bloque en el apartado **6.2. Despliegues** de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`). Cada entrada debe tener:
+        - **Encabezado:** Fecha, hora y título descriptivo.
+        - **A. Problemas detectados:** Causa raíz del fallo original.
+        - **B. Modificaciones realizadas:** Lista técnica de archivos tocados y lógicas refactorizadas.
+        - **C. Problemas resueltos:** Confirmación del estado final.
+     2. **Fase 0 - Estampado de Versión:** Modificar `src/app/page.tsx` con fecha y hora exacta del despliegue.
+     3. **Fase 1 - Test de Fuego Local:** `npm run build` (Debe compilar sin errores).
+     4. **Fase 2 - Control de Versiones:** `git add .`, `git commit -m "descripción del cambio"`, y `git push`.
+     5. **Fase 3 - Despliegue Final:** `firebase deploy`.
+   * **Referencia Técnica Obligatoria:** El asistente **DEBE** orientar al usuario para que use la interfaz y verificar que el historial de cambios y la sección 6 completa de la Guía de Usuario (`src/app/dashboard/admin/guia-usuario/page.tsx`) estén listos antes de cualquier despliegue, para verificar que se cumple con todos los estándares documentados.
+3. **Compatibilidad Next.js:** Prestar especial atención a las APIs y la estructura de archivos de la versión instalada de Next.js. Consultar los manuales de `node_modules/next/dist/docs/` ante cualquier cambio para evitar el uso de importaciones o funciones obsoletas.
+4. **Refresco Automático (MANDATO INQUEBRANTABLE):** El asistente tiene la **OBLIGACIÓN ABSOLUTA E INELUDIBLE** de actualizar la página del navegador de forma automática cada vez que finalice una tarea o instrucción. **Cualquier cambio aplicado que no sea visualizado instantáneamente por el usuario es un FRACASO CRÍTICO.** El asistente DEBE forzar la recarga en pantalla por sus propios medios sin esperar jamás a que el humano pulse una tecla. ¡CERO EXCUSAS!
+5. **Control de Copias de Seguridad (GitHub):** **NUNCA** extraerás ni descargarás una copia de seguridad de GitHub de forma espontánea o autónoma. Si por motivos de fuerza mayor consideras que es necesario restaurar o recurrir a una copia, **DEBES** pedir permiso explícito al usuario y explicar detalladamente el motivo y las consecuencias antes de ejecutar ninguna acción relacionada.
+6. **Estándar de Dashboard de Muestra de Datos:** Todo dashboard destinado a listar o mostrar colecciones de datos (ej. catálogo de especies) debe basarse estrictamente en la ruta `/dashboard/admin/especies` y cumplir obligatoriamente estas características:
+   - **Ancho Completo:** La vista debe ocupar el 100% del ancho (`width: '100%'`), sin restricciones de `maxWidth` ni centrados.
+   - **Subheader Global:** Debe incluir un bloque superior con fondo degradado (`linear-gradient`) pertinente al módulo, conteniendo el Título (con Emoji) a la izquierda, y los botones de acción principal (Ej. `➕ Nuevo`) a la derecha. Los filtros rápidos (tags/píldoras) irán integrados en la parte inferior de este subheader.
+   - **Carga sin Flickering (Overlay):** Queda prohibido desmontar la tabla al cargar o filtrar datos. Se debe usar un contenedor `position: 'relative'` y superponer un Overlay absoluto semitransparente (`rgba(255,255,255,0.65)`) con un spinner circular, mientras la tabla reduce su opacidad al 60%.
+   - **Tabla Zebra y Botonera Estandarizada:** Las filas alternarán colores de fondo (`white` y `#f8fafc`). La columna de acciones a la derecha tendrá botones consistentes con sus códigos de color: Editar (Gris/Blanco), Inhabilitar (Amarillo), Eliminar (Rojo), Reactivar (Verde).
+7. **Estándar de Dashboard de Edición de Datos:** Toda ruta de edición de formularios (ej. `/dashboard/admin/especies/[id]`) es el estándar maestro de edición y debe seguir obligatoriamente estos patrones:
+   - **Navegación Jerárquica Superior:** Doble botonera alineada a la izquierda y situada en lo alto del DOM: `🏠 Volver al Inicio` y `🌍 Volver a [Listado Global]`. Quedan prohibidos los botones de 'Volver' redundantes a pie de página.
+   - **Subheader Contextual y Autoguardado:** Debajo de la navegación mostrará el título de edición. El guardado de datos será **automático** (Auto-Save con debounce al detectar cambios en los inputs), eliminando la necesidad de un botón manual de "Guardar Cambios". Se usará un pequeño indicador visual de estado (ej. "Guardando..." o "Guardado").
+   - **Pestañas Controladas por CSS:** Queda tajantemente prohibido usar renderizado condicional de React para las pestañas de contenido. Todas las pestañas deben estar renderizadas siempre en el DOM y se ocultarán exclusivamente mediante CSS (`display: none / block` o `grid`) para precargar los datos en segundo plano sin parpadeos.
+   - **Multimedia Segregado:** Prohibido agrupar fotos y documentos bajo una pestaña "Adjuntos". Obligatorio separarlo en pestañas independientes `📷 Fotos` y `📄 PDFs`, instanciando siempre el gestor `VariedadMediaManager`.
+   - **Edición en Línea (Grids):** Cualquier colección secundaria anidada debe gestionarse a través de listas/tablas editables en línea sin requerir ventanas modales externas.
+8. **Estándar Fotográfico y Multimedia (Hero Carousel & Galerías):** Cualquier módulo que gestione fotografías en los dashboards de edición debe cumplir esta arquitectura estricta:
+   - **Hero Carousel (Encabezado Visual):** Situado debajo del Subheader contextual. Debe tener un fondo degradado basado en el color vibrante (extraído por IA). Contendrá la Foto Principal (Hero) a tamaño `180px x 220px` (proporción 3:4) aplicando todos los metadatos JSON de encuadre/zoom/brillo.
+   - **Miniaturas Apiladas (Verticales):** Al lado de la foto Hero, se apilarán **verticalmente** un máximo de 3 miniaturas de `52px x 70px`. No heredarán el zoom del Hero para no cortar caras (usarán encuadre neutral `cover`). Su interactividad se marca solo con hover (borde morado y escala), sin añadir textos redundantes como "Haz clic para cambiar".
+   - **Sincronización Inmediata:** Cualquier acción en la galería inferior (añadir, borrar, reordenar) disparará el callback `onMediaChange` que actualizará automáticamente el Hero Carousel sin recargas de página.
+   - **Galería (Pestaña Fotos):** Incorpora el motor Dropzone, renderización instantánea con BlurHash y botones de acción unificados (Estrella=Portada, Lápiz=Editar, X=Eliminar).
+   - **Editor Visual Estándar:** El modal de edición fotográfica forzará la proporción 3:4 y soportará Drag-to-Pan (arrastre libre) y sliders de Zoom, Brillo y Contraste, persistiendo los datos en un objeto JSON (`resumen`). Contará con botón "Auto Color" y "Smart Save".

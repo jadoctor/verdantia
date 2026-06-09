@@ -394,6 +394,223 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 15:35 – Despliegue v0.1.8 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/logs/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 15:31 – Despliegue v0.1.7 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/logs/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 15:27 – Despliegue v0.1.6 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/logs/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 15:24 – Despliegue v0.1.5 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 15:24 – Despliegue v0.1.4 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 14:50 – Despliegue v0.1.3 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 14:46 – Despliegue v0.1.2 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>09/06/2026 14:42 – Despliegue v0.1.1 - Mantenimiento y Copias</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>Necesidad de salvaguardar el estado actual del código y sincronizar la base de datos de manera automatizada.</li>
+                  <li style={{ marginBottom: '8px' }}>Requisito de documentar y registrar de forma síncrona en el histórico de la guía de usuario cada cambio y despliegue a producción.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/normas/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/mantenimiento/backup/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Control de versiones y despliegue actualizados. Historial de cambios registrado con éxito.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
               <strong>08/06/2026 18:58 – Copia de seguridad en GitHub</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>

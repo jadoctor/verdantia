@@ -561,6 +561,10 @@ export default function DashboardLayout({
               </button>
               {superAdminExpanded && (
                 <nav className="sidebar-nav">
+                  <a href="/dashboard/admin/ajustes/mantenimiento" className={`nav-item ${pathname.includes('/admin/ajustes/mantenimiento') ? 'active' : ''}`} onClick={handleNavClick}>
+                    <span className="nav-icon">🔧</span>
+                    <span>Mantenimiento y Copias</span>
+                  </a>
                   <a href="/dashboard/admin/usuarios" className={`nav-item ${isActive('/dashboard/admin/usuarios')}`} onClick={handleNavClick}>
                     <span className="nav-icon">👥</span>
                     <span>Usuarios</span>
