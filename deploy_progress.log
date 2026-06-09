@@ -212,3 +212,29 @@ Route (app)
 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
 > ✅ Compilación exitosa a la primera.
 > 📦 [FASE 2 - GIT] Empaquetando los archivos modificados para su subida al repositorio...
+add 'AGENTS.md'
+add 'deploy_progress.log'
+add 'package.json'
+add 'src/app/api/admin/mantenimiento/backup/route.ts'
+add 'src/app/dashboard/admin/guia-usuario/page.tsx'
+add 'src/app/page.tsx'
+add 'src/app/global-error.tsx'
+
+warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy_progress.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/admin/mantenimiento/backup/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/dashboard/admin/guia-usuario/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/global-error.tsx', LF will be replaced by CRLF the next time Git touches it
+> 🏷️ [FASE 2 - GIT] Sellando los cambios con el mensaje: "Despliegue v0.1.16: Mantenimiento: [MODIFICADO] src/app/api/admin/mantenimiento/backup/route.ts, src/app/dashboard/admin/guia-usuario/page.tsx, src/app/page.tsx | [NUEVO] src/app/global-error.tsx"...
+[main b61552e8] Despliegue v0.1.16: Mantenimiento: [MODIFICADO] src/app/api/admin/mantenimiento/backup/route.ts, src/app/dashboard/admin/guia-usuario/page.tsx, src/app/page.tsx | [NUEVO] src/app/global-error.tsx
+ 7 files changed, 446 insertions(+), 20 deletions(-)
+ create mode 100644 src/app/global-error.tsx
+> ☁️ [FASE 2 - GIT] Sincronizando repositorio local con la nube de GitHub...
+Pushing to https://github.com/jadoctor/verdantia.git
+POST git-receive-pack (4695 bytes)
+To https://github.com/jadoctor/verdantia.git
+   c8c34d43..b61552e8  main -> main
+updating local tracking ref 'refs/remotes/origin/main'
+> 🔥 [FASE 3 - FIREBASE] Construyendo los assets estáticos y empaquetando para subir a la CDN de Firebase Hosting...
