@@ -5,31 +5,7 @@ import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
 
-const PLAN_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
-  premium:  { color: '#d97706', bg: '#fffbeb', icon: '👑', label: 'Premium' },
-  avanzado: { color: '#2563eb', bg: '#eff6ff', icon: '🌳', label: 'Avanzado' },
-  pro:      { color: '#2563eb', bg: '#eff6ff', icon: '🌳', label: 'Pro' },
-  esencial: { color: '#059669', bg: '#f0fdf4', icon: '🌿', label: 'Esencial' },
-  plus:     { color: '#059669', bg: '#f0fdf4', icon: '🌿', label: 'Plus' },
-  gratuito: { color: '#64748b', bg: '#f8fafc', icon: '🍃', label: 'Gratuito' },
-  free:     { color: '#64748b', bg: '#f8fafc', icon: '🍃', label: 'Free' },
-};
-
-const ROL_CONFIG: Record<string, { color: string; bg: string }> = {
-  superadministrador: { color: '#9f1239', bg: '#fff1f2' },
-  administrador:      { color: '#0f766e', bg: '#f0fdfa' },
-  usuario:            { color: '#1d4ed8', bg: '#eff6ff' },
-  visitante:          { color: '#64748b', bg: '#f8fafc' },
-};
-
-function getPlanConfig(plan?: string) {
-  return PLAN_CONFIG[(plan || '').toLowerCase()] || PLAN_CONFIG['gratuito'];
-}
-
-function getRolConfig(rol?: string) {
-  const r = (rol || '').toLowerCase().split(',')[0].trim();
-  return ROL_CONFIG[r] || ROL_CONFIG['visitante'];
-}
+import { getPlanConfig, getRolConfig } from '@/lib/plan-config';
 
 export default function UsuariosAdminPage() {
   const router = useRouter();
@@ -156,9 +132,9 @@ export default function UsuariosAdminPage() {
               style={{ padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '0.85rem', background: 'white', color: '#0f172a', fontWeight: 'bold' }}>
               <option value="">Todos los planes</option>
               <option value="Premium">👑 Premium</option>
-              <option value="Avanzado">🌳 Avanzado</option>
-              <option value="Esencial">🌿 Esencial</option>
-              <option value="Gratuito">🍃 Gratuito</option>
+              <option value="Avanzado">💎 Avanzado</option>
+              <option value="Esencial">🚀 Esencial</option>
+              <option value="Gratuito">🆓 Gratuito</option>
             </select>
             <button onClick={loadUsuarios} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
               🔄
@@ -266,9 +242,9 @@ export default function UsuariosAdminPage() {
                           onChange={e => handleChangePlan(u.id, e.target.value)}
                           style={{ padding: '4px 8px', borderRadius: '8px', border: `1.5px solid ${planCfg.color}40`, background: planCfg.bg, color: planCfg.color, fontWeight: 700, cursor: 'pointer' }}
                         >
-                          <option value="Gratuito">🍃 Gratuito</option>
-                          <option value="Esencial">🌿 Esencial</option>
-                          <option value="Avanzado">🌳 Avanzado</option>
+                          <option value="Gratuito">🆓 Gratuito</option>
+                          <option value="Esencial">🚀 Esencial</option>
+                          <option value="Avanzado">💎 Avanzado</option>
                           <option value="Premium">👑 Premium</option>
                         </select>
                         {u.suscripcion && u.suscripcion !== 'Gratuito' ? (

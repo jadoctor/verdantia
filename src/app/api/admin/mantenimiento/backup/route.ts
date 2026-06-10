@@ -371,6 +371,19 @@ export async function POST(request: Request) {
       }
     }
 
+    if (action === 'open_onedrive_folder') {
+      const backupDir = 'C:\\Users\\Public\\OneDrive\\PROYECTOS\\VERDANTIA';
+      try {
+        if (!fs.existsSync(backupDir)) {
+          fs.mkdirSync(backupDir, { recursive: true });
+        }
+        await execAsync(`explorer.exe "${backupDir}"`);
+        return NextResponse.json({ success: true });
+      } catch (err: any) {
+        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+      }
+    }
+
     if (action === 'git_only') {
       const logs: string[] = [];
       const logFile = path.join(cwd, 'deploy_progress.log');

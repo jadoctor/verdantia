@@ -2159,8 +2159,7 @@ export default function GuiaUsuarioPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                <th style={{ padding: '10px', textAlign: 'center', width: '40px' }}>Nv.</th>
-                <th style={{ padding: '10px', textAlign: 'center', width: '40px' }}></th>
+                <th style={{ padding: '10px', textAlign: 'center', width: '70px' }}>Insignia</th>
                 <th style={{ padding: '10px' }}>Rango</th>
                 <th style={{ padding: '10px' }}>Descripción</th>
                 <th style={{ padding: '10px' }}>Privilegio</th>
@@ -2169,8 +2168,14 @@ export default function GuiaUsuarioPage() {
             <tbody>
               {logros.map((l: any) => (
                 <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700 }}>{l.logrosnivel}</td>
-                  <td style={{ padding: '8px', textAlign: 'center', fontSize: '1.3rem' }}>{l.logrosicono}</td>
+                  <td style={{ padding: '8px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', background: l.logrosnivel >= 8 ? '#fefce8' : '#f8fafc', borderRadius: '10px', border: `2px solid ${l.logrosnivel >= 8 ? '#fde047' : '#e2e8f0'}` }}>
+                      <span style={{ fontSize: '1.4rem' }}>{l.logrosicono}</span>
+                      <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: l.logrosnivel >= 8 ? '#ca8a04' : '#64748b', color: 'white', width: '18px', height: '18px', borderRadius: '50%', fontSize: '0.65rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                        {l.logrosnivel}
+                      </span>
+                    </div>
+                  </td>
                   <td style={{ padding: '8px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>{l.logrosnombre}</td>
                   <td style={{ padding: '8px', color: '#64748b' }}>{l.logrosdescripcion}</td>
                   <td style={{ padding: '8px', color: '#0f766e', fontWeight: 600, whiteSpace: 'nowrap' }}>{l.privilegios}</td>
@@ -2190,7 +2195,7 @@ export default function GuiaUsuarioPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f0fdf4' }}>
-                <th style={{ padding: '8px', textAlign: 'center' }}>Nv.</th>
+                <th style={{ padding: '8px', textAlign: 'center' }}>Insignia</th>
                 <th style={{ padding: '8px' }}>Rango</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Antigüedad</th>
                 <th style={{ padding: '8px', textAlign: 'center' }}>Semillas</th>
@@ -2208,8 +2213,15 @@ export default function GuiaUsuarioPage() {
                 const fmtMeses = (v: number) => v === 0 ? '—' : v === 1 ? '1 mes' : v + ' meses';
                 return (
                   <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9', background: l.logrosnivel >= 8 ? '#fefce8' : 'white' }}>
-                    <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700 }}>{l.logrosnivel}</td>
-                    <td style={{ padding: '6px 8px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>{l.logrosicono} {l.logrosnombre}</td>
+                    <td style={{ padding: '6px 8px', display: 'flex', justifyContent: 'center' }}>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', background: l.logrosnivel >= 8 ? '#fefce8' : '#f8fafc', borderRadius: '8px', border: `2px solid ${l.logrosnivel >= 8 ? '#fde047' : '#e2e8f0'}` }}>
+                        <span style={{ fontSize: '1.2rem' }}>{l.logrosicono}</span>
+                        <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: l.logrosnivel >= 8 ? '#ca8a04' : '#64748b', color: 'white', width: '16px', height: '16px', borderRadius: '50%', fontSize: '0.6rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                          {l.logrosnivel}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '6px 8px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>{l.logrosnombre}</td>
                     {[fmtMeses(l.req_antiguedad_meses), fmt(l.req_semillas), fmt(l.req_siembras), fmt(l.req_recolecciones), fmt(l.req_especies), fmt(l.req_fotos), fmt(l.req_mensajes), fmt(l.req_blogs)].map((v, i) => (
                       <td key={i} style={{ padding: '6px 8px', textAlign: 'center', color: v === '—' ? '#cbd5e1' : '#0f172a', fontWeight: v === '—' ? 400 : 600 }}>{v}</td>
                     ))}
@@ -2240,22 +2252,30 @@ export default function GuiaUsuarioPage() {
           </p>
         </div>
 
-        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.3. Descuentos Escalonados en Suscripción PRO</h3>
+        <h3 style={{ color: '#334155', marginTop: '40px', fontSize: '1.3rem' }}>9.3. Descuentos Escalonados en Suscripción Premium</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          El <strong>&quot;Play to Earn&quot;</strong> de Verdantia. Los descuentos solo se aplican al plan <strong>PRO</strong>.
+          El <strong>&quot;Play to Earn&quot;</strong> de Verdantia. Los descuentos solo se aplican al plan <strong>Premium</strong>.
         </p>
         <div style={{ overflowX: 'auto', marginTop: '16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: '500px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
                 <th style={{ padding: '10px' }}>Rango</th>
-                <th style={{ padding: '10px', textAlign: 'center' }}>Descuento PRO</th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>Descuento Premium</th>
               </tr>
             </thead>
             <tbody>
               {logros.map((l: any) => (
                 <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '8px', fontWeight: 600 }}>{l.logrosicono} {l.logrosnombre} ({l.logrosnivel})</td>
+                  <td style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', background: l.logrosnivel >= 8 ? '#fefce8' : '#f8fafc', borderRadius: '8px', border: `1.5px solid ${l.logrosnivel >= 8 ? '#fde047' : '#e2e8f0'}` }}>
+                      <span style={{ fontSize: '1.1rem' }}>{l.logrosicono}</span>
+                      <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: l.logrosnivel >= 8 ? '#ca8a04' : '#64748b', color: 'white', width: '15px', height: '15px', borderRadius: '50%', fontSize: '0.6rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
+                        {l.logrosnivel}
+                      </span>
+                    </div>
+                    {l.logrosnombre}
+                  </td>
                   <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: l.descuento_pro === 0 ? '#94a3b8' : l.descuento_pro >= 60 ? '#dc2626' : l.descuento_pro >= 25 ? '#d97706' : '#059669' }}>
                     {l.descuento_pro === 100 ? '100% GRATIS' : l.descuento_pro + '%'}
                   </td>
@@ -2264,9 +2284,12 @@ export default function GuiaUsuarioPage() {
             </tbody>
           </table>
         </div>
-        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '12px 16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
+        <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '12px 16px', borderRadius: '0 8px 8px 0', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <p style={{ color: '#166534', margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
-            <strong>Nota:</strong> El Nivel 10 (👑 Leyenda Verde) recibe la suscripción PRO <strong>100% gratuita</strong> como contraprestación por su labor de moderación global.
+            <strong>Nota 1:</strong> El Nivel 10 (👑 Leyenda Verde) recibe la suscripción Premium <strong>100% gratuita</strong> como contraprestación por su labor de moderación global.
+          </p>
+          <p style={{ color: '#166534', margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
+            <strong>Nota 2:</strong> Por regla del sistema, cualquier usuario con rol de <strong>Superadministrador</strong> cuenta con un plan Premium permanente independientemente de su nivel.
           </p>
         </div>
 
@@ -2285,7 +2308,15 @@ export default function GuiaUsuarioPage() {
             <tbody>
               {logros.filter((l: any) => l.req_mantenimiento_mensual > 0).map((l: any) => (
                 <tr key={l.logrosnivel} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '8px', fontWeight: 600 }}>{l.logrosicono} {l.logrosnombre} ({l.logrosnivel})</td>
+                  <td style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600, color: '#1e293b' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', background: l.logrosnivel >= 8 ? '#fefce8' : '#f8fafc', borderRadius: '8px', border: `1.5px solid ${l.logrosnivel >= 8 ? '#fde047' : '#e2e8f0'}` }}>
+                      <span style={{ fontSize: '1.1rem' }}>{l.logrosicono}</span>
+                      <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: l.logrosnivel >= 8 ? '#ca8a04' : '#64748b', color: 'white', width: '15px', height: '15px', borderRadius: '50%', fontSize: '0.6rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
+                        {l.logrosnivel}
+                      </span>
+                    </div>
+                    {l.logrosnombre}
+                  </td>
                   <td style={{ padding: '8px', textAlign: 'center', fontWeight: 600, color: '#d97706' }}>{l.req_mantenimiento_mensual} acción{l.req_mantenimiento_mensual > 1 ? 'es' : ''}/mes</td>
                 </tr>
               ))}
@@ -2311,7 +2342,7 @@ export default function GuiaUsuarioPage() {
         </div>
         <ul style={{ color: '#475569', lineHeight: 1.8, paddingLeft: '20px' }}>
           <li><strong>Conserva:</strong> Su título histórico y su historial de logros.</li>
-          <li><strong>Pierde temporalmente:</strong> Acceso a descuentos PRO, privilegios de moderación y badge visible.</li>
+          <li><strong>Pierde temporalmente:</strong> Acceso a descuentos Premium, privilegios de moderación y badge visible.</li>
           <li><strong>Reactivación:</strong> Automática al cumplir la cuota mensual de nuevo.</li>
         </ul>
 

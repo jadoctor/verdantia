@@ -7,8 +7,8 @@ import ReactMarkdown from 'react-markdown';
 
 // FORZAR RECARGA INMEDIATA AL HOT-SWAP (Regla 4)
 if (typeof window !== 'undefined') {
-  if (!window.sessionStorage.getItem('__did_reload_v8')) {
-    window.sessionStorage.setItem('__did_reload_v8', 'true');
+  if (!window.sessionStorage.getItem('__did_reload_v13')) {
+    window.sessionStorage.setItem('__did_reload_v13', 'true');
     window.location.reload();
   }
 }
@@ -27,12 +27,12 @@ export default function MantenimientoPage() {
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
-  const [lastLocalBackup, setLastLocalBackup] = useState<string>('Nunca');
-  const [lastProjectBackup, setLastProjectBackup] = useState<string>('Nunca');
-  const [lastGitOnly, setLastGitOnly] = useState<string>('Nunca');
-  const [lastGitAndDeploy, setLastGitAndDeploy] = useState<string>('Nunca');
-  const [includeFullBackup, setIncludeFullBackup] = useState<boolean>(false);
-  const [isDeployChecked, setIsDeployChecked] = useState<boolean>(false);
+  const [lastAction, setLastAction] = useState<string>('Nunca');
+  const [optSql, setOptSql] = useState<boolean>(false);
+  const [optZip, setOptZip] = useState<boolean>(false);
+  const [optGit, setOptGit] = useState<boolean>(false);
+  const [optFirebase, setOptFirebase] = useState<boolean>(false);
+  const [optOneDrive, setOptOneDrive] = useState<boolean>(false);
 
   // Estados para las Normas de Funcionamiento
   const [rulesContent, setRulesContent] = useState<string>('');
@@ -43,10 +43,7 @@ export default function MantenimientoPage() {
   const [rulesError, setRulesError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLastLocalBackup(localStorage.getItem('last_local_backup') || 'Nunca');
-    setLastProjectBackup(localStorage.getItem('last_project_backup') || 'Nunca');
-    setLastGitOnly(localStorage.getItem('last_git_only') || 'Nunca');
-    setLastGitAndDeploy(localStorage.getItem('last_git_and_deploy') || 'Nunca');
+    setLastAction(localStorage.getItem('last_action_time') || 'Nunca');
   }, []);
 
   const loadRules = async (email: string) => {
@@ -151,219 +148,72 @@ export default function MantenimientoPage() {
     }
   }, [logs, isConsoleOpen]);
 
-  const handleLocalBackup = async () => {
-    if (!userEmail || isRunning) return;
-    setIsRunning(true);
-    setStatus('idle');
-    setLogs('> Solicitando exportación de base de datos MySQL (Hostinger)...\n> Consultando tablas y generando sentencias SQL...');
-
-    try {
-      const res = await fetch('/api/admin/mantenimiento/backup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-email': userEmail,
-        },
-        body: JSON.stringify({ action: 'local_backup' }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Error en servidor (${res.status})`);
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      a.download = `verdantia-backup-${timestamp}.sql`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      setLogs(prev => prev + '\n✅ [Copia Local Exitosa] Archivo SQL descargado en tu navegador.\n💾 Copia de base de datos (.sql) guardada en:\nC:\\Users\\jaill\\Documents\\VERDANTIAS COPIAS SEGURIDAD');
-      setStatus('success');
-      const dateStr = new Date().toLocaleString('es-ES');
-      localStorage.setItem('last_local_backup', dateStr);
-      setLastLocalBackup(dateStr);
-    } catch (err: any) {
-      setLogs(prev => prev + `\n❌ Error al generar la copia local: ${err.message}`);
-      setStatus('error');
-    } finally {
-      setIsRunning(false);
+  const handleExecuteTasks = () => {
+    if (!optSql && !optZip && !optOneDrive && !optGit && !optFirebase) {
+      alert('Debes seleccionar al menos una tarea para ejecutar.');
+      return;
     }
+
+    const tasks = [];
+    if (optSql) tasks.push('volcado de la base de datos (SQL)');
+    if (optZip) tasks.push('comprimir el código del proyecto (ZIP)');
+    if (optOneDrive) tasks.push('respaldar en la nube (crear carpeta con fecha en C:\\\\Users\\\\Public\\\\OneDrive\\\\PROYECTOS\\\\VERDANTIA y copiar allí el SQL y el ZIP)');
+    if (optGit) tasks.push('sincronizar en GitHub (commit y push)');
+    if (optFirebase) tasks.push('desplegar en Firebase (producción)');
+
+    const tasksStr = tasks.join(', ').replace(/, ([^,]*)$/, ' y $1');
+    const comando = `Antigravity, SUBE A PRODUCCIÓN: realiza las siguientes tareas: ${tasksStr}.`;
+
+    navigator.clipboard.writeText(comando);
+    setLogs(`> 🤖 MODO IA ACTIVADO\n\nSe ha copiado el comando al portapapeles:\n\n"${comando}"\n\n👉 Pega este comando en el chat de Antigravity para que yo ejecute todo el proceso de forma autónoma.`);
+    setIsConsoleOpen(true);
+    setStatus('idle');
+
+    const dateStr = new Date().toLocaleString('es-ES');
+    localStorage.setItem('last_action_time', dateStr);
+    setLastAction(dateStr);
   };
 
-  const handleProjectBackup = async () => {
-    if (!userEmail || isRunning) return;
-    setIsRunning(true);
-    setStatus('idle');
-    setLogs('> Iniciando copia de seguridad del código del proyecto (excluyendo node_modules, .next, etc.)...\n> Comprimiendo archivos en formato ZIP...');
-
-    try {
-      const res = await fetch('/api/admin/mantenimiento/backup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-email': userEmail,
-        },
-        body: JSON.stringify({ action: 'project_backup' }),
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || `Error en servidor (${res.status})`);
-      }
-
-      setLogs(data.log || '✅ [Copia de Código Exitosa] Archivo ZIP guardado en tu carpeta de copias de seguridad.');
-      setStatus('success');
-      const dateStr = new Date().toLocaleString('es-ES');
-      localStorage.setItem('last_project_backup', dateStr);
-      setLastProjectBackup(dateStr);
-    } catch (err: any) {
-      setLogs(`\n❌ Error al generar la copia del proyecto: ${err.message}`);
-      setStatus('error');
-    } finally {
-      setIsRunning(false);
-    }
+  const handleSelectAll = () => {
+    const allSelected = optSql && optZip && optOneDrive && optGit && optFirebase;
+    setOptSql(!allSelected);
+    setOptZip(!allSelected);
+    setOptOneDrive(!allSelected);
+    setOptGit(!allSelected);
+    setOptFirebase(!allSelected);
   };
 
   const handleOpenBackupsFolder = async () => {
-    if (!userEmail) return;
     try {
-      const res = await fetch('/api/admin/mantenimiento/backup', {
+      await fetch('/api/admin/mantenimiento/backup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-email': userEmail,
+          'x-user-email': userEmail || '',
         },
         body: JSON.stringify({ action: 'open_backups_folder' }),
       });
-      if (res.ok) {
-        setLogs(prev => prev + '\n📂 Carpeta de copias de seguridad abierta en el explorador de archivos.');
-      }
-    } catch (err: any) {
-      console.error('Error al abrir la carpeta de copias:', err);
+    } catch (err) {
+      console.error("No se pudo abrir la carpeta", err);
     }
   };
 
-  const handleGitOnly = async () => {
-    if (!userEmail || isRunning) return;
-    setIsRunning(true);
-    setStatus('idle');
-    setLogs('> Iniciando subida a GitHub (solo repositorio)...');
-
-    const logInterval = setInterval(async () => {
-      try {
-        const logRes = await fetch('/api/admin/mantenimiento/logs');
-        if (logRes.ok) {
-          const text = await logRes.text();
-          if (text) setLogs(text);
-        }
-      } catch (e) {}
-    }, 1500);
-
+  const handleOpenOneDriveFolder = async () => {
     try {
-      const res = await fetch('/api/admin/mantenimiento/backup', {
+      await fetch('/api/admin/mantenimiento/backup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-email': userEmail,
+          'x-user-email': userEmail || '',
         },
-        body: JSON.stringify({ 
-          action: 'git_only'
-        }),
+        body: JSON.stringify({ action: 'open_onedrive_folder' }),
       });
-
-      const data = await res.json();
-      clearInterval(logInterval);
-      setLogs(data.log || data.error || 'Ocurrió un error inesperado');
-      if (res.ok && data.success) {
-        setStatus('success');
-        const dateStr = new Date().toLocaleString('es-ES');
-        localStorage.setItem('last_git_only', dateStr);
-        setLastGitOnly(dateStr);
-        if (userEmail) loadChangesPreview(userEmail);
-      } else {
-        setStatus('error');
-      }
-    } catch (err: any) {
-      clearInterval(logInterval);
-      setLogs(prev => prev + `\n❌ Error de conexión: ${err.message}`);
-      setStatus('error');
-    } finally {
-      clearInterval(logInterval);
-      setIsRunning(false);
+    } catch (err) {
+      console.error("No se pudo abrir la carpeta OneDrive", err);
     }
   };
 
-  const handleGitAndDeploy = async () => {
-    if (!userEmail || isRunning) return;
-    
-    const confirmDeploy = confirm(
-      '⚠️ ¿Estás seguro de que quieres realizar la subida a GitHub Y EL DESPLIEGUE A PRODUCCIÓN?\n\n' +
-      'Esto compilará la aplicación (npm run build) y la subirá a la red (firebase deploy).'
-    );
-    if (!confirmDeploy) return;
-
-    setIsRunning(true);
-    setStatus('idle');
-    setLogs('> Iniciando flujo de subida y despliegue a producción...\n> Esto puede tardar alrededor de 1-2 minutos...');
-
-    const logInterval = setInterval(async () => {
-      try {
-        const logRes = await fetch('/api/admin/mantenimiento/logs');
-        if (logRes.ok) {
-          const text = await logRes.text();
-          if (text) setLogs(text);
-        }
-      } catch (e) {}
-    }, 1500);
-
-    try {
-      const res = await fetch('/api/admin/mantenimiento/backup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-email': userEmail,
-        },
-        body: JSON.stringify({ 
-          action: 'git_and_deploy',
-          includeFullBackup: includeFullBackup
-        }),
-      });
-
-      const data = await res.json();
-      clearInterval(logInterval);
-      setLogs(data.log || data.error || 'Ocurrió un error inesperado');
-      if (res.ok && data.success) {
-        setStatus('success');
-        const dateStr = new Date().toLocaleString('es-ES');
-        localStorage.setItem('last_git_and_deploy', dateStr);
-        setLastGitAndDeploy(dateStr);
-
-        if (includeFullBackup) {
-          localStorage.setItem('last_local_backup', dateStr);
-          setLastLocalBackup(dateStr);
-          localStorage.setItem('last_project_backup', dateStr);
-          setLastProjectBackup(dateStr);
-        }
-
-        if (userEmail) loadChangesPreview(userEmail);
-      } else {
-        setStatus('error');
-      }
-    } catch (err: any) {
-      clearInterval(logInterval);
-      setLogs(prev => prev + `\n❌ Error de conexión: ${err.message}`);
-      setStatus('error');
-    } finally {
-      clearInterval(logInterval);
-      setIsRunning(false);
-    }
-  };
+  // Funciones obsoletas eliminadas
 
   const copyLogs = () => {
     navigator.clipboard.writeText(logs);
@@ -995,288 +845,247 @@ export default function MantenimientoPage() {
             )}
           </div>
 
-          {/* Fila de Controles */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          {/* Fila de Controles Unificada */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
             
-            {/* Card 1: Copias de Seguridad Locales */}
+            {/* Panel Centralizado: Tareas Autónomas */}
             <div style={{ 
               background: 'white', 
               borderRadius: '16px', 
-              padding: '24px', 
+              padding: '28px', 
               border: '1px solid #e2e8f0',
               boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '20px'
+              gap: '24px'
             }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>💾</span>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#1e293b', fontWeight: 'bold' }}>Copias de Seguridad Locales</h3>
+              {/* Cabecera del Panel */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '1.8rem' }}>🚀</span>
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#1e293b', fontWeight: 'bold' }}>Sincronización, Copia y Despliegue</h3>
+                  </div>
+                  <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0, lineHeight: '1.5' }}>
+                    Selecciona las acciones que deseas delegar a Antigravity. El sistema generará la orden inteligente lista para ejecutar.
+                  </p>
                 </div>
-                <p style={{ color: '#64748b', fontSize: '0.88rem', margin: '0 0 16px 0', lineHeight: '1.5' }}>
-                  Descarga y respalda archivos físicos de la base de datos de Hostinger y el código fuente del proyecto.
-                </p>
-                
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  background: '#f8fafc',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '0.82rem',
-                  marginBottom: '16px'
-                }}>
-                  <strong style={{ color: '#475569' }}>Ruta local:</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      onClick={handleOpenBackupsFolder}
+                      style={{
+                        background: '#f1f5f9',
+                        border: '1px solid #cbd5e1',
+                        color: '#4f46e5',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.8rem',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = '#e2e8f0'}
+                      onMouseOut={e => e.currentTarget.style.background = '#f1f5f9'}
+                    >
+                      📂 Carpeta Local
+                    </button>
+                    <button 
+                      onClick={handleOpenOneDriveFolder}
+                      style={{
+                        background: '#fdf4ff',
+                        border: '1px solid #f5d0fe',
+                        color: '#a21caf',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.8rem',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = '#fae8ff'}
+                      onMouseOut={e => e.currentTarget.style.background = '#fdf4ff'}
+                    >
+                      ☁️ Carpeta Nube
+                    </button>
+                  </div>
+                  
                   <button 
-                    onClick={handleOpenBackupsFolder}
+                    onClick={handleSelectAll}
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#4f46e5',
+                      color: (optSql && optZip && optOneDrive && optGit && optFirebase) ? '#64748b' : '#3b82f6',
                       cursor: 'pointer',
                       fontWeight: 'bold',
+                      fontSize: '0.8rem',
                       textDecoration: 'underline',
                       padding: 0
                     }}
                   >
-                    📂 Abrir Carpeta
+                    {(optSql && optZip && optOneDrive && optGit && optFirebase) ? '❌ Desmarcar Todas' : '✅ Seleccionar Todas'}
                   </button>
                 </div>
               </div>
 
-              {/* Sección A: MySQL */}
-              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: '#1e293b', fontWeight: 'bold' }}>📥 Volcado de Base de Datos (SQL)</h4>
-                <p style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                  Exporta un archivo SQL de MySQL y lo guarda de forma física en el directorio de copias de seguridad.
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Último: {lastLocalBackup}</span>
-                  <button 
-                    onClick={handleLocalBackup}
-                    disabled={isRunning}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: isRunning ? 'not-allowed' : 'pointer',
-                      opacity: isRunning ? 0.6 : 1,
-                      transition: 'background 0.2s',
-                      fontSize: '0.85rem'
-                    }}
-                    onMouseOver={e => !isRunning && (e.currentTarget.style.background = '#059669')}
-                    onMouseOut={e => !isRunning && (e.currentTarget.style.background = '#10b981')}
-                  >
-                    Descargar SQL
-                  </button>
-                </div>
-              </div>
-
-              {/* Sección B: ZIP */}
-              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: '#1e293b', fontWeight: 'bold' }}>📦 Comprimir Código del Proyecto (ZIP)</h4>
-                <p style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                  Genera una copia ZIP comprimida de todo el código de desarrollo del proyecto.
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Último: {lastProjectBackup}</span>
-                  <button 
-                    onClick={handleProjectBackup}
-                    disabled={isRunning}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#f97316',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      cursor: isRunning ? 'not-allowed' : 'pointer',
-                      opacity: isRunning ? 0.6 : 1,
-                      transition: 'background 0.2s',
-                      fontSize: '0.85rem'
-                    }}
-                    onMouseOver={e => !isRunning && (e.currentTarget.style.background = '#ea580c')}
-                    onMouseOut={e => !isRunning && (e.currentTarget.style.background = '#f97316')}
-                  >
-                    Respaldar ZIP
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Sincronización y Publicación */}
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '16px', 
-              padding: '24px', 
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '20px'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>🚀</span>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#1e293b', fontWeight: 'bold' }}>Sincronización y Despliegue</h3>
-                </div>
-                <p style={{ color: '#64748b', fontSize: '0.88rem', margin: '0 0 16px 0', lineHeight: '1.5' }}>
-                  Sincroniza tus cambios locales con el repositorio en la nube y publica las actualizaciones en la red.
-                </p>
-
-                {/* Switch de Despliegue */}
+              {/* Lista de Interruptores (Switches) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                
+                {/* 1. SQL */}
                 <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)',
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid #ddd6fe',
-                  marginBottom: '16px'
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: optSql ? '#f0fdf4' : '#f8fafc',
+                  padding: '16px 20px', borderRadius: '12px', border: optSql ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+                  transition: 'all 0.3s'
                 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4f46e5' }}>
-                      🌐 Desplegar en la Red (Firebase)
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: optSql ? '#166534' : '#334155' }}>
+                      💾 1. Volcado de Base de Datos (SQL)
                     </span>
-                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                      Compila la app y actualiza en producción
-                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Extrae los datos de MySQL en un archivo .sql.</span>
                   </div>
-                  <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={isDeployChecked}
-                      onChange={(e) => setIsDeployChecked(e.target.checked)}
-                      style={{ opacity: 0, width: 0, height: 0 }} 
-                    />
-                    <span style={{
-                      position: 'absolute',
-                      cursor: 'pointer',
-                      top: 0, left: 0, right: 0, bottom: 0,
-                      backgroundColor: isDeployChecked ? '#4f46e5' : '#cbd5e1',
-                      transition: '.3s',
-                      borderRadius: '24px'
-                    }}>
-                      <span style={{
-                        position: 'absolute',
-                        content: '""',
-                        height: '18px', width: '18px',
-                        left: isDeployChecked ? '22px' : '3px',
-                        bottom: '3px',
-                        backgroundColor: 'white',
-                        transition: '.3s',
-                        borderRadius: '50%',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
-                      }} />
+                  <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                    <input type="checkbox" checked={optSql} onChange={e => setOptSql(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optSql ? '#22c55e' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
+                      <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optSql ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                     </span>
                   </label>
                 </div>
 
-                {/* Sub-Switch condicional: Copia Completa Previa (solo si se va a desplegar) */}
-                {isDeployChecked && (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    background: '#f8fafc',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    marginBottom: '16px',
-                    animation: 'fadeIn 0.2s'
-                  }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#1e293b' }}>
-                        💾 Copia Completa Previa
-                      </span>
-                      <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                        Crea SQL y ZIP local antes de subir
-                      </span>
-                    </div>
-                    <label style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={includeFullBackup}
-                        onChange={(e) => setIncludeFullBackup(e.target.checked)}
-                        style={{ opacity: 0, width: 0, height: 0 }} 
-                      />
-                      <span style={{
-                        position: 'absolute',
-                        cursor: 'pointer',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: includeFullBackup ? '#8b5cf6' : '#cbd5e1',
-                        transition: '.3s',
-                        borderRadius: '20px'
-                      }}>
-                        <span style={{
-                          position: 'absolute',
-                          content: '""',
-                          height: '14px', width: '14px',
-                          left: includeFullBackup ? '19px' : '3px',
-                          bottom: '3px',
-                          backgroundColor: 'white',
-                          transition: '.3s',
-                          borderRadius: '50%',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.15)'
-                        }} />
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              <div>
+                {/* 2. ZIP */}
                 <div style={{ 
-                  fontSize: '0.8rem', 
-                  color: '#475569', 
-                  background: '#f8fafc', 
-                  padding: '8px 12px', 
-                  borderRadius: '8px', 
-                  border: '1px solid #e2e8f0', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px',
-                  fontWeight: 600,
-                  marginBottom: '16px'
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: optZip ? '#fff7ed' : '#f8fafc',
+                  padding: '16px 20px', borderRadius: '12px', border: optZip ? '1px solid #fed7aa' : '1px solid #e2e8f0',
+                  transition: 'all 0.3s'
                 }}>
-                  <span>🕒</span>
-                  <span><strong>Último:</strong> {isDeployChecked ? lastGitAndDeploy : lastGitOnly}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: optZip ? '#9a3412' : '#334155' }}>
+                      📦 2. Comprimir Código del Proyecto (ZIP)
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Crea un respaldo comprimido local excluyendo dependencias.</span>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                    <input type="checkbox" checked={optZip} onChange={e => setOptZip(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optZip ? '#f97316' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
+                      <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optZip ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                    </span>
+                  </label>
                 </div>
 
+                {/* 3. OneDrive */}
+                <div style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: optOneDrive ? '#fdf4ff' : '#f8fafc',
+                  padding: '16px 20px', borderRadius: '12px', border: optOneDrive ? '1px solid #f5d0fe' : '1px solid #e2e8f0',
+                  transition: 'all 0.3s'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: optOneDrive ? '#86198f' : '#334155' }}>
+                      ☁️ 3. Respaldo en la Nube (OneDrive)
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Copia el SQL y ZIP a OneDrive en una carpeta con fecha.</span>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                    <input type="checkbox" checked={optOneDrive} onChange={e => setOptOneDrive(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optOneDrive ? '#d946ef' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
+                      <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optOneDrive ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                    </span>
+                  </label>
+                </div>
+
+                {/* 4. GitHub */}
+                <div style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: optGit ? '#eff6ff' : '#f8fafc',
+                  padding: '16px 20px', borderRadius: '12px', border: optGit ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+                  transition: 'all 0.3s'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: optGit ? '#1e40af' : '#334155' }}>
+                      🐙 4. Sincronizar en GitHub (Commit & Push)
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Sella los cambios locales y los sube al repositorio maestro.</span>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                    <input type="checkbox" checked={optGit} onChange={e => setOptGit(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optGit ? '#3b82f6' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
+                      <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optGit ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                    </span>
+                  </label>
+                </div>
+
+                {/* 5. Firebase */}
+                <div style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: optFirebase ? '#faf5ff' : '#f8fafc',
+                  padding: '16px 20px', borderRadius: '12px', border: optFirebase ? '1px solid #e9d5ff' : '1px solid #e2e8f0',
+                  transition: 'all 0.3s'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: optFirebase ? '#6b21a8' : '#334155' }}>
+                      🔥 5. Desplegar en Firebase (Producción)
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Compila la app y la despliega públicamente en la red.</span>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                    <input type="checkbox" checked={optFirebase} onChange={e => setOptFirebase(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optFirebase ? '#8b5cf6' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
+                      <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optFirebase ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                    </span>
+                  </label>
+                </div>
+
+              </div>
+
+              {/* Botón Maestro */}
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                <div style={{ 
+                  fontSize: '0.85rem', color: '#64748b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' 
+                }}>
+                  <span>🕒</span>
+                  <span><strong>Última ejecución:</strong> {lastAction}</span>
+                </div>
+                
                 <button 
-                  onClick={isDeployChecked ? handleGitAndDeploy : handleGitOnly}
-                  disabled={isRunning}
+                  onClick={handleExecuteTasks}
+                  disabled={!optSql && !optZip && !optOneDrive && !optGit && !optFirebase}
                   style={{
                     width: '100%',
-                    padding: '12px',
-                    background: isDeployChecked 
-                      ? 'linear-gradient(135deg, #4f46e5, #8b5cf6)' 
-                      : '#3b82f6',
+                    padding: '16px',
+                    background: (!optSql && !optZip && !optOneDrive && !optGit && !optFirebase) 
+                      ? '#cbd5e1' 
+                      : 'linear-gradient(135deg, #4f46e5, #8b5cf6)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     fontWeight: 'bold',
-                    cursor: isRunning ? 'not-allowed' : 'pointer',
-                    opacity: isRunning ? 0.6 : 1,
+                    cursor: (!optSql && !optZip && !optOneDrive && !optGit && !optFirebase) ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s',
-                    fontSize: '0.95rem',
-                    boxShadow: isDeployChecked ? '0 4px 10px rgba(79, 70, 229, 0.2)' : 'none'
+                    fontSize: '1.05rem',
+                    boxShadow: (!optSql && !optZip && !optOneDrive && !optGit && !optFirebase) ? 'none' : '0 4px 15px rgba(79, 70, 229, 0.3)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
-                  onMouseOver={e => !isRunning && (e.currentTarget.style.background = isDeployChecked ? '' : '#2563eb')}
-                  onMouseOut={e => !isRunning && (e.currentTarget.style.background = isDeployChecked ? '' : '#3b82f6')}
+                  onMouseOver={e => {
+                    if (optSql || optZip || optOneDrive || optGit || optFirebase) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(79, 70, 229, 0.4)';
+                    }
+                  }}
+                  onMouseOut={e => {
+                    if (optSql || optZip || optOneDrive || optGit || optFirebase) {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(79, 70, 229, 0.3)';
+                    }
+                  }}
                 >
-                  {isDeployChecked 
-                    ? `🌐 Subir y Desplegar a Producción` 
-                    : `🚀 Sincronizar en GitHub (Push)`
-                  }
+                  <span style={{ fontSize: '1.3rem' }}>⚡</span>
+                  Copiar Comando para Antigravity
                 </button>
               </div>
             </div>

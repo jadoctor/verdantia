@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import ConflictosDashboard from '@/components/user/ConflictosDashboard';
+import { getPlanConfig } from '@/lib/plan-config';
 import RangoBadge from '@/components/ui/RangoBadge';
 
 interface UserProfile {
@@ -743,10 +744,19 @@ export default function DashboardLayout({
               <span className="profile-name">Hola, {displayName}</span>
               {isSuperAdmin && <span className="role-badge superadmin">SUPERADMIN</span>}
               {!isSuperAdmin && isAdmin && <span className="role-badge admin">ADMIN</span>}
-              <span className="profile-achievement">
-                <RangoBadge icono={profile?.iconoLogro || '1️⃣👶'} nivel={profile?.nivelLogro} size={18} style={{ marginRight: '6px' }} />
-                <span>{profile?.nombreLogro || 'Visitante'} · ⭐ {profile?.suscripcion || 'Básica'}</span>
-              </span>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                {/* Placa de Logro */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '6px 10px', borderRadius: '12px', color: '#92400e' }}>
+                  <RangoBadge icono={profile?.iconoLogro || '1️⃣👶'} nivel={profile?.nivelLogro} size={28} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', lineHeight: 1.1 }}>{profile?.nombreLogro || 'Visitante'}</span>
+                </div>
+                
+                {/* Placa de Suscripción */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: getPlanConfig(profile?.suscripcion).bg, border: `1px solid ${getPlanConfig(profile?.suscripcion).color}40`, padding: '6px 10px', borderRadius: '12px', color: getPlanConfig(profile?.suscripcion).color }}>
+                  <span style={{ fontSize: '28px', lineHeight: 1, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>{getPlanConfig(profile?.suscripcion).icon}</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', lineHeight: 1.1, textTransform: 'uppercase' }}>{profile?.suscripcion || 'Gratuito'}</span>
+                </div>
+              </div>
               <span className="profile-edit-hint">✏️ Editar perfil</span>
             </div>
           </a>

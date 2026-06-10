@@ -112,6 +112,13 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       }
     }
 
+    // Regla de Oro: Los Superadministradores siempre tienen Premium Permanente
+    if (user.usuariosroles && user.usuariosroles.includes('superadministrador')) {
+      suscripcion = 'Premium';
+      esPrueba = false;
+      fechaCaduca = null;
+    }
+
     // Obtener foto preferida (solo aprobadas: validado=1 y no rechazadas)
     const [fotoRows] = await pool.query(
       `SELECT datosadjuntosruta, datosadjuntosresumen 
@@ -192,6 +199,7 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       fotoPreferidaMeta: fotoPreferidaMeta,
       iconoLogro: iconoLogro,
       nombreLogro: nombreLogro,
+      nivelLogro: nivelLogro,
       zonaClimatica: user.usuarioszonaclimatica || null,
       tipoCalendario: user.usuariostipocalendario || 'Normal',
       tipoLaboreo: user.usuariostipolaboreo || 'Convencional',

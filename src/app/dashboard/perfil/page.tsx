@@ -2392,7 +2392,7 @@ function PerfilContent() {
                     onClick={() => {
                       // Calendario Lunar: requiere plan Esencial o superior
                       const p = (profile?.suscripcion || '').toLowerCase();
-                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes(p);
+                      const hasAccess = ['esencial','avanzado','premium'].includes(p);
                       if (!hasAccess) {
                         showToast('❌ El calendario Lunar requiere un plan Esencial o superior');
                         return;
@@ -2405,30 +2405,30 @@ function PerfilContent() {
                       border: tipoCalendario === 'Lunar' ? '2.5px solid #3b82f6' : '1px solid #cbd5e1',
                       borderRadius: '16px',
                       padding: '20px',
-                      cursor: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'pointer' : 'not-allowed',
-                      background: tipoCalendario === 'Lunar' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : (!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
-                      opacity: ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 1 : 0.6,
+                      cursor: ['esencial','avanzado','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 'pointer' : 'not-allowed',
+                      background: tipoCalendario === 'Lunar' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : (!['esencial','avanzado','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? '#f8fafc' : '#ffffff'),
+                      opacity: ['esencial','avanzado','premium'].includes((profile?.suscripcion||'').toLowerCase()) ? 1 : 0.6,
                       boxShadow: tipoCalendario === 'Lunar' ? '0 8px 24px rgba(59, 130, 246, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
                       transform: tipoCalendario === 'Lunar' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       position: 'relative'
                     }}
                     onMouseEnter={(e) => {
-                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase());
+                      const hasAccess = ['esencial','avanzado','premium'].includes((profile?.suscripcion||'').toLowerCase());
                       if (!hasAccess) return;
                       e.currentTarget.style.transform = tipoCalendario === 'Lunar' ? 'translateY(-4px) scale(1.025)' : 'translateY(-3px)';
                       e.currentTarget.style.boxShadow = tipoCalendario === 'Lunar' ? '0 12px 28px rgba(59, 130, 246, 0.22)' : '0 6px 16px rgba(0,0,0,0.08)';
                       if (tipoCalendario !== 'Lunar') e.currentTarget.style.borderColor = '#3b82f6';
                     }}
                     onMouseLeave={(e) => {
-                      const hasAccess = ['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase());
+                      const hasAccess = ['esencial','avanzado','premium'].includes((profile?.suscripcion||'').toLowerCase());
                       if (!hasAccess) return;
                       e.currentTarget.style.transform = tipoCalendario === 'Lunar' ? 'translateY(-2px) scale(1.02)' : 'translateY(0) scale(1)';
                       e.currentTarget.style.boxShadow = tipoCalendario === 'Lunar' ? '0 8px 24px rgba(59, 130, 246, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)';
                       if (tipoCalendario !== 'Lunar') e.currentTarget.style.borderColor = '#cbd5e1';
                     }}
                   >
-                    {!['esencial','plus','avanzado','pro','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 12, right: 12, fontSize: '1.2rem' }}>🔒</div>}
+                    {!['esencial','avanzado','premium'].includes((profile?.suscripcion||'').toLowerCase()) && <div style={{ position: 'absolute', top: 12, right: 12, fontSize: '1.2rem' }}>🔒</div>}
                     {tipoCalendario === 'Lunar' && (
                       <div style={{
                         position: 'absolute',

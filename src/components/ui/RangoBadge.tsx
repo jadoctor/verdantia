@@ -8,16 +8,24 @@ interface RangoBadgeProps {
   style?: React.CSSProperties;
 }
 
-// Mapeo de nivel a emoji numérico
-const NIVEL_EMOJI: Record<number, string> = {
-  1: '1️⃣', 2: '2️⃣', 3: '3️⃣', 4: '4️⃣', 5: '5️⃣',
-  6: '6️⃣', 7: '7️⃣', 8: '8️⃣', 9: '9️⃣', 10: '🔟'
-};
-
 export default function RangoBadge({ icono, nivel, size = 48, className = '', style = {} }: RangoBadgeProps) {
   const showBadge = typeof nivel === 'number' && nivel > 0;
-  const nivelEmoji = showBadge ? (NIVEL_EMOJI[nivel] || `${nivel}`) : '';
+  const isHighLevel = showBadge && nivel! >= 8;
 
+  // Calculamos medidas relativas
+  const borderRadius = Math.max(4, Math.round(size * 0.25));
+  const fontSizeIcon = size * 0.65;
+  const badgeSize = Math.max(10, Math.round(size * 0.45));
+  
+  // badgeFontSize en rem o px. Si badgeSize es 10px, font = 6px.
+  // Es mejor usar px aquí para más precisión.
+  const badgeFontSizePx = Math.max(7, Math.round(badgeSize * 0.6)); 
+  const badgeBorder = Math.max(1, Math.round(size * 0.05));
+  const offset = -Math.max(2, Math.round(size * 0.15));
+
+  // Parseamos el emoji viejo si accidentalmente se pasó, pero ahora queremos usar solo el número
+  // (Aunque la BD tiene emojis antiguos, 'nivel' siempre es un número).
+  
   return (
     <div 
       className={`rango-badge-container ${className}`}
@@ -28,35 +36,39 @@ export default function RangoBadge({ icono, nivel, size = 48, className = '', st
         justifyContent: 'center',
         width: `${size}px`,
         height: `${size}px`,
-        background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
-        borderRadius: '50%',
-        border: '2px solid #cbd5e1',
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+        background: isHighLevel ? '#fefce8' : '#f8fafc',
+        borderRadius: `${borderRadius}px`,
+        border: `${Math.max(1.5, Math.round(size * 0.04))}px solid ${isHighLevel ? '#fde047' : '#e2e8f0'}`,
         flexShrink: 0,
         ...style
       }}
       title={showBadge ? `Nivel ${nivel}` : undefined}
     >
-      {/* Cara grande - ocupa ~80% del círculo */}
       <span style={{ 
-        fontSize: `${size * 0.65}px`, 
-        lineHeight: 1,
-        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' 
+        fontSize: `${fontSizeIcon}px`, 
+        lineHeight: 1
       }}>
         {icono}
       </span>
-      {/* Número emoji como "oreja" en esquina superior-derecha */}
       {showBadge && (
         <span style={{
           position: 'absolute',
-          top: `${size * -0.12}px`,
-          right: `${size * -0.12}px`,
-          fontSize: `${size * 0.38}px`,
-          lineHeight: 1,
-          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+          bottom: `${offset}px`,
+          right: `${offset}px`,
+          background: isHighLevel ? '#ca8a04' : '#64748b',
+          color: 'white',
+          width: `${badgeSize}px`,
+          height: `${badgeSize}px`,
+          borderRadius: '50%',
+          fontSize: `${badgeFontSizePx}px`,
+          fontWeight: 900,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: `${badgeBorder}px solid white`,
           zIndex: 2
         }}>
-          {nivelEmoji}
+          {nivel}
         </span>
       )}
     </div>

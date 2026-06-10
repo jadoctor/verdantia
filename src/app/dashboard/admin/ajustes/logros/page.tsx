@@ -1,8 +1,15 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-
 export default function LogrosAdminPage() {
+  // FORZAR RECARGA INMEDIATA AL HOT-SWAP (Regla 4)
+  if (typeof window !== 'undefined') {
+    if (!window.sessionStorage.getItem('__did_reload_logros_v2')) {
+      window.sessionStorage.setItem('__did_reload_logros_v2', 'true');
+      window.location.reload();
+    }
+  }
+
   const router = useRouter();
   const [logros, setLogros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,6 +118,8 @@ export default function LogrosAdminPage() {
         </div>
       </div>
 
+
+
       {/* ── Tabla ── */}
       {loading ? (
         <p style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Cargando rangos del ecosistema...</p>
@@ -119,8 +128,7 @@ export default function LogrosAdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
-                <th style={{ padding: '12px 8px', width: '50px', textAlign: 'center' }}>Nv.</th>
-                <th style={{ padding: '12px', width: '280px' }}>Rango & Privilegios</th>
+                <th style={{ padding: '12px 20px', width: '330px' }}>Insignia & Privilegios</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Meses de antigüedad">📅 Antig.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Semillas">🌾 Sem.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Siembras">🪴 Siem.</th>
@@ -138,30 +146,24 @@ export default function LogrosAdminPage() {
                 const lc = getLevelStyle(l.logrosnivel);
                 return (
                   <tr key={l.idlogros} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
-                    {/* NIVEL */}
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: '34px', height: '34px', borderRadius: '10px',
-                        background: lc.bg, color: lc.text, border: `2px solid ${lc.border}`,
-                        fontWeight: 900
-                      }}>
-                        {l.logrosnivel}
-                      </span>
-                    </td>
+                    {/* INSIGNIA & PRIVILEGIOS */}
+                    <td style={{ padding: '10px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        
+                        {/* Contenedor Unificado (Medalla Superpuesta) */}
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', background: lc.bg, borderRadius: '12px', border: `2px solid ${lc.border}`, flexShrink: 0 }}>
+                          <input
+                            type="text"
+                            value={l.logrosicono}
+                            onChange={(e) => handleChange(idx, 'logrosicono', e.target.value)}
+                            style={{ width: '100%', fontSize: '1.6rem', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: 0 }}
+                            title="Icono del rango (Editable)"
+                          />
+                          <span style={{ position: 'absolute', bottom: '-6px', right: '-6px', background: lc.text, color: 'white', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} title={`Nivel ${l.logrosnivel}`}>
+                            {l.logrosnivel}
+                          </span>
+                        </div>
 
-                    {/* RANGO & PRIVILEGIOS */}
-                    <td style={{ padding: '8px 12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input
-                          type="text"
-                          value={l.logrosicono}
-                          onChange={(e) => handleChange(idx, 'logrosicono', e.target.value)}
-                          style={{ width: '40px', fontSize: '1.5rem', textAlign: 'center', background: 'transparent', border: '1px solid transparent', borderRadius: '8px', outline: 'none', cursor: 'pointer', padding: '4px', transition: 'all 0.2s' }}
-                          onFocus={(e) => { e.currentTarget.style.border = '1px solid #a7f3d0'; e.currentTarget.style.background = '#f0fdf4'; }}
-                          onBlur={(e) => { e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.background = 'transparent'; }}
-                          title="Icono del rango"
-                        />
                         <div style={{ flex: 1 }}>
                           <input
                             type="text"
@@ -202,7 +204,7 @@ export default function LogrosAdminPage() {
                       </td>
                     ))}
 
-                    {/* DESCUENTO PRO (columna verde) */}
+                    {/* DESCUENTO PREMIUM (columna verde) */}
                     <td style={{ padding: '6px', textAlign: 'center', background: '#f0fdf4', borderLeft: '2px solid #a7f3d0' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
                         <input
@@ -259,7 +261,7 @@ export default function LogrosAdminPage() {
           <div style={{ display: 'flex', gap: '20px', padding: '16px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#a7f3d0', border: '1px solid #4ade80', display: 'inline-block' }}></span>
-              <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>🎁 Descuento en Suscripción PRO</span>
+              <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>🎁 Descuento en Suscripción Premium</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#fca5a5', border: '1px solid #f87171', display: 'inline-block' }}></span>

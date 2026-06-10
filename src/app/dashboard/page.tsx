@@ -537,6 +537,7 @@ export default function DashboardHome() {
             const actualLogro = misLogros.length > 0 ? misLogros[misLogros.length - 1] : null;
             const actualLogroIcono = actualLogro?.logrosicono || (profile?.roles?.includes('visitante') ? '👁️' : '🧑‍🌾');
             const actualLogroNombre = actualLogro?.nombre_logro || (profile?.roles?.includes('visitante') ? 'Visitante' : 'Aprendiz');
+            const actualLogroNivel = actualLogro?.logrosnivel || 1;
 
             const reqList: React.ReactNode[] = [];
 
@@ -783,7 +784,12 @@ export default function DashboardHome() {
                   
                   {/* Rango Actual */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(135deg, rgba(254, 240, 138, 0.4), rgba(253, 224, 71, 0.35))', padding: '8px 16px', borderRadius: '16px', border: '1.5px solid rgba(234, 179, 8, 0.4)', color: '#854d0e' }}>
-                    <span style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 8px rgba(234,179,8,0.25))' }}>{actualLogroIcono}</span>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '54px', height: '54px', background: 'white', borderRadius: '12px', border: '2px solid rgba(234, 179, 8, 0.6)' }}>
+                      <span style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(234,179,8,0.25))' }}>{actualLogroIcono}</span>
+                      <span style={{ position: 'absolute', bottom: '-6px', right: '-6px', background: '#ca8a04', color: 'white', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>
+                        {actualLogroNivel}
+                      </span>
+                    </div>
                     <div>
                       <div style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mi Rango Actual</div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{actualLogroNombre}</div>
@@ -795,7 +801,12 @@ export default function DashboardHome() {
 
                   {/* Siguiente Rango */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(135deg, rgba(233, 213, 255, 0.45), rgba(216, 180, 254, 0.35))', padding: '8px 16px', borderRadius: '16px', border: '1.5px solid rgba(168, 85, 247, 0.4)', color: '#6b21a8' }}>
-                    <span style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 8px rgba(139,92,246,0.3))' }}>{siguiente.logrosicono || '🏆'}</span>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '54px', height: '54px', background: 'white', borderRadius: '12px', border: '2px solid rgba(168, 85, 247, 0.6)' }}>
+                      <span style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(139,92,246,0.3))' }}>{siguiente.logrosicono || '🏆'}</span>
+                      <span style={{ position: 'absolute', bottom: '-6px', right: '-6px', background: '#9333ea', color: 'white', width: '22px', height: '22px', borderRadius: '50%', fontSize: '0.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>
+                        {siguiente.logrosnivel || '?'}
+                      </span>
+                    </div>
                     <div>
                       <div style={{ fontSize: '0.75rem', color: '#7e22ce', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Siguiente Rango</div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>{siguiente.logrosnombre}</div>
