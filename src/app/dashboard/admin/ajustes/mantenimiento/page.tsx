@@ -7,8 +7,8 @@ import ReactMarkdown from 'react-markdown';
 
 // FORZAR RECARGA INMEDIATA AL HOT-SWAP (Regla 4)
 if (typeof window !== 'undefined') {
-  if (!window.sessionStorage.getItem('__did_reload_v20')) {
-    window.sessionStorage.setItem('__did_reload_v20', 'true');
+  if (!window.sessionStorage.getItem('__did_reload_v22')) {
+    window.sessionStorage.setItem('__did_reload_v22', 'true');
     window.location.reload();
   }
 }
@@ -27,7 +27,10 @@ export default function MantenimientoPage() {
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const consoleEndRef = useRef<HTMLDivElement>(null);
 
-  const [lastAction, setLastAction] = useState<string>('Nunca');
+  const [lastActionLocalCopy, setLastActionLocalCopy] = useState<string>('Nunca');
+  const [lastActionOneDrive, setLastActionOneDrive] = useState<string>('Nunca');
+  const [lastActionGit, setLastActionGit] = useState<string>('Nunca');
+  const [lastActionFirebase, setLastActionFirebase] = useState<string>('Nunca');
   const [optLocalCopy, setOptLocalCopy] = useState<boolean>(false);
   const [optGit, setOptGit] = useState<boolean>(false);
   const [optFirebase, setOptFirebase] = useState<boolean>(false);
@@ -42,7 +45,10 @@ export default function MantenimientoPage() {
   const [rulesError, setRulesError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLastAction(localStorage.getItem('last_action_time') || 'Nunca');
+    setLastActionLocalCopy(localStorage.getItem('last_action_local') || 'Nunca');
+    setLastActionOneDrive(localStorage.getItem('last_action_onedrive') || 'Nunca');
+    setLastActionGit(localStorage.getItem('last_action_git') || 'Nunca');
+    setLastActionFirebase(localStorage.getItem('last_action_firebase') || 'Nunca');
   }, []);
 
   const loadRules = async (email: string) => {
@@ -156,8 +162,17 @@ export default function MantenimientoPage() {
     const tasks = [];
     if (optLocalCopy) tasks.push('volcado de la base de datos local (SQL) y comprimir el código del proyecto local (ZIP) guardándolos en una carpeta con la fecha y hora dentro de C:\\\\Users\\\\jaill\\\\Documents\\\\VERDANTIA COPIAS SEGURIDAD');
     if (optOneDrive) tasks.push('respaldar en la nube (crear carpeta con fecha en C:\\Users\\Public\\OneDrive\\PROYECTOS\\VERDANTIA y copiar allí el SQL y el ZIP)');
-    if (optGit) tasks.push('guardar los cambios locales y subirlos al repositorio remoto de GitHub (solo hacer commit y push, NO desplegar a producción)');
-    if (optFirebase) tasks.push('desplegar en Firebase (producción)');
+    if (optGit && optFirebase) {
+      tasks.push('ejecutar npm run build localmente para validar');
+      tasks.push('guardar los cambios locales y subirlos al repositorio remoto de GitHub (solo commit y push)');
+      tasks.push('desplegar en Firebase (producción)');
+    } else if (optGit) {
+      tasks.push('ejecutar npm run build localmente para validar');
+      tasks.push('guardar los cambios locales y subirlos al repositorio remoto de GitHub (solo commit y push, NO desplegar a producción)');
+    } else if (optFirebase) {
+      tasks.push('ejecutar npm run build localmente para validar');
+      tasks.push('desplegar en Firebase (producción)');
+    }
 
     const tasksStr = tasks.join(', ').replace(/, ([^,]*)$/, ' y $1');
     const isDeploy = optFirebase;
@@ -175,17 +190,20 @@ export default function MantenimientoPage() {
     setIsConsoleOpen(true);
     setStatus('idle');
 
-    const dateStr = new Date().toLocaleString('es-ES');
-    localStorage.setItem('last_action_time', dateStr);
-    setLastAction(dateStr);
+
   }, [optLocalCopy, optOneDrive, optGit, optFirebase]);
 
   const handleSelectAll = () => {
     const allSelected = optLocalCopy && optOneDrive && optGit && optFirebase;
+    const dateStr = new Date().toLocaleString('es-ES');
     setOptLocalCopy(!allSelected);
+    if (!allSelected) { localStorage.setItem('last_action_local', dateStr); setLastActionLocalCopy(dateStr); }
     setOptOneDrive(!allSelected);
+    if (!allSelected) { localStorage.setItem('last_action_onedrive', dateStr); setLastActionOneDrive(dateStr); }
     setOptGit(!allSelected);
+    if (!allSelected) { localStorage.setItem('last_action_git', dateStr); setLastActionGit(dateStr); }
     setOptFirebase(!allSelected);
+    if (!allSelected) { localStorage.setItem('last_action_firebase', dateStr); setLastActionFirebase(dateStr); }
   };
 
   const handleOpenBackupsFolder = async () => {
@@ -913,6 +931,7 @@ export default function MantenimientoPage() {
                       💾 1. Copia Local (SQL y ZIP)
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Extrae los datos en un archivo .sql y comprime el proyecto en un .zip.</span>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}><span>🕒</span> Última ejecución: {lastActionLocalCopy}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                       <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', color: '#475569' }}>
                         C:\Users\jaill\Documents\VERDANTIA COPIAS SEGURIDAD
@@ -939,7 +958,7 @@ export default function MantenimientoPage() {
                     </div>
                   </div>
                   <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
-                    <input type="checkbox" checked={optLocalCopy} onChange={e => setOptLocalCopy(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <input type="checkbox" checked={optLocalCopy} onChange={e => { setOptLocalCopy(e.target.checked); if (e.target.checked) { const dateStr = new Date().toLocaleString('es-ES'); localStorage.setItem('last_action_local', dateStr); setLastActionLocalCopy(dateStr); } }} style={{ opacity: 0, width: 0, height: 0 }} />
                     <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optLocalCopy ? '#22c55e' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
                       <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optLocalCopy ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                     </span>
@@ -958,6 +977,7 @@ export default function MantenimientoPage() {
                       ☁️ 2. Copia en la nube (SQL y zip)
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Copia el SQL y ZIP a OneDrive en una carpeta con fecha.</span>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}><span>🕒</span> Última ejecución: {lastActionOneDrive}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                       <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', color: '#475569' }}>
                         C:\Users\Public\OneDrive\PROYECTOS\VERDANTIA
@@ -984,7 +1004,7 @@ export default function MantenimientoPage() {
                     </div>
                   </div>
                   <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
-                    <input type="checkbox" checked={optOneDrive} onChange={e => setOptOneDrive(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <input type="checkbox" checked={optOneDrive} onChange={e => { setOptOneDrive(e.target.checked); if (e.target.checked) { const dateStr = new Date().toLocaleString('es-ES'); localStorage.setItem('last_action_onedrive', dateStr); setLastActionOneDrive(dateStr); } }} style={{ opacity: 0, width: 0, height: 0 }} />
                     <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optOneDrive ? '#d946ef' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
                       <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optOneDrive ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                     </span>
@@ -1003,9 +1023,10 @@ export default function MantenimientoPage() {
                       🐙 3. Guardar en GitHub (Commit & Push)
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Sella los cambios locales y los sube al repositorio remoto sin desplegar a producción.</span>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}><span>🕒</span> Última ejecución: {lastActionGit}</div>
                   </div>
                   <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
-                    <input type="checkbox" checked={optGit} onChange={e => setOptGit(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <input type="checkbox" checked={optGit} onChange={e => { setOptGit(e.target.checked); if (e.target.checked) { const dateStr = new Date().toLocaleString('es-ES'); localStorage.setItem('last_action_git', dateStr); setLastActionGit(dateStr); } }} style={{ opacity: 0, width: 0, height: 0 }} />
                     <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optGit ? '#3b82f6' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
                       <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optGit ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                     </span>
@@ -1024,9 +1045,10 @@ export default function MantenimientoPage() {
                       🔥 4. Desplegar en Firebase (Producción)
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Compila la app y la despliega públicamente en la red.</span>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}><span>🕒</span> Última ejecución: {lastActionFirebase}</div>
                   </div>
                   <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
-                    <input type="checkbox" checked={optFirebase} onChange={e => setOptFirebase(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+                    <input type="checkbox" checked={optFirebase} onChange={e => { setOptFirebase(e.target.checked); if (e.target.checked) { const dateStr = new Date().toLocaleString('es-ES'); localStorage.setItem('last_action_firebase', dateStr); setLastActionFirebase(dateStr); } }} style={{ opacity: 0, width: 0, height: 0 }} />
                     <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: optFirebase ? '#8b5cf6' : '#cbd5e1', transition: '.3s', borderRadius: '28px' }}>
                       <span style={{ position: 'absolute', content: '""', height: '20px', width: '20px', left: optFirebase ? '26px' : '4px', bottom: '4px', backgroundColor: 'white', transition: '.3s', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                     </span>
@@ -1035,15 +1057,7 @@ export default function MantenimientoPage() {
 
               </div>
 
-              {/* Información de Última Acción */}
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-                <div style={{ 
-                  fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' 
-                }}>
-                  <span>🕒</span>
-                  <span><strong>Última ejecución:</strong> {lastAction}</span>
-                </div>
-              </div>
+
             </div>
           </div>
 
