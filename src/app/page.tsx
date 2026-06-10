@@ -24,10 +24,10 @@ export default function Home() {
           </a>
           <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="text-sm text-green-700 bg-green-100 px-4 py-2 rounded-full font-medium inline-block mb-2 shadow-sm border border-green-200">
-              ✅ <span className="font-bold">Verificado:</span> 09/06/2026 19:16
+              ✅ <span className="font-bold">Verificado:</span> 10/06/2026 15:15
             </div>
             <div className="text-xs text-slate-500 max-w-xl mx-auto italic">
-              "Despliegue General"
+              "Despliegue v0.1.19 - Mantenimiento y Copias"
             </div>
           </div>
         </div>

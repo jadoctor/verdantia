@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getUserByEmail } from '@/lib/auth';
+import { checkAndUpgradeRank } from '@/lib/logros';
 
 export async function GET(
   request: Request,
@@ -274,6 +275,28 @@ export async function PATCH(
         `UPDATE cultivos SET ${updates.join(', ')} WHERE idcultivos = ?`,
         values
       );
+
+      // Si finaliza o recolecta, evaluamos rango
+      if (body.cultivosestado === 'finalizado' || body.cultivosfecharecoleccion) {
+        let cultivoNombre = 'su cosecha';
+        try {
+          const [cRows]: any = await pool.query(
+            `SELECT COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre, e.especiesnombre) AS nombre
+             FROM cultivos c
+             JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades
+             LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
+             LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies OR vg.xvariedadesidespecies = e.idespecies
+             WHERE c.idcultivos = ? LIMIT 1`,
+            [cultivoId]
+          );
+          if (cRows.length > 0 && cRows[0].nombre) cultivoNombre = cRows[0].nombre;
+        } catch(e) {}
+
+        checkAndUpgradeRank(user.id, {
+          type: 'cultivo',
+          data: { variedad: cultivoNombre }
+        }).catch(console.error);
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -1374,7 +1374,7 @@ function PerfilContent() {
           </div>
         ) : (
           <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {icono ? (
+            {icono && !icono.startsWith('mdi-') ? (
               <span style={{ fontSize: '2.5rem' }}>{icono}</span>
             ) : (
               <span style={{ fontSize: '2.5rem' }}>👤</span>

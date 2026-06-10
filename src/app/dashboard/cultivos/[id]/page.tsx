@@ -232,7 +232,21 @@ export default function CultivoDashboard() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    
+    // Auto-vincular fechas si el usuario cambia el estado manualmente
+    let updates: any = { [name]: value };
+    if (name === 'cultivosestado') {
+      const today = new Date().toISOString().split('T')[0];
+      if (value === 'finalizado' && !formData.cultivosfechafinalizacion) {
+        updates['cultivosfechafinalizacion'] = today;
+        saveField('cultivosfechafinalizacion', today);
+      } else if (value === 'recoleccion' && !formData.cultivosfecharecoleccion) {
+        updates['cultivosfecharecoleccion'] = today;
+        saveField('cultivosfecharecoleccion', today);
+      }
+    }
+    
+    setFormData((prev: any) => ({ ...prev, ...updates }));
 
     // Cancel any pending debounced save for this field
     if (saveTimeoutRef.current[name]) {

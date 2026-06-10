@@ -136,7 +136,7 @@ export default function DashboardLayout({
     '/dashboard/admin/asuntos-pendientes': { label: 'Asuntos Pendientes', icon: '📋' },
     '/dashboard/admin/asuntos-realizados': { label: 'Asuntos Realizados', icon: '✅' },
     '/dashboard/admin/blog': { label: 'Gestor Blog IA', icon: '📝' },
-    '/dashboard/admin/ajustes/mantenimiento': { label: 'Mantenimiento', icon: '🔧' },
+    '/dashboard/admin/ajustes/mantenimiento': { label: 'Mantenimiento y Copias', icon: '🛠️' },
   };
 
   const getBreadcrumbs = () => {
@@ -562,10 +562,7 @@ export default function DashboardLayout({
               </button>
               {superAdminExpanded && (
                 <nav className="sidebar-nav">
-                  <a href="/dashboard/admin/ajustes/mantenimiento" className={`nav-item ${pathname.includes('/admin/ajustes/mantenimiento') ? 'active' : ''}`} onClick={handleNavClick}>
-                    <span className="nav-icon">🔧</span>
-                    <span>Mantenimiento y Copias</span>
-                  </a>
+
                   <a href="/dashboard/admin/usuarios" className={`nav-item ${isActive('/dashboard/admin/usuarios')}`} onClick={handleNavClick}>
                     <span className="nav-icon">👥</span>
                     <span>Usuarios</span>
@@ -573,7 +570,7 @@ export default function DashboardLayout({
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setTareasAgricolasHover(true)} onMouseLeave={() => setTareasAgricolasHover(false)}>
                     <button type="button" className={`nav-item ${pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setTareasAgricolasHover(h => !h); }}
-                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">🚜</span>
                       <span style={{flex: 1}}>Tareas Agrícolas</span>
                       <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
@@ -602,7 +599,7 @@ export default function DashboardLayout({
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setTareasAdministrativasHover(true)} onMouseLeave={() => setTareasAdministrativasHover(false)}>
                     <button type="button" className={`nav-item ${pathname.includes('/admin/asuntos-pendientes') || pathname.includes('/admin/asuntos-realizados') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setTareasAdministrativasHover(h => !h); }}
-                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">🏢</span>
                       <span style={{flex: 1}}>Tareas Administrativas</span>
                       <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAdministrativasHover || pathname.includes('/admin/asuntos-pendientes') || pathname.includes('/admin/asuntos-realizados') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
@@ -615,7 +612,7 @@ export default function DashboardLayout({
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setAjustesHover(true)} onMouseLeave={() => setAjustesHover(false)}>
                     <button type="button" className={`nav-item ${pathname.includes('/admin/ajustes') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setAjustesHover(h => !h); }}
-                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">⚙️</span>
                       <span style={{flex: 1}}>Ajustes de Programa</span>
                       <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: ajustesHover || pathname.includes('/admin/ajustes') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
@@ -625,7 +622,7 @@ export default function DashboardLayout({
                       <a href="/dashboard/admin/ajustes/paises" className={`nav-item ${pathname.includes('/admin/ajustes/paises') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌎 Países</a>
                       <a href="/dashboard/admin/ajustes/avisos" className={`nav-item ${pathname.includes('/admin/ajustes/avisos') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔔 Avisos y Reglas</a>
                       <a href="/dashboard/admin/ajustes/logros" className={`nav-item ${pathname.includes('/admin/ajustes/logros') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🏆 Sistema de Rangos</a>
-                      <a href="/dashboard/admin/ajustes/mantenimiento" className={`nav-item ${pathname.includes('/admin/ajustes/mantenimiento') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔧 Mantenimiento</a>
+                      <a href="/dashboard/admin/ajustes/mantenimiento" className={`nav-item ${pathname.includes('/admin/ajustes/mantenimiento') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🛠️ Mantenimiento y Copias</a>
                     </div>
                   </div>
                 </nav>
@@ -663,7 +660,28 @@ export default function DashboardLayout({
                   <span>Mis Semillas</span>
                 </a>
                 <a href="/dashboard/cultivos" className={`nav-item ${isActive('/dashboard/cultivos')}`} onClick={handleNavClick}>
-                  <span className="nav-icon">🌿</span>
+                  <span className="nav-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="1.2em" height="1.2em" viewBox="0 0 32 32" style={{ filter: 'drop-shadow(0 2px 3px rgba(20, 184, 166, 0.3))' }}>
+                      <line x1="18" y1="23" x2="18" y2="6" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" />
+                      <line x1="18" y1="23" x2="18" y2="6" stroke="#84cc16" strokeWidth="1" strokeLinecap="round" />
+                      <g stroke="#1e293b" strokeWidth="1.2" strokeLinejoin="round" fill="#84cc16">
+                        <path d="M 18 7 Q 14 7, 14 3 Q 18 3, 18 7 Z" />
+                        <path d="M 18 7 Q 22 7, 22 3 Q 18 3, 18 7 Z" />
+                        <path d="M 18 12 Q 12 12, 12 6 Q 18 6, 18 12 Z" />
+                        <path d="M 18 12 Q 24 12, 24 6 Q 18 6, 18 12 Z" />
+                        <path d="M 18 17 Q 10 17, 10 9 Q 18 9, 18 17 Z" />
+                        <path d="M 18 17 Q 26 17, 26 9 Q 18 9, 18 17 Z" />
+                      </g>
+                      <path d="M 7 25 C 13 28, 20 29, 25 26 Q 31 23, 30 25 C 28 28, 22 32, 15 32 L 7 30 Z" fill="#fcd34d" stroke="#1e293b" strokeWidth="1.2" strokeLinejoin="round" />
+                      <path d="M 10 25 C 10 20, 15 19, 18 19 C 22 19, 25 20, 27 23 C 28 25, 25 27, 18 27 C 12 27, 10 26, 10 25 Z" fill="#78350f" stroke="#1e293b" strokeWidth="1.2" strokeLinejoin="round" />
+                      <circle cx="14" cy="21" r="0.75" fill="#1e293b" />
+                      <circle cx="21" cy="22" r="0.75" fill="#1e293b" />
+                      <circle cx="24" cy="24" r="0.75" fill="#1e293b" />
+                      <path d="M 7 22 C 11 21, 14 22, 15 24 C 13 26, 10 26, 7 25 Z" fill="#fcd34d" stroke="#1e293b" strokeWidth="1.2" strokeLinejoin="round" />
+                      <path d="M 2 19 L 7 19 L 7 32 L 2 32 Z" fill="#0ea5e9" stroke="#1e293b" strokeWidth="1.2" strokeLinejoin="round" />
+                      <path d="M 7 18 L 10 18 L 10 32 L 7 32 Z" fill="#0284c7" stroke="#1e293b" strokeWidth="1.2" strokeLinejoin="round" />
+                    </svg>
+                  </span>
                   <span>Mis cultivos</span>
                 </a>
                 <a href="/dashboard/tareas" className={`nav-item ${isActive('/dashboard/tareas')}`} onClick={handleNavClick}>
@@ -674,7 +692,7 @@ export default function DashboardLayout({
                 <div className="nav-submenu-wrapper" onMouseEnter={() => setBancalesHover(true)} onMouseLeave={() => setBancalesHover(false)}>
                   <button type="button" className={`nav-item ${pathname.includes('/dashboard/bancales') ? 'active' : ''}`}
                     onClick={(e) => { e.preventDefault(); setBancalesHover(h => !h); }}
-                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', font: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                     <span className="nav-icon">🛏️</span>
                     <span style={{flex: 1}}>Mis Bancales</span>
                     <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: bancalesHover || pathname.includes('/dashboard/bancales') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getUserByEmail } from '@/lib/auth';
+import { checkAndUpgradeRank } from '@/lib/logros';
 
 // GET /api/user/semillas — Listar inventario de semillas del usuario
 export async function GET(request: Request) {
@@ -277,6 +278,21 @@ export async function POST(request: Request) {
       console.error('Error auto-asignando variedad/especie:', autoAssignErr);
       // No bloqueamos la creación de la semilla si falla la auto-asignación
     }
+
+    // Evaluar rango asíncronamente
+    let variedadNombre = 'sus semillas';
+    try {
+      const [vRows]: any = await pool.query(
+        'SELECT COALESCE(NULLIF(v.variedadesnombre, \"\"), vg.variedadesnombre, e.especiesnombre) AS nombre FROM variedades v LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies OR vg.xvariedadesidespecies = e.idespecies WHERE v.idvariedades = ? LIMIT 1',
+        [xsemillasidvariedades]
+      );
+      if (vRows.length > 0 && vRows[0].nombre) variedadNombre = vRows[0].nombre;
+    } catch(e) {}
+
+    checkAndUpgradeRank(user.id, {
+      type: 'semilla',
+      data: { variedad: variedadNombre, compartir: semillascompartir ? 1 : 0 }
+    }).catch(console.error);
 
     return NextResponse.json({ 
       success: true, 

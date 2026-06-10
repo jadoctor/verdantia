@@ -42,6 +42,8 @@ export async function GET(request: Request) {
         COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesmarcofilas) AS especiesmarcofilas,
         COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesmarcomargen) AS especiesmarcomargen,
         -- Foto de la variedad o especie
+        (SELECT COUNT(*) FROM datosadjuntos 
+         WHERE xdatosadjuntosidcultivos = c.idcultivos AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1) AS fotos_propias_count,
 
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos 
