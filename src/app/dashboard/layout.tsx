@@ -1,10 +1,10 @@
 'use client';
-
+// Force reload layout after maintenance path move
 import './dashboard.css';
 import { auth } from '@/lib/firebase/config';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import ConflictosDashboard from '@/components/user/ConflictosDashboard';
 import { getPlanConfig } from '@/lib/plan-config';
@@ -81,13 +81,20 @@ function getBiodynamicDay() {
   return types[zodiacIndex];
 }
 
-export default function DashboardLayout({
+function DashboardLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get('from');
+
+  const FROM_LABELS: Record<string, { label: string; path: string; icon: string }> = {
+    mantenimiento: { label: 'Copias de Seguridad', path: '/dashboard/admin/mantenimiento', icon: '📁' },
+    analisis: { label: 'Análisis de Dashboard', path: '/dashboard/admin/mantenimiento/analisis', icon: '📊' },
+  };
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -103,6 +110,7 @@ export default function DashboardLayout({
   const [tareasAgricolasHover, setTareasAgricolasHover] = useState(false);
   const [tareasAdministrativasHover, setTareasAdministrativasHover] = useState(false);
   const [bancalesHover, setBancalesHover] = useState(false);
+  const [mantenimientoHover, setMantenimientoHover] = useState(false);
   const [bancalesList, setBancalesList] = useState<any[]>([]);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -119,7 +127,7 @@ export default function DashboardLayout({
     '/dashboard/semillas': { label: 'Semillas', icon: '🌾' },
     '/dashboard/cultivos': { label: 'Mis Cultivos', icon: '🌿' },
     '/dashboard/tareas': { label: 'Tareas', icon: '🔔' },
-    '/dashboard/admin/especies': { label: 'Cuarentena de Especies', icon: '🌍' },
+    '/dashboard/admin/especies': { label: 'Gestor de Especies Globales', icon: '🌍' },
     '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '➕' },
     '/dashboard/admin/fases': { label: 'Fases de Cultivo', icon: '🌱' },
     '/dashboard/admin/fases/nueva': { label: 'Nueva Fase', icon: '➕' },
@@ -136,7 +144,9 @@ export default function DashboardLayout({
     '/dashboard/admin/asuntos-pendientes': { label: 'Asuntos Pendientes', icon: '📋' },
     '/dashboard/admin/asuntos-realizados': { label: 'Asuntos Realizados', icon: '✅' },
     '/dashboard/admin/blog': { label: 'Gestor Blog IA', icon: '📝' },
-    '/dashboard/admin/ajustes/mantenimiento': { label: 'Mantenimiento y Copias', icon: '🛠️' },
+    '/dashboard/admin/mantenimiento': { label: 'Copias de Seguridad', icon: '📁' },
+    '/dashboard/admin/mantenimiento/analisis': { label: 'Análisis de Dashboard', icon: '📊' },
+    '/dashboard/admin/mantenimiento/biblia': { label: 'La Biblia', icon: '📜' },
   };
 
   const getBreadcrumbs = () => {
@@ -609,6 +619,31 @@ export default function DashboardLayout({
                       <a href="/dashboard/admin/asuntos-realizados" className={`nav-item ${isActive('/dashboard/admin/asuntos-realizados')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>✅ Asuntos Realizados</a>
                     </div>
                   </div>
+                  <div className="nav-submenu-wrapper" onMouseEnter={() => setMantenimientoHover(true)} onMouseLeave={() => setMantenimientoHover(false)}>
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/mantenimiento') ? 'active' : ''}`}
+                      onClick={(e) => { e.preventDefault(); setMantenimientoHover(h => !h); }}
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                      <span className="nav-icon">🛠️</span>
+                      <span style={{flex: 1}}>Mantenimiento</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: mantenimientoHover || pathname.includes('/admin/mantenimiento') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                    </button>
+                    <div style={{ display: mantenimientoHover || pathname.includes('/admin/mantenimiento') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                      <a href="/dashboard/admin/mantenimiento" className={`nav-item ${pathname === '/dashboard/admin/mantenimiento' ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>📁 Copias de Seguridad</a>
+                      <a href="/dashboard/admin/mantenimiento/analisis?clean=true" className={`nav-item ${pathname === '/dashboard/admin/mantenimiento/analisis' ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={(e) => {
+                        if (typeof window !== 'undefined') {
+                          sessionStorage.removeItem('analisis_filter');
+                          sessionStorage.removeItem('analisis_group_filter');
+                          sessionStorage.removeItem('analisis_expanded_code');
+                          sessionStorage.removeItem('analisis_expanded_responsive');
+                          sessionStorage.removeItem('analisis_scroll');
+                          sessionStorage.removeItem('analisis_foco_file');
+                        }
+                        handleNavClick();
+                      }}>📊 Análisis de Dashboard</a>
+                      <a href="/dashboard/admin/mantenimiento/biblia" className={`nav-item ${pathname === '/dashboard/admin/mantenimiento/biblia' ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>📜 La Biblia</a>
+                    </div>
+                  </div>
+
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setAjustesHover(true)} onMouseLeave={() => setAjustesHover(false)}>
                     <button type="button" className={`nav-item ${pathname.includes('/admin/ajustes') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setAjustesHover(h => !h); }}
@@ -622,7 +657,6 @@ export default function DashboardLayout({
                       <a href="/dashboard/admin/ajustes/paises" className={`nav-item ${pathname.includes('/admin/ajustes/paises') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌎 Países</a>
                       <a href="/dashboard/admin/ajustes/avisos" className={`nav-item ${pathname.includes('/admin/ajustes/avisos') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔔 Avisos y Reglas</a>
                       <a href="/dashboard/admin/ajustes/logros" className={`nav-item ${pathname.includes('/admin/ajustes/logros') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🏆 Sistema de Rangos</a>
-                      <a href="/dashboard/admin/ajustes/mantenimiento" className={`nav-item ${pathname.includes('/admin/ajustes/mantenimiento') ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🛠️ Mantenimiento y Copias</a>
                     </div>
                   </div>
                 </nav>
@@ -847,6 +881,37 @@ export default function DashboardLayout({
         </header>
 
         <div className="dashboard-content">
+          {/* Barra de Retorno Contextual — Regla 10 */}
+          {fromParam && FROM_LABELS[fromParam] && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              marginBottom: '16px', padding: '10px 16px',
+              background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+              border: '1px solid #bbf7d0', borderRadius: '10px',
+              borderLeft: '4px solid #10b981'
+            }}>
+              <span style={{ fontSize: '0.85rem', color: '#065f46', fontWeight: 600 }}>
+                Viniste desde:
+              </span>
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('mantenimiento_tab', 'codigo');
+                  window.location.href = FROM_LABELS[fromParam].path;
+                }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '5px 14px', borderRadius: '8px',
+                  background: '#10b981', color: 'white',
+                  border: 'none', fontSize: '0.82rem', fontWeight: 700,
+                  cursor: 'pointer', transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+              >
+                {FROM_LABELS[fromParam].icon} ← Volver a {FROM_LABELS[fromParam].label}
+              </button>
+            </div>
+          )}
           {children}
           {/* DASHBOARD CONFLICTOS (Bloqueador de Pantalla si hay fotos rechazadas) */}
           {profile?.fotosRechazadasCount ? (
@@ -855,5 +920,22 @@ export default function DashboardLayout({
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Cargando panel...</p>
+      </div>
+    }>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
   );
 }

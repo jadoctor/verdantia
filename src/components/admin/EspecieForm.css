@@ -1060,5 +1060,37 @@
   }
 }
 
+/* Responsive AI Comparison Grid */
+@media (max-width: 768px) {
+  .ai-comparison-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+    padding: 10px 0;
+  }
+  .ai-comparison-grid.header {
+    display: none !important;
+  }
+  .ai-comparison-grid > div {
+    border-right: none !important;
+    padding: 4px 8px !important;
+  }
+  .ai-comparison-grid > div:first-child {
+    font-weight: bold;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 6px !important;
+  }
+  .ai-comparison-grid > div:nth-child(2)::before {
+    content: "Actual: ";
+    font-weight: 600;
+    color: #94a3b8;
+  }
+  .ai-comparison-grid > div:nth-child(3)::before {
+    content: "Propuesta IA: ";
+    font-weight: 600;
+    color: #94a3b8;
+  }
+}
+
 
 

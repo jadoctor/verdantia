@@ -437,7 +437,7 @@ END:VCALENDAR`;
           cultivosmetodo: finalData.metodo,
           cultivoscantidad: finalData.cantidad,
           cultivosubicacion: finalData.ubicacion || null,
-          cultivosestado: finalData.fechaInicio > new Date().toISOString().split('T')[0] ? 'en_espera' : (finalData.metodo === 'semillero' ? 'germinacion' : 'crecimiento'),
+          cultivosestado: finalData.fechaInicio > new Date().toISOString().split('T')[0] ? 'en_espera' : 'germinacion',
           cultivosfechainicio: finalData.fechaInicio || new Date().toISOString().split('T')[0]
         })
       });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getUserByEmail } from '@/lib/auth';
 import { checkAndUpgradeRank } from '@/lib/logros';
+import { autoUpdateCropStates } from '@/lib/cultivos-utils';
 
 export async function GET(
   request: Request,
@@ -16,17 +17,14 @@ export async function GET(
   const { id: cultivoId } = await params;
 
   try {
+    // Sync states dynamically before loading details
+    await autoUpdateCropStates(pool, user.id);
+
     const [rows]: any = await pool.query(`
       SELECT 
         c.*,
         COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS variedad_nombre,
         e.especiesnombre,
-        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, e.especiesdiasgerminacion) AS dias_germinacion,
-        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, e.especiesdiashastatrasplante) AS dias_trasplante,
-        COALESCE(vu.variedadesdiascrecimientofirme, vg.variedadesdiascrecimientofirme, e.especiesdiascrecimientofirme) AS dias_crecimiento,
-        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, e.especiesdiashastafructificacion) AS dias_fructificacion,
-        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, e.especiesdiashastarecoleccion) AS dias_recoleccion,
-        COALESCE(vu.variedadesduraciontotal, vg.variedadesduraciontotal, e.especiesduraciontotal) AS duracion_total,
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidcultivos = c.idcultivos AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
@@ -96,10 +94,52 @@ export async function GET(
       `, [cultivoId]);
       fotosLabores = fotosRows;
     } catch (err) {
-      console.warn('Error fetching fotosLabores:', err);
+      console.warn('La tabla datosadjuntos aún no existe o hay un error.');
     }
 
-    return NextResponse.json({ cultivo, pautas, avisosCompletados, fotosLabores });
+    // Obtener duraciones teóricas de fases para la especie de este cultivo
+    const [especiesFasesRows]: any = await pool.query(`
+      SELECT xespeciesfasesidfasescultivo AS idfase, especiesfasesduraciondias AS duracion
+      FROM especiesfases
+      WHERE xespeciesfasesidespecies = (
+        SELECT COALESCE(v.xvariedadesidespecies, v_orig.xvariedadesidespecies)
+        FROM cultivos c
+        JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades
+        LEFT JOIN variedades v_orig ON v.xvariedadesidvariedadorigen = v_orig.idvariedades
+        WHERE c.idcultivos = ?
+      )
+    `, [cultivoId]);
+
+    const fases_duracion = especiesFasesRows.reduce((acc: any, row: any) => {
+      acc[row.idfase] = row.duracion;
+      return acc;
+    }, {});
+
+    // Obtener historial real de fases del cultivo
+    const [cultivosFasesRows]: any = await pool.query(`
+      SELECT xcultivosfasesidfasescultivo AS idfase, cultivosfasesfecha AS fecha
+      FROM cultivosfases
+      WHERE xcultivosfasesidcultivos = ?
+      ORDER BY cultivosfasesfecha ASC
+    `, [cultivoId]);
+
+    const fases_historial = cultivosFasesRows.reduce((acc: any, row: any) => {
+      acc[row.idfase] = row.fecha;
+      return acc;
+    }, {});
+
+    // Obtener catálogo maestro de fases para el frontend
+    const [masterFasesRows]: any = await pool.query(`
+      SELECT idfasescultivo, fasescultivonombre, fasescultivoorden
+      FROM fasescultivo
+      WHERE 1=1
+      ORDER BY fasescultivoorden ASC
+    `);
+
+    cultivo.fases_duracion = fases_duracion;
+    cultivo.fases_historial = fases_historial;
+
+    return NextResponse.json({ cultivo, pautas, avisosCompletados, fotosLabores, masterFases: masterFasesRows });
   } catch (error: any) {
     console.error('Error fetching cultivo:', error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
@@ -229,16 +269,52 @@ export async function PATCH(
       
       return NextResponse.json({ success: true });
     }
+
+    if (body.action === 'update_fase') {
+      const { idfase, fecha } = body;
+      if (!idfase) return NextResponse.json({ error: 'Falta idfase' }, { status: 400 });
+
+      if (fecha) {
+        // Remove existing date for this phase first
+        await pool.query(`
+          DELETE FROM cultivosfases 
+          WHERE xcultivosfasesidcultivos = ? AND xcultivosfasesidfasescultivo = ?
+        `, [cultivoId, idfase]);
+        // Insert new date
+        await pool.query(`
+          INSERT INTO cultivosfases (xcultivosfasesidcultivos, xcultivosfasesidfasescultivo, cultivosfasesfecha) 
+          VALUES (?, ?, ?) 
+        `, [cultivoId, idfase, fecha]);
+      } else {
+        // Remove date if null/empty
+        await pool.query(`
+          DELETE FROM cultivosfases 
+          WHERE xcultivosfasesidcultivos = ? AND xcultivosfasesidfasescultivo = ?
+        `, [cultivoId, idfase]);
+      }
+      return NextResponse.json({ success: true });
+    }
     
-    // Verificar que el cultivo pertenezca al usuario para otras actualizaciones
+    // Verificar que el cultivo pertenezca al usuario y obtener estado actual
     const [rows]: any = await pool.query(
-      'SELECT idcultivos FROM cultivos WHERE idcultivos = ? AND xcultivosidusuarios = ?',
+      'SELECT * FROM cultivos WHERE idcultivos = ? AND xcultivosidusuarios = ?',
       [cultivoId, user.id]
     );
 
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Cultivo no encontrado o no autorizado' }, { status: 404 });
     }
+
+    const currentCultivo = rows[0];
+
+    // Validaciones cronológicas de fases
+    const dateOrDefault = (field: string) => {
+      if (body[field] === '') return null;
+      if (body[field] !== undefined && body[field] !== null) return new Date(body[field]);
+      return currentCultivo[field] ? new Date(currentCultivo[field]) : null;
+    };
+
+    const dInicio = dateOrDefault('cultivosfechainicio');
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -248,12 +324,6 @@ export async function PATCH(
       'cultivoscantidad',
       'cultivosubicacion',
       'cultivosfechainicio',
-      'cultivosfechagerminacion',
-      'cultivosfechatrasplante',
-      'cultivosfechacrecimiento',
-      'cultivosfechafructificacion',
-      'cultivosfecharecoleccion',
-      'cultivosfechafinalizacion',
       'cultivosobservaciones',
       'cultivosmetodo',
       'cultivosposicionx',

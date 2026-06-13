@@ -22,7 +22,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Especie no encontrada' }, { status: 404 });
     }
-    return NextResponse.json({ especie: rows[0] });
+    
+    const especie = rows[0];
+    const [fases]: any = await pool.query('SELECT xespeciesfasesidfasescultivo as idFase, especiesfasesduraciondias as duracion FROM especiesfases WHERE xespeciesfasesidespecies = ?', [resolvedParams.id]);
+    
+    // Transform array to a map for easy frontend usage: { "1": 15, "2": 5 }
+    especie.fases_duracion = {};
+    for (const f of fases) {
+      especie.fases_duracion[f.idFase] = f.duracion;
+    }
+
+    return NextResponse.json({ especie });
   } catch (error: any) {
     console.error('Error fetching especie:', error);
     return NextResponse.json({ error: 'Error al obtener especie' }, { status: 500 });

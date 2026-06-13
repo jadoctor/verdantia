@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Refresh: 2026-06-12T19:48:15 (watermark and SEO correction)
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -6,12 +6,22 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getMediaUrl } from '@/lib/media-url';
 import YoutubePlayer from '@/components/ui/YoutubePlayer';
+import { auth } from '@/lib/firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function BlogPublicArticle() {
   const params = useParams();
   const router = useRouter();
   const [art, setArt] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const isPreview = window.location.search.includes('preview=true');
@@ -177,6 +187,23 @@ export default function BlogPublicArticle() {
       `}} />
 
       <div className="vblog">
+        {/* Public Top Navbar (only if not logged in) */}
+        {!isLoggedIn && (
+          <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+            <Link href="/" style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+              🌱 Verdantia
+            </Link>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <Link href="/login" style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 600, textDecoration: 'none' }}>
+                Iniciar Sesión
+              </Link>
+              <Link href={`/register?redirect=/blog/${params.slug}`} style={{ fontSize: '0.88rem', background: 'linear-gradient(135deg, #10b981, #0ea5e9)', color: 'white', padding: '8px 18px', borderRadius: '8px', fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 10px rgba(16,185,129,0.2)' }}>
+                Registrarse Gratis
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Breadcrumb */}
         <div className="vblog-bc">
           <a href="/">🏠 Verdantia</a> › <a href="/blog">Blog</a> › {art.blogtitulo}
@@ -287,8 +314,30 @@ export default function BlogPublicArticle() {
               <h2>{blogData.cta.titulo}</h2>
               <p>{blogData.cta.subtitulo}</p>
               <div className="vblog-cta-btns">
-                <button className="vblog-cta-btn vblog-cta-btn-primary">{blogData.cta.boton_primario}</button>
-                <button className="vblog-cta-btn vblog-cta-btn-secondary">{blogData.cta.boton_secundario}</button>
+                <button 
+                  className="vblog-cta-btn vblog-cta-btn-primary"
+                  onClick={() => {
+                    if (isLoggedIn) {
+                      router.push('/dashboard/perfil');
+                    } else {
+                      router.push(`/register?redirect=/blog/${params.slug}`);
+                    }
+                  }}
+                >
+                  {isLoggedIn ? blogData.cta.boton_primario : '🌱 Registrarse Gratis'}
+                </button>
+                <button 
+                  className="vblog-cta-btn vblog-cta-btn-secondary"
+                  onClick={() => {
+                    if (isLoggedIn) {
+                      router.push('/dashboard');
+                    } else {
+                      router.push('/');
+                    }
+                  }}
+                >
+                  {isLoggedIn ? blogData.cta.boton_secundario : '🔍 Explorar Verdantia'}
+                </button>
               </div>
             </div>
           )}

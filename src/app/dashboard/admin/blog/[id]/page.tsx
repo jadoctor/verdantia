@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Reload: 2026-06-12T19:53:05 (Dashboard refactor standards)
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -18,12 +18,9 @@ export default function BlogEditorDashboard() {
   const [originalBlog, setOriginalBlog] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserEmail(user?.email ?? null);
-    });
-    return () => unsubscribe();
-  }, []);
+  // -- Estados de Autoguardado y Pestañas (Estándares de Dashboard) --
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+  const [activeTab, setActiveTab] = useState<'contenido' | 'ajustes'>('contenido');
 
   // -- Photo Editor State --
   const [editingPhoto, setEditingPhoto] = useState<{index: number, url: string} | null>(null);
@@ -51,6 +48,47 @@ export default function BlogEditorDashboard() {
   });
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUserEmail(user?.email ?? null);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Función de Autoguardado Silencioso
+  const autoSave = async (currentBlog: any) => {
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`/api/admin/blog/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentBlog)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOriginalBlog(JSON.stringify(currentBlog));
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 1500);
+      } else {
+        setSaveStatus('idle');
+        console.error('Error al guardar automáticamente:', data.error);
+      }
+    } catch (e) {
+      setSaveStatus('idle');
+      console.error('Error de red al guardar automáticamente:', e);
+    }
+  };
+
+  // Efecto de Autoguardado con Debounce de 800ms
+  useEffect(() => {
+    if (blog && originalBlog && JSON.stringify(blog) !== originalBlog) {
+      const timer = setTimeout(() => {
+        autoSave(blog);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [blog, originalBlog]);
+
+  useEffect(() => {
     fetch(`/api/admin/blog/${params.id}`)
       .then(res => res.json())
       .then(data => {
@@ -64,6 +102,7 @@ export default function BlogEditorDashboard() {
         setLoading(false);
       });
   }, [params.id, router]);
+
 
   const handleSave = async (estado: 'borrador' | 'publicado') => {
     setSaving(true);
@@ -288,14 +327,15 @@ export default function BlogEditorDashboard() {
   const globalHasChanges = originalBlog !== JSON.stringify(blog);
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', width: '100%' }}>
+      <style dangerouslySetInnerHTML={{ __html: '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }' }} />
       {/* ── Navegación ── */}
       <div style={{ marginBottom: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
         <button onClick={() => router.push('/dashboard/admin/blog')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          📝 Volver al Blog
+          🔙 Volver al Listado de Blogs
         </button>
       </div>
 
@@ -303,8 +343,20 @@ export default function BlogEditorDashboard() {
       <div style={{ background: 'linear-gradient(135deg, #10b981, #047857)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800 }}>
-              Editar Artículo: {blog.blogtitulo || 'Nuevo Artículo'}
+            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <span>✍️ Editar Artículo: {blog.blogtitulo || 'Nuevo Artículo'}</span>
+              
+              {/* Indicadores de Autoguardado */}
+              {saveStatus === 'saving' && (
+                <span style={{ background: '#fef08a', color: '#854d0e', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid #eab308' }}>
+                  <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span> Guardando...
+                </span>
+              )}
+              {saveStatus === 'success' && (
+                <span style={{ background: '#d1fae5', color: '#065f46', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid #34d399' }}>
+                  ✓ Guardado
+                </span>
+              )}
             </h1>
             <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
               Estado actual: {blog.blogestado === 'publicado' ? '✅ Publicado' : '📝 Borrador'}
@@ -379,40 +431,84 @@ export default function BlogEditorDashboard() {
         </div>
       </div>
 
-      {/* ── Campos Meta (Título, Slug, Resumen) ── */}
-      <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div>
-            <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Título</label>
-            <input 
-              type="text" 
-              value={blog.blogtitulo} 
-              onChange={e => setBlog({...blog, blogtitulo: e.target.value})}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 'bold' }}
-            />
+
+      {/* ── Selector de Pestañas CSS (Estilo Premium) ── */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', marginBottom: '24px', paddingBottom: '2px' }}>
+        <button
+          onClick={(e) => { e.preventDefault(); setActiveTab('contenido'); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '10px 20px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            color: activeTab === 'contenido' ? '#10b981' : '#64748b',
+            borderBottom: activeTab === 'contenido' ? '3px solid #10b981' : '3px solid transparent',
+            transition: 'all 0.2s',
+            marginBottom: '-5px'
+          }}
+        >
+          📝 Contenido del Artículo
+        </button>
+        <button
+          onClick={(e) => { e.preventDefault(); setActiveTab('ajustes'); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '10px 20px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            color: activeTab === 'ajustes' ? '#10b981' : '#64748b',
+            borderBottom: activeTab === 'ajustes' ? '3px solid #10b981' : '3px solid transparent',
+            transition: 'all 0.2s',
+            marginBottom: '-5px'
+          }}
+        >
+          ⚙️ Ajustes y Difusión
+        </button>
+      </div>
+
+      {/* ── PESTAÑA: AJUSTES Y CONFIGURACIÓN (Ocultada mediante CSS) ── */}
+      <div style={{ display: activeTab === 'ajustes' ? 'block' : 'none' }}>
+        {/* ── Campos Meta (Título, Slug, Resumen) ── */}
+        <div style={{ background: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Título</label>
+              <input 
+                type="text" 
+                value={blog.blogtitulo} 
+                onChange={e => setBlog({...blog, blogtitulo: e.target.value})}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 'bold' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Slug (URL)</label>
+              <input 
+                type="text" 
+                value={blog.blogslug} 
+                onChange={e => setBlog({...blog, blogslug: e.target.value})}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              />
+            </div>
           </div>
           <div>
-            <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Slug (URL)</label>
-            <input 
-              type="text" 
-              value={blog.blogslug} 
-              onChange={e => setBlog({...blog, blogslug: e.target.value})}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+            <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Resumen</label>
+            <textarea 
+              value={blog.blogresumen} 
+              onChange={e => setBlog({...blog, blogresumen: e.target.value})}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '60px', resize: 'vertical' }}
             />
           </div>
-        </div>
-        <div>
-          <label style={{ fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Resumen</label>
-          <textarea 
-            value={blog.blogresumen} 
-            onChange={e => setBlog({...blog, blogresumen: e.target.value})}
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '60px', resize: 'vertical' }}
-          />
         </div>
       </div>
 
-      {/* ── Vista Previa Editable (estilo blog público) ── */}
-      {(() => {
+      {/* ── PESTAÑA: CONTENIDO (Ocultada mediante CSS) ── */}
+      <div style={{ display: activeTab === 'contenido' ? 'block' : 'none' }}>
+        {/* ── Vista Previa Editable (estilo blog público) ── */}
+        {(() => {
         try {
           const blogData = JSON.parse(blog.blogcontenido);
           const heroImg = blogData.hero_imagen || null;
@@ -429,13 +525,13 @@ export default function BlogEditorDashboard() {
           const secImgIdxs = (blogData.secciones || []).map((sec: any) => sec.imagen_ruta ? imgIdx++ : -1);
 
           return (
-            <div style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', maxWidth: '860px', margin: '0 auto', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
               {/* Barra indicadora */}
               <div style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', padding: '8px 20px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 ✏️ MODO EDITOR — Los cambios se reflejan en tiempo real
               </div>
 
-              <div style={{ padding: '32px 28px', maxWidth: '860px', margin: '0 auto' }}>
+              <div style={{ padding: '32px 28px' }}>
                 {/* HEADER con hero */}
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '32px' }}>
                   {heroImg && (
@@ -637,6 +733,7 @@ export default function BlogEditorDashboard() {
           );
         }
       })()}
+      </div>
 
       {/* Editor Modal */}
       {editingPhoto && (() => {

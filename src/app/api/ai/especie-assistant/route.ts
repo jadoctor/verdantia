@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserByEmail } from '@/lib/auth';
+import pool from '@/lib/db';
 
 async function authenticateSuperadmin(request: Request) {
   const email = request.headers.get('x-user-email');
@@ -27,25 +28,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'API key de IA no configurada' }, { status: 500 });
     }
 
+    const [fasesRows]: any = await pool.query("SELECT idfasescultivo, fasescultivonombre FROM fasescultivo WHERE fasescultivotipo = 'Fase' ORDER BY fasescultivoorden ASC");
+    const fasesStr = fasesRows.map((f: any) => `- ID ${f.idfasescultivo}: ${f.fasescultivonombre}`).join('\n');
+
     const prompt = `
 Eres un experto botánico y agrónomo. Necesito que me devuelvas EXCLUSIVAMENTE un objeto JSON válido con los datos de cultivo de la especie "${nombre}". 
 No incluyas markdown, ni comillas invertidas, solo el JSON puro.
 ${customPrompt ? `\nINSTRUCCIONES ADICIONALES DEL USUARIO:\n${customPrompt}\n` : ''}
-
 
 Las claves esperadas en el JSON son:
 - especiesnombrecientifico (string, ej: Solanum lycopersicum)
 - especiesfamilia (string, ej: Solanaceae)
 - especiestipo (array de strings, elige entre: hortaliza, fruta, aromatica, leguminosa, cereal)
 - especiesciclo (array de strings, elige entre: anual, bianual, perenne)
-- especiesdiasgerminacion (entero aproximado, ej: 8)
+- fases_duracion (objeto cuyas claves son los IDs de las siguientes fases, y sus valores son la duración en DÍAS. Solo incluye las fases que apliquen al ciclo normal de la planta, omitiendo las que no apliquen poniendo 0 o no incluyéndolas. OBLIGATORIO. Estas son las fases disponibles:
+${fasesStr}
+Ejemplo: {"1": 8, "2": 30, "3": 45})
 - especiesviabilidadsemilla (entero aproximado en años, ej: 4)
 - especiespeso1000semillas (numero, usa punto decimal solo si es necesario, sin ceros extra, ej: 1.5 o 5)
-- especiesdiashastatrasplante (entero aproximado en días desde la siembra, ej: 30)
-- especiesdiascrecimientofirme (entero aproximado en días post-trasplante o post-siembra directa en que la planta ya es robusta, ej: 45)
-- especiesdiashastafructificacion (entero aproximado en días post-trasplante o post-siembra directa, ej: 75)
-- especiesdiashastarecoleccion (entero aproximado en días post-trasplante o post-siembra directa, ej: 90)
-- especiesduraciontotal (entero aproximado en días totales del ciclo hasta el fin de la planta, ej: 150)
 - especiestemperaturaminima (numero decimal, ej: 10.5)
 - especiestemperaturaoptima (numero decimal, ej: 25.0)
 - especiestemperaturamaxima (numero decimal, ej: 35.0)

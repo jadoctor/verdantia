@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media-url';
 import './perfil.css';
 import BancalesSettings from '@/components/user/BancalesSettings';
@@ -1394,7 +1395,8 @@ function PerfilContent() {
           { id: 'bancales', label: '🚜 Bancales (SIGPAC)' },
           { id: 'seguridad', label: '🔒 Seguridad & Privacidad' },
           { id: 'suscripcion', label: '⭐ Suscripción' },
-          { id: 'logros', label: '🏆 Logros y Roles' },
+          { id: 'logros', label: '🏆 Logros' },
+          { id: 'roles', label: '👑 Roles' },
           { id: 'cuenta', label: '⚠️ Eliminar Cuenta' }
         ].map(tab => {
           const isActive = activeTab === tab.id;
@@ -2452,6 +2454,11 @@ function PerfilContent() {
                     <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌔</div>
                     <h4 style={{ margin: '0 0 5px 0', color: tipoCalendario === 'Lunar' ? '#1d4ed8' : '#334155', fontWeight: 700 }}>Calendario Lunar</h4>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Añade la influencia gravitacional y fases de la luna para optimizar la savia.</p>
+                    <div style={{ marginTop: '10px' }}>
+                      <Link href="/blog/calendario-lunar" style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }} onClick={(e) => e.stopPropagation()}>
+                        Leer Guía Práctica del Calendario Lunar
+                      </Link>
+                    </div>
                     <span style={{ display: 'inline-block', marginTop: '8px', fontSize: '0.7rem', padding: '3px 8px', background: tipoCalendario === 'Lunar' ? '#bfdbfe' : '#dbeafe', color: tipoCalendario === 'Lunar' ? '#1e40af' : '#1d4ed8', borderRadius: '10px', fontWeight: 'bold' }}>Requiere Plan Esencial</span>
                   </div>
 
@@ -2980,41 +2987,51 @@ function PerfilContent() {
       )}
 
       {/* ═══════════════════════════════════════════ */}
-      {/* 4. LOGROS Y ROLES                            */}
+      {/* 4. LOGROS                                   */}
       {/* ═══════════════════════════════════════════ */}
       {activeTab === 'logros' && (
         <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#d97706', fontSize: '1.1rem', fontWeight: 800 }}>🏆 Logros y Roles</h3>
+          <h3 style={{ margin: '0 0 16px 0', color: '#d97706', fontSize: '1.1rem', fontWeight: 800 }}>🏆 Logros</h3>
           <div className="accordion-body">
-          <label className="section-label">Roles Actuales Aprobados</label>
-          <div className="roles-display">
-{roles.map((rol) => (
-              <span key={rol} className="role-tag">✅ {rol}</span>
-            ))}
+            <label className="section-label">Vitrina Temporal de Logros</label>
+            <div className="achievements-timeline" style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '10px' }}>
+              {achievementsHistory.length > 0 ? (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, borderLeft: '2px solid var(--accent-amber)', marginLeft: '10px' }}>
+                  {achievementsHistory.map((logro, i) => (
+                    <li key={i} style={{ paddingLeft: '20px', position: 'relative', marginBottom: i === achievementsHistory.length - 1 ? '0' : '15px' }}>
+                      <span style={{
+                        position: 'absolute', left: '-11px', top: '2px', width: '20px', height: '20px',
+                        background: 'var(--accent-amber)', borderRadius: '50%', border: '4px solid var(--bg-card)'
+                      }}></span>
+                      <strong style={{ color: 'var(--accent-amber)', fontSize: '1.05rem', display: 'block' }}>{logro.nombre_logro}</strong>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        <div>Inicio: {new Date(logro.fecha_desbloqueo).toLocaleDateString('es-ES')} a las {new Date(logro.fecha_desbloqueo).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</div>
+                        <div>Fin: {logro.fecha_fin ? `${new Date(logro.fecha_fin).toLocaleDateString('es-ES')} a las ${new Date(logro.fecha_fin).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}` : 'En curso'}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Aún no has desbloqueado ningún logro. ¡Sigue interactuando en la comunidad!</p>
+              )}
+            </div>
           </div>
+        </div>
+      )}
 
-          <label className="section-label" style={{ marginTop: '20px' }}>Vitrina Temporal de Logros</label>
-          <div className="achievements-timeline" style={{ background: 'var(--bg-card)', padding: '15px', borderRadius: '12px', border: '1px solid var(--border-color)', marginTop: '10px' }}>
-            {achievementsHistory.length > 0 ? (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, borderLeft: '2px solid var(--accent-amber)', marginLeft: '10px' }}>
-                {achievementsHistory.map((logro, i) => (
-                  <li key={i} style={{ paddingLeft: '20px', position: 'relative', marginBottom: i === achievementsHistory.length - 1 ? '0' : '15px' }}>
-                    <span style={{
-                      position: 'absolute', left: '-11px', top: '2px', width: '20px', height: '20px',
-                      background: 'var(--accent-amber)', borderRadius: '50%', border: '4px solid var(--bg-card)'
-                    }}></span>
-                    <strong style={{ color: 'var(--accent-amber)', fontSize: '1.05rem', display: 'block' }}>{logro.nombre_logro}</strong>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      <div>Inicio: {new Date(logro.fecha_desbloqueo).toLocaleDateString('es-ES')} a las {new Date(logro.fecha_desbloqueo).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</div>
-                      <div>Fin: {logro.fecha_fin ? `${new Date(logro.fecha_fin).toLocaleDateString('es-ES')} a las ${new Date(logro.fecha_fin).toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}` : 'En curso'}</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Aún no has desbloqueado ningún logro. ¡Sigue interactuando en la comunidad!</p>
-            )}
-          </div>
+      {/* ═══════════════════════════════════════════ */}
+      {/* 4B. ROLES                                   */}
+      {/* ═══════════════════════════════════════════ */}
+      {activeTab === 'roles' && (
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.1rem', fontWeight: 800 }}>👑 Roles</h3>
+          <div className="accordion-body">
+            <label className="section-label">Roles Actuales Aprobados</label>
+            <div className="roles-display" style={{ marginTop: '10px' }}>
+              {roles.map((rol) => (
+                <span key={rol} className="role-tag">✅ {rol}</span>
+              ))}
+            </div>
           </div>
         </div>
       )}

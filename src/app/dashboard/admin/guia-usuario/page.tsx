@@ -2356,7 +2356,7 @@ export default function GuiaUsuarioPage() {
 
       <Section id="s10" title="10. Taxonomía y Fases de Cultivo">
         <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6 }}>
-          La plataforma emplea una taxonomía agronómica de 12 fases (incluyendo estados finales) que permite definir con precisión milimétrica el estado vital de una planta y asignarle tareas específicas (Labores). Es crucial entender la diferencia técnica entre <strong>"Hitos"</strong> (momentos puntuales) y <strong>"Periodos"</strong> (rangos temporales de latencia o crecimiento).
+          La plataforma emplea una taxonomía agronómica de 16 fases (incluyendo estados finales) que permite definir con precisión milimétrica el estado vital de una planta y asignarle tareas específicas (Labores). Es crucial entender la diferencia técnica entre <strong>"Hitos"</strong> (momentos puntuales) y <strong>"Periodos"</strong> (rangos temporales de latencia o crecimiento).
         </p>
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.3rem' }}>10.1. El Ciclo de Vida (Orden Cronológico Estricto)</h3>
@@ -2374,85 +2374,113 @@ export default function GuiaUsuarioPage() {
           <tbody>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>1</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>planificado</td>
-              <td style={{ padding: '12px' }}>📅 Pre-siembra</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Registrado en sistema, semilla sin usar.</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>creacion</td>
+              <td style={{ padding: '12px' }}>📍 1. Creación</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Momento en el que el cultivo se crea en el sistema.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>2</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>siembra</td>
-              <td style={{ padding: '12px' }}>⛏️ Siembra</td>
-              <td style={{ padding: '12px' }}>Hito</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Acto físico de meter semilla en sustrato.</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>planificacion</td>
+              <td style={{ padding: '12px' }}>⏳ 2. Planificación</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Periodo de espera y preparación antes de adquirir o sembrar.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>3</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>postsiembra</td>
-              <td style={{ padding: '12px' }}>⏳ Post-siembra</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Latencia invisible bajo tierra.</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>siembra</td>
+              <td style={{ padding: '12px' }}>📍 3. Siembra (Semilla)</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Acto de plantar la semilla en sustrato.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>4</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>germinacion</td>
-              <td style={{ padding: '12px' }}>🌱 Germinación</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>adquisicion</td>
+              <td style={{ padding: '12px' }}>📍 4. Adquisición (Plantón)</td>
               <td style={{ padding: '12px' }}>Hito</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Asoma el primer brote a la superficie.</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Acto de adquirir un plantón ya crecido.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>5</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>semillero</td>
-              <td style={{ padding: '12px' }}>🪴 Semillero</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Desarrollo en entorno protegido.</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>pregerminacion</td>
+              <td style={{ padding: '12px' }}>⏳ 5. Pre-germinación</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Periodo bajo tierra esperando brotar.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>6</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>trasplante</td>
-              <td style={{ padding: '12px' }}>🚚 Trasplante</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>germinacion</td>
+              <td style={{ padding: '12px' }}>📍 6. Germinación</td>
               <td style={{ padding: '12px' }}>Hito</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Mudanza al suelo o bancal definitivo.</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Asoma el primer brote visible.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>7</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>enraizamiento</td>
-              <td style={{ padding: '12px' }}>🪵 Post-Trasplante</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Estrés y desarrollo radicular primario.</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>postgerminacion</td>
+              <td style={{ padding: '12px' }}>⏳ 7. Post-germinación</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Primeros días de vida muy vulnerables (cotiledones).</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>8</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>crecimiento</td>
-              <td style={{ padding: '12px' }}>🌿 Crecimiento Veg.</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Desarrollo masivo de tallos y hojas (Nitrógeno).</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>hitoplanton</td>
+              <td style={{ padding: '12px' }}>📍 8. Alcanza Rango Plantón</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>La planta desarrolla hojas verdaderas.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>9</td>
-              <td style={{ padding: '12px', fontFamily: 'monospace' }}>floracion</td>
-              <td style={{ padding: '12px' }}>🌸 Floración</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Polinización y cuajado (Fósforo/Potasio).</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>semillero</td>
+              <td style={{ padding: '12px' }}>⏳ 9. Etapa de Plantón</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Crecimiento seguro en semillero antes de trasplante.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>10</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>trasplante</td>
+              <td style={{ padding: '12px' }}>📍 10. Plantación</td>
+              <td style={{ padding: '12px' }}>Hito</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Paso a ubicación definitiva (tierra/maceta final).</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>11</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>enraizamiento</td>
+              <td style={{ padding: '12px' }}>⏳ 11. Posplantación</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Periodo de estrés post-trasplante.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>12</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>crecimiento</td>
+              <td style={{ padding: '12px' }}>⏳ 12. Crecimiento Veg.</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Desarrollo masivo de tallos y hojas.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>13</td>
+              <td style={{ padding: '12px', fontFamily: 'monospace' }}>floracion</td>
+              <td style={{ padding: '12px' }}>⏳ 13. Floración</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Aparición de flores y cuajado de frutos.</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>14</td>
               <td style={{ padding: '12px', fontFamily: 'monospace' }}>cosecha</td>
-              <td style={{ padding: '12px' }}>🧺 Cosecha</td>
-              <td style={{ padding: '12px' }}>Periodo</td>
-              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Época de recolección de frutos.</td>
+              <td style={{ padding: '12px' }}>⏳ 14. Cosecha</td>
+              <td style={{ padding: '12px' }}>Fase</td>
+              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem' }}>Periodo de recolección continua.</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#fef2f2' }}>
-              <td style={{ padding: '12px', fontWeight: 'bold' }}>11</td>
+              <td style={{ padding: '12px', fontWeight: 'bold' }}>15</td>
               <td style={{ padding: '12px', fontFamily: 'monospace' }}>finalizado</td>
-              <td style={{ padding: '12px' }}>🏁 Finalizado</td>
+              <td style={{ padding: '12px' }}>🏁 15. Finalizado</td>
               <td style={{ padding: '12px' }}>Hito Final</td>
               <td style={{ padding: '12px', color: '#b91c1c', fontSize: '0.9rem' }}>Fin natural o arrancado. `esfin = 1`</td>
             </tr>
             <tr style={{ background: '#fef2f2' }}>
               <td style={{ padding: '12px', fontWeight: 'bold' }}>99</td>
               <td style={{ padding: '12px', fontFamily: 'monospace' }}>perdido</td>
-              <td style={{ padding: '12px' }}>🥀 Perdido</td>
+              <td style={{ padding: '12px' }}>🥀 99. Perdido</td>
               <td style={{ padding: '12px' }}>Hito Final</td>
               <td style={{ padding: '12px', color: '#b91c1c', fontSize: '0.9rem' }}>Fracaso (plaga, helada). `esfin = 1`</td>
             </tr>

@@ -33,15 +33,37 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { fasescultivoclave, fasescultivonombre, fasescultivoorden, fasescultivocolor, fasescultivoicono, fasescultivodescripcion, fasescultivoesfin } = body;
+    const { 
+      fasescultivoclave, 
+      fasescultivonombre, 
+      fasescultivoorden, 
+      fasescultivocolor, 
+      fasescultivoicono, 
+      fasescultivodescripcion, 
+      fasescultivoesfin, 
+      fasescultivotipo,
+      fasescultivodesde,
+      fasescultivohasta
+    } = body;
 
     if (!fasescultivoclave || !fasescultivonombre || !fasescultivoorden) {
       return NextResponse.json({ error: 'Clave, nombre y orden son obligatorios' }, { status: 400 });
     }
 
     const query = `
-      INSERT INTO fasescultivo (fasescultivoclave, fasescultivonombre, fasescultivoorden, fasescultivocolor, fasescultivoicono, fasescultivodescripcion, fasescultivoesfin) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO fasescultivo (
+        fasescultivoclave, 
+        fasescultivonombre, 
+        fasescultivoorden, 
+        fasescultivocolor, 
+        fasescultivoicono, 
+        fasescultivodescripcion, 
+        fasescultivoesfin, 
+        fasescultivotipo,
+        fasescultivodesde,
+        fasescultivohasta
+      ) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       fasescultivoclave, 
@@ -50,7 +72,10 @@ export async function POST(request: Request) {
       fasescultivocolor || '#3b82f6', 
       fasescultivoicono || '🌱', 
       fasescultivodescripcion || null,
-      fasescultivoesfin ? 1 : 0
+      fasescultivoesfin ? 1 : 0,
+      fasescultivotipo || 'Fase',
+      fasescultivodesde || null,
+      fasescultivohasta || null
     ];
 
     const [result]: any = await pool.query(query, params);

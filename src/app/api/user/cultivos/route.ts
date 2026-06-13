@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getUserByEmail } from '@/lib/auth';
+import { autoUpdateCropStates } from '@/lib/cultivos-utils';
 
 // GET /api/user/cultivos — Listar cultivos del usuario
 export async function GET(request: Request) {
@@ -14,6 +15,9 @@ export async function GET(request: Request) {
   const variedadId = url.searchParams.get('variedadId');
 
   try {
+    // Auto-update crops state based on current date
+    await autoUpdateCropStates(pool, user.id);
+
     let sql = `
       SELECT 
         c.idcultivos,
@@ -28,10 +32,6 @@ export async function GET(request: Request) {
         c.cultivosmetodo,
         c.cultivosestado,
         c.cultivosfechainicio,
-        c.cultivosfechagerminacion,
-        c.cultivosfechatrasplante,
-        c.cultivosfecharecoleccion,
-        c.cultivosfechafinalizacion,
         c.cultivoscantidad,
         c.cultivosubicacion,
         c.cultivosobservaciones,

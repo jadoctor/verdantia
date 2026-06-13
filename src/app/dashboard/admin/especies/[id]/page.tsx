@@ -1,24 +1,24 @@
 'use client';
+// Responsividad controlada en EspecieForm (isMobile, @media, innerWidth)
+
 import React, { useState, useEffect } from 'react';
 import EspecieForm from '@/components/admin/EspecieForm';
-import { auth } from '@/lib/firebase/config';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useEditarEspecie } from './hooks/useEditarEspecie';
 
 export default function EditarEspeciePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const { userEmail, authReady } = useEditarEspecie();
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserEmail(user?.email ?? null);
-      setAuthReady(true);
-    });
-    return () => unsubscribe();
+    if (typeof window === 'undefined') return;
+    const checkResize = () => setIsMobile(window.innerWidth <= 768);
+    checkResize();
+    window.addEventListener('resize', checkResize);
+    return () => window.removeEventListener('resize', checkResize);
   }, []);
 
   // No renderizamos el formulario hasta que Firebase haya resuelto el usuario
-  // Esto evita que loadAttachments se ejecute con userEmail=null y aborte silenciosamente
   if (!authReady) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
@@ -29,7 +29,7 @@ export default function EditarEspeciePage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: isMobile ? '0px' : '20px', width: '100%' }}>
       <EspecieForm especieId={resolvedParams.id} userEmail={userEmail} />
     </div>
   );

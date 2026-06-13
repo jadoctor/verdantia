@@ -1,14 +1,29 @@
 'use client';
+// Force compilation refresh for 100% unique database phase icons
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
+
+// Se eliminan los mapeos estáticos para usar los nombres enteros reales de la base de datos
 
 export default function FasesCultivoAdminPage() {
   const router = useRouter();
   const [fases, setFases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      handleResize();
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -33,8 +48,38 @@ export default function FasesCultivoAdminPage() {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      loading && setLoading(false);
     }
+  };
+
+  const formatHitos = (hitosString: string) => {
+    if (!hitosString) return '—';
+    return hitosString.split(',').map(key => {
+      const cleanKey = key.trim();
+      const found = fases.find(f => f.fasescultivoclave === cleanKey);
+      if (found) {
+        return `${found.fasescultivoicono || '📍'} ${found.fasescultivonombre}`;
+      }
+      return cleanKey;
+    }).join(' o ');
+  };
+
+  const getFasesIniciadasPorHito = (hitoClave: string) => {
+    const iniciadas = fases.filter(f => 
+      f.fasescultivotipo === 'Fase' && 
+      (f.fasescultivodesde || '').split(',').map((k: any) => k.trim()).includes(hitoClave)
+    );
+    if (iniciadas.length === 0) return '—';
+    return iniciadas.map(f => `${f.fasescultivoicono || '🌱'} ${f.fasescultivonombre}`).join(', ');
+  };
+
+  const getFasesFinalizadasPorHito = (hitoClave: string) => {
+    const finalizadas = fases.filter(f => 
+      f.fasescultivotipo === 'Fase' && 
+      (f.fasescultivohasta || '').split(',').map((k: any) => k.trim()).includes(hitoClave)
+    );
+    if (finalizadas.length === 0) return '—';
+    return finalizadas.map(f => `${f.fasescultivoicono || '🌱'} ${f.fasescultivonombre}`).join(', ');
   };
 
   useEffect(() => {
@@ -71,26 +116,33 @@ export default function FasesCultivoAdminPage() {
   };
 
   return (
-    <div className="dashboard-content" style={{ padding: '20px' }}>
-      <div style={{ marginBottom: '16px' }}>
+    <div className="dashboard-content" style={{ padding: isMobile ? '10px 0' : '20px', width: '100%' }}>
+      <div style={{ marginBottom: '16px', paddingLeft: isMobile ? '10px' : 0 }}>
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
       </div>
       
-      {/* ── Header ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+      {/* ── Header responsivo ── */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #0f766e, #10b981)', 
+        borderRadius: isMobile ? '12px' : '16px', 
+        padding: isMobile ? '20px' : '24px 28px', 
+        marginBottom: '24px', 
+        color: 'white',
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '16px' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800 }}>🌱 Gestión de Fases de Cultivo</h1>
-            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? '1.35rem' : '1.6rem', fontWeight: 800 }}>🌱 Gestión de Fases de Cultivo</h1>
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.85rem' }}>
               Catálogo centralizado del ciclo de vida para toda la comunidad Verdantia
             </p>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
             <button 
               onClick={() => handleEdit(null)}
-              style={{ padding: '8px 16px', borderRadius: '8px', background: 'white', color: '#0f766e', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+              style={{ width: isMobile ? '100%' : 'auto', textAlign: 'center', padding: '8px 16px', borderRadius: '8px', background: 'white', color: '#0f766e', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
             >
               ➕ Nueva Fase
             </button>
@@ -98,18 +150,49 @@ export default function FasesCultivoAdminPage() {
         </div>
       </div>
 
-      {loading ? (
-        <p>Cargando fases...</p>
-      ) : (
-        <div style={{ background: 'white', borderRadius: '12px', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <style dangerouslySetInnerHTML={{ __html: '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }' }} />
+      
+      {/* Envoltura scrollable */}
+      <div style={{ position: 'relative', background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', minHeight: '200px', width: '100%' }}>
+        {/* Loading Overlay */}
+        {loading && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(255, 255, 255, 0.65)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+            backdropFilter: 'blur(1px)'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #cbd5e1',
+              borderTopColor: '#0f766e',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite'
+            }} />
+            <span style={{ marginTop: '10px', fontSize: '0.85rem', color: '#0f766e', fontWeight: 'bold' }}>Cargando fases...</span>
+          </div>
+        )}
+
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s ease-in-out', minWidth: isMobile ? '900px' : '100%' }}>
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
                 <th style={{ padding: '12px', width: '60px', textAlign: 'center' }}>Orden</th>
                 <th style={{ padding: '12px', width: '60px', textAlign: 'center' }}>Icono</th>
                 <th style={{ padding: '12px' }}>Nombre</th>
                 <th style={{ padding: '12px' }}>Clave Interna</th>
-                <th style={{ padding: '12px' }}>Color UI</th>
+                <th style={{ padding: '12px' }}>Tipo</th>
+                <th style={{ padding: '12px' }}>Desde</th>
+                <th style={{ padding: '12px' }}>Hasta</th>
                 <th style={{ padding: '12px' }}>Descripción</th>
                 <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
               </tr>
@@ -132,25 +215,49 @@ export default function FasesCultivoAdminPage() {
                   </td>
                   <td style={{ padding: '12px', fontWeight: 'bold', color: '#1e293b' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ 
-                        width: '12px', height: '12px', borderRadius: '50%', 
-                        backgroundColor: f.fasescultivocolor, display: 'inline-block' 
-                      }}></span>
                       {f.fasescultivonombre}
                       {f.fasescultivoesfin ? (
                         <span style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                          🏁 Fase Final
+                          🛑 Fase Final
                         </span>
                       ) : null}
                     </div>
                   </td>
-                  <td style={{ fontFamily: 'monospace', color: '#0f766e', background: '#ccfbf1', borderRadius: '4px', padding: '4px 8px', display: 'inline-block', margin: '8px 12px' }}>
-                    {f.fasescultivoclave}
+                  <td style={{ padding: '12px' }}>
+                    <span style={{ fontFamily: 'monospace', color: '#0f766e', background: '#ccfbf1', borderRadius: '4px', padding: '4px 8px', fontSize: '0.85rem' }}>
+                      {f.fasescultivoclave}
+                    </span>
                   </td>
-                  <td style={{ padding: '12px', color: '#64748b' }}>
-                    {f.fasescultivocolor}
+                  <td style={{ padding: '12px' }}>
+                    <span style={{
+                      background: f.fasescultivotipo === 'Hito' || f.fasescultivotipo === 'Hito Final' ? '#e0e7ff' : '#fef3c7',
+                      color: f.fasescultivotipo === 'Hito' || f.fasescultivotipo === 'Hito Final' ? '#4338ca' : '#d97706',
+                      padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold'
+                    }}>
+                      {f.fasescultivotipo || 'Fase'}
+                    </span>
                   </td>
-                  <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <td style={{ padding: '12px', color: '#334155', fontSize: '0.85rem' }}>
+                    {f.fasescultivotipo === 'Fase' ? (
+                      formatHitos(f.fasescultivodesde)
+                    ) : (
+                      <div style={{ color: '#0f766e', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '0.72rem', textTransform: 'uppercase', color: '#0d9488' }}>Inicia:</span>
+                        <span>{getFasesIniciadasPorHito(f.fasescultivoclave)}</span>
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '12px', color: '#334155', fontSize: '0.85rem' }}>
+                    {f.fasescultivotipo === 'Fase' ? (
+                      formatHitos(f.fasescultivohasta)
+                    ) : (
+                      <div style={{ color: '#b91c1c', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '0.72rem', textTransform: 'uppercase', color: '#dc2626' }}>Finaliza:</span>
+                        <span>{getFasesFinalizadasPorHito(f.fasescultivoclave)}</span>
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '12px', color: '#64748b', fontSize: '0.9rem', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {f.fasescultivodescripcion || '-'}
                   </td>
                   <td style={{ padding: '12px' }}>
@@ -168,15 +275,15 @@ export default function FasesCultivoAdminPage() {
                   </td>
                 </tr>
               ))}
-              {fases.length === 0 && (
+              {fases.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No hay fases de cultivo registradas.</td>
+                  <td colSpan={9} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>No hay fases de cultivo registradas.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
     </div>
   );
 }

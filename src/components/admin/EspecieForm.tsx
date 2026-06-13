@@ -29,11 +29,19 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const tabParam = searchParams.get('tab');
   const focusParam = searchParams.get('focus');
 
-  const defaultFormData = {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkResize = () => setIsMobile(window.innerWidth <= 768);
+    checkResize();
+    window.addEventListener('resize', checkResize);
+    return () => window.removeEventListener('resize', checkResize);
+  }, []);
+
+    const defaultFormData = {
     especiesnombre: '', especiesnombrecientifico: '', especiesfamilia: '',
     especiestipo: [], especiesciclo: [], especiescolor: '', especiestamano: 'mediano',
-    especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '',
-    especiesdiashastafructificacion: '', especiesdiascrecimientofirme: '', especiesdiashastarecoleccion: '',
+    especiesviabilidadsemilla: '',
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
     especiesmarcoplantas: '', especiesmarcofilas: '', especiesmarcomargen: '', especiesprofundidadsiembra: '',
     especiesfechasemillerodesde: '', especiesfechasemillerohasta: '',
@@ -44,7 +52,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
     especiesicono: '',    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '', especiesprofundidadtrasplante: '',
     especiesphsuelo: '', especiesnecesidadriego: '', especiestiposiembra: [], especiestiposiembrapreferente: [],
-    especiesvolumenmaceta: '', especiesemillerovolumendesde: '', especiesemillerovolumenhasta: '', especiesluzsolar: '', especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: ''
+    especiesvolumenmaceta: '', especiesemillerovolumendesde: '', especiesemillerovolumenhasta: '', especiesluzsolar: '', especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: '',
+    especiespreparacionconvencional: '', especiespreparacionminima: '', especiespreparacionnolaboreo: '',
+    especiespeso1000semillas: '',
+    especieslunarfasesiembra: '',
+    especieslunarfasetrasplante: '',
+    especieslunarobservaciones: '',
+    especiesbiodinamicafasesiembra: '',
+    especiesbiodinamicafasetrasplante: '',
+    fases_duracion: {}
   };
 
   const [formData, setFormData] = useState<any>(defaultFormData);
@@ -85,6 +101,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   // -- Relaciones State --
   const [masterEspecies, setMasterEspecies] = useState<any[]>([]);
   const [masterPlagas, setMasterPlagas] = useState<any[]>([]);
+  const [masterFases, setMasterFases] = useState<any[]>([]);
 
   // -- Sinonimos State --
   const [sinonimos, setSinonimos] = useState<any[]>([]);
@@ -100,9 +117,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   // -- Synonym AI Config Panel --
   
-  useEffect(() => {
+    useEffect(() => {
     if (tabParam) {
-      setActiveTab(tabParam);
+      const mappedTabs: Record<string, string> = {
+        sinonimos: 'taxonomia',
+        fisiologia: 'cultivo',
+        calendarios: 'fases',
+        plagas: 'asociaciones',
+        autosuficiencia: 'textos'
+      };
+      setActiveTab(mappedTabs[tabParam] || tabParam);
     }
   }, [tabParam]);
   const [showSinonimosConfig, setShowSinonimosConfig] = useState(false);
@@ -159,7 +183,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [editingPauta, setEditingPauta] = useState<any>(null);
   const [pautaForm, setPautaForm] = useState({
     xlaborespautaidlabores: '',
-    laborespautafase: 'germinacion',
+    laborespautafase: 'planificacion',
     laborespautafrecuenciadias: '',
     laborespautaoffset: 0,
     laborespautanotasia: '',
@@ -215,6 +239,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       fetch('/api/admin/labores', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterLabores(data.labores || []));
+      fetch('/api/admin/fases', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterFases(data.fases || []));
       fetch('/api/admin/ajustes/idiomas')
         .then(res => res.json())
         .then(data => setMasterIdiomas(Array.isArray(data) ? data : []));
@@ -302,7 +329,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           especiestiposiembra: especie.especiestiposiembra ? especie.especiestiposiembra.split(',') : [],
           especiestiposiembrapreferente: especie.especiestiposiembrapreferente ? especie.especiestiposiembrapreferente.split(',') : [],
           especiesviabilidadsemilla: especie.especiesviabilidadsemilla !== null ? parseFloat(especie.especiesviabilidadsemilla).toString() : '',
-          especiespeso1000semillas: especie.especiespeso1000semillas !== null ? parseFloat(especie.especiespeso1000semillas).toString() : ''
+          especiespeso1000semillas: especie.especiespeso1000semillas !== null ? parseFloat(especie.especiespeso1000semillas).toString() : '',
+          especiespreparacionconvencional: especie.especiespreparacionconvencional !== null && especie.especiespreparacionconvencional !== undefined ? parseInt(especie.especiespreparacionconvencional, 10).toString() : '',
+          especiespreparacionminima: especie.especiespreparacionminima !== null && especie.especiespreparacionminima !== undefined ? parseInt(especie.especiespreparacionminima, 10).toString() : '',
+          especiespreparacionnolaboreo: especie.especiespreparacionnolaboreo !== null && especie.especiespreparacionnolaboreo !== undefined ? parseInt(especie.especiespreparacionnolaboreo, 10).toString() : ''
         };
         setFormData(parsedEspecie);
         setInitialData(parsedEspecie);
@@ -382,6 +412,31 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
     } catch (e) {
       console.error('Error in autoSaveField:', e);
+      setSaveStatus('idle');
+    }
+  };
+
+  const autoSaveFases = async (fasesData: any) => {
+    if (!especieId || !userEmail) return;
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`/api/admin/especies/${especieId}/fases`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail
+        },
+        body: JSON.stringify({ fases_duracion: fasesData })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('idle');
+      }
+    } catch (e) {
+      console.error('Error in autoSaveFases:', e);
       setSaveStatus('idle');
     }
   };
@@ -529,16 +584,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     {
       id: 'fisiologia',
       title: '🌱 Fisiología',
-      keys: ['especiesdiasgerminacion', 'especiesdiashastatrasplante', 'especiesviabilidadsemilla', 'especiespeso1000semillas', 'especiesdiascrecimientofirme', 'especiesdiashastafructificacion', 'especiesdiashastarecoleccion', 'especiesduraciontotal', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
+      keys: ['fases_duracion', 'especiesviabilidadsemilla', 'especiespeso1000semillas', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
       labels: {
-        especiesdiasgerminacion: 'Días Germinación',
-        especiesdiashastatrasplante: 'Días hasta Trasplante',
+        fases_duracion: 'Duración de Fases',
         especiesviabilidadsemilla: 'Viabilidad Semilla',
         especiespeso1000semillas: 'Peso de 1.000 Semillas (g)',
-        especiesdiascrecimientofirme: 'Días a Crec. Firme',
-        especiesdiashastafructificacion: 'Días a Fruct.',
-        especiesdiashastarecoleccion: 'Días a Recol.',
-        especiesduraciontotal: 'Duración Total',
         especiestemperaturaminima: 'Temp. Mínima',
         especiestemperaturaoptima: 'Temp. Óptima',
         especiestemperaturamaxima: 'Temp. Máxima',
@@ -639,6 +689,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
     });
     setFormData((prev: any) => ({ ...prev, ...updates }));
+
+    if (updates['fases_duracion']) {
+      autoSaveFases(updates['fases_duracion']);
+    }
   };
 
   const assimilateRelacionesAI = async () => {
@@ -1159,6 +1213,28 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
   };
 
+  const handlePhotoReorder = (e?: React.DragEvent) => {
+    if (e) e.preventDefault();
+    if (draggedPhotoIndex !== null && draggedOverPhotoIndex !== null && draggedPhotoIndex !== draggedOverPhotoIndex) {
+      const newPhotos = [...photos];
+      const [draggedItem] = newPhotos.splice(draggedPhotoIndex, 1);
+      newPhotos.splice(draggedOverPhotoIndex, 0, draggedItem);
+      
+      const wasAlreadyPrimary = draggedItem.esPrincipal === 1;
+      if (draggedOverPhotoIndex === 0) {
+        newPhotos.forEach(p => p.esPrincipal = (p.id === draggedItem.id ? 1 : 0));
+      }
+      
+      handleReorderPhotos(newPhotos);
+      
+      if (draggedOverPhotoIndex === 0 && !wasAlreadyPrimary) {
+        handleSetPrimaryPhoto(draggedItem.id);
+      }
+    }
+    setDraggedPhotoIndex(null);
+    setDraggedOverPhotoIndex(null);
+  };
+
   const handleSetPrimaryPhoto = async (photoId: number) => {
     // Optimistic UI update: mark photo as primary immediately
     setPhotos(prev => prev.map(p => ({ ...p, esPrincipal: p.id === photoId ? 1 : 0 })));
@@ -1273,6 +1349,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     } finally {
       setPdfEditorSaveStatus('idle');
     }
+  };
+
+  const handleOpenPdfEditor = (pdf: any) => {
+    setEditingPdf(pdf);
+    setPdfTitle(pdf.titulo || '');
+    setPdfSummary(pdf.resumen || '');
+    setPdfApuntes(pdf.apuntes || '');
   };
 
   // ── Generar Portada de PDF con IA ──
@@ -1553,7 +1636,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       setEditingPauta(null);
       setPautaForm({
         xlaborespautaidlabores: '',
-        laborespautafase: 'germinacion',
+        laborespautafase: 'planificacion',
         laborespautafrecuenciadias: '',
         laborespautaoffset: 0,
         laborespautanotasia: '',
@@ -1886,1415 +1969,66 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </div>
 
               <div className="form-tabs">
-                <button type="button" className={activeTab === 'taxonomia' ? 'active' : ''} onClick={() => setActiveTab('taxonomia')}>🧬 Taxonomía</button>
-                <button type="button" className={activeTab === 'cultivo' ? 'active' : ''} onClick={() => setActiveTab('cultivo')}>🚜 Cultivo</button>
-                <button type="button" className={activeTab === 'fisiologia' ? 'active' : ''} onClick={() => setActiveTab('fisiologia')}>🌱 Fisiología</button>
-                <button type="button" className={activeTab === 'calendarios' ? 'active' : ''} onClick={() => setActiveTab('calendarios')}>📅 Calendarios</button>
-                <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos</button>
-                <button type="button" className={activeTab === 'autosuficiencia' ? 'active' : ''} onClick={() => setActiveTab('autosuficiencia')}>⚖️ Autosuficiencia</button>
-                <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna</button>
-                <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Asociaciones</button>
-                <button type="button" className={activeTab === 'plagas' ? 'active' : ''} onClick={() => setActiveTab('plagas')}>🐛 Plagas</button>
+                <button type="button" className={activeTab === 'taxonomia' ? 'active' : ''} onClick={() => setActiveTab('taxonomia')}>🧬 Identificación</button>
+                <button type="button" className={activeTab === 'cultivo' ? 'active' : ''} onClick={() => setActiveTab('cultivo')}>🌱 Requisitos y Suelo</button>
+                <button type="button" className={activeTab === 'fases' ? 'active' : ''} onClick={() => setActiveTab('fases')}>⏳ Cronología y Calendarios</button>
+                <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna y Biodinámica</button>
+                <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Ecosistema</button>
+                <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos y Autosuficiencia</button>
                 <button type="button" className={activeTab === 'variedades' ? 'active' : ''} onClick={() => setActiveTab('variedades')}>🌱 Variedades</button>
                 <button type="button" className={activeTab === 'pautas' ? 'active' : ''} onClick={() => setActiveTab('pautas')}>📋 Labores</button>
-                <button type="button" className={activeTab === 'sinonimos' ? 'active' : ''} onClick={() => setActiveTab('sinonimos')}>🗣️ Sinónimos</button>
-                <button type="button" className={activeTab === 'adjuntos' ? 'active' : ''} onClick={() => setActiveTab('adjuntos')}>📎 Adjuntos</button>
+                <button type="button" className={activeTab === 'photos' ? 'active' : ''} onClick={() => setActiveTab('photos')}>📷 Fotos</button>
+                <button type="button" className={activeTab === 'pdfs' ? 'active' : ''} onClick={() => setActiveTab('pdfs')}>📄 PDFs</button>
                 <button type="button" className={activeTab === 'blogs' ? 'active' : ''} onClick={() => setActiveTab('blogs')}>📰 Blogs</button>
               </div>
 
               <div className="form-tab-content">
 
-                {/* TAXONOMÍA */}
-                {activeTab === 'taxonomia' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <label>Nombre Común *</label>
-                      <input type="text" name="especiesnombre" required value={formData.especiesnombre || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Nombre Científico</label>
-                      <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Familia</label>
-                      <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group full">
-                      <label>Descripción / Cultivo</label>
-                      <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group full checkbox-group">
-                      <label>Tipos</label>
-                      <div className="cb-list">
-                        {TIPOS.map(t => (
-                          <label key={t}><input type="checkbox" name="especiestipo" value={t} checked={formData.especiestipo.includes(t)} onChange={handleChange} /> {t}</label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="form-group full checkbox-group">
-                      <label>Ciclo</label>
-                      <div className="cb-list">
-                        {CICLOS.map(c => (
-                          <label key={c}><input type="checkbox" name="especiesciclo" value={c} checked={formData.especiesciclo.includes(c)} onChange={handleChange} /> {c}</label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>Color Fenotípico</label>
-                      <input type="text" name="especiescolor" value={formData.especiescolor || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Tamaño</label>
-                      <select name="especiestamano" value={formData.especiestamano || 'mediano'} onChange={handleChange}>
-                        <option value="pequeno">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
-                      </select>
-                    </div>
-
+                {/* IDENTIFICACIÓN (Taxonomía + Sinónimos) */}
+                <div className="grid-form" style={{ display: activeTab === 'taxonomia' ? 'grid' : 'none' }}>
+                  <div className="form-group full">
+                    <label>Nombre Común *</label>
+                    <input type="text" name="especiesnombre" required value={formData.especiesnombre || ''} onChange={handleChange} />
                   </div>
-                )}
-
-                {/* CULTIVO */}
-                {activeTab === 'cultivo' && (
-                  <div className="grid-form">
-                    {/* TIPO DE SIEMBRA */}
-                    <div className="form-group full" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                      <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra / Propagación</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                        {[
-                          { val: 'directa', label: 'Semilla: Siembra Directa' },
-                          { val: 'semillero', label: 'Semilla: Semillero / Almácigo' },
-                          { val: 'planton', label: 'Plantón / Plantel' },
-                          { val: 'esqueje', label: 'Esqueje / Chupón / Estolón' },
-                          { val: 'bulbo', label: 'Tubérculo / Bulbo / Rizoma' },
-                          { val: 'division', label: 'División de Mata' }
-                        ].map(t => (
-                          <div key={t.val} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', cursor: 'pointer', color: '#475569', flex: 1 }}>
-                              <input
-                                type="checkbox"
-                                name="especiestiposiembra"
-                                value={t.val}
-                                checked={formData.especiestiposiembra?.includes(t.val)}
-                                onChange={handleChange}
-                              />
-                              {t.label}
-                            </label>
-                            {formData.especiestiposiembra?.includes(t.val) && (
-                              <button
-                                type="button"
-                                title="Marcar como preferente"
-                                onClick={() => {
-                                  const prefs = formData.especiestiposiembrapreferente || [];
-                                  const newPrefs = prefs.includes(t.val) ? prefs.filter((p: string) => p !== t.val) : [...prefs, t.val];
-                                  setFormData({ ...formData, especiestiposiembrapreferente: newPrefs });
-                                }}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  padding: '4px',
-                                  fontSize: '1.2rem',
-                                  color: formData.especiestiposiembrapreferente?.includes(t.val) ? '#fbbf24' : '#cbd5e1'
-                                }}
-                              >
-                                {formData.especiestiposiembrapreferente?.includes(t.val) ? '⭐' : '☆'}
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label>Profundidad de Siembra (cm)</label>
-                      <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Profundidad de Trasplante</label>
-                      <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>Dificultad</label>
-                      <select name="especiesdificultad" value={formData.especiesdificultad || ''} onChange={handleChange}>
-                        <option value="">--</option>
-                        <option value="baja">Baja</option>
-                        <option value="media">Media</option>
-                        <option value="alta">Alta</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Luz Solar</label>
-                      <select name="especiesluzsolar" value={formData.especiesluzsolar || ''} onChange={handleChange}>
-                        <option value="">--</option>
-                        <option value="pleno_sol">Pleno Sol</option>
-                        <option value="semisombra">Semisombra</option>
-                        <option value="sombra">Sombra</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Necesidad de Riego</label>
-                      <select name="especiesnecesidadriego" value={formData.especiesnecesidadriego || ''} onChange={handleChange}>
-                        <option value="">--</option>
-                        <option value="baja">Baja</option>
-                        <option value="media">Media</option>
-                        <option value="alta">Alta</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Volumen Maceta (L)</label>
-                      <input type="number" name="especiesvolumenmaceta" value={formData.especiesvolumenmaceta || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Vol. Semillero Mín (cc)</label>
-                      <input type="number" name="especiesemillerovolumendesde" value={formData.especiesemillerovolumendesde || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Vol. Semillero Máx (cc)</label>
-                      <input type="number" name="especiesemillerovolumenhasta" value={formData.especiesemillerovolumenhasta || ''} onChange={handleChange} />
-                    </div>
-
-                    <div className="form-group">
-                      <label>pH del Suelo</label>
-                      <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group full">
-                      <label>Características del Suelo</label>
-                      <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
+                  <div className="form-group">
+                    <label>Nombre Científico</label>
+                    <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label>Familia</label>
+                    <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group full checkbox-group">
+                    <label>Tipos</label>
+                    <div className="cb-list">
+                      {TIPOS.map(t => (
+                        <label key={t}><input type="checkbox" name="especiestipo" value={t} checked={formData.especiestipo.includes(t)} onChange={handleChange} /> {t}</label>
+                      ))}
                     </div>
                   </div>
-                )}
-
-                {/* FISIOLOGÍA */}
-                {activeTab === 'fisiologia' && (
-                  <div className="grid-form">
-                    {/* BLOQUE PRINCIPAL SUPERIOR */}
-                    <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-
-
-                      <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
-                        <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
-                      </div>
-
-                      <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Peso de 1.000 Semillas (g)</label>
-                        <input type="number" step="0.001" name="especiespeso1000semillas" value={formData.especiespeso1000semillas || ''} onChange={handleChange} style={{ marginTop: '8px' }} placeholder="Ej. 1.5" />
-                        {formData.especiespeso1000semillas && Number(formData.especiespeso1000semillas) > 0 && (
-                          <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#0f766e', fontWeight: 'bold' }}>
-                            🔄 Equivalencia: {Math.round(1000 / Number(formData.especiespeso1000semillas))} semillas por gramo
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* CRONOLOGÍA MODULAR */}
-                    <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                      <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        ⏱️ Cronología Modular (Días de Desarrollo)
-                      </h3>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                        {/* BLOQUE 1: DDS */}
-                        <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                          <h4 style={{ margin: '0 0 10px 0', color: '#3b82f6', borderBottom: '2px solid #bfdbfe', paddingBottom: '8px', fontSize: '1rem' }}>
-                            Bloque 1: Desde la Siembra (DDS)
-                          </h4>
-                          <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
-                            Estos tiempos se cuentan siempre desde el momento en el que la semilla toca la tierra.
-                          </p>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div className="form-group" style={{ margin: 0 }}>
-                              <label style={{ fontWeight: 'bold' }}>Días hasta Germinación</label>
-                              <input type="number" name="especiesdiasgerminacion" value={formData.especiesdiasgerminacion || ''} onChange={handleChange} />
-                            </div>
-                            <div className="form-group" style={{ margin: 0 }}>
-                              <label style={{ fontWeight: 'bold' }}>Edad del Plantel (Días a Trasplante)</label>
-                              <input type="number" name="especiesdiashastatrasplante" value={formData.especiesdiashastatrasplante || ''} onChange={handleChange} />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* BLOQUE 2: DDT */}
-                        <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                          <h4 style={{ margin: '0 0 10px 0', color: '#10b981', borderBottom: '2px solid #a7f3d0', paddingBottom: '8px', fontSize: '1rem' }}>
-                            Bloque 2: Desde el Trasplante (DDT)
-                          </h4>
-                          <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '15px', lineHeight: '1.4' }}>
-                            Estos tiempos se cuentan después de plantar el plantel. <em>Si es de siembra directa, se contarán desde el Día 0.</em>
-                          </p>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div className="form-group" style={{ margin: 0 }}>
-                              <label style={{ fontWeight: 'bold', color: '#10b981' }}>Días hasta Crecimiento Firme</label>
-                              <input type="number" name="especiesdiascrecimientofirme" value={formData.especiesdiascrecimientofirme || ''} onChange={handleChange} />
-                            </div>
-                            <div className="form-group" style={{ margin: 0 }}>
-                              <label style={{ fontWeight: 'bold' }}>Días hasta Fructificación</label>
-                              <input type="number" name="especiesdiashastafructificacion" value={formData.especiesdiashastafructificacion || ''} onChange={handleChange} />
-                            </div>
-                            <div className="form-group" style={{ margin: 0 }}>
-                              <label style={{ fontWeight: 'bold' }}>Días hasta Recolección / Cosecha</label>
-                              <input type="number" name="especiesdiashastarecoleccion" value={formData.especiesdiashastarecoleccion || ''} onChange={handleChange} />
-                            </div>
-                            <div className="form-group" style={{ margin: 0 }}>
-                              <label style={{ fontWeight: 'bold' }}>Duración Total del Cultivo (Días hasta Fin de Ciclo)</label>
-                              <input type="number" name="especiesduraciontotal" value={formData.especiesduraciontotal || ''} onChange={handleChange} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* REQUISITOS TÉRMICOS */}
-                    <div className="form-group full" style={{ marginBottom: '10px', padding: '20px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecdd3' }}>
-                      <h3 style={{ margin: '0 0 15px 0', color: '#be123c', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🌡️ Requisitos Térmicos (°C)
-                      </h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
-                        <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                          <label style={{ color: '#0369a1' }}>Mínima (Sobrevive)</label>
-                          <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
-                        </div>
-                        <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                          <label style={{ color: '#15803d' }}>Óptima (Desarrollo)</label>
-                          <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
-                        </div>
-                        <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                          <label style={{ color: '#be123c' }}>Máxima (Estrés)</label>
-                          <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
-                        </div>
-                      </div>
-                    </div>
-
-
-                  </div>
-                )}
-
-                {/* CALENDARIOS */}
-                {activeTab === 'calendarios' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
-                        {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
-                          const colorMap: Record<string, string> = {
-                            siembradirecta: '#f97316',
-                            semillero: '#3b82f6',
-                            trasplante: '#a855f7',
-                            recoleccion: '#22c55e'
-                          };
-                          const labelMap: Record<string, string> = {
-                            siembradirecta: 'Siembra Directa',
-                            semillero: 'Semillero',
-                            trasplante: 'Trasplante',
-                            recoleccion: 'Recolección'
-                          };
-                          return (
-                            <div key={tipo} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', borderTop: `4px solid ${colorMap[tipo]}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                              <strong style={{ display: 'block', marginBottom: '10px', fontSize: '0.95rem', color: '#334155' }}>{labelMap[tipo]}</strong>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <select
-                                  name={tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`}
-                                  value={formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`] || ''}
-                                  onChange={handleChange}
-                                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                >
-                                  <option value="">Desde (Mes)...</option>
-                                  {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                                </select>
-                                <select
-                                  name={tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`}
-                                  value={formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`] || ''}
-                                  onChange={handleChange}
-                                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                >
-                                  <option value="">Hasta (Mes)...</option>
-                                  {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                                </select>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="form-group full" style={{ marginTop: '10px' }}>
-                      <h3 style={{ fontSize: '1.1rem', color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
-                        📊 Gráfico del Calendario de Cultivo
-                      </h3>
-
-                      <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                        {/* Cabecera de meses */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                          <div style={{ padding: '8px 4px', fontWeight: 'bold', color: '#64748b', fontSize: '0.7rem', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>FASE</div>
-                          {MESES.map(m => (
-                            <div key={m.val} style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', color: '#475569', fontSize: '0.7rem', borderRight: m.val < 12 ? '1px solid #e2e8f0' : 'none' }}>
-                              {m.label.charAt(0)}
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Filas del gráfico */}
-                        {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map((tipo, idx) => {
-                          const colorMap: Record<string, string> = { siembradirecta: '#f97316', semillero: '#3b82f6', trasplante: '#a855f7', recoleccion: '#22c55e' };
-                          const labelMap: Record<string, string> = { siembradirecta: 'Siembra', semillero: 'Semillero', trasplante: 'Traspl.', recoleccion: 'Recol.' };
-
-                          const desde = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`]) || 0;
-                          const hasta = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`]) || 0;
-
-                          const isMonthActive = (m: number) => {
-                            if (!desde || !hasta) return false;
-                            if (desde <= hasta) return m >= desde && m <= hasta;
-                            return m >= desde || m <= hasta;
-                          };
-
-                          return (
-                            <div key={tipo} style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', borderBottom: idx < 3 ? '1px solid #e2e8f0' : 'none', background: '#fff' }}>
-                              <div style={{ padding: '8px 4px', fontSize: '0.65rem', fontWeight: 'bold', color: '#334155', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colorMap[tipo], flexShrink: 0 }}></span>
-                                {labelMap[tipo]}
-                              </div>
-                              {MESES.map(m => {
-                                const active = isMonthActive(m.val);
-                                return (
-                                  <div key={m.val} style={{
-                                    padding: '8px 0',
-                                    borderRight: m.val < 12 ? '1px dashed #e2e8f0' : 'none',
-                                    background: active ? `${colorMap[tipo]}20` : 'transparent',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                  }}>
-                                    {active && <div style={{ width: '100%', height: '10px', background: colorMap[tipo], borderRadius: '2px', margin: '0 1px' }}></div>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
-                      </div>
+                  <div className="form-group full checkbox-group">
+                    <label>Ciclo</label>
+                    <div className="cb-list">
+                      {CICLOS.map(c => (
+                        <label key={c}><input type="checkbox" name="especiesciclo" value={c} checked={formData.especiesciclo.includes(c)} onChange={handleChange} /> {c}</label>
+                      ))}
                     </div>
                   </div>
-                )}
-
-                {/* TEXTOS */}
-                {activeTab === 'textos' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <label>Historia / Origen</label>
-                      <textarea name="especieshistoria" rows={3} value={formData.especieshistoria || ''} onChange={handleChange} />
-                    </div>
-
-                    <div className="form-group full">
-                      <label>Fuentes (URLs separadas por comas)</label>
-                      <input type="text" name="especiesfuentesinformacion" value={formData.especiesfuentesinformacion || ''} onChange={handleChange} />
-                      {formData.especiesfuentesinformacion && typeof formData.especiesfuentesinformacion === 'string' && formData.especiesfuentesinformacion.trim() !== '' && (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                          {formData.especiesfuentesinformacion.split(',').map((url: string, idx: number) => {
-                            const trimmedUrl = url.trim();
-                            if (!trimmedUrl) return null;
-                            const href = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`;
-                            return (
-                              <a
-                                key={idx}
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  background: '#e0e7ff',
-                                  color: '#4338ca',
-                                  padding: '6px 12px',
-                                  borderRadius: '16px',
-                                  fontSize: '0.8rem',
-                                  textDecoration: 'none',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  border: '1px solid #c7d2fe',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                  transition: 'all 0.2s'
-                                }}
-                              >
-                                🔗 {trimmedUrl.length > 35 ? trimmedUrl.substring(0, 35) + '...' : trimmedUrl}
-                              </a>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                  <div className="form-group">
+                    <label>Color Fenotípico</label>
+                    <input type="text" name="especiescolor" value={formData.especiescolor || ''} onChange={handleChange} />
                   </div>
-                )}
-
-                {/* LUNA Y BIODINAMICA */}
-                {activeTab === 'biodinamica' && (
-                  <div className="grid-form" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    
-                    {/* SECCIÓN CALENDARIO LUNAR */}
-                    <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      <h3 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🌕 Calendario Lunar
-                      </h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                        <div className="form-group" style={{ margin: 0 }}>
-                          <label style={{ fontWeight: 'bold' }}>Fase de Siembra</label>
-                          <select name="especieslunarfasesiembra" value={formData.especieslunarfasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                            <option value="">— Seleccionar Fase —</option>
-                            <option value="Creciente">🌘 Cuarto Creciente (Savia sube)</option>
-                            <option value="Menguante">🌔 Cuarto Menguante (Savia baja)</option>
-                            <option value="Nueva">🌑 Luna Nueva</option>
-                            <option value="Llena">🌕 Luna Llena</option>
-                          </select>
-                        </div>
-                        <div className="form-group" style={{ margin: 0 }}>
-                          <label style={{ fontWeight: 'bold' }}>Fase de Trasplante</label>
-                          <select name="especieslunarfasetrasplante" value={formData.especieslunarfasetrasplante || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                            <option value="">— Seleccionar Fase —</option>
-                            <option value="Creciente">🌘 Cuarto Creciente</option>
-                            <option value="Menguante">🌔 Cuarto Menguante (Recomendado)</option>
-                            <option value="Nueva">🌑 Luna Nueva</option>
-                            <option value="Llena">🌕 Luna Llena</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="form-group full" style={{ margin: 0 }}>
-                        <label style={{ fontWeight: 'bold' }}>Observaciones del Calendario Lunar</label>
-                        <textarea name="especieslunarobservaciones" value={formData.especieslunarobservaciones || ''} onChange={handleChange} rows={3} placeholder="Ej: La lechuga es preferible sembrarla en menguante para evitar que espigue rápido..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }} />
-                      </div>
-                    </div>
-
-                    {/* SECCIÓN CALENDARIO BIODINÁMICO */}
-                    <div style={{ background: '#f0fdfa', padding: '20px', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
-                      <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🌍 Calendario Biodinámico
-                      </h3>
-                      
-                      <div className="form-group full" style={{ marginBottom: '16px' }}>
-                        <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Categoría del Órgano Principal</label>
-                        <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', fontSize: '1rem', background: '#fff' }}>
-                          <option value="">— Sin categoría —</option>
-                          <option value="fruto">🍅 Planta de Fruto (Días de Fuego/Calor)</option>
-                          <option value="raiz">🥕 Planta de Raíz (Días de Tierra/Frío)</option>
-                          <option value="hoja">🥬 Planta de Hoja (Días de Agua/Humedad)</option>
-                          <option value="flor">🌸 Planta de Flor (Días de Aire/Luz)</option>
-                        </select>
-                        {formData.especiesbiodinamicacategoria && (
-                          <p style={{ marginTop: '8px', fontSize: '0.85rem', color: '#0f766e', lineHeight: 1.5 }}>
-                            {({ fruto: 'Siembra y trasplanta en días Fruto. Recolecta también en días Fruto para mejor sabor y conservación.', raiz: 'Siembra en días Raíz. Recolecta en días Raíz para mejor conservación.', hoja: 'Siembra y trasplanta en días Hoja. Evita podar o cosechar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
-                          </p>
-                        )}
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                        <div className="form-group" style={{ margin: 0 }}>
-                          <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Fase de Siembra Biodinámica</label>
-                          <select name="especiesbiodinamicafasesiembra" value={formData.especiesbiodinamicafasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff' }}>
-                            <option value="">— Seleccionar Fase —</option>
-                            <option value="Ascendente">📈 Luna Ascendente (Savia sube)</option>
-                            <option value="Descendente">📉 Luna Descendente (Savia en raíces)</option>
-                          </select>
-                        </div>
-                        <div className="form-group" style={{ margin: 0 }}>
-                          <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Fase de Trasplante Biodinámica</label>
-                          <select name="especiesbiodinamicafasetrasplante" value={formData.especiesbiodinamicafasetrasplante || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff' }}>
-                            <option value="">— Seleccionar Fase —</option>
-                            <option value="Ascendente">📈 Luna Ascendente</option>
-                            <option value="Descendente">📉 Luna Descendente (Recomendado)</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="form-group full" style={{ margin: 0 }}>
-                        <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Notas de Calendario Biodinámico</label>
-                        <textarea name="especiesbiodinamicanotas" value={formData.especiesbiodinamicanotas || ''} onChange={handleChange} rows={3} placeholder="Ej: Además del día de Fruto, evitar perigeos y nodos lunares para la siembra..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff', resize: 'vertical' }} />
-                      </div>
-                    </div>
-
+                  <div className="form-group">
+                    <label>Tamaño</label>
+                    <select name="especiestamano" value={formData.especiestamano || 'mediano'} onChange={handleChange}>
+                      <option value="pequeno">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option>
+                    </select>
                   </div>
-                )}
 
-                {/* AUTOSUFICIENCIA */}
-                {activeTab === 'autosuficiencia' && (
-                  <div className="grid-form">
-                    <div className="form-group">
-                      <label>Marco Plantas (cm)</label>
-                      <input type="number" name="especiesmarcoplantas" value={formData.especiesmarcoplantas || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Marco Filas (cm)</label>
-                      <input type="number" name="especiesmarcofilas" value={formData.especiesmarcofilas || ''} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                      <label>Margen al Borde (cm)</label>
-                      <input type="number" name="especiesmarcomargen" value={formData.especiesmarcomargen || ''} onChange={handleChange} />
-                    </div>
-
-                    {(formData.especiesmarcoplantas || formData.especiesmarcofilas) && (
-                      <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '10px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
-                        <span style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', fontWeight: 'bold' }}>Esquema de Plantación a Escala</span>
-
-                        {(() => {
-                          let p = parseFloat(formData.especiesmarcoplantas);
-                          let f = parseFloat(formData.especiesmarcofilas);
-                          let m = parseFloat(formData.especiesmarcomargen) || 0;
-                          if (!p || p <= 0) p = 50;
-                          if (!f || f <= 0) f = 50;
-
-                          // Dimensiones físicas totales incluyendo el margen doble
-                          const totalW = p + 2 * m;
-                          const totalH = f + 2 * m;
-
-                          const maxW = 220;
-                          const maxH = 160;
-
-                          let drawTotalW, drawTotalH;
-                          const ratio = totalW / totalH;
-                          const maxRatio = maxW / maxH;
-
-                          if (ratio > maxRatio) {
-                            drawTotalW = maxW;
-                            drawTotalH = maxW / ratio;
-                          } else {
-                            drawTotalH = maxH;
-                            drawTotalW = maxH * ratio;
-                          }
-
-                          if (drawTotalW < 50) drawTotalW = 50;
-                          if (drawTotalH < 50) drawTotalH = 50;
-
-                          // Factor de escala (píxeles por cm)
-                          const scale = drawTotalW / totalW;
-                          const drawM = m * scale;
-                          const drawW = p * scale;
-                          const drawH = f * scale;
-
-                          const cx = 160;
-                          const cy = 120;
-
-                          // Límites del Bancal / Cama
-                          const bedX1 = cx - drawTotalW / 2;
-                          const bedX2 = cx + drawTotalW / 2;
-                          const bedY1 = cy - drawTotalH / 2;
-                          const bedY2 = cy + drawTotalH / 2;
-
-                          // Coordenadas de las 4 plantas
-                          const x1 = bedX1 + drawM;
-                          const x2 = bedX2 - drawM;
-                          const y1 = bedY1 + drawM;
-                          const y2 = bedY2 - drawM;
-
-                          return (
-                            <svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
-                              {/* Cama de Cultivo (Fondo) */}
-                              <rect 
-                                x={bedX1} 
-                                y={bedY1} 
-                                width={drawTotalW} 
-                                height={drawTotalH} 
-                                fill="#fdfbf7" 
-                                stroke="#10b981" 
-                                strokeWidth="1.5" 
-                                rx="6" 
-                                style={{ filter: 'drop-shadow(0 2px 4px rgba(16,185,129,0.05))' }}
-                              />
-
-                              {/* Plantas */}
-                              <circle cx={x1} cy={y1} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
-                              <circle cx={x2} cy={y1} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
-                              <circle cx={x1} cy={y2} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
-                              <circle cx={x2} cy={y2} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
-
-                              {/* Marco entre Plantas (Horizontal) */}
-                              {x2 - x1 > 30 && (
-                                <>
-                                  <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#64748b" strokeWidth="2" />
-                                  <polygon points={`${x1 + 12},${y1 - 4} ${x1 + 8},${y1} ${x1 + 12},${y1 + 4}`} fill="#64748b" />
-                                  <polygon points={`${x2 - 12},${y1 - 4} ${x2 - 8},${y1} ${x2 - 12},${y1 + 4}`} fill="#64748b" />
-                                </>
-                              )}
-
-                              <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
-                              <text x={cx} y={y1 + 4} fontSize="11" fontWeight="bold" fill="#0f172a" textAnchor="middle">
-                                {formData.especiesmarcoplantas ? `${formData.especiesmarcoplantas} cm` : '? cm'}
-                              </text>
-
-                              {/* Marco entre Filas (Vertical) */}
-                              {y2 - y1 > 30 && (
-                                <>
-                                  <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#64748b" strokeWidth="2" />
-                                  <polygon points={`${x1 - 4},${y1 + 12} ${x1},${y1 + 8} ${x1 + 4},${y1 + 12}`} fill="#64748b" />
-                                  <polygon points={`${x1 - 4},${y2 - 12} ${x1},${y2 - 8} ${x1 + 4},${y2 - 12}`} fill="#64748b" />
-                                </>
-                              )}
-
-                              <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
-                              <text x={x1} y={cy + 4} fontSize="11" fontWeight="bold" fill="#0f172a" textAnchor="middle">
-                                {formData.especiesmarcofilas ? `${formData.especiesmarcofilas} cm` : '? cm'}
-                              </text>
-
-                              {/* Líneas de Guía de Rejilla de Plantas */}
-                              <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
-                              <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
-
-                              {/* Cota Margen al Borde (Horizontal) */}
-                              {m > 0 && (
-                                <>
-                                  <line x1={x2} y1={y1} x2={bedX2} y2={y1} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
-                                  {drawM > 15 && (
-                                    <>
-                                      <line x1={x2 + 8} y1={y1} x2={bedX2 - 4} y2={y1} stroke="#f59e0b" strokeWidth="1.5" />
-                                      <polygon points={`${x2 + 8},${y1 - 3} ${x2 + 3},${y1} ${x2 + 8},${y1 + 3}`} fill="#f59e0b" />
-                                      <polygon points={`${bedX2 - 5},${y1 - 3} ${bedX2 - 1},${y1} ${bedX2 - 5},${y1 + 3}`} fill="#f59e0b" />
-                                    </>
-                                  )}
-                                  <g transform={`translate(${Math.max(x2 + 10, x2 + drawM / 2)}, ${y1 - 16})`}>
-                                    <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" />
-                                    <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle">
-                                      {m} cm
-                                    </text>
-                                  </g>
-                                </>
-                              )}
-
-                              {/* Cota Margen al Borde (Vertical) */}
-                              {m > 0 && (
-                                <>
-                                  <line x1={x2} y1={y2} x2={x2} y2={bedY2} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
-                                  {drawM > 15 && (
-                                    <>
-                                      <line x1={x2} y1={y2 + 8} x2={x2} y2={bedY2 - 4} stroke="#f59e0b" strokeWidth="1.5" />
-                                      <polygon points={`${x2 - 3},${y2 + 8} ${x2},${y2 + 3} ${x2 + 3},${y2 + 8}`} fill="#f59e0b" />
-                                      <polygon points={`${x2 - 3},${bedY2 - 5} ${x2},${bedY2 - 1} ${x2 + 3},${bedY2 - 5}`} fill="#f59e0b" />
-                                    </>
-                                  )}
-                                  <g transform={`translate(${x2 + 22}, ${Math.max(y2 + 10, y2 + drawM / 2)})`}>
-                                    <rect x="-18" y="-7" width="36" height="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="1" rx="3" />
-                                    <text x="0" y="3" fontSize="8" fontWeight="bold" fill="#d97706" textAnchor="middle">
-                                      {m} cm
-                                    </text>
-                                  </g>
-                                </>
-                              )}
-                            </svg>
-                          );
-                        })()}
-
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0', textAlign: 'center' }}>
-                          <strong style={{ color: '#64748b' }}>Marco Plantas:</strong> distancia entre plantas de la misma fila.<br />
-                          <strong style={{ color: '#64748b' }}>Marco Filas:</strong> distancia entre las diferentes filas.<br />
-                          <strong style={{ color: '#d97706' }}>Margen al Borde:</strong> distancia desde las plantas exteriores hasta el borde del bancal.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                      <div>
-                        <label>🌱 Parcial (plantas/pers)</label>
-                        <input type="number" step="0.1" name="especiesautosuficienciaparcial" value={formData.especiesautosuficienciaparcial || ''} onChange={handleChange} />
-                      </div>
-                      <div>
-                        <label>🥬 Completa (plantas/pers)</label>
-                        <input type="number" step="0.1" name="especiesautosuficiencia" value={formData.especiesautosuficiencia || ''} onChange={handleChange} />
-                      </div>
-                      <div>
-                        <label>🥫 Conserva (plantas/pers)</label>
-                        <input type="number" step="0.1" name="especiesautosuficienciaconserva" value={formData.especiesautosuficienciaconserva || ''} onChange={handleChange} />
-                      </div>
-                    </div>
-
-                    <div className="form-group full" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '10px' }}>
-                      <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, textAlign: 'center' }}>
-                        <strong>Nota:</strong> Estos valores indican el número estimado de plantas necesarias para abastecer a <strong>una persona</strong> durante un año.
-                      </p>
-                    </div>
-
-                    {/* CALCULADORA */}
-                    {(() => {
-                      const pParcial = parseFloat(formData.especiesautosuficienciaparcial) || 0;
-                      const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;
-                      const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;
-                      const totalPParcial = pParcial * calcPersonas;
-                      const totalPFresco = pFresco * calcPersonas;
-                      const totalPConserva = pConserva * calcPersonas;
-
-                      const marcoP = (parseFloat(formData.especiesmarcoplantas) || 0) / 100;
-                      const marcoF = (parseFloat(formData.especiesmarcofilas) || 0) / 100;
-                      const margin = (parseFloat(formData.especiesmarcomargen) || 0) / 100;
-                      // El footprint de cada planta incluye el espaciado entre plantas y el doble margen al borde
-                      const areaPlant = (marcoP + 2 * margin) * (marcoF + 2 * margin);
-
-                      const m2Parcial = totalPParcial * areaPlant;
-                      const m2Fresco = totalPFresco * areaPlant;
-                      const m2Conserva = totalPConserva * areaPlant;
-
-                      return (
-                        <div className="form-group full" style={{ marginTop: '20px', padding: '14px', background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
-                          <h3 style={{ marginTop: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
-                            🧮 Calculadora de Autosuficiencia
-                            <span style={{ fontSize: '0.8rem', fontWeight: 'normal', background: '#dcfce7', padding: '3px 8px', borderRadius: '12px' }}>No se guarda</span>
-                          </h3>
-
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
-                            <label style={{ fontWeight: 'bold', color: '#15803d' }}>Número de Personas a alimentar:</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={calcPersonas}
-                              onChange={(e) => setCalcPersonas(parseInt(e.target.value) || 1)}
-                              style={{ width: '80px', padding: '8px', border: '1px solid #86efac', borderRadius: '4px', textAlign: 'center', fontSize: '1.1rem' }}
-                            />
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                            <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Parcial</h4>
-                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
-                              <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPParcial.toFixed(1)}</strong>
-                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
-                              <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Parcial > 0 ? `${m2Parcial.toFixed(2)} m²` : '--- m²'}</strong>
-                            </div>
-
-                            <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥬 Completa</h4>
-                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
-                              <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>
-                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
-                              <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Fresco > 0 ? `${m2Fresco.toFixed(2)} m²` : '--- m²'}</strong>
-                            </div>
-
-                            <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥫 Conserva</h4>
-                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
-                              <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPConserva.toFixed(1)}</strong>
-                              <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
-                              <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Conserva > 0 ? `${m2Conserva.toFixed(2)} m²` : '--- m²'}</strong>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-
-                {/* ASOCIACIONES */}
-                {activeTab === 'asociaciones' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <h4 style={{ margin: 0 }}>Asociaciones Beneficiosas</h4>
-                        {relacionesSaveStatus !== 'idle' && (
-                          <span style={{
-                            fontSize: '0.85rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px',
-                            color: relacionesSaveStatus === 'no-changes' ? '#10b981' : '#64748b',
-                            background: relacionesSaveStatus === 'no-changes' ? '#dcfce7' : '#f1f5f9',
-                            transition: 'all 0.3s'
-                          }}>
-                            {relacionesSaveStatus === 'saving' ? '⏳ Guardando...' : '✓ Guardado'}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                        <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                          <option value="">Selecciona especie...</option>
-                          {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
-                        </select>
-                        <input type="text" id="motivoBen" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                        <button type="button" onClick={() => {
-                          const sel = document.getElementById('selBen') as HTMLSelectElement;
-                          const mot = document.getElementById('motivoBen') as HTMLInputElement;
-                          if (!sel.value) return;
-                          if (relaciones.beneficiosas.some((b: any) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
-                          const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
-                          const updated = {
-                            ...relaciones,
-                            beneficiosas: [...relaciones.beneficiosas, {
-                              xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
-                              especie_destino_nombre: sp?.especiesnombre,
-                              asociacionesbeneficiosasmotivo: mot.value
-                            }]
-                          };
-                          setRelaciones(updated);
-                          saveRelacionesNow(updated);
-                          sel.value = ''; mot.value = '';
-                        }} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
-                      </div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {relaciones.beneficiosas.map((b: any, idx: number) => (
-                          <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
-                            <div><strong>{b.especie_destino_nombre}</strong></div>
-                            <input type="text" value={b.asociacionesbeneficiosasmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
-                              const updatedBen = relaciones.beneficiosas.map((bb: any, i: number) => i === idx ? { ...bb, asociacionesbeneficiosasmotivo: e.target.value } : bb);
-                              setRelaciones({ ...relaciones, beneficiosas: updatedBen });
-                              setRelacionesDirty(true);
-                            }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                            <button type="button" onClick={() => {
-                              const updated = { ...relaciones, beneficiosas: relaciones.beneficiosas.filter((_: any, i: number) => i !== idx) };
-                              setRelaciones(updated);
-                              saveRelacionesNow(updated);
-                            }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                          </li>
-                        ))}
-                        {relaciones.beneficiosas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones beneficiosas.</p>}
-                      </ul>
-                    </div>
-
-                    <div className="form-group full" style={{ marginTop: '20px' }}>
-                      <h4>Asociaciones Perjudiciales</h4>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                        <select id="selPer" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                          <option value="">Selecciona especie...</option>
-                          {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
-                        </select>
-                        <input type="text" id="motivoPer" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                        <button type="button" onClick={() => {
-                          const sel = document.getElementById('selPer') as HTMLSelectElement;
-                          const mot = document.getElementById('motivoPer') as HTMLInputElement;
-                          if (!sel.value) return;
-                          if (relaciones.perjudiciales.some((p: any) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
-                          const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
-                          const updated = {
-                            ...relaciones,
-                            perjudiciales: [...relaciones.perjudiciales, {
-                              xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
-                              especie_destino_nombre: sp?.especiesnombre,
-                              asociacionesperjudicialesmotivo: mot.value
-                            }]
-                          };
-                          setRelaciones(updated);
-                          saveRelacionesNow(updated);
-                          sel.value = ''; mot.value = '';
-                        }} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
-                      </div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {relaciones.perjudiciales.map((p: any, idx: number) => (
-                          <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
-                            <div><strong>{p.especie_destino_nombre}</strong></div>
-                            <input type="text" value={p.asociacionesperjudicialesmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
-                              const updatedPer = relaciones.perjudiciales.map((pp: any, i: number) => i === idx ? { ...pp, asociacionesperjudicialesmotivo: e.target.value } : pp);
-                              setRelaciones({ ...relaciones, perjudiciales: updatedPer });
-                              setRelacionesDirty(true);
-                            }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                            <button type="button" onClick={() => {
-                              const updated = { ...relaciones, perjudiciales: relaciones.perjudiciales.filter((_: any, i: number) => i !== idx) };
-                              setRelaciones(updated);
-                              saveRelacionesNow(updated);
-                            }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                          </li>
-                        ))}
-                        {relaciones.perjudiciales.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones perjudiciales.</p>}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {/* PLAGAS */}
-                {activeTab === 'plagas' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <h4>Plagas / Enfermedades Asociadas</h4>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                        <select id="selPla" style={{ flex: 1, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                          <option value="">Selecciona plaga o enfermedad...</option>
-                          {masterPlagas.map(p => <option key={p.idplagas} value={p.idplagas}>{p.plagasnombre} ({p.plagastipo})</option>)}
-                        </select>
-                        <select id="riesgoPla" style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                          <option value="baja">Riesgo Bajo</option>
-                          <option value="media">Riesgo Medio</option>
-                          <option value="alta">Riesgo Alto</option>
-                        </select>
-                        <input type="text" id="notasPla" placeholder="Notas (opcional)" style={{ flex: 2, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                        <button type="button" onClick={() => {
-                          const sel = document.getElementById('selPla') as HTMLSelectElement;
-                          const r = document.getElementById('riesgoPla') as HTMLSelectElement;
-                          const n = document.getElementById('notasPla') as HTMLInputElement;
-                          if (!sel.value) return;
-                          if (relaciones.plagas.some((p: any) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
-                          const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
-                          const updated = {
-                            ...relaciones,
-                            plagas: [...relaciones.plagas, {
-                              xespeciesplagasidplagas: parseInt(sel.value),
-                              plagasnombre: pla?.plagasnombre,
-                              plagastipo: pla?.plagastipo,
-                              especiesplagasnivelriesgo: r.value,
-                              especiesplagasnotasespecificas: n.value
-                            }]
-                          };
-                          setRelaciones(updated);
-                          saveRelacionesNow(updated);
-                          sel.value = ''; n.value = ''; r.value = 'media';
-                        }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
-                      </div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {relaciones.plagas.map((p: any, idx: number) => (
-                          <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '12px', alignItems: 'center' }}>
-                            <div>
-                              <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span>
-                            </div>
-                            <select value={p.especiesplagasnivelriesgo || 'media'} onChange={(e) => {
-                              const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnivelriesgo: e.target.value } : pl);
-                              const updated = { ...relaciones, plagas: updatedPlagas };
-                              setRelaciones(updated);
-                              saveRelacionesNow(updated);
-                            }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
-                              <option value="baja">🟢 Riesgo Bajo</option>
-                              <option value="media">🟡 Riesgo Medio</option>
-                              <option value="alta">🔴 Riesgo Alto</option>
-                            </select>
-                            <input type="text" value={p.especiesplagasnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
-                              const updatedPlagas = relaciones.plagas.map((pl: any, i: number) => i === idx ? { ...pl, especiesplagasnotasespecificas: e.target.value } : pl);
-                              setRelaciones({ ...relaciones, plagas: updatedPlagas });
-                              setRelacionesDirty(true);
-                            }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
-                            <button type="button" onClick={() => {
-                              const updated = { ...relaciones, plagas: relaciones.plagas.filter((_: any, i: number) => i !== idx) };
-                              setRelaciones(updated);
-                              saveRelacionesNow(updated);
-                            }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                          </li>
-                        ))}
-                        {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {/* VARIEDADES */}
-                {activeTab === 'variedades' && (
-                  <EspecieVariedadesTab especieId={especieId} userEmail={userEmail} focusVariedadId={focusParam} />
-                )}
-
-                {/* PAUTAS DE LABORES */}
-                {activeTab === 'pautas' && (
-                  <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowPautasConfig(true);
-                          setPautasConfigPromptOpen(false);
-                        }}
-                        disabled={pautasAiLoading}
-                        style={{ 
-                          height: '38px',
-                          padding: '0 16px', 
-                          background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '8px', 
-                          fontWeight: 'bold', 
-                          cursor: pautasAiLoading ? 'not-allowed' : 'pointer', 
-                          fontSize: '0.9rem', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          gap: '8px',
-                          transition: 'all 0.3s ease',
-                          boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
-                          flexShrink: 0
-                        }}
-                      >
-                        {pautasAiLoading ? (
-                          <>
-                            <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
-                            Analizando... {pautasAiSeconds}s
-                          </>
-                        ) : (
-                          <>✨ Asistente IA</>
-                        )}
-                      </button>
-
-                      {especieId && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAddPautaForm(!showAddPautaForm)}
-                          style={{ 
-                            height: '38px',
-                            padding: '0 16px', 
-                            background: showAddPautaForm ? 'linear-gradient(135deg, #475569, #1e293b)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '8px', 
-                            fontWeight: 'bold', 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            gap: '8px', 
-                            fontSize: '0.9rem', 
-                            transition: 'all 0.3s ease',
-                            boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
-                            flexShrink: 0
-                          }}
-                        >
-                          {showAddPautaForm ? '✕ Cancelar' : '+ Añadir Labor'}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* BARRA DE FILTROS */}
-                    {especieId && pautas.length > 0 && (
-                      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', background: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>🔍 Filtrar por:</span>
-                        
-                        <select 
-                          value={pautasFiltroFase} 
-                          onChange={(e) => setPautasFiltroFase(e.target.value)}
-                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#f8fafc', color: '#334155' }}
-                        >
-                          <option value="">Todas las Fases</option>
-                          <option value="planificado">1. Pre-siembra</option>
-                          <option value="siembra">2. Siembra</option>
-                          <option value="postsiembra">3. Post-siembra</option>
-                          <option value="germinacion">4. Germinación</option>
-                          <option value="semillero">5. Semillero</option>
-                          <option value="trasplante">6. Trasplante</option>
-                          <option value="enraizamiento">7. Post-Trasplante</option>
-                          <option value="crecimiento">8. Crecimiento Veg.</option>
-                          <option value="floracion">9. Floración</option>
-                          <option value="cosecha">10. Cosecha</option>
-                          <option value="finalizado">11. Finalizado</option>
-                          <option value="general">🌍 General</option>
-                        </select>
-
-                        <select 
-                          value={pautasFiltroLabor} 
-                          onChange={(e) => setPautasFiltroLabor(e.target.value)}
-                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#f8fafc', color: '#334155' }}
-                        >
-                          <option value="">Todas las Labores</option>
-                          {masterLabores.map(l => (
-                            <option key={l.idlabores} value={String(l.idlabores)}>{l.laboresnombre}</option>
-                          ))}
-                        </select>
-
-                        <select 
-                          value={pautasFiltroLaboreo} 
-                          onChange={(e) => setPautasFiltroLaboreo(e.target.value)}
-                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: '#f8fafc', color: '#334155' }}
-                        >
-                          <option value="">Sistemas de Cultivo (Todos)</option>
-                          <option value="convencional">🚜 Convencional</option>
-                          <option value="minimo">⛏️ Mínimo</option>
-                          <option value="nolaboreo">🚫 No laboreo</option>
-                        </select>
-
-                        {(pautasFiltroFase || pautasFiltroLabor || pautasFiltroLaboreo) && (
-                          <button 
-                            type="button" 
-                            onClick={() => { setPautasFiltroFase(''); setPautasFiltroLabor(''); setPautasFiltroLaboreo(''); }}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                          >
-                            Limpiar filtros
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {!especieId ? (
-                      <div style={{ padding: '20px', background: '#fffbeb', color: '#b45309', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-                        Debes guardar la especie primero antes de poder asignar pautas de labores.
-                      </div>
-                    ) : (
-                      <>
-                        {showAddPautaForm && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '16px', marginBottom: '24px', background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                            <div style={{ gridColumn: '1 / -1', marginBottom: '8px' }}>
-                              <h4 style={{ margin: 0, color: '#1e293b', fontSize: '1rem' }}>➕ Nueva Pauta de Labor</h4>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Labor *</label>
-                              <select
-                                value={pautaForm.xlaborespautaidlabores}
-                                onChange={e => setPautaForm({ ...pautaForm, xlaborespautaidlabores: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                              >
-                                <option value="">Selecciona labor...</option>
-                                {masterLabores.map(l => (
-                                  <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre} ({l.laborestipo})</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Fase de la Planta *</label>
-                              <select
-                                value={pautaForm.laborespautafase}
-                                onChange={e => setPautaForm({ ...pautaForm, laborespautafase: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                              >
-                                <option value="planificado">1. Pre-siembra</option>
-                                <option value="siembra">2. Siembra</option>
-                                <option value="postsiembra">3. Post-siembra</option>
-                                <option value="germinacion">4. Germinación</option>
-                                <option value="semillero">5. Semillero</option>
-                                <option value="trasplante">6. Trasplante</option>
-                                <option value="enraizamiento">7. Post-Trasplante</option>
-                                <option value="crecimiento">8. Crecimiento Veg.</option>
-                                <option value="floracion">9. Floración</option>
-                                <option value="cosecha">10. Cosecha</option>
-                                <option value="finalizado">11. Finalizado</option>
-                                <option value="general">🌍 General / Todo el ciclo</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Frecuencia (días)</label>
-                              <input
-                                type="number"
-                                min="1"
-                                placeholder="Ej: 3"
-                                value={pautaForm.laborespautafrecuenciadias}
-                                onChange={e => setPautaForm({ ...pautaForm, laborespautafrecuenciadias: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Offset (días)</label>
-                              <input 
-                                type="number" 
-                                placeholder="Ej: -180"
-                                value={pautaForm.laborespautaoffset} 
-                                onChange={e => setPautaForm({...pautaForm, laborespautaoffset: parseInt(e.target.value) || 0})}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                title="Días de anticipación (negativo) o retraso (positivo) respecto al inicio de la fase."
-                              />
-                            </div>
-                            <div style={{ gridColumn: '1 / -1' }}>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Notas de la IA / Instrucciones</label>
-                              <textarea
-                                rows={2}
-                                placeholder="Ej: Mantener humedad constante sin encharcar..."
-                                value={pautaForm.laborespautanotasia}
-                                onChange={e => setPautaForm({ ...pautaForm, laborespautanotasia: e.target.value })}
-                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                              />
-                            </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={pautaForm.laborespautaactivosino === 1}
-                                  onChange={e => setPautaForm({ ...pautaForm, laborespautaactivosino: e.target.checked ? 1 : 0 })}
-                                />
-                                Pauta Activa
-                              </label>
-                              <div style={{ display: 'flex', gap: '10px' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowAddPautaForm(false);
-                                    setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'germinacion', laborespautafrecuenciadias: '', laborespautanotasia: '', laborespautaactivosino: 1, idlaborespauta: undefined, laborespautaoffset: 0 });
-                                  }}
-                                  style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}
-                                >
-                                  Cancelar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={handleSavePauta}
-                                  style={{ padding: '8px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                                >
-                                  Guardar Pauta
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {pautas.length > 0 && (
-                          <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                              <thead style={{ background: '#f1f5f9' }}>
-                                <tr>
-                                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', width: '20%' }}>Fase</th>
-                                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0', width: '30%' }}>Labor</th>
-                                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Frec.</th>
-                                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Offset</th>
-                                  <th style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>Estado</th>
-                                  <th style={{ padding: '12px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>Acciones</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(() => {
-                                  const faseOrder: Record<string, number> = { planificado: 1, siembra: 2, postsiembra: 3, germinacion: 4, semillero: 5, trasplante: 6, enraizamiento: 7, crecimiento: 8, floracion: 9, cosecha: 10, finalizado: 11, general: 99 };
-                                  const filteredPautas = [...pautas].filter(p => {
-                                    if (p.laborespautaactivosino === 0) return false;
-                                    if (pautasFiltroFase && p.laborespautafase !== pautasFiltroFase) return false;
-                                    if (pautasFiltroLabor && String(p.xlaborespautaidlabores) !== String(pautasFiltroLabor)) return false;
-                                    if (pautasFiltroLaboreo === 'convencional' && p.laboresaplicaconvencional === 0) return false;
-                                    if (pautasFiltroLaboreo === 'minimo' && p.laboresaplicaminimo === 0) return false;
-                                    if (pautasFiltroLaboreo === 'nolaboreo' && p.laboresaplicanolaboreo === 0) return false;
-                                    return true;
-                                  });
-                                  const sortedPautas = filteredPautas.sort((a, b) => {
-                                    const orderA = faseOrder[a.laborespautafase] || 99;
-                                    const orderB = faseOrder[b.laborespautafase] || 99;
-                                    return orderA - orderB;
-                                  });
-                                  return sortedPautas.map((p, i) => {
-                                  const isNotesOpen = editingPauta === p.idlaborespauta;
-                                  
-                                  const updateField = async (field: string, value: any) => {
-                                    // Update local state first for responsiveness
-                                    const updatedPautas = pautas.map(item => 
-                                      item.idlaborespauta === p.idlaborespauta ? { ...item, [field]: value } : item
-                                    );
-                                    setPautas(updatedPautas);
-
-                                    // Auto-save to DB
-                                    try {
-                                      const updatedItem = { ...p, [field]: value };
-                                      await fetch(`/api/admin/especies/${especieId}/pautas/${p.idlaborespauta}`, {
-                                        method: 'PUT',
-                                        headers: { 
-                                          'Content-Type': 'application/json',
-                                          'x-user-email': userEmail || ''
-                                        },
-                                        body: JSON.stringify(updatedItem)
-                                      });
-                                    } catch (e) {
-                                      console.error('Error auto-saving pauta:', e);
-                                    }
-                                  };
-
-                                  return (
-                                    <React.Fragment key={p.idlaborespauta}>
-                                      <tr style={{ 
-                                        background: isNotesOpen ? '#f0f9ff' : (i % 2 === 0 ? 'white' : '#f8fafc'),
-                                        transition: 'all 0.2s',
-                                        borderBottom: '1px solid #e2e8f0'
-                                      }}>
-                                        <td style={{ padding: '8px 12px' }}>
-                                          <select
-                                            value={p.laborespautafase}
-                                            onChange={e => updateField('laborespautafase', e.target.value)}
-                                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', fontSize: '0.85rem', color: '#64748b', cursor: 'pointer' }}
-                                            onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
-                                            onBlur={e => e.target.style.border = '1px solid transparent'}
-                                          >
-                                            <option value="planificado">1. Pre-siembra</option>
-                                            <option value="siembra">2. Siembra</option>
-                                            <option value="postsiembra">3. Post-siembra</option>
-                                            <option value="germinacion">4. Germinación</option>
-                                            <option value="semillero">5. Semillero</option>
-                                            <option value="trasplante">6. Trasplante</option>
-                                            <option value="enraizamiento">7. Post-Trasplante</option>
-                                            <option value="crecimiento">8. Crecimiento Veg.</option>
-                                            <option value="floracion">9. Floración</option>
-                                            <option value="cosecha">10. Cosecha</option>
-                                            <option value="finalizado">11. Finalizado</option>
-                                            <option value="general">🌍 General / Todo el Ciclo</option>
-                                          </select>
-                                        </td>
-                                        <td style={{ padding: '8px 12px' }}>
-                                          <select
-                                            value={p.xlaborespautaidlabores}
-                                            onChange={e => updateField('xlaborespautaidlabores', e.target.value)}
-                                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer' }}
-                                            onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
-                                            onBlur={e => e.target.style.border = '1px solid transparent'}
-                                          >
-                                            {masterLabores.map(l => (
-                                              <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
-                                            ))}
-                                          </select>
-                                        </td>
-                                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
-                                            <input
-                                              type="number"
-                                              min="1"
-                                              value={p.laborespautafrecuenciadias || ''}
-                                              onChange={e => updateField('laborespautafrecuenciadias', e.target.value)}
-                                              placeholder="--"
-                                              style={{ width: '45px', padding: '4px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', textAlign: 'center', fontSize: '0.85rem' }}
-                                              onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
-                                              onBlur={e => e.target.style.border = '1px solid transparent'}
-                                            />
-                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>d</span>
-                                          </div>
-                                        </td>
-                                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
-                                            <input
-                                              type="number"
-                                              value={p.laborespautaoffset || 0}
-                                              onChange={e => updateField('laborespautaoffset', parseInt(e.target.value) || 0)}
-                                              placeholder="0"
-                                              style={{ width: '55px', padding: '4px', borderRadius: '4px', border: '1px solid transparent', background: 'transparent', textAlign: 'center', fontSize: '0.85rem' }}
-                                              onFocus={e => e.target.style.border = '1px solid #cbd5e1'}
-                                              onBlur={e => e.target.style.border = '1px solid transparent'}
-                                              title="Offset (días)"
-                                            />
-                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>d</span>
-                                          </div>
-                                        </td>
-                                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                          <input
-                                            type="checkbox"
-                                            checked={p.laborespautaactivosino === 1}
-                                            onChange={e => updateField('laborespautaactivosino', e.target.checked ? 1 : 0)}
-                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                          />
-                                        </td>
-                                        <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                            <button 
-                                              type="button" 
-                                              onClick={() => {
-                                                if (isNotesOpen) {
-                                                  setEditingPauta(null);
-                                                } else {
-                                                  setEditingPauta(p.idlaborespauta);
-                                                  setPautaForm({ ...p });
-                                                }
-                                              }} 
-                                              title="Editar notas"
-                                              style={{ background: isNotesOpen ? '#ede9fe' : 'none', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '4px', fontSize: '1rem' }}
-                                            >
-                                              {isNotesOpen ? '📖' : '✏️'}
-                                            </button>
-                                            <button type="button" onClick={() => handleDeletePauta(p.idlaborespauta)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', fontSize: '1rem', opacity: 0.8 }} title="Eliminar labor" onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'}>🗑️</button>
-                                          </div>
-                                        </td>
-                                      </tr>
-
-                                      {isNotesOpen && (
-                                        <tr style={{ background: '#f5f3ff' }}>
-                                          <td colSpan={5} style={{ padding: '0 12px 12px 12px' }}>
-                                            <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd6fe', marginTop: '4px' }}>
-                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#6d28d9' }}>Notas e Instrucciones detalladas</label>
-                                                <span style={{ fontSize: '0.7rem', color: '#a78bfa' }}>Se guarda automáticamente</span>
-                                              </div>
-                                              <textarea
-                                                rows={3}
-                                                value={p.laborespautanotasia || ''}
-                                                onChange={e => updateField('laborespautanotasia', e.target.value)}
-                                                placeholder="Instrucciones específicas para esta labor..."
-                                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', lineHeight: '1.4' }}
-                                              />
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      )}
-                                    </React.Fragment>
-                                  );
-                                });
-                                })()}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* SINONIMOS */}
-                {activeTab === 'sinonimos' && (
-                  <div className="grid-form">
-                    <div className="form-group full" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h3 style={{ margin: 0 }}>Gestión de Sinónimos y Nombres Locales</h3>
+                  {/* SECCIÓN SINÓNIMOS */}
+                  <div className="form-group full" style={{ marginTop: '30px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>🗣️ Sinónimos y Nombres Locales</h3>
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <button
                           type="button"
@@ -3331,14 +2065,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       </div>
                     </div>
 
-                    <div className="form-group full">
-                      {sinonimos.length === 0 && !sinonimosAiLoading ? (
-                        <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
-                          <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay sinónimos registrados.</p>
-                          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "Proponer Sinónimos" para que la Inteligencia Artificial busque por ti.</p>
-                        </div>
-                      ) : (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                    {sinonimos.length === 0 && !sinonimosAiLoading ? (
+                      <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                        <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay sinónimos registrados.</p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "Proponer Sinónimos" para que la Inteligencia Artificial busque por ti.</p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto', width: '100%' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', minWidth: '600px' }}>
                           <thead>
                             <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                               <th style={{ padding: '12px', textAlign: 'left', width: '30%' }}>Nombre / Sinónimo</th>
@@ -3421,7 +2155,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                       const newSin = [...sinonimos];
                                       newSin.splice(index, 1);
                                       setSinonimos(newSin);
-                                      // Auto-borrar de la BD si ya estaba guardado
                                       if (sinToDelete.idespeciessinonimos && especieId) {
                                         try {
                                           await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
@@ -3439,393 +2172,1458 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                             ))}
                           </tbody>
                         </table>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {/* BLOGS */}
-                {activeTab === 'blogs' && (
-                  <div className="grid-form">
-                    <div className="form-group full">
-                      <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
-                        <span style={{ margin: 0 }}>Artículos del Blog generados para esta Especie</span>
-                      </label>
-                      {blogs.length === 0 ? (
-                        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '30px', textAlign: 'center', borderRadius: '12px', color: '#64748b' }}>
-                          No hay ningún artículo generado para esta especie.<br /><br />
-                          <button type="button" onClick={() => setActiveTab('adjuntos')} style={{ background: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                            Ir a Adjuntos para generar uno a partir de un PDF
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                          {blogs.map(b => {
-                            const linkedPdf = b.pdfSourceId ? pdfs.find((p: any) => p.id === b.pdfSourceId) : null;
-                            return (
-                              <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', display: 'flex', flexDirection: 'column' }}>
-                                {b.hero_imagen ? (
-                                  <img src={getMediaUrl(b.hero_imagen)} alt={b.hero_imagen_alt || b.titulo} style={{ width: '100%', height: '140px', objectFit: 'cover' }} crossOrigin="anonymous" />
-                                ) : (
-                                  <div style={{ width: '100%', height: '140px', background: 'linear-gradient(135deg, #0f766e, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '3rem' }}>📝</div>
-                                )}
-                                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                  <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: '#1e293b', lineHeight: 1.3 }}>{b.titulo}</h3>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px', fontSize: '0.75rem', color: '#64748b' }}>
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>✍️ {b.autor}</span>
-                                    <span>•</span>
-                                    <span>{b.fechaCreacion ? new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Sin fecha'}</span>
-                                    <span style={{ marginLeft: 'auto', background: b.estado === 'publicado' ? '#dcfce7' : '#fef3c7', color: b.estado === 'publicado' ? '#166534' : '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase' }}>{b.estado}</span>
-                                  </div>
-                                  <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
-                                    {b.resumen}
-                                  </p>
-
-                                  {/* PDF asociado */}
-                                  <div style={{ marginBottom: '12px', padding: '8px 10px', background: linkedPdf ? '#ecfdf5' : '#f8fafc', border: `1px solid ${linkedPdf ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: '6px', fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {linkedPdf ? (
-                                      <a href={getMediaUrl(linkedPdf.ruta)} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: '#0f766e', fontWeight: 600 }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                                        📄 {linkedPdf.titulo || linkedPdf.nombreOriginal}
-                                      </a>
-                                    ) : (
-                                      <span style={{ color: '#94a3b8' }}>Sin PDF de origen vinculado</span>
-                                    )}
-                                  </div>
-
-                                  {/* Acciones */}
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                    <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ textAlign: 'center', background: '#f1f5f9', color: '#0f766e', textDecoration: 'none', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #cbd5e1', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>
-                                      👁️
-                                    </a>
-                                    <a href={`/dashboard/admin/blog/${b.id}`} style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', textDecoration: 'none', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #bfdbfe', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'} onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}>
-                                      ✏️ Editar
-                                    </a>
-                                    <button type="button" onClick={async () => {
-                                      if (!confirm(`¿Estás seguro de que quieres eliminar el blog "${b.titulo}"? Esta acción no se puede deshacer.`)) return;
-                                      try {
-                                        const res = await fetch(`/api/admin/blog/${b.id}`, { method: 'DELETE' });
-                                        const data = await res.json();
-                                        if (data.success) {
-                                          setBlogs(prev => prev.filter(x => x.id !== b.id));
-                                        } else {
-                                          alert(data.error || 'Error al eliminar');
-                                        }
-                                      } catch (e) { alert('Error de red al eliminar blog'); }
-                                    }} style={{ padding: '8px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; }}>
-                                      🗑️
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* ADJUNTOS */}
-                {activeTab === 'adjuntos' && (
-                  <div>
-                    {!especieId ? (
-                      <p>Guarda la especie primero para subir archivos adjuntos.</p>
-                    ) : (
-                      <div className="grid-form">
-                        <div className="form-group full">
-                          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              Fotos
-                              {photos.length > 1 && (
-                                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 'normal', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '2px 7px', letterSpacing: '0.01em' }}>
-                                  ✥ Arrastra para cambiar el orden
-                                </span>
-                              )}
-                            </span>
-                            <small style={{ color: photos.length >= 4 ? '#ef4444' : '#64748b' }}>
-                              {photos.length} / 4 permitidas
-                            </small>
+                {/* REQUISITOS Y SUELO (Cultivo + Fisiología + Marcos) */}
+                <div className="grid-form" style={{ display: activeTab === 'cultivo' ? 'grid' : 'none' }}>
+                  {/* TIPO DE SIEMBRA */}
+                  <div className="form-group full" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra / Propagación</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                      {[
+                        { val: 'directa', label: 'Semilla: Siembra Directa' },
+                        { val: 'semillero', label: 'Semilla: Semillero / Almácigo' },
+                        { val: 'planton', label: 'Plantón / Plantel' },
+                        { val: 'esqueje', label: 'Esqueje / Chupón / Estolón' },
+                        { val: 'bulbo', label: 'Tubérculo / Bulbo / Rizoma' },
+                        { val: 'division', label: 'División de Mata' }
+                      ].map(t => (
+                        <div key={t.val} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', cursor: 'pointer', color: '#475569', flex: 1 }}>
+                            <input
+                              type="checkbox"
+                              name="especiestiposiembra"
+                              value={t.val}
+                              checked={formData.especiestiposiembra?.includes(t.val)}
+                              onChange={handleChange}
+                            />
+                            {t.label}
                           </label>
-                          <div className="gallery">
-                            {photos.map((p, index) => {
-                              const isLocked = index >= 4;
-                              let meta: any = {};
-                              try { meta = JSON.parse(p.resumen || '{}'); } catch (e) { }
-
-                              let baseFilter = isLocked ? 'grayscale(100%) blur(2px)' : (meta.profile_style ? STYLE_FILTERS[meta.profile_style] : 'none');
-                              if (!isLocked && (meta.profile_brightness !== undefined || meta.profile_contrast !== undefined)) {
-                                baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
-                              }
-
-                              const imgStyle: any = {
-                                filter: baseFilter,
-                                objectFit: 'cover',
-                                objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
-                                transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
-                                transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
-                              };
-
-                              const isDragging = draggedPhotoIndex === index;
-                              const isDragOver = draggedOverPhotoIndex === index;
-
-                              return (
-                                <div
-                                  key={p.id}
-                                  className={`gallery-item ${p.esPrincipal ? 'is-preferred' : ''}`}
-                                  style={{
-                                    opacity: isDragging ? 0.5 : 1,
-                                    border: isDragOver ? '2px dashed #10b981' : undefined,
-                                    transform: isDragOver ? 'scale(1.02)' : 'none',
-                                    transition: 'all 0.2s ease',
-                                    cursor: 'grab',
-                                    backgroundColor: meta.dominant_color || '#f1f5f9',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                  }}
-                                  draggable
-                                  onDragStart={() => setDraggedPhotoIndex(index)}
-                                  onDragEnter={() => setDraggedPhotoIndex !== null && setDraggedOverPhotoIndex(index)}
-                                  onDragEnd={() => {
-                                    if (draggedPhotoIndex !== null && draggedOverPhotoIndex !== null && draggedPhotoIndex !== draggedOverPhotoIndex) {
-                                      const newPhotos = [...photos];
-                                      const [draggedItem] = newPhotos.splice(draggedPhotoIndex, 1);
-                                      newPhotos.splice(draggedOverPhotoIndex, 0, draggedItem);
-
-                                      // Guardar estado original
-                                      const wasAlreadyPrimary = draggedItem.esPrincipal === 1;
-
-                                      // Si se arrastra a la primera posición, marcarla como principal localmente
-                                      if (draggedOverPhotoIndex === 0) {
-                                        newPhotos.forEach(p => p.esPrincipal = (p.id === draggedItem.id ? 1 : 0));
-                                      }
-
-                                      handleReorderPhotos(newPhotos);
-
-                                      // Si cayó en la primera posición y no era la principal, actualizar en servidor
-                                      if (draggedOverPhotoIndex === 0 && !wasAlreadyPrimary) {
-                                        handleSetPrimaryPhoto(draggedItem.id);
-                                      }
-                                    }
-                                    setDraggedPhotoIndex(null);
-                                    setDraggedOverPhotoIndex(null);
-                                  }}
-                                  onDragOver={(e) => e.preventDefault()}
-                                >
-                                  {meta.blurhash && (
-                                    <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-                                      <Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} />
-                                    </div>
-                                  )}
-                                  <img
-                                    src={getMediaUrl(p.ruta)}
-                                    alt={meta.seo_alt || 'foto especie'}
-                                    loading="lazy"
-                                    style={{ ...imgStyle, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}
-                                    draggable={false}
-                                    crossOrigin="anonymous" />
-                                  {meta.exif_data && (
-                                    <div style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', cursor: 'help', zIndex: 10 }} title={`Cámara: ${meta.exif_data.make || ''} ${meta.exif_data.model || ''}\nFecha: ${meta.exif_data.date ? new Date(meta.exif_data.date).toLocaleDateString() : 'Desconocida'}`}>
-                                      ℹ️
-                                    </div>
-                                  )}
-                                  {isLocked && (
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)', zIndex: 10, background: 'rgba(0,0,0,0.4)' }}>
-                                      <span style={{ fontSize: '1.5rem', marginBottom: '4px' }}>🔒</span>
-                                      <small style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '0.65rem' }}>Excede límite</small>
-                                    </div>
-                                  )}
-                                  <div className="photo-actions" style={{ zIndex: 20 }}>
-                                    <button
-                                      type="button"
-                                      className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`}
-                                      onClick={() => handleSetPrimaryPhoto(p.id)}
-                                      title={p.esPrincipal ? 'Foto preferida actual' : 'Marcar como foto preferida'}
-                                    >{p.esPrincipal ? '★' : '☆'}</button>
-                                    <button
-                                      type="button"
-                                      className="photo-action-btn btn-photo-edit"
-                                      onClick={() => openPhotoEditor(p)}
-                                      title="Editar foto"
-                                    >✏️</button>
-                                    <button type="button" className="photo-action-btn btn-photo-delete" onClick={() => handleDeleteFile(p.id, 'photos')} title="Eliminar">✕</button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-
-                            {photos.length >= 4 ? null : (
-                              <div
-                                className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
-                                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
-                                onDrop={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setDragOverPhotos(false);
-                                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                                    handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
-                                  }
-                                }}
-                              >
-                                <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
-                                <input type="file" id="upload-camera" accept="image/*" capture="environment" onChange={(e) => handleFileUpload(e, 'photos')} style={{ display: 'none' }} disabled={uploadingPhotos} />
-
-                                {uploadingPhotos ? (
-                                  <div className="drop-zone-content">
-                                    <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                                    <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Procesando...</span>
-                                    <span className="drop-hint" style={{ color: '#059669', fontSize: '0.65rem' }}>IA analizando</span>
-                                  </div>
-                                ) : (
-                                  <div className="drop-zone-content">
-                                    <div className="drop-zone-buttons" style={{ flexDirection: 'column' }}>
-                                      <label htmlFor="upload-photos" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                                        <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📁</span> Galería
-                                      </label>
-                                      <label htmlFor="upload-camera" className="btn-upload secondary mobile-only" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                                        <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📷</span> Cámara
-                                      </label>
-                                      <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
-                                        <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>✨</span> Generar IA
-                                      </button>
-                                    </div>
-                                    <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br />aquí</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="form-group full">
-                          <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px' }}>
-                            <span style={{ margin: 0 }}>Documentos Adicionales (PDF)</span>
-                            <button type="button" onClick={() => setShowPdfSearchModal(true)} style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)', margin: 0 }}>
-                              ✨ Buscar PDFs con IA
-                            </button>
-                          </label>
-                          <div className="gallery pdfs">
-                            {pdfs.map(p => (
-                              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                {/* Cuadro de portada — solo la foto */}
-                                <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
-                                  {p.portada ? (
-                                    <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
-                                  ) : (
-                                    <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        {generatingCoverId === p.id ? '⏳ Generando...' : '🎨 Generar Portada'}
-                                      </button>
-                                    </div>
-                                  )}
-
-                                  {/* Botones superpuestos en la foto */}
-                                  <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                                    <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
-                                    {(p.hasBlog || blogs.some(b => b.pdfSourceId == p.id)) ? (
-                                      <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
-                                    ) : (
-                                      <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeleteFile(p.id, 'pdfs')} title="Eliminar">✕</button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Título como hipervínculo debajo del cuadro */}
-                                <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                                  📄 {p.titulo || p.nombreOriginal}
-                                </a>
-
-                                {/* Botón generar blog debajo del título */}
-                                <button type="button" onClick={() => setBlogGenPdf(p)} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', alignSelf: 'center', boxShadow: '0 2px 4px rgba(245,158,11,0.3)' }}>
-                                  📝 Generar Blog
-                                </button>
-
-                                {/* Blogs relacionados a este PDF */}
-                                {blogs.filter(b => b.pdfSourceId == p.id).length > 0 && (
-                                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>Blogs Generados</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      {blogs.filter(b => b.pdfSourceId == p.id).map(b => (
-                                        <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
-                                          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                                            {b.hero_imagen ? (
-                                              <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
-                                                <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                                              </div>
-                                            ) : (
-                                              <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
-                                            )}
-                                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                              <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                                                {b.titulo}
-                                              </a>
-                                            </div>
-                                          </div>
-                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '46px' }}>
-                                            <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
-                                              {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
-                                            </span>
-                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                              <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
-                                                {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                                              </span>
-                                              <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
-                                                🗑️
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-
-                            <div
-                              className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
-                              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
-                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
-                              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(false); }}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setDragOverPdfs(false);
-                                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                                  handleFileUpload({ target: { files: e.dataTransfer.files } }, 'pdfs');
-                                }
+                          {formData.especiestiposiembra?.includes(t.val) && (
+                            <button
+                              type="button"
+                              title="Marcar como preferente"
+                              onClick={() => {
+                                const prefs = formData.especiestiposiembrapreferente || [];
+                                const newPrefs = prefs.includes(t.val) ? prefs.filter((p: string) => p !== t.val) : [...prefs, t.val];
+                                const next = { ...formData, especiestiposiembrapreferente: newPrefs };
+                                setFormData(next);
+                                setTimeout(() => autoSaveField('especiestiposiembrapreferente', newPrefs, next), 100);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                fontSize: '1.2rem',
+                                color: formData.especiestiposiembrapreferente?.includes(t.val) ? '#fbbf24' : '#cbd5e1'
                               }}
                             >
-                              <input type="file" id="upload-pdfs" multiple accept=".pdf" onChange={(e) => handleFileUpload(e, 'pdfs')} disabled={uploadingPdfs} />
+                              {formData.especiestiposiembrapreferente?.includes(t.val) ? '⭐' : '☆'}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                              {uploadingPdfs ? (
-                                <div className="drop-zone-content">
-                                  <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                                  <span style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Subiendo...</span>
-                                </div>
-                              ) : (
-                                <div className="drop-zone-content">
-                                  <label htmlFor="upload-pdfs" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                                    <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📄</span> Subir PDF
-                                  </label>
-                                  <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br />aquí</span>
-                                </div>
-                              )}
-                            </div>
+                  <div className="form-group">
+                    <label>Profundidad de Siembra (cm)</label>
+                    <input type="number" step="0.1" name="especiesprofundidadsiembra" value={formData.especiesprofundidadsiembra || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label>Profundidad de Trasplante</label>
+                    <input type="text" name="especiesprofundidadtrasplante" placeholder="Ej: Hasta los cotiledones" value={formData.especiesprofundidadtrasplante || ''} onChange={handleChange} />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Dificultad</label>
+                    <select name="especiesdificultad" value={formData.especiesdificultad || ''} onChange={handleChange}>
+                      <option value="">--</option>
+                      <option value="baja">Baja</option>
+                      <option value="media">Media</option>
+                      <option value="alta">Alta</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Luz Solar</label>
+                    <select name="especiesluzsolar" value={formData.especiesluzsolar || ''} onChange={handleChange}>
+                      <option value="">--</option>
+                      <option value="pleno_sol">Pleno Sol</option>
+                      <option value="semisombra">Semisombra</option>
+                      <option value="sombra">Sombra</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Necesidad de Riego</label>
+                    <select name="especiesnecesidadriego" value={formData.especiesnecesidadriego || ''} onChange={handleChange}>
+                      <option value="">--</option>
+                      <option value="baja">Baja</option>
+                      <option value="media">Media</option>
+                      <option value="alta">Alta</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Volumen Maceta (L)</label>
+                    <input type="number" name="especiesvolumenmaceta" value={formData.especiesvolumenmaceta || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label>Vol. Semillero Mín (cc)</label>
+                    <input type="number" name="especiesemillerovolumendesde" value={formData.especiesemillerovolumendesde || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label>Vol. Semillero Máx (cc)</label>
+                    <input type="number" name="especiesemillerovolumenhasta" value={formData.especiesemillerovolumenhasta || ''} onChange={handleChange} />
+                  </div>
+
+                  <div className="form-group">
+                    <label>pH del Suelo</label>
+                    <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group full">
+                    <label>Características del Suelo</label>
+                    <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
+                  </div>
+
+                  {/* DATOS DE FISIOLOGÍA SEMILLAS */}
+                  <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px' }}>
+                    <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
+                      <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Peso de 1.000 Semillas (g)</label>
+                      <input type="number" step="0.001" name="especiespeso1000semillas" value={formData.especiespeso1000semillas || ''} onChange={handleChange} style={{ marginTop: '8px' }} placeholder="Ej. 1.5" />
+                      {formData.especiespeso1000semillas && Number(formData.especiespeso1000semillas) > 0 && (
+                        <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#0f766e', fontWeight: 'bold' }}>
+                          🔄 Equivalencia: {Math.round(1000 / Number(formData.especiespeso1000semillas))} semillas por gramo
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* REQUISITOS TÉRMICOS */}
+                  <div className="form-group full" style={{ marginTop: '15px', marginBottom: '15px', padding: '20px', background: '#fff1f2', borderRadius: '12px', border: '1px solid #fecdd3' }}>
+                    <h3 style={{ margin: '0 0 15px 0', color: '#be123c', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🌡️ Requisitos Térmicos (°C)
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+                      <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                        <label style={{ color: '#0369a1' }}>Mínima (Sobrevive)</label>
+                        <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
+                      </div>
+                      <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                        <label style={{ color: '#15803d' }}>Óptima (Desarrollo)</label>
+                        <input type="number" step="0.1" name="especiestemperaturaoptima" value={formData.especiestemperaturaoptima || ''} onChange={handleChange} />
+                      </div>
+                      <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                        <label style={{ color: '#be123c' }}>Máxima (Estrés)</label>
+                        <input type="number" step="0.1" name="especiestemperaturamaxima" value={formData.especiestemperaturamaxima || ''} onChange={handleChange} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MARCOS DE PLANTACIÓN (Autosuficiencia) */}
+                  <div className="form-group" style={{ marginTop: '15px' }}>
+                    <label>Marco Plantas (cm)</label>
+                    <input type="number" name="especiesmarcoplantas" value={formData.especiesmarcoplantas || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group" style={{ marginTop: '15px' }}>
+                    <label>Marco Filas (cm)</label>
+                    <input type="number" name="especiesmarcofilas" value={formData.especiesmarcofilas || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group full" style={{ marginTop: '15px' }}>
+                    <label>Margen al Borde (cm)</label>
+                    <input type="number" name="especiesmarcomargen" value={formData.especiesmarcomargen || ''} onChange={handleChange} />
+                  </div>
+
+                  {(formData.especiesmarcoplantas || formData.especiesmarcofilas) && (
+                    <div className="form-group full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '15px', padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '10px', fontWeight: 'bold' }}>Esquema de Plantación a Escala</span>
+
+                      {(() => {
+                        let p = parseFloat(formData.especiesmarcoplantas);
+                        let f = parseFloat(formData.especiesmarcofilas);
+                        let m = parseFloat(formData.especiesmarcomargen) || 0;
+                        if (!p || p <= 0) p = 50;
+                        if (!f || f <= 0) f = 50;
+
+                        const totalW = p + 2 * m;
+                        const totalH = f + 2 * m;
+
+                        const maxW = 220;
+                        const maxH = 160;
+
+                        let drawTotalW, drawTotalH;
+                        const ratio = totalW / totalH;
+                        const maxRatio = maxW / maxH;
+
+                        if (ratio > maxRatio) {
+                          drawTotalW = maxW;
+                          drawTotalH = maxW / ratio;
+                        } else {
+                          drawTotalH = maxH;
+                          drawTotalW = maxH * ratio;
+                        }
+
+                        if (drawTotalW < 50) drawTotalW = 50;
+                        if (drawTotalH < 50) drawTotalH = 50;
+
+                        const scale = drawTotalW / totalW;
+                        const drawM = m * scale;
+                        const drawW = p * scale;
+                        const drawH = f * scale;
+
+                        const cx = 160;
+                        const cy = 120;
+
+                        const bedX1 = cx - drawTotalW / 2;
+                        const bedX2 = cx + drawTotalW / 2;
+                        const bedY1 = cy - drawTotalH / 2;
+                        const bedY2 = cy + drawTotalH / 2;
+
+                        const x1 = bedX1 + drawM;
+                        const x2 = bedX2 - drawM;
+                        const y1 = bedY1 + drawM;
+                        const y2 = bedY2 - drawM;
+
+                        return (
+                          <svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '100%', height: 'auto' }}>
+                            <rect 
+                              x={bedX1} 
+                              y={bedY1} 
+                              width={drawTotalW} 
+                              height={drawTotalH} 
+                              fill="#fdfbf7" 
+                              stroke="#10b981" 
+                              strokeWidth="1.5" 
+                              rx="6" 
+                              style={{ filter: 'drop-shadow(0 2px 4px rgba(16,185,129,0.05))' }}
+                            />
+
+                            <circle cx={x1} cy={y1} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                            <circle cx={x2} cy={y1} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                            <circle cx={x1} cy={y2} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+                            <circle cx={x2} cy={y2} r="8" fill="#22c55e" stroke="#16a34a" strokeWidth="1" />
+
+                            {x2 - x1 > 30 && (
+                              <>
+                                <line x1={x1 + 12} y1={y1} x2={x2 - 12} y2={y1} stroke="#64748b" strokeWidth="2" />
+                                <polygon points={`${x1 + 12},${y1 - 4} ${x1 + 8},${y1} ${x1 + 12},${y1 + 4}`} fill="#64748b" />
+                                <polygon points={`${x2 - 12},${y1 - 4} ${x2 - 8},${y1} ${x2 - 12},${y1 + 4}`} fill="#64748b" />
+                              </>
+                            )}
+
+                            <rect x={cx - 30} y={y1 - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                            <text x={cx} y={y1 + 4} fontSize="11" fontWeight="bold" fill="#0f172a" textAnchor="middle">
+                              {formData.especiesmarcoplantas ? `${formData.especiesmarcoplantas} cm` : '? cm'}
+                            </text>
+
+                            {y2 - y1 > 30 && (
+                              <>
+                                <line x1={x1} y1={y1 + 12} x2={x1} y2={y2 - 12} stroke="#64748b" strokeWidth="2" />
+                                <polygon points={`${x1 - 4},${y1 + 12} ${x1},${y1 + 8} ${x1 + 4},${y1 + 12}`} fill="#64748b" />
+                                <polygon points={`${x1 - 4},${y2 - 12} ${x1},${y2 - 8} ${x1 + 4},${y2 - 12}`} fill="#64748b" />
+                              </>
+                            )}
+
+                            <rect x={x1 - 30} y={cy - 10} width="60" height="20" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" rx="4" />
+                            <text x={x1} y={cy + 4} fontSize="11" fontWeight="bold" fill="#0f172a" textAnchor="middle">
+                              {formData.especiesmarcofilas ? `${formData.especiesmarcofilas} cm` : '? cm'}
+                            </text>
+
+                            <line x1={x2} y1={y1 + 12} x2={x2} y2={y2 - 12} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+                            <line x1={x1 + 12} y1={y2} x2={x2 - 12} y2={y2} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4 4" />
+
+                            {m > 0 && (
+                              <>
+                                <line x1={x2} y1={y1} x2={bedX2} y2={y1} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" />
+                                {drawM > 15 && (
+                                  <>
+                                    <line x1={x2 + 8} y1={y1 - 6} x2={x2 + 8} y2={y1 + 6} stroke="#f59e0b" strokeWidth="1.5" />
+                                    <line x1={bedX2 - 8} y1={y1 - 6} x2={bedX2 - 8} y2={y1 + 6} stroke="#f59e0b" strokeWidth="1.5" />
+                                  </>
+                                )}
+                                <rect x={((x2 + bedX2) / 2) - 20} y={y1 - 18} width="40" height="15" fill="#ffffff" stroke="#fef3c7" strokeWidth="1" rx="3" />
+                                <text x={(x2 + bedX2) / 2} y={y1 - 7} fontSize="9" fontWeight="bold" fill="#d97706" textAnchor="middle">
+                                  {formData.especiesmarcomargen ? `${formData.especiesmarcomargen} cm` : '0 cm'}
+                                </text>
+                              </>
+                            )}
+                          </svg>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* CRONOLOGÍA Y CALENDARIOS (Fases + Calendarios) */}
+                <div className="grid-form" style={{ display: activeTab === 'fases' ? 'grid' : 'none' }}>
+                  <div className="form-group full" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ⏳ Tiempos Estimados (Días)
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '20px' }}>
+                      Indica los días reales que dura cada fase para esta especie concreta. El sistema las encadenará automáticamente para calcular las fechas estimadas del cultivo. Deja en 0 las fases que no apliquen.
+                    </p>
+
+                    {/* Tiempos de Preparación del Terreno (según laboreo) */}
+                    <div style={{
+                      background: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '10px',
+                      padding: '16px',
+                      marginBottom: '20px'
+                    }}>
+                      <h4 style={{ margin: '0 0 8px 0', color: '#334155', fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🚜 Preparación del Terreno (según tipo de laboreo)
+                      </h4>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 14px 0' }}>
+                        Establece los días de preparación del suelo según la técnica de laboreo a emplear.
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                        <div className="form-group" style={{ margin: 0, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>🚜</span>
+                            <span style={{ color: '#475569' }}>Prep. Convencional</span>
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                            <input 
+                              type="number" 
+                              min="0"
+                              name="especiespreparacionconvencional"
+                              placeholder="Días"
+                              value={formData.especiespreparacionconvencional || ''} 
+                              onChange={handleChange}
+                              style={{ flex: 1 }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>días</span>
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>⛏️</span>
+                            <span style={{ color: '#475569' }}>Prep. Mínimo</span>
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                            <input 
+                              type="number" 
+                              min="0"
+                              name="especiespreparacionminima"
+                              placeholder="Días"
+                              value={formData.especiespreparacionminima || ''} 
+                              onChange={handleChange}
+                              style={{ flex: 1 }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>días</span>
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>🌱</span>
+                            <span style={{ color: '#475569' }}>Prep. No Laboreo</span>
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                            <input 
+                              type="number" 
+                              min="0"
+                              name="especiespreparacionnolaboreo"
+                              placeholder="Días"
+                              value={formData.especiespreparacionnolaboreo || ''} 
+                              onChange={handleChange}
+                              style={{ flex: 1 }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>días</span>
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Resto de Fases del Cultivo */}
+                    <div style={{ marginBottom: '30px' }}>
+                      <h4 style={{ margin: '0 0 12px 0', color: '#334155', fontSize: '0.95rem', fontWeight: 'bold' }}>
+                        🌱 Fases del Ciclo de Vida
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+                        {masterFases
+                          .filter(f => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion')
+                          .map(fase => (
+                            <div key={fase.idfasescultivo} className="form-group" style={{ margin: 0, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                              <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>{fase.fasescultivoicono}</span>
+                                <span style={{ color: fase.fasescultivocolor }}>{fase.fasescultivonombre}</span>
+                              </label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  placeholder="Días"
+                                  value={formData.fases_duracion?.[fase.idfasescultivo] || ''} 
+                                  onChange={(e) => {
+                                    setFormData((prev: any) => ({
+                                      ...prev,
+                                      fases_duracion: {
+                                        ...prev.fases_duracion,
+                                        [fase.idfasescultivo]: e.target.value
+                                      }
+                                    }));
+                                  }}
+                                  onBlur={() => autoSaveFases(formData.fases_duracion)}
+                                  style={{ flex: 1 }}
+                                />
+                                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>días</span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* SECCIÓN CALENDARIOS ANUALES (Meses) */}
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '25px', marginTop: '20px' }}>
+                      <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        📅 Calendario Anual (Temporadas)
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                        {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
+                          const colorMap: Record<string, string> = {
+                            siembradirecta: '#f97316',
+                            semillero: '#3b82f6',
+                            trasplante: '#a855f7',
+                            recoleccion: '#22c55e'
+                          };
+                          const labelMap: Record<string, string> = {
+                            siembradirecta: 'Siembra Directa',
+                            semillero: 'Semillero',
+                            trasplante: 'Trasplante',
+                            recoleccion: 'Recolección'
+                          };
+                          return (
+                            <div key={tipo} style={{ background: '#fff', padding: '15px', borderRadius: '8px', borderTop: `4px solid ${colorMap[tipo]}`, borderLeft: '1px solid #cbd5e1', borderRight: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                              <strong style={{ display: 'block', marginBottom: '10px', fontSize: '0.95rem', color: '#334155' }}>{labelMap[tipo]}</strong>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <select
+                                  name={tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`}
+                                  value={formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`] || ''}
+                                  onChange={handleChange}
+                                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                >
+                                  <option value="">Desde (Mes)...</option>
+                                  {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                </select>
+                                <select
+                                  name={tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`}
+                                  value={formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`] || ''}
+                                  onChange={handleChange}
+                                  style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                >
+                                  <option value="">Hasta (Mes)...</option>
+                                  {MESES.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                </select>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ marginTop: '20px' }}>
+                        <h4 style={{ fontSize: '1.1rem', color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
+                          📊 Gráfico del Calendario de Cultivo
+                        </h4>
+
+                        <div style={{ overflowX: 'auto', width: '100%' }}>
+                          <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden', minWidth: '550px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                              <div style={{ padding: '8px 4px', fontWeight: 'bold', color: '#64748b', fontSize: '0.7rem', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>FASE</div>
+                              {MESES.map(m => (
+                                <div key={m.val} style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold', color: '#475569', fontSize: '0.7rem', borderRight: m.val < 12 ? '1px solid #e2e8f0' : 'none' }}>
+                                  {isMobile ? m.label.charAt(0) : m.label}
+                                </div>
+                              ))}
+                            </div>
+
+                            {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map((tipo, idx) => {
+                              const colorMap: Record<string, string> = { siembradirecta: '#f97316', semillero: '#3b82f6', trasplante: '#a855f7', recoleccion: '#22c55e' };
+                              const labelMap: Record<string, string> = { siembradirecta: 'Siembra', semillero: 'Semillero', trasplante: 'Traspl.', recoleccion: 'Recol.' };
+
+                              const desde = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}desde` : `especiesfecha${tipo}desde`]) || 0;
+                              const hasta = parseInt(formData[tipo === 'trasplante' ? `especies${tipo}hasta` : `especiesfecha${tipo}hasta`]) || 0;
+
+                              const isMonthActive = (m: number) => {
+                                if (!desde || !hasta) return false;
+                                if (desde <= hasta) return m >= desde && m <= hasta;
+                                return m >= desde || m <= hasta;
+                              };
+
+                              return (
+                                <div key={tipo} style={{ display: 'grid', gridTemplateColumns: '70px repeat(12, 1fr)', borderBottom: idx < 3 ? '1px solid #e2e8f0' : 'none', background: '#fff' }}>
+                                  <div style={{ padding: '8px 4px', fontSize: '0.65rem', fontWeight: 'bold', color: '#334155', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: colorMap[tipo], flexShrink: 0 }}></span>
+                                    {labelMap[tipo]}
+                                  </div>
+                                  {MESES.map(m => {
+                                    const active = isMonthActive(m.val);
+                                    return (
+                                      <div key={m.val} style={{
+                                        padding: '8px 0',
+                                        borderRight: m.val < 12 ? '1px dashed #e2e8f0' : 'none',
+                                        background: active ? `${colorMap[tipo]}20` : 'transparent',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                      }}>
+                                        {active && <div style={{ width: '100%', height: '10px', background: colorMap[tipo], borderRadius: '2px', margin: '0 1px' }}></div>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* LUNA Y BIODINAMICA */}
+                <div className="grid-form" style={{ display: activeTab === 'biodinamica' ? 'flex' : 'none', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🌕 Calendario Lunar
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Fase de Siembra</label>
+                        <select name="especieslunarfasesiembra" value={formData.especieslunarfasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <option value="">— Seleccionar Fase —</option>
+                          <option value="Creciente">🌘 Cuarto Creciente (Savia sube)</option>
+                          <option value="Menguante">🌔 Cuarto Menguante (Savia baja)</option>
+                          <option value="Nueva">🌑 Luna Nueva</option>
+                          <option value="Llena">🌕 Luna Llena</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold' }}>Fase de Trasplante</label>
+                        <select name="especieslunarfasetrasplante" value={formData.especieslunarfasetrasplante || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                          <option value="">— Seleccionar Fase —</option>
+                          <option value="Creciente">🌘 Cuarto Creciente</option>
+                          <option value="Menguante">🌔 Cuarto Menguante (Recomendado)</option>
+                          <option value="Nueva">🌑 Luna Nueva</option>
+                          <option value="Llena">🌕 Luna Llena</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group full" style={{ margin: 0 }}>
+                      <label style={{ fontWeight: 'bold' }}>Observaciones del Calendario Lunar</label>
+                      <textarea name="especieslunarobservaciones" value={formData.especieslunarobservaciones || ''} onChange={handleChange} rows={3} placeholder="Ej: La lechuga es preferible sembrarla en menguante para evitar que espigue rápido..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', resize: 'vertical' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#f0fdfa', padding: '20px', borderRadius: '12px', border: '1px solid #ccfbf1' }}>
+                    <h3 style={{ margin: '0 0 16px 0', color: '#0f766e', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🌍 Calendario Biodinámico
+                    </h3>
+                    
+                    <div className="form-group full" style={{ marginBottom: '16px' }}>
+                      <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Categoría del Órgano Principal</label>
+                      <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', fontSize: '1rem', background: '#fff' }}>
+                        <option value="">— Sin categoría —</option>
+                        <option value="fruto">🍅 Planta de Fruto (Días de Fuego/Calor)</option>
+                        <option value="raiz">🥕 Planta de Raíz (Días de Tierra/Frío)</option>
+                        <option value="hoja">🥬 Planta de Hoja (Días de Agua/Humedad)</option>
+                        <option value="flor">🌸 Planta de Flor (Días de Aire/Luz)</option>
+                      </select>
+                      {formData.especiesbiodinamicacategoria && (
+                        <p style={{ marginTop: '8px', fontSize: '0.85rem', color: '#0f766e', lineHeight: 1.5 }}>
+                          {({ fruto: 'Siembra y trasplanta en días Fruto. Recolecta también en días Fruto para mejor sabor y conservación.', raiz: 'Siembra en días Raíz. Recolecta en días Raíz para mejor conservación.', hoja: 'Siembra y trasplanta en días Hoja. Evita podar o cosechar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
+                        </p>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Fase de Siembra Biodinámica</label>
+                        <select name="especiesbiodinamicafasesiembra" value={formData.especiesbiodinamicafasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff' }}>
+                          <option value="">— Seleccionar Fase —</option>
+                          <option value="Ascendente">📈 Luna Ascendente (Savia sube)</option>
+                          <option value="Descendente">📉 Luna Descendente (Savia en raíces)</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Fase de Trasplante Biodinámica</label>
+                        <select name="especiesbiodinamicafasetrasplante" value={formData.especiesbiodinamicafasetrasplante || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff' }}>
+                          <option value="">— Seleccionar Fase —</option>
+                          <option value="Ascendente">📈 Luna Ascendente</option>
+                          <option value="Descendente">📉 Luna Descendente (Recomendado)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-group full" style={{ margin: 0 }}>
+                      <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Notas de Calendario Biodinámico</label>
+                      <textarea name="especiesbiodinamicanotas" value={formData.especiesbiodinamicanotas || ''} onChange={handleChange} rows={3} placeholder="Ej: Además del día de Fruto, evitar perigeos y nodos lunares para la siembra..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', background: '#fff', resize: 'vertical' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ECOSISTEMA (Asociaciones + Plagas) */}
+                <div className="grid-form" style={{ display: activeTab === 'asociaciones' ? 'grid' : 'none' }}>
+                  <div className="form-group full">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Asociaciones Beneficiosas</h4>
+                      {relacionesSaveStatus !== 'idle' && (
+                        <span style={{
+                          fontSize: '0.85rem', fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px',
+                          color: relacionesSaveStatus === 'no-changes' ? '#10b981' : '#64748b',
+                          background: relacionesSaveStatus === 'no-changes' ? '#dcfce7' : '#f1f5f9',
+                          transition: 'all 0.3s'
+                        }}>
+                          {relacionesSaveStatus === 'saving' ? '⏳ Guardando...' : '✓ Guardado'}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <option value="">Selecciona especie...</option>
+                        {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                      </select>
+                      <input type="text" id="motivoBen" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                      <button type="button" onClick={() => {
+                        const sel = document.getElementById('selBen') as HTMLSelectElement | null;
+                        const mot = document.getElementById('motivoBen') as HTMLInputElement | null;
+                        if (!sel || !sel.value) return;
+                        if (relaciones.beneficiosas.some((b) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
+                        const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                        const updated = {
+                          ...relaciones,
+                          beneficiosas: [...relaciones.beneficiosas, {
+                            xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
+                            especie_destino_nombre: sp?.especiesnombre,
+                            asociacionesbeneficiosasmotivo: mot?.value || ''
+                          }]
+                        };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                        if (sel) sel.value = '';
+                        if (mot) mot.value = '';
+                      }} style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {relaciones.beneficiosas.map((b, idx) => (
+                        <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                          <div><strong>{b.especie_destino_nombre}</strong></div>
+                          <input type="text" value={b.asociacionesbeneficiosasmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
+                            const updatedBen = relaciones.beneficiosas.map((bb, i) => i === idx ? { ...bb, asociacionesbeneficiosasmotivo: e.target.value } : bb);
+                            setRelaciones({ ...relaciones, beneficiosas: updatedBen });
+                            setRelacionesDirty(true);
+                          }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                          <button type="button" onClick={() => {
+                            const updated = { ...relaciones, beneficiosas: relaciones.beneficiosas.filter((_, i) => i !== idx) };
+                            setRelaciones(updated);
+                            saveRelacionesNow(updated);
+                          }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                        </li>
+                      ))}
+                      {relaciones.beneficiosas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones beneficiosas.</p>}
+                    </ul>
+                  </div>
+
+                  <div className="form-group full" style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', marginBottom: '10px' }}>Asociaciones Perjudiciales</h4>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                      <select id="selPer" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <option value="">Selecciona especie...</option>
+                        {masterEspecies.filter(e => e.idespecies.toString() !== especieId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                      </select>
+                      <input type="text" id="motivoPer" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                      <button type="button" onClick={() => {
+                        const sel = document.getElementById('selPer') as HTMLSelectElement | null;
+                        const mot = document.getElementById('motivoPer') as HTMLInputElement | null;
+                        if (!sel || !sel.value) return;
+                        if (relaciones.perjudiciales.some((p) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
+                        const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                        const updated = {
+                          ...relaciones,
+                          perjudiciales: [...relaciones.perjudiciales, {
+                            xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
+                            especie_destino_nombre: sp?.especiesnombre,
+                            asociacionesperjudicialesmotivo: mot?.value || ''
+                          }]
+                        };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                        if (sel) sel.value = '';
+                        if (mot) mot.value = '';
+                      }} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir</button>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {relaciones.perjudiciales.map((p, idx) => (
+                        <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                          <div><strong>{p.especie_destino_nombre}</strong></div>
+                          <input type="text" value={p.asociacionesperjudicialesmotivo || ''} placeholder="Motivo de la asociación..." onChange={(e) => {
+                            const updatedPer = relaciones.perjudiciales.map((pp, i) => i === idx ? { ...pp, asociacionesperjudicialesmotivo: e.target.value } : pp);
+                            setRelaciones({ ...relaciones, perjudiciales: updatedPer });
+                            setRelacionesDirty(true);
+                          }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                          <button type="button" onClick={() => {
+                            const updated = { ...relaciones, perjudiciales: relaciones.perjudiciales.filter((_, i) => i !== idx) };
+                            setRelaciones(updated);
+                            saveRelacionesNow(updated);
+                          }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                        </li>
+                      ))}
+                      {relaciones.perjudiciales.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones perjudiciales.</p>}
+                    </ul>
+                  </div>
+
+                  {/* SECCIÓN PLAGAS */}
+                  <div className="form-group full" style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', marginBottom: '10px' }}>Plagas / Enfermedades Asociadas</h4>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                      <select id="selPla" style={{ flex: 1, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <option value="">Selecciona plaga o enfermedad...</option>
+                        {masterPlagas.map(p => <option key={p.idplagas} value={p.idplagas}>{p.plagasnombre} ({p.plagastipo})</option>)}
+                      </select>
+                      <select id="riesgoPla" style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                        <option value="baja">Riesgo Bajo</option>
+                        <option value="media">Riesgo Medio</option>
+                        <option value="alta">Riesgo Alto</option>
+                      </select>
+                      <input type="text" id="notasPla" placeholder="Notas (opcional)" style={{ flex: 2, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                      <button type="button" onClick={() => {
+                        const sel = document.getElementById('selPla') as HTMLSelectElement | null;
+                        const r = document.getElementById('riesgoPla') as HTMLSelectElement | null;
+                        const n = document.getElementById('notasPla') as HTMLInputElement | null;
+                        if (!sel || !sel.value) return;
+                        if (relaciones.plagas.some((p) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
+                        const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
+                        const updated = {
+                          ...relaciones,
+                          plagas: [...relaciones.plagas, {
+                            xespeciesplagasidplagas: parseInt(sel.value),
+                            plagasnombre: pla?.plagasnombre,
+                            plagastipo: pla?.plagastipo,
+                            especiesplagasnivelriesgo: r?.value || 'media',
+                            especiesplagasnotasespecificas: n?.value || ''
+                          }]
+                        };
+                        setRelaciones(updated);
+                        saveRelacionesNow(updated);
+                        if (sel) sel.value = '';
+                        if (n) n.value = '';
+                        if (r) r.value = 'media';
+                      }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {relaciones.plagas.map((p, idx) => (
+                        <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '12px', alignItems: 'center' }}>
+                          <div>
+                            <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span>
+                          </div>
+                          <select value={p.especiesplagasnivelriesgo || 'media'} onChange={(e) => {
+                            const updatedPlagas = relaciones.plagas.map((pl, i) => i === idx ? { ...pl, especiesplagasnivelriesgo: e.target.value } : pl);
+                            const updated = { ...relaciones, plagas: updatedPlagas };
+                            setRelaciones(updated);
+                            saveRelacionesNow(updated);
+                          }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
+                            <option value="baja">🟢 Riesgo Bajo</option>
+                            <option value="media">🟡 Riesgo Medio</option>
+                            <option value="alta">🔴 Riesgo Alto</option>
+                          </select>
+                          <input type="text" value={p.especiesplagasnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
+                            const updatedPlagas = relaciones.plagas.map((pl, i) => i === idx ? { ...pl, especiesplagasnotasespecificas: e.target.value } : pl);
+                            setRelaciones({ ...relaciones, plagas: updatedPlagas });
+                            setRelacionesDirty(true);
+                          }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
+                          <button type="button" onClick={() => {
+                            const updated = { ...relaciones, plagas: relaciones.plagas.filter((_, i) => i !== idx) };
+                            setRelaciones(updated);
+                            saveRelacionesNow(updated);
+                          }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                        </li>
+                      ))}
+                      {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* TEXTOS Y AUTOSUFICIENCIA */}
+                <div className="grid-form" style={{ display: activeTab === 'textos' ? 'grid' : 'none' }}>
+                  <div className="form-group full">
+                    <label>Descripción / Cultivo</label>
+                    <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
+                  </div>
+
+                  <div className="form-group full">
+                    <label>Historia / Origen</label>
+                    <textarea name="especieshistoria" rows={3} value={formData.especieshistoria || ''} onChange={handleChange} />
+                  </div>
+
+                  <div className="form-group full">
+                    <label>Fuentes (URLs separadas por comas)</label>
+                    <input type="text" name="especiesfuentesinformacion" value={formData.especiesfuentesinformacion || ''} onChange={handleChange} />
+                    {formData.especiesfuentesinformacion && typeof formData.especiesfuentesinformacion === 'string' && formData.especiesfuentesinformacion.trim() !== '' && (
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+                        {formData.especiesfuentesinformacion.split(',').map((url: string, idx: number) => {
+                          const trimmedUrl = url.trim();
+                          if (!trimmedUrl) return null;
+                          const href = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`;
+                          return (
+                            <a
+                              key={idx}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                background: '#e0e7ff',
+                                color: '#4338ca',
+                                padding: '6px 12px',
+                                borderRadius: '16px',
+                                fontSize: '0.8rem',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                border: '1px solid #c7d2fe',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              🔗 {trimmedUrl.length > 35 ? trimmedUrl.substring(0, 35) + '...' : trimmedUrl}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* METRICAS DE CONSUMO DE AUTOSUFICIENCIA */}
+                  <div className="form-group full" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px', marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                    <h3 className="form-group full" style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#1e293b' }}>
+                      ⚖️ Ratios de Consumo para Autosuficiencia
+                    </h3>
+                    <div>
+                      <label>🌱 Parcial (plantas/pers)</label>
+                      <input type="number" step="0.1" name="especiesautosuficienciaparcial" value={formData.especiesautosuficienciaparcial || ''} onChange={handleChange} />
+                    </div>
+                    <div>
+                      <label>🥬 Completa (plantas/pers)</label>
+                      <input type="number" step="0.1" name="especiesautosuficiencia" value={formData.especiesautosuficiencia || ''} onChange={handleChange} />
+                    </div>
+                    <div>
+                      <label>🥫 Conserva (plantas/pers)</label>
+                      <input type="number" step="0.1" name="especiesautosuficienciaconserva" value={formData.especiesautosuficienciaconserva || ''} onChange={handleChange} />
+                    </div>
+                  </div>
+
+                  <div className="form-group full" style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '10px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, textAlign: 'center' }}>
+                      <strong>Nota:</strong> Estos valores indican el número estimado de plantas necesarias para abastecer a <strong>una persona</strong> durante un año.
+                    </p>
+                  </div>
+
+                  {/* CALCULADORA DE RENDIMIENTO */}
+                  {(() => {
+                    const pParcial = parseFloat(formData.especiesautosuficienciaparcial) || 0;
+                    const pFresco = parseFloat(formData.especiesautosuficiencia) || 0;
+                    const pConserva = parseFloat(formData.especiesautosuficienciaconserva) || 0;
+                    const totalPParcial = pParcial * calcPersonas;
+                    const totalPFresco = pFresco * calcPersonas;
+                    const totalPConserva = pConserva * calcPersonas;
+
+                    const marcoP = (parseFloat(formData.especiesmarcoplantas) || 0) / 100;
+                    const marcoF = (parseFloat(formData.especiesmarcofilas) || 0) / 100;
+                    const margin = (parseFloat(formData.especiesmarcomargen) || 0) / 100;
+                    const areaPlant = (marcoP + 2 * margin) * (marcoF + 2 * margin);
+
+                    const m2Parcial = totalPParcial * areaPlant;
+                    const m2Fresco = totalPFresco * areaPlant;
+                    const m2Conserva = totalPConserva * areaPlant;
+
+                    return (
+                      <div className="form-group full" style={{ marginTop: '20px', padding: '14px', background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '8px', boxSizing: 'border-box', maxWidth: '100%', overflow: 'hidden' }}>
+                        <h3 style={{ marginTop: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
+                          🧮 Calculadora de Autosuficiencia
+                          <span style={{ fontSize: '0.8rem', fontWeight: 'normal', background: '#dcfce7', padding: '3px 8px', borderRadius: '12px' }}>No se guarda</span>
+                        </h3>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                          <label style={{ fontWeight: 'bold', color: '#15803d' }}>Número de Personas a alimentar:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={calcPersonas}
+                            onChange={(e) => setCalcPersonas(parseInt(e.target.value) || 1)}
+                            style={{ width: '80px', padding: '8px', border: '1px solid #86efac', borderRadius: '4px', textAlign: 'center', fontSize: '1.1rem' }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                          <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                            <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🌱 Parcial</h4>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                            <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPParcial.toFixed(1)}</strong>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                            <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Parcial > 0 ? `${m2Parcial.toFixed(2)} m²` : '--- m²'}</strong>
+                          </div>
+
+                          <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                            <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥬 Completa</h4>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                            <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPFresco.toFixed(1)}</strong>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                            <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Fresco > 0 ? `${m2Fresco.toFixed(2)} m²` : '--- m²'}</strong>
+                          </div>
+
+                          <div style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                            <h4 style={{ margin: '0 0 10px 0', color: '#15803d', borderBottom: '1px solid #bbf7d0', paddingBottom: '10px' }}>🥫 Conserva</h4>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Plantas Necesarias</span>
+                            <strong style={{ fontSize: '1.8rem', color: '#15803d', display: 'block', marginBottom: '10px' }}>{totalPConserva.toFixed(1)}</strong>
+                            <span style={{ display: 'block', fontSize: '0.9rem', color: '#166534' }}>Terreno Necesario</span>
+                            <strong style={{ fontSize: '1.8rem', color: '#15803d' }}>{m2Conserva > 0 ? `${m2Conserva.toFixed(2)} m²` : '--- m²'}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* VARIEDADES */}
+                <div style={{ display: activeTab === 'variedades' ? 'block' : 'none' }}>
+                  {especieId && (
+                    <EspecieVariedadesTab especieId={especieId} userEmail={userEmail} focusVariedadId={focusParam} />
+                  )}
+                </div>
+
+                {/* PAUTAS DE LABORES */}
+                <div style={{ display: activeTab === 'pautas' ? 'block' : 'none', background: '#f8fafc', padding: '24px', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPautasConfig(true);
+                        setPautasConfigPromptOpen(false);
+                      }}
+                      disabled={pautasAiLoading}
+                      style={{ 
+                        height: '38px',
+                        padding: '0 16px', 
+                        background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px', 
+                        fontWeight: 'bold', 
+                        cursor: pautasAiLoading ? 'not-allowed' : 'pointer', 
+                        fontSize: '0.9rem', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
+                        flexShrink: 0
+                      }}
+                    >
+                      {pautasAiLoading ? (
+                        <>
+                          <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
+                          Analizando... {pautasAiSeconds}s
+                        </>
+                      ) : (
+                        <>✨ Asistente IA</>
+                      )}
+                    </button>
+
+                    {especieId && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPautaForm(!showAddPautaForm)}
+                        style={{ 
+                          height: '38px',
+                          padding: '0 16px', 
+                          background: showAddPautaForm ? 'linear-gradient(135deg, #475569, #1e293b)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          fontWeight: 'bold', 
+                          cursor: 'pointer', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          gap: '8px', 
+                          fontSize: '0.9rem', 
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
+                          flexShrink: 0
+                        }}
+                      >
+                        {showAddPautaForm ? '✕ Cancelar' : '+ Añadir Labor'}
+                      </button>
+                    )}
+                  </div>
+
+                  {especieId && pautas.length > 0 && (
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', background: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>🔍 Filtrar por:</span>
+                      
+                      <select 
+                        value={pautasFiltroFase} 
+                        onChange={(e) => setPautasFiltroFase(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                      >
+                        <option value="">Fase...</option>
+                        {masterFases.map(f => <option key={f.idfasescultivo} value={f.fasescultivoclave}>{f.fasescultivonombre}</option>)}
+                      </select>
+
+                      <select 
+                        value={pautasFiltroLabor} 
+                        onChange={(e) => setPautasFiltroLabor(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                      >
+                        <option value="">Labor...</option>
+                        {masterLabores.map(l => <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>)}
+                      </select>
+
+                      <button 
+                        type="button" 
+                        onClick={() => { setPautasFiltroFase(''); setPautasFiltroLabor(''); setPautasFiltroLaboreo(''); }} 
+                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.85rem', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        Limpiar Filtros
+                      </button>
+                    </div>
+                  )}
+
+                  {showAddPautaForm && (
+                    <form onSubmit={(e) => { e.preventDefault(); handleSavePauta(); }} style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <h4 style={{ margin: 0, color: '#1e293b' }}>{editingPauta ? '✏️ Editar Labor Pautada' : '➕ Añadir Nueva Labor Pautada'}</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Labor *</label>
+                          <select required value={pautaForm.xlaborespautaidlabores} onChange={(e) => setPautaForm({ ...pautaForm, xlaborespautaidlabores: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                            <option value="">Selecciona labor...</option>
+                            {masterLabores.map(l => <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>)}
+                          </select>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Fase de Cultivo *</label>
+                          <select required value={pautaForm.laborespautafase} onChange={(e) => setPautaForm({ ...pautaForm, laborespautafase: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                            {masterFases.map(f => <option key={f.idfasescultivo} value={f.fasescultivoclave}>{f.fasescultivonombre}</option>)}
+                          </select>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Frecuencia (Días) *</label>
+                          <input type="number" required min="1" placeholder="Ej: 3" value={pautaForm.laborespautafrecuenciadias} onChange={(e) => setPautaForm({ ...pautaForm, laborespautafrecuenciadias: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Día de Inicio en la Fase (Offset)</label>
+                          <input type="number" min="0" placeholder="Ej: 0 (empieza inmediato)" value={pautaForm.laborespautaoffset} onChange={(e) => setPautaForm({ ...pautaForm, laborespautaoffset: parseInt(e.target.value) || 0 })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Instrucciones / Notas Específicas</label>
+                        <textarea placeholder="Consejos prácticos para realizar esta labor en esta especie..." value={pautaForm.laborespautanotasia} onChange={(e) => setPautaForm({ ...pautaForm, laborespautanotasia: e.target.value })} rows={2} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', resize: 'vertical' }} />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                        <button type="button" onClick={() => { setShowAddPautaForm(false); setEditingPauta(null); setPautaForm({ xlaborespautaidlabores: '', laborespautafase: 'planificacion', laborespautafrecuenciadias: '', laborespautaoffset: 0, laborespautanotasia: '', laborespautaactivosino: 1, idlaborespauta: undefined }); }} style={{ padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px', color: '#475569', cursor: 'pointer', fontWeight: 'bold' }}>Cancelar</button>
+                        <button type="submit" style={{ padding: '8px 20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>{editingPauta ? 'Actualizar' : 'Guardar'}</button>
+                      </div>
+                    </form>
+                  )}
+
+                  {especieId && pautas.length === 0 ? (
+                    <div style={{ background: 'white', padding: '40px', textAlign: 'center', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                      <p style={{ margin: 0, color: '#64748b', fontSize: '1rem', fontWeight: 'bold' }}>No hay labores programadas para esta especie.</p>
+                      <p style={{ margin: '8px 0 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>Haz clic en "+ Añadir Labor" o pídele al "Asistente IA" que diseñe un calendario recomendado.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {pautas
+                        .filter(p => {
+                          if (pautasFiltroFase && p.laborespautafase !== pautasFiltroFase) return false;
+                          if (pautasFiltroLabor && p.xlaborespautaidlabores?.toString() !== pautasFiltroLabor) return false;
+                          return true;
+                        })
+                        .map(p => {
+                          const faseDetail = masterFases.find(f => f.fasescultivoclave === p.laborespautafase);
+                          return (
+                            <div key={p.idlaborespauta} style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', transition: 'all 0.2s' }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '1.2rem', padding: '6px', background: `${p.laborescolor || '#f1f5f9'}30`, borderRadius: '6px' }}>{p.laboresicono || '📋'}</span>
+                                  <strong style={{ fontSize: '1rem', color: '#1e293b' }}>{p.laboresnombre}</strong>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold', background: `${faseDetail?.fasescultivocolor || '#64748b'}15`, color: faseDetail?.fasescultivocolor || '#64748b', padding: '3px 8px', borderRadius: '12px' }}>
+                                    {faseDetail?.fasescultivoicono} {faseDetail?.fasescultivonombre || p.laborespautafase}
+                                  </span>
+                                  <span style={{ fontSize: '0.75rem', color: '#475569', background: '#f1f5f9', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                    Cada {p.laborespautafrecuenciadias} {p.laborespautafrecuenciadias === 1 ? 'día' : 'días'}
+                                  </span>
+                                  {p.laborespautaoffset > 0 && (
+                                    <span style={{ fontSize: '0.75rem', color: '#4f46e5', background: '#e0e7ff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                      Inicio: Día +{p.laborespautaoffset}
+                                    </span>
+                                  )}
+                                </div>
+                                {p.laborespautanotasia && (
+                                  <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem', color: '#475569', fontStyle: 'italic', background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #cbd5e1' }}>
+                                    {p.laborespautanotasia}
+                                  </p>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingPauta(p);
+                                    setPautaForm({
+                                      xlaborespautaidlabores: p.xlaborespautaidlabores?.toString() || '',
+                                      laborespautafase: p.laborespautafase || 'planificacion',
+                                      laborespautafrecuenciadias: p.laborespautafrecuenciadias?.toString() || '',
+                                      laborespautaoffset: p.laborespautaoffset || 0,
+                                      laborespautanotasia: p.laborespautanotasia || '',
+                                      laborespautaactivosino: p.laborespautaactivosino || 1,
+                                      idlaborespauta: p.idlaborespauta
+                                    });
+                                    setShowAddPautaForm(true);
+                                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                                  }}
+                                  style={{ padding: '6px 12px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                                >
+                                  ✏️ Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!especieId) return;
+                                    if (!window.confirm('¿Seguro que deseas eliminar esta labor de la pauta?')) return;
+                                    try {
+                                      const res = await fetch(`/api/admin/especies/${especieId}/pautas?id=${p.idlaborespauta}`, { method: 'DELETE' });
+                                      if (res.ok) {
+                                        loadPautas(especieId);
+                                        setToastMessage('Labor eliminada con éxito.');
+                                        setTimeout(() => setToastMessage(null), 3000);
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  style={{ padding: '6px 10px', background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer' }}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+
+                {/* FOTOS */}
+                <div style={{ display: activeTab === 'photos' ? 'block' : 'none' }}>
+                  <div
+                    className={`custom-file-upload drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
+                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragOverPhotos(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
+                      }
+                    }}
+                  >
+                    <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
+
+                    {uploadingPhotos ? (
+                      <div className="drop-zone-content">
+                        <span style={{ fontSize: '2rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                        <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Procesando imágenes...</span>
+                      </div>
+                    ) : (
+                      <div className="drop-zone-content">
+                        <span className="icon" style={{ fontSize: '2.5rem' }}>📷</span>
+                        <span style={{ fontWeight: 'bold', color: '#475569' }}>Arrastra tus imágenes aquí o pega desde el portapapeles</span>
+                        <div className="drop-zone-buttons">
+                          <label htmlFor="upload-photos" className="btn-upload primary">Seleccionar Archivos</label>
+                          <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload secondary" style={{ fontWeight: 'bold' }}>✨ Generar Imagen con IA</button>
+                        </div>
+                        <span className="drop-hint">Soporta JPG, PNG, WEBP, HEIC/HEIF</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {photos.length > 0 && (
+                    <div className="gallery">
+                      {photos.map((photo, index) => {
+                        let parsedResumen: any = {};
+                        try {
+                          parsedResumen = typeof photo.resumen === 'string'
+                            ? JSON.parse(photo.resumen)
+                            : (photo.resumen || {});
+                        } catch (e) {
+                          console.error('Error parseando resumen foto:', e);
+                        }
+
+                        const filterVal = STYLE_FILTERS[parsedResumen.profile_style || ''] || 'none';
+
+                        return (
+                          <div
+                            key={photo.id}
+                            className={`gallery-item ${photo.esPrincipal ? 'is-preferred' : ''}`}
+                            draggable
+                            onDragStart={() => setDraggedPhotoIndex(index)}
+                            onDragOver={(e) => { e.preventDefault(); setDraggedOverPhotoIndex(index); }}
+                            onDrop={handlePhotoReorder}
+                          >
+                            <img
+                              src={getMediaUrl(photo.ruta)}
+                              alt={parsedResumen.seo_alt || formData.especiesnombre || 'Foto de Especie'}
+                              crossOrigin="anonymous"
+                              style={{ filter: filterVal }}
+                            />
+                            <div className="photo-actions">
+                              <button
+                                type="button"
+                                className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
+                                onClick={() => handleSetPrimaryPhoto(photo.id)}
+                                title={photo.esPrincipal ? 'Foto de portada' : 'Hacer portada'}
+                              >
+                                {photo.esPrincipal ? '⭐' : '☆'}
+                              </button>
+                              <button
+                                type="button"
+                                className="photo-action-btn btn-photo-delete"
+                                onClick={() => setDeleteConfirm({ id: photo.id, type: 'photos' })}
+                                title="Eliminar foto"
+                              >
+                                ✕
+                              </button>
+                              <button
+                                type="button"
+                                className="photo-action-btn btn-photo-edit"
+                                onClick={() => openPhotoEditor(photo)}
+                                title="Editar imagen y SEO"
+                              >
+                                ✏️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* PDFs */}
+                <div style={{ display: activeTab === 'pdfs' ? 'block' : 'none' }}>
+                  <div
+                    className={`custom-file-upload drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
+                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(false); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragOverPdfs(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleFileUpload({ target: { files: e.dataTransfer.files } }, 'pdfs');
+                      }
+                    }}
+                  >
+                    <input type="file" id="upload-pdfs" multiple accept=".pdf" onChange={(e) => handleFileUpload(e, 'pdfs')} disabled={uploadingPdfs} />
+
+                    {uploadingPdfs ? (
+                      <div className="drop-zone-content">
+                        <span style={{ fontSize: '2rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                        <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Subiendo documentos...</span>
+                      </div>
+                    ) : (
+                      <div className="drop-zone-content">
+                        <span className="icon" style={{ fontSize: '2.5rem' }}>📄</span>
+                        <span style={{ fontWeight: 'bold', color: '#475569' }}>Arrastra tus documentos PDF aquí</span>
+                        <div className="drop-zone-buttons">
+                          <label htmlFor="upload-pdfs" className="btn-upload primary">Seleccionar PDFs</label>
+                          <button type="button" onClick={() => setShowPdfSearchModal(true)} className="btn-upload secondary" style={{ fontWeight: 'bold' }}>🔎 Buscar Guías con IA</button>
+                        </div>
+                        <span className="drop-hint">Soporta archivos .pdf de manuales y guías</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {pdfs.length > 0 && (
+                    <div className="gallery" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+                      {pdfs.map((pdf) => {
+                        return (
+                          <div key={pdf.id} className="gallery-item pdf">
+                            <span style={{ fontSize: '2rem' }}>📄</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#334155', display: 'block', margin: '8px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                              {pdf.titulo || pdf.resumen || 'Guía Técnica'}
+                            </span>
+                            <div className="photo-actions">
+                              <button
+                                type="button"
+                                className="photo-action-btn btn-photo-delete"
+                                onClick={() => setDeleteConfirm({ id: pdf.id, type: 'pdfs' })}
+                                title="Eliminar PDF"
+                              >
+                                ✕
+                              </button>
+                              <button
+                                type="button"
+                                className="photo-action-btn btn-photo-edit"
+                                onClick={() => handleOpenPdfEditor(pdf)}
+                                title="Editar título y resumen"
+                                style={{ background: '#3b82f6' }}
+                              >
+                                ✏️
+                              </button>
+                            </div>
+                            <a
+                              href={getMediaUrl(pdf.ruta)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'block',
+                                background: '#1e293b',
+                                color: 'white',
+                                padding: '4px 10px',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                textDecoration: 'none',
+                                fontWeight: 'bold',
+                                marginTop: 'auto',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Leer PDF
+                            </a>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* BLOGS */}
+                <div className="grid-form" style={{ display: activeTab === 'blogs' ? 'grid' : 'none' }}>
+                  <div className="form-group full" style={{ margin: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>📰 Posts de Blog Vinculados</h3>
+                      {especieId && pdfs.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBlogGenPdf(pdfs[0]?.id?.toString() || '');
+                            setShowBlogPrompt(true);
+                          }}
+                          disabled={blogGenLoading}
+                          style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: blogGenLoading ? 'not-allowed' : 'pointer' }}
+                        >
+                          {blogGenLoading ? '⏳ Generando...' : '✨ Redactar Post de Blog (IA)'}
+                        </button>
+                      )}
+                    </div>
+
+                    {blogGenLoading && (
+                      <div style={{ padding: '24px', background: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '2rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⚙️</span>
+                        <strong style={{ color: '#065f46' }}>El redactor IA está trabajando...</strong>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#047857' }}>{blogGenProgress}</p>
+                      </div>
                     )}
 
+                    {blogs.length === 0 && !blogGenLoading ? (
+                      <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                        <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay artículos de blog asociados a esta especie.</p>
+                        {pdfs.length > 0 ? (
+                          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Puedes generar un post de blog automáticamente utilizando las guías de la pestaña PDFs.</p>
+                        ) : (
+                          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Sube primero guías en la pestaña PDFs para que la IA tenga material de base para redactar artículos.</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginTop: '10px' }}>
+                        {blogs.map((b) => (
+                          <div key={b.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                              {b.hero_imagen ? (
+                                <div style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', background: '#f1f5f9', flexShrink: 0 }}>
+                                  <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                                </div>
+                              ) : (
+                                <div style={{ width: '60px', height: '60px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>✨</div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold', color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.3 }}>
+                                  {b.titulo}
+                                </h4>
+                                <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '0.7rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                                  {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
+                                </span>
+                              </div>
+                            </div>
 
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.4 }}>
+                              {b.resumen}
+                            </p>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <a
+                                  href={`/blog/${b.slug}?preview=true`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    background: '#0f766e',
+                                    color: 'white',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    textDecoration: 'none',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Leer Art
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteBlog(b.id)}
+                                  style={{ background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem' }}
+                                  title="Eliminar artículo"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
               </div>
-            </div>
-          )}
 
-          <div className="form-footer">
+              <div className="form-footer">
             {hasChanges && (
               <button
                 type="submit"
@@ -3836,6 +3634,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               </button>
             )}
           </div>
+            </div>
+          )}
         </form>
       </div>
 
@@ -4803,7 +4603,7 @@ JSON de salida obligatorio:
               </h2>
 
               {hasBothColumns ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
                   {/* Columna Izquierda: Ya incorporados */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px', borderLeft: '4px solid #94a3b8' }}>
@@ -5011,7 +4811,7 @@ JSON de salida obligatorio:
                   germinacion: '4. Germinación',
                   semillero: '5. Semillero',
                   trasplante: '6. Trasplante',
-                  enraizamiento: '7. Post-Trasplante',
+                  enraizamiento: '7. Posplantación',
                   crecimiento: '8. Crecimiento Veg.',
                   floracion: '9. Floración',
                   cosecha: '10. Cosecha',
@@ -5023,7 +4823,7 @@ JSON de salida obligatorio:
                   return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>;
                 }
                 
-                const faseOrderModal: Record<string, number> = { planificado: 1, siembra: 2, postsiembra: 3, germinacion: 4, semillero: 5, trasplante: 6, enraizamiento: 7, crecimiento: 8, floracion: 9, cosecha: 10, finalizado: 11, general: 99 };
+                const faseOrderModal: Record<string, number> = { creacion: 1, planificacion: 2, siembra: 3, adquisicion: 4, pregerminacion: 5, germinacion: 6, postgerminacion: 7, hitoplanton: 8, semillero: 9, trasplante: 10, enraizamiento: 11, crecimiento: 12, floracion: 13, cosecha: 14, finalizado: 15, perdido: 99 };
                 const sortedAiPautas = aiPautasProposal
                   .map((prop, originalIdx) => ({ prop, idx: originalIdx }))
                   .sort((a, b) => (faseOrderModal[a.prop.fase] || 99) - (faseOrderModal[b.prop.fase] || 99));

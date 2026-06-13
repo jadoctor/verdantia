@@ -23,13 +23,16 @@ export const processAlertas = (cultivos: any[], overrideNow?: number) => {
     const dReco = Math.max(0, (c.dias_recoleccion || 0) - (c.dias_fructificacion || 0));
 
     const isSemillero = c.cultivosmetodo === 'semillero';
+    const hasTrasplante = c.cultivosmetodo !== 'siembra_directa';
     const baseGerminacion = tSiembra ? tSiembra + dGerm * DAY_MS : null;
     const estGerminacion = parseTime(c.cultivosfechagerminacion) || baseGerminacion;
 
-    const baseTrasplante = estGerminacion ? estGerminacion + dTras * DAY_MS : null;
+    const baseTrasplante = c.cultivosmetodo === 'semillero'
+      ? (estGerminacion ? estGerminacion + dTras * DAY_MS : null)
+      : (tSiembra ? tSiembra + 3 * DAY_MS : null);
     
     let baseCrecimiento = null;
-    if (isSemillero) baseCrecimiento = (parseTime(c.cultivosfechatrasplante) || baseTrasplante) ? (parseTime(c.cultivosfechatrasplante) || baseTrasplante)! + (c.dias_crecimiento ? (c.dias_crecimiento - (c.dias_trasplante || 0)) * DAY_MS : 0) : null;
+    if (hasTrasplante) baseCrecimiento = (parseTime(c.cultivosfechatrasplante) || baseTrasplante) ? (parseTime(c.cultivosfechatrasplante) || baseTrasplante)! + 10 * DAY_MS : null;
     else baseCrecimiento = estGerminacion ? estGerminacion + dCrecFromGerm * DAY_MS : null;
 
     const estCrecimiento = parseTime(c.cultivosfechacrecimiento) || baseCrecimiento;
@@ -41,11 +44,11 @@ export const processAlertas = (cultivos: any[], overrideNow?: number) => {
     const items = [
       { id: 'registro', ts: tRegistro },
       { id: 'siembra', ts: tSiembra },
-      { id: 'germinacion', ts: estGerminacion },
-      { id: 'trasplante', ts: isSemillero ? baseTrasplante : null },
-      { id: 'crecimiento', ts: estCrecimiento },
-      { id: 'fructificacion', ts: estFructificacion },
-      { id: 'recoleccion', ts: estRecoleccion },
+      { id: 'germinacion', ts: (c.cultivosmetodo === 'semillero' || c.cultivosmetodo === 'siembra_directa') ? estGerminacion : null },
+      { id: 'trasplante', ts: hasTrasplante ? baseTrasplante : null },
+      { id: 'inicio_crecimiento', ts: estCrecimiento },
+      { id: 'primeras_flores', ts: estFructificacion },
+      { id: 'primera_cosecha', ts: estRecoleccion },
       { id: 'finalizacion', ts: estFinalizacion }
     ].filter(i => i.ts !== null);
 
@@ -61,13 +64,13 @@ export const processAlertas = (cultivos: any[], overrideNow?: number) => {
     if (currentPhaseId === 'finalizacion') continue;
 
     const phaseMap: Record<string, string[]> = {
-      'registro': ['general', 'presiembra'],
-      'siembra': ['siembra', 'pregerminacion'],
-      'germinacion': ['germinacion'],
-      'trasplante': ['trasplante'],
-      'crecimiento': ['crecimiento', 'crecimiento_inicial'],
-      'fructificacion': ['fructificacion'],
-      'recoleccion': ['recoleccion']
+      'registro': ['creacion', 'planificacion'],
+      'siembra': ['siembra', 'adquisicion', 'pregerminacion', 'semillero'],
+      'germinacion': ['germinacion', 'postgerminacion'],
+      'trasplante': ['trasplante', 'enraizamiento'],
+      'inicio_crecimiento': ['inicio_crecimiento', 'crecimiento'],
+      'primeras_flores': ['primeras_flores', 'floracion'],
+      'primera_cosecha': ['primera_cosecha', 'cosecha']
     };
 
     const validDbPhases = phaseMap[currentPhaseId] || [];
@@ -89,28 +92,36 @@ export const processAlertas = (cultivos: any[], overrideNow?: number) => {
       // Determinar el timestamp base de la fase de la labor
       let baseTs = tRegistro;
       switch (p.laborespautafase) {
+        case 'creacion':
+        case 'planificacion':
+          baseTs = tRegistro;
+          break;
         case 'siembra':
+        case 'adquisicion':
         case 'pregerminacion':
-        case 'presiembra':
+        case 'semillero':
           baseTs = tSiembra || tRegistro;
           break;
         case 'germinacion':
+        case 'postgerminacion':
           baseTs = estGerminacion || tRegistro;
           break;
         case 'trasplante':
-          baseTs = (isSemillero ? baseTrasplante : estGerminacion) || tRegistro;
+        case 'enraizamiento':
+          baseTs = (hasTrasplante ? baseTrasplante : estGerminacion) || tRegistro;
           break;
+        case 'inicio_crecimiento':
         case 'crecimiento':
-        case 'crecimiento_inicial':
           baseTs = estCrecimiento || tRegistro;
           break;
-        case 'fructificacion':
+        case 'primeras_flores':
+        case 'floracion':
           baseTs = estFructificacion || tRegistro;
           break;
-        case 'recoleccion':
+        case 'primera_cosecha':
+        case 'cosecha':
           baseTs = estRecoleccion || tRegistro;
           break;
-        case 'general':
         default:
           baseTs = tRegistro;
           break;
@@ -139,16 +150,16 @@ export const processAlertas = (cultivos: any[], overrideNow?: number) => {
       // Una labor es válida si es su tiempo (isTimeTriggered) Y (es de la fase actual o es pasada y no completada).
       // Verdantia originalmente solo mostraba validDbPhases. 
       // Para respetar eso pero permitir offsets anticipados:
-      const phaseOrder = ['registro', 'siembra', 'germinacion', 'trasplante', 'crecimiento', 'fructificacion', 'recoleccion', 'finalizacion'];
+      const phaseOrder = ['registro', 'siembra', 'germinacion', 'trasplante', 'inicio_crecimiento', 'primeras_flores', 'primera_cosecha', 'finalizacion'];
       
       const getPhaseIndexForPauta = (fase: string) => {
-        if (fase === 'general' || fase === 'presiembra') return 0; // registro
-        if (fase === 'siembra' || fase === 'pregerminacion') return 1;
-        if (fase === 'germinacion') return 2;
-        if (fase === 'trasplante') return 3;
-        if (fase === 'crecimiento' || fase === 'crecimiento_inicial') return 4;
-        if (fase === 'fructificacion') return 5;
-        if (fase === 'recoleccion') return 6;
+        if (fase === 'creacion' || fase === 'planificacion') return 0;
+        if (fase === 'siembra' || fase === 'adquisicion' || fase === 'pregerminacion' || fase === 'semillero') return 1;
+        if (fase === 'germinacion' || fase === 'postgerminacion') return 2;
+        if (fase === 'trasplante' || fase === 'enraizamiento') return 3;
+        if (fase === 'inicio_crecimiento' || fase === 'crecimiento') return 4;
+        if (fase === 'primeras_flores' || fase === 'floracion') return 5;
+        if (fase === 'primera_cosecha' || fase === 'cosecha') return 6;
         return 7;
       };
 

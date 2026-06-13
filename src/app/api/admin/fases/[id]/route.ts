@@ -38,7 +38,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const body = await request.json();
-    const { fasescultivoclave, fasescultivonombre, fasescultivoorden, fasescultivocolor, fasescultivoicono, fasescultivodescripcion, fasescultivoesfin } = body;
+    const { 
+      fasescultivoclave, 
+      fasescultivonombre, 
+      fasescultivoorden, 
+      fasescultivocolor, 
+      fasescultivoicono, 
+      fasescultivodescripcion, 
+      fasescultivoesfin, 
+      fasescultivotipo,
+      fasescultivodesde,
+      fasescultivohasta
+    } = body;
 
     if (!fasescultivoclave || !fasescultivonombre || !fasescultivoorden) {
       return NextResponse.json({ error: 'Clave, nombre y orden son obligatorios' }, { status: 400 });
@@ -46,7 +57,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const query = `
       UPDATE fasescultivo 
-      SET fasescultivoclave = ?, fasescultivonombre = ?, fasescultivoorden = ?, fasescultivocolor = ?, fasescultivoicono = ?, fasescultivodescripcion = ?, fasescultivoesfin = ?
+      SET 
+        fasescultivoclave = ?, 
+        fasescultivonombre = ?, 
+        fasescultivoorden = ?, 
+        fasescultivocolor = ?, 
+        fasescultivoicono = ?, 
+        fasescultivodescripcion = ?, 
+        fasescultivoesfin = ?, 
+        fasescultivotipo = ?,
+        fasescultivodesde = ?,
+        fasescultivohasta = ?
       WHERE idfasescultivo = ?
     `;
     const queryParams = [
@@ -57,6 +78,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       fasescultivoicono || '🌱', 
       fasescultivodescripcion || null,
       fasescultivoesfin ? 1 : 0,
+      fasescultivotipo || 'Fase',
+      fasescultivodesde || null,
+      fasescultivohasta || null,
       resolvedParams.id
     ];
 
