@@ -109,7 +109,7 @@ export const getCategory = (lines: number): { label: string; emoji: string; bg: 
 
 export const dashboards: DashboardItem[] = [
   { lines: 7109, path: '/dashboard/bancales/[id]', file: 'bancales/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
-  { lines: 3598, path: '/dashboard/perfil', file: 'perfil/page.tsx', refactoredAt: null, responsiveAt: null },
+  { lines: 150, path: '/dashboard/perfil', file: 'perfil/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026' },
   { lines: 2009, path: '/dashboard/admin/usuarios/[id]', file: 'admin/usuarios/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 1295, path: '/dashboard/mis-plantas/[id]', file: 'mis-plantas/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 1261, path: '/dashboard/admin/tareas/contenedores/[id]', file: 'admin/tareas/contenedores/[id]/page.tsx', refactoredAt: null, responsiveAt: null },

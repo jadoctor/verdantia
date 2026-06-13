@@ -57,7 +57,7 @@ async function doSqlBackup() {
   await pool.end();
 
   // Create local backups folder if it doesn't exist
-  const destDir = path.join('C:\\Users\\jaill\\Documents', 'VERDANTIAS COPIAS SEGURIDAD');
+  const destDir = path.join('C:\\Users\\jaill\\Documents', 'VERDANTIA COPIAS SEGURIDAD');
   if (!fs.existsSync(destDir)) {
     fs.mkdirSync(destDir, { recursive: true });
   }

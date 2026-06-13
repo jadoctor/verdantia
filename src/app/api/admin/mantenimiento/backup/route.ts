@@ -15,13 +15,12 @@ async function authenticateSuperadmin(request: Request) {
   if (!user || !user.roles?.includes('superadministrador')) return null;
   return user;
 }
-
 function getTimestampedBackupDir(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-  return path.join('C:\\Users\\jaill\\Documents\\VERDANTIAS COPIAS SEGURIDAD', `Copia_${dateStr}_${timeStr}`);
+  return path.join('C:\\Users\\jaill\\Documents\\VERDANTIA COPIAS SEGURIDAD', `Copia_${dateStr}_${timeStr}`);
 }
 
 function stampVersion() {
@@ -359,12 +358,12 @@ export async function POST(request: Request) {
     }
 
     if (action === 'open_backups_folder') {
-      const backupDir = 'C:\\Users\\jaill\\Documents\\VERDANTIAS COPIAS SEGURIDAD';
+      const backupDir = 'C:\\Users\\jaill\\Documents\\VERDANTIA COPIAS SEGURIDAD';
       try {
         if (!fs.existsSync(backupDir)) {
           fs.mkdirSync(backupDir, { recursive: true });
         }
-        await execAsync(`explorer.exe "${backupDir}"`);
+        exec(`explorer.exe "${backupDir}"`, () => {});
         return NextResponse.json({ success: true });
       } catch (err: any) {
         return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -377,7 +376,7 @@ export async function POST(request: Request) {
         if (!fs.existsSync(backupDir)) {
           fs.mkdirSync(backupDir, { recursive: true });
         }
-        await execAsync(`explorer.exe "${backupDir}"`);
+        exec(`explorer.exe "${backupDir}"`, () => {});
         return NextResponse.json({ success: true });
       } catch (err: any) {
         return NextResponse.json({ success: false, error: err.message }, { status: 500 });
