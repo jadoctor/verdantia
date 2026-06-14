@@ -1092,5 +1092,72 @@
   }
 }
 
+/* AI Modal Tabs Styles */
+.ai-modal-tab-btn {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-modal-tab-btn:hover {
+  color: #7c3aed !important;
+  background-color: rgba(124, 58, 237, 0.05) !important;
+  border-radius: 8px;
+}
+
+.ai-modal-tab-btn.active {
+  color: #7c3aed !important;
+  font-weight: 700 !important;
+}
+
+/* AI Comparison Grid with Actions Styles */
+.ai-comparison-grid-with-actions {
+  transition: all 0.2s ease;
+}
+
+.ai-comparison-grid-with-actions:hover {
+  background-color: #f5f3ff !important;
+}
+
+.ai-row-diff {
+  border-left: 4px solid #8b5cf6 !important;
+}
+
+.ai-row-same {
+  opacity: 0.9;
+}
+
+.btn-assimilate-row {
+  transition: all 0.2s ease;
+}
+
+.btn-assimilate-row:hover {
+  background: #c7d2fe !important;
+  color: #312e81 !important;
+  transform: translateY(-1px);
+}
+
+.btn-assimilate-row:active {
+  transform: translateY(0);
+}
+
+@keyframes flipHourglass {
+  0% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(180deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  90% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+
 
 

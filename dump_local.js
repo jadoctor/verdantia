@@ -82,7 +82,15 @@ async function doBackup() {
   execSync(`powershell -Command "Compress-Archive -Path (Get-ChildItem -Path '${cwd}' -Exclude 'node_modules', '.next', '.git', '.vercel', '.firebase', 'dump.js', 'dump_local.js') -DestinationPath '${zipFile}' -Force"`);
   console.log('ZIP creado y guardado:', zipFile);
 
-  console.log('Copia de seguridad local completada con éxito.');
+  // 6. Copiar a la nube (OneDrive)
+  const cloudDir = path.join('C:\\Users\\Public\\OneDrive\\PROYECTOS\\VERDANTIA', folderName);
+  fs.mkdirSync(cloudDir, { recursive: true });
+  console.log('Carpeta en la nube creada:', cloudDir);
+  fs.copyFileSync(sqlFile, path.join(cloudDir, 'verdantia-backup.sql'));
+  fs.copyFileSync(zipFile, path.join(cloudDir, 'verdantia-codigo.zip'));
+  console.log('SQL y ZIP copiados a la nube.');
+
+  console.log('Copia de seguridad local y en la nube completada con éxito.');
 }
 
 doBackup().catch(console.error);

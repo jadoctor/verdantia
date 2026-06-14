@@ -24,6 +24,9 @@ export async function GET(request: Request) {
   try {
     let query = `
       SELECT e.*, 
+        f.familiasnombre,
+        f.familiasemoji,
+        f.familiascolor,
         (SELECT COUNT(*) FROM variedades v WHERE v.xvariedadesidespecies = e.idespecies AND v.xvariedadesidusuarios IS NULL AND v.variedadesvisibilidadsino = 1 AND v.variedadesesgenerica = 0) as total_variedades, 
         (SELECT COUNT(*) FROM semillas s JOIN variedades v2 ON s.xsemillasidvariedades = v2.idvariedades WHERE v2.xvariedadesidespecies = e.idespecies) as total_semillas,
         (SELECT COUNT(*) FROM cultivos c JOIN variedades v3 ON c.xcultivosidvariedades = v3.idvariedades WHERE v3.xvariedadesidespecies = e.idespecies) as total_cultivos,
@@ -34,7 +37,8 @@ export async function GET(request: Request) {
         (SELECT COUNT(*) FROM especiesplagas ep WHERE ep.xespeciesplagasidespecies = e.idespecies) as total_especiesplagas,
         (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_ruta,
         (SELECT datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_resumen
-      FROM especies e 
+      FROM especies e
+      LEFT JOIN familias f ON e.xespeciesidfamilias = f.idfamilias
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -71,7 +75,7 @@ export async function POST(request: Request) {
     const {
       especiesnombre,
       especiesnombrecientifico,
-      especiesfamilia,
+      xespeciesidfamilias,
       especiestipo,
       especiesciclo,
       especiesviabilidadsemilla,
@@ -99,10 +103,11 @@ export async function POST(request: Request) {
       especiesautosuficienciaparcial,
       especiesautosuficienciaconserva,
       especiesicono,
-      especiesbiodinamicacategoria,
+      especiesorganocomestible,
       especiesbiodinamicanotas,
       especiesprofundidadtrasplante,
-      especiesphsuelo,
+      especiesphminimosuelo,
+      especiesphmaximosuelo,
       especiesnecesidadriego,
       especiestiposiembra,
       especiestiposiembrapreferente,
@@ -118,7 +123,13 @@ export async function POST(request: Request) {
       especiesbiodinamicafasetrasplante,
       especiesemillerovolumendesde,
       especiesemillerovolumenhasta,
-      especiesmarcomargen
+      especiesmarcomargen,
+      especiesresistenciahelada,
+      especiesnecesidadtutoraje,
+      especiesporteplanta,
+      especiesrendimientoestimado,
+      especiespartecosechable,
+      especiesgerminaroscuridad
     } = body;
 
     if (!especiesnombre) {
@@ -127,7 +138,7 @@ export async function POST(request: Request) {
 
     const query = `
       INSERT INTO especies (
-        especiesnombre, especiesnombrecientifico, especiesfamilia, especiestipo, especiesciclo, 
+        especiesnombre, especiesnombrecientifico, xespeciesidfamilias, especiestipo, especiesciclo, 
         especiesviabilidadsemilla, especiespeso1000semillas,
         especiestemperaturaminima, especiestemperaturaoptima, especiesmarcoplantas, especiesmarcofilas, 
         especiesprofundidadsiembra, especieshistoria, especiesdescripcion, especiescolor, especiestamano, 
@@ -135,20 +146,22 @@ export async function POST(request: Request) {
         especiesfechasiembradirectahasta, especiestrasplantedesde, especiestrasplantehasta, 
         especiesfecharecolecciondesde, especiesfecharecoleccionhasta, especiesvisibilidadsino, 
         especiesfuentesinformacion, especiesautosuficiencia, especiesautosuficienciaparcial, especiesautosuficienciaconserva, especiesicono,
-        especiesbiodinamicacategoria, especiesbiodinamicanotas,
-        especiesprofundidadtrasplante, especiesphsuelo, especiesnecesidadriego, especiestiposiembra, especiestiposiembrapreferente,
+        especiesorganocomestible, especiesbiodinamicanotas,
+        especiesprofundidadtrasplante, especiesphminimosuelo, especiesphmaximosuelo, especiesnecesidadriego, especiestiposiembra, especiestiposiembrapreferente,
         especiesvolumenmaceta, especiesluzsolar, especiescaracteristicassuelo, especiesdificultad,
         especiestemperaturamaxima,
         especieslunarfasesiembra, especieslunarfasetrasplante, especieslunarobservaciones,
         especiesbiodinamicafasesiembra, especiesbiodinamicafasetrasplante,
-        especiesemillerovolumendesde, especiesemillerovolumenhasta, especiesmarcomargen
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        especiesemillerovolumendesde, especiesemillerovolumenhasta, especiesmarcomargen,
+        especiesresistenciahelada, especiesnecesidadtutoraje, especiesporteplanta,
+        especiesrendimientoestimado, especiespartecosechable, especiesgerminaroscuridad
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
       especiesnombre,
       especiesnombrecientifico || null,
-      especiesfamilia || null,
+      xespeciesidfamilias || null,
       Array.isArray(especiestipo) ? especiestipo.join(',') : (especiestipo || null),
       Array.isArray(especiesciclo) ? especiesciclo.join(',') : (especiesciclo || null),
       especiesviabilidadsemilla || null,
@@ -176,10 +189,11 @@ export async function POST(request: Request) {
       especiesautosuficienciaparcial || null,
       especiesautosuficienciaconserva || null,
       especiesicono || null,
-      especiesbiodinamicacategoria || null,
+      especiesorganocomestible || null,
       especiesbiodinamicanotas || null,
       especiesprofundidadtrasplante || null,
-      especiesphsuelo || null,
+      especiesphminimosuelo || null,
+      especiesphmaximosuelo || null,
       especiesnecesidadriego || null,
       Array.isArray(especiestiposiembra) ? especiestiposiembra.join(',') : (especiestiposiembra || null),
       Array.isArray(especiestiposiembrapreferente) ? especiestiposiembrapreferente.join(',') : (especiestiposiembrapreferente || null),
@@ -195,7 +209,13 @@ export async function POST(request: Request) {
       especiesbiodinamicafasetrasplante || null,
       especiesemillerovolumendesde || null,
       especiesemillerovolumenhasta || null,
-      especiesmarcomargen || null
+      especiesmarcomargen || null,
+      especiesresistenciahelada || null,
+      especiesnecesidadtutoraje || null,
+      especiesporteplanta || null,
+      especiesrendimientoestimado || null,
+      Array.isArray(especiespartecosechable) ? especiespartecosechable.join(',') : (especiespartecosechable || null),
+      especiesgerminaroscuridad !== undefined ? especiesgerminaroscuridad : null
     ];
 
     const [result]: any = await pool.query(query, params);

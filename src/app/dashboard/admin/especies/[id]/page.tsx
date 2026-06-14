@@ -1,9 +1,11 @@
 'use client';
-// Responsividad controlada en EspecieForm (isMobile, @media, innerWidth)
+// Responsividad controlada en EspecieForm (isMobile, @media, innerWidth) - Hot-reload trigger: 2026-06-14T17:26:00
 
 import React, { useState, useEffect } from 'react';
 import EspecieForm from '@/components/admin/EspecieForm';
 import { useEditarEspecie } from './hooks/useEditarEspecie';
+
+// HMR trigger for db change (removed metadata) - updated phases - added master labor editor - changed to link - updated in especieform - rules 8 and 11 v6
 
 export default function EditarEspeciePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);

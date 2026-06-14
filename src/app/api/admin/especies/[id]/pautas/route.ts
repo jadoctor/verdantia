@@ -27,15 +27,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       WHERE p.xlaborespautaidespecies = ? AND p.xlaborespautaidusuarios IS NULL 
         AND (p.laborespautaactivosino = 1 OR p.laborespautaactivosino IS NULL)
       ORDER BY CASE p.laborespautafase 
-                 WHEN 'siembra' THEN 1 
-                 WHEN 'germinacion' THEN 2 
-                 WHEN 'plantula' THEN 3 
-                 WHEN 'crecimiento' THEN 4 
-                 WHEN 'floracion' THEN 5 
-                 WHEN 'fructificacion' THEN 6 
-                 WHEN 'cosecha' THEN 7
-                 WHEN 'fin_ciclo' THEN 8
-                 ELSE 9 END,
+                 WHEN 'planificacion' THEN 1
+                 WHEN 'adquisicion' THEN 2
+                 WHEN 'siembra' THEN 3
+                 WHEN 'pregerminacion' THEN 4
+                 WHEN 'germinacion' THEN 5
+                 WHEN 'postgerminacion' THEN 6
+                 WHEN 'hitoplanton' THEN 7
+                 WHEN 'semillero' THEN 8
+                 WHEN 'trasplante' THEN 9
+                 WHEN 'enraizamiento' THEN 10
+                 WHEN 'inicio_crecimiento' THEN 11
+                 WHEN 'crecimiento' THEN 12
+                 WHEN 'primeras_flores' THEN 13
+                 WHEN 'floracion' THEN 14
+                 WHEN 'primera_cosecha' THEN 15
+                 WHEN 'cosecha' THEN 16
+                 WHEN 'finalizado' THEN 17
+                 ELSE 18 END,
                  p.laborespautaoffset ASC,
                  CASE l.laboresnombre
                    WHEN 'Laboreo' THEN 1

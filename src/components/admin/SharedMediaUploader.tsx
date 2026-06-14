@@ -25,11 +25,10 @@ const CICLOS = ['anual', 'bianual', 'perenne'];
 export default function SharedMediaUploader({ entityId, entityType, userEmail }: SharedMediaUploaderProps) {
   const router = useRouter();
 
-  const defaultFormData = {
-    especiesnombre: '', especiesnombrecientifico: '', especiesfamilia: '',
+  const [formData, setFormData] = useState<any>({
+    especiesnombre: '', especiesnombrecientifico: '', xespeciesidfamilias: '',
     especiestipo: [], especiesciclo: [], especiescolor: '', especiestamano: 'mediano',
-    especiesdiasgerminacion: '', especiesdiashastatrasplante: '', especiesviabilidadsemilla: '', 
-    especiesdiashastafructificacion: '', especiesdiashastarecoleccion: '',
+    especiesviabilidadsemilla: '', 
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
     especiesmarcoplantas: '', especiesmarcofilas: '', especiesmarcomargen: '', especiesprofundidadsiembra: '',
     especiesfechasemillerodesde: '', especiesfechasemillerohasta: '',
@@ -39,14 +38,14 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     especieshistoria: '', especiesdescripcion: '', especiesfuentesinformacion: '',
     especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
     especiesicono: '',
-    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '',
-    especiesprofundidadtrasplante: '', especiesphsuelo: '', especiesnecesidadriego: '',
+    especiesorganocomestible: '', especiesbiodinamicanotas: '',
+    especiesprofundidadtrasplante: '', especiesphminimosuelo: '', especiesphmaximosuelo: '', especiesnecesidadriego: '',
     especiestiposiembra: '', especiesvolumenmaceta: '', especiesluzsolar: '',
-    especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: ''
-  };
-
-  const [formData, setFormData] = useState<any>(defaultFormData);
-  const [initialData, setInitialData] = useState<any>(defaultFormData);
+    especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: '',
+    especiesresistenciahelada: '', especiesnecesidadtutoraje: '', especiesporteplanta: '',
+    especiesrendimientoestimado: '', especiespartecosechable: [], especiesgerminaroscuridad: ''
+  });
+  const [initialData, setInitialData] = useState<any>(formData);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'no-changes'>('idle');
   const [relaciones, setRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
   const [initialRelaciones, setInitialRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
@@ -82,6 +81,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
   // -- Relaciones State --
   const [masterEspecies, setMasterEspecies] = useState<any[]>([]);
+  const [masterFamilias, setMasterFamilias] = useState<any[]>([]);
   const [masterPlagas, setMasterPlagas] = useState<any[]>([]);
 
   // -- Sinonimos State --
@@ -196,9 +196,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   useEffect(() => {
     // Cargar catálogos maestros
     if (userEmail) {
-      fetch(`/api/admin/${entityType}`, { headers: { 'x-user-email': userEmail } })
+      fetch('/api/admin/especies', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterEspecies(data.especies || []));
+      fetch('/api/admin/familias', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterFamilias(data.familias || []));
       fetch('/api/admin/plagas', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterPlagas(data.plagas || []));
@@ -504,11 +507,11 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   const aiGroups = [
     {
       id: 'taxonomia',
-      title: '🧬 Taxonomía',
-      keys: ['especiesnombrecientifico', 'especiesfamilia', 'especiestipo', 'especiesciclo', 'especiescolor', 'especiestamano'],
+      title: '🧬 Identificación',
+      keys: ['especiesnombrecientifico', 'xespeciesidfamilias', 'especiestipo', 'especiesciclo', 'especiescolor', 'especiestamano'],
       labels: {
         especiesnombrecientifico: 'Nombre Científico',
-        especiesfamilia: 'Familia',
+        xespeciesidfamilias: 'Familia botánica (ID)',
         especiestipo: 'Tipos',
         especiesciclo: 'Ciclo',
         especiescolor: 'Color',
@@ -536,14 +539,22 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     {
       id: 'cultivo',
       title: '🚜 Cultivo y Suelo',
-      keys: ['especiesphsuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 'especiestiposiembra', 'especiesvolumenmaceta', 'especiesdificultad'],
+      keys: ['especiesphminimosuelo', 'especiesphmaximosuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 'especiestiposiembra', 'especiesvolumenmaceta', 'especiesdificultad',
+        'especiesresistenciahelada', 'especiesnecesidadtutoraje', 'especiesporteplanta', 'especiesrendimientoestimado', 'especiespartecosechable', 'especiesgerminaroscuridad'],
       labels: {
-        especiesphsuelo: 'pH Suelo',
+        especiesphminimosuelo: 'pH Mín. Suelo',
+        especiesphmaximosuelo: 'pH Máx. Suelo',
         especiescaracteristicassuelo: 'Tipo de Suelo',
         especiesnecesidadriego: 'Nec. Riego',
         especiestiposiembra: 'Tipo Siembra',
         especiesvolumenmaceta: 'Vol. Maceta (L)',
-        especiesdificultad: 'Dificultad'
+        especiesdificultad: 'Dificultad',
+        especiesresistenciahelada: 'Resistencia Heladas',
+        especiesnecesidadtutoraje: 'Nec. Tutoraje',
+        especiesporteplanta: 'Porte Planta',
+        especiesrendimientoestimado: 'Rendimiento',
+        especiespartecosechable: 'Parte Cosechable',
+        especiesgerminaroscuridad: 'Germina Oscuridad'
       }
     },
     {
@@ -566,7 +577,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         'especieslunarfasesiembra', 
         'especieslunarfasetrasplante', 
         'especieslunarobservaciones',
-        'especiesbiodinamicacategoria', 
+        'especiesorganocomestible', 
         'especiesbiodinamicafasesiembra',
         'especiesbiodinamicafasetrasplante',
         'especiesbiodinamicanotas'
@@ -575,7 +586,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         especieslunarfasesiembra: 'Fase Siembra (Lunar)',
         especieslunarfasetrasplante: 'Fase Trasplante (Lunar)',
         especieslunarobservaciones: 'Notas (Lunar)',
-        especiesbiodinamicacategoria: 'Categoría (Biodinámica)',
+        especiesorganocomestible: 'Órgano Comestible',
         especiesbiodinamicafasesiembra: 'Fase Siembra (Biodinámica)',
         especiesbiodinamicafasetrasplante: 'Fase Trasplante (Biodinámica)',
         especiesbiodinamicanotas: 'Notas (Biodinámica)'
@@ -1010,7 +1021,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   const buildPromptPreview = () => {
     const nombre = formData.especiesnombre || 'especie';
     const sciCtx = formData.especiesnombrecientifico ? ` Nombre científico: ${formData.especiesnombrecientifico}.` : '';
-    const famCtx = formData.especiesfamilia ? ` Familia botánica: ${formData.especiesfamilia}.` : '';
+    const famCtx = formData.xespeciesidfamilias ? ` ID Familia: ${formData.xespeciesidfamilias}.` : '';
     const defaultConcept = `varios ejemplares de ${nombre} recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
     return `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.\nSujeto principal: ${nombre} (hortaliza/planta comestible de huerto).${sciCtx}${famCtx}\nEscena concreta: ${aiImageConcept || defaultConcept}.\nComposición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.\nREGLAS ESTRICTAS:\n1. El sujeto es SIEMPRE una planta, hortaliza, fruto o semilla comestible de huerto.\n2. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura.\n3. El entorno debe ser siempre agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica.\n4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n5. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible.`;
   };
@@ -1027,7 +1038,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       const body: any = { 
         especieNombre: formData.especiesnombre,
         especieNombreCientifico: formData.especiesnombrecientifico,
-        especieFamilia: formData.especiesfamilia,
+        especieFamiliaId: formData.xespeciesidfamilias,
         concept: aiImageConcept 
       };
       // Si el usuario ha editado manualmente el prompt, enviarlo como customPrompt
@@ -1927,9 +1938,19 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 <label>Nombre Científico</label>
                 <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
               </div>
-              <div className="form-group">
-                <label>Familia</label>
-                <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Familia</span>
+                  <a href="/dashboard/admin/familias" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', textDecoration: 'none', background: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', color: '#475569' }}>⚙️ Gestionar</a>
+                </label>
+                <select name="xespeciesidfamilias" value={formData.xespeciesidfamilias || ''} onChange={handleChange} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                  <option value="">— Sin familia asignada —</option>
+                  {masterFamilias.map((f: any) => (
+                    <option key={f.idfamilias} value={f.idfamilias}>
+                      {f.familiasemoji} {f.familiasnombre} {f.familiasnombrecientifico ? `(${f.familiasnombrecientifico})` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-group full checkbox-group">
                 <label>Tipos</label>
@@ -2216,8 +2237,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label>pH del Suelo</label>
-                <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
+                <label>pH Mínimo del Suelo</label>
+                <input type="number" step="0.1" min="0" max="14" name="especiesphminimosuelo" placeholder="Ej: 5.5" value={formData.especiesphminimosuelo || ''} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>pH Máximo del Suelo</label>
+                <input type="number" step="0.1" min="0" max="14" name="especiesphmaximosuelo" placeholder="Ej: 7.0" value={formData.especiesphmaximosuelo || ''} onChange={handleChange} />
               </div>
               <div className="form-group full">
                 <label>Características del Suelo</label>
@@ -4038,17 +4063,23 @@ JSON de salida obligatorio:
                               onChange={e => setPautaForm({...pautaForm, laborespautafase: e.target.value})}
                               style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                             >
-                              <option value="presiembra">1. Presiembra</option>
-                              <option value="siembra">2. Siembra</option>
-                              <option value="pregerminacion">3. Pre-Germinación</option>
-                              <option value="germinacion">4. Germinación</option>
-                              <option value="crecimiento_inicial">5. Crec. Inicial</option>
-                              <option value="trasplante">6. Trasplante</option>
-                              <option value="crecimiento">7. Crec. Firme</option>
-                              <option value="fructificacion">8. Flor. y Fructificación</option>
-                              <option value="recoleccion">9. Recolección</option>
-                              <option value="finalizacion">10. Finalización</option>
-                              <option value="general">General</option>
+                              <option value="planificacion">Planificación</option>
+                              <option value="adquisicion">Adquisición (Plantón)</option>
+                              <option value="siembra">Siembra</option>
+                              <option value="pregerminacion">Pre-germinación</option>
+                              <option value="germinacion">Germinación</option>
+                              <option value="postgerminacion">Post-germinación</option>
+                              <option value="hitoplanton">Plantón</option>
+                              <option value="semillero">Etapa Semillero</option>
+                              <option value="trasplante">Trasplante</option>
+                              <option value="enraizamiento">Enraizamiento</option>
+                              <option value="inicio_crecimiento">Inicio Crecimiento</option>
+                              <option value="crecimiento">Crecimiento Vegetativo</option>
+                              <option value="primeras_flores">Primeras Flores</option>
+                              <option value="floracion">Floración</option>
+                              <option value="primera_cosecha">Primera Cosecha</option>
+                              <option value="cosecha">Cosecha</option>
+                              <option value="finalizado">Finalizado</option>
                             </select>
                           </div>
                           <div>
@@ -4120,7 +4151,7 @@ JSON de salida obligatorio:
                         if (!grouped[key]) grouped[key] = [];
                         grouped[key].push(p);
                       }
-                      const faseOrder: Record<string, number> = { presiembra: 1, siembra: 2, pregerminacion: 3, germinacion: 4, crecimiento_inicial: 5, trasplante: 6, crecimiento: 7, fructificacion: 8, recoleccion: 9, finalizacion: 10, general: 11 };
+                      const faseOrder: Record<string, number> = { planificacion: 1, adquisicion: 2, siembra: 3, pregerminacion: 4, germinacion: 5, postgerminacion: 6, hitoplanton: 7, semillero: 8, trasplante: 9, enraizamiento: 10, inicio_crecimiento: 11, crecimiento: 12, primeras_flores: 13, floracion: 14, primera_cosecha: 15, cosecha: 16, finalizado: 17 };
 
                       const cellStyle: React.CSSProperties = { padding: '6px 8px', fontSize: '0.83rem', borderRadius: '5px', border: '1px solid #e2e8f0', width: '100%', background: '#fff' };
 
@@ -4145,6 +4176,14 @@ JSON de salida obligatorio:
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#1e293b' }}>{laborName}</span>
                                     <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700' }}>{laborPautas.length}</span>
+                                    <a 
+                                      href={`/dashboard/admin/labores/${laborId}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={e => e.stopPropagation()}
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', marginLeft: '8px', textDecoration: 'none' }} 
+                                      title="Ir al dashboard para editar la labor original"
+                                    >⚙️</a>
                                   </div>
                                   <span style={{ fontSize: '0.85rem', color: '#94a3b8', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                                 </button>
@@ -4168,17 +4207,23 @@ JSON de salida obligatorio:
                                               onChange={e => autoSavePautaField(p.idlaborespauta, 'laborespautafase', e.target.value)}
                                               style={{ ...cellStyle, width: '135px' }}
                                             >
-                                              <option value="presiembra">1. Presiembra</option>
-                                              <option value="siembra">2. Siembra</option>
-                                              <option value="pregerminacion">3. Pre-Germinación</option>
-                                              <option value="germinacion">4. Germinación</option>
-                                              <option value="crecimiento_inicial">5. Crec. Inicial</option>
-                                              <option value="trasplante">6. Trasplante</option>
-                                              <option value="crecimiento">7. Crec. Firme</option>
-                                              <option value="fructificacion">8. Flor. y Fructificación</option>
-                                              <option value="recoleccion">9. Recolección</option>
-                                              <option value="finalizacion">10. Finalización</option>
-                                              <option value="general">General</option>
+                                              <option value="planificacion">Planificación</option>
+                                              <option value="adquisicion">Adquisición (Plantón)</option>
+                                              <option value="siembra">Siembra</option>
+                                              <option value="pregerminacion">Pre-germinación</option>
+                                              <option value="germinacion">Germinación</option>
+                                              <option value="postgerminacion">Post-germinación</option>
+                                              <option value="hitoplanton">Plantón</option>
+                                              <option value="semillero">Etapa Semillero</option>
+                                              <option value="trasplante">Trasplante</option>
+                                              <option value="enraizamiento">Enraizamiento</option>
+                                              <option value="inicio_crecimiento">Inicio Crecimiento</option>
+                                              <option value="crecimiento">Crecimiento Vegetativo</option>
+                                              <option value="primeras_flores">Primeras Flores</option>
+                                              <option value="floracion">Floración</option>
+                                              <option value="primera_cosecha">Primera Cosecha</option>
+                                              <option value="cosecha">Cosecha</option>
+                                              <option value="finalizado">Finalizado</option>
                                             </select>
                                           </td>
                                           <td style={{ padding: '5px 8px', textAlign: 'center' }}>

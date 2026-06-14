@@ -9,9 +9,14 @@ export default function EspeciesAdminPage() {
     router,
     focusParam,
     especies,
+    counts,
+    countsStatus,
+    uniqueFamilias,
     loading,
     filterTipo,
     setFilterTipo,
+    filterFamilia,
+    setFilterFamilia,
     filter,
     setFilter,
     handleEdit,
@@ -25,8 +30,13 @@ export default function EspeciesAdminPage() {
       <EspeciesHeader
         filterTipo={filterTipo}
         setFilterTipo={setFilterTipo}
+        filterFamilia={filterFamilia}
+        setFilterFamilia={setFilterFamilia}
         filter={filter}
         setFilter={setFilter}
+        counts={counts}
+        countsStatus={countsStatus}
+        uniqueFamilias={uniqueFamilias}
         onNewEspecie={() => handleEdit(null)}
         onGoHome={() => router.push('/dashboard')}
         isMobile={isMobile}

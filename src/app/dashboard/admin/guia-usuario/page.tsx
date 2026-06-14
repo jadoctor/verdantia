@@ -394,6 +394,32 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>14/06/2026 21:39 – Despliegue v0.1.23 - Integración del módulo de Familias y Análisis</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El backend no guardaba la descripción de las familias por omisión en la consulta PUT del auto-guardado.</li>
+                  <li style={{ marginBottom: '8px' }}>El Asistente IA de Rotación disparaba incorrectamente el asistente general.</li>
+                  <li style={{ marginBottom: '8px' }}>Las listas serializadas de la BD no se validaban correctamente en el Modal de Chequeo.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>api/admin/familias/[id]/route.ts</code>: Inclusión del campo <code>familiasdescripcion</code> en UPDATE.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>dashboard/admin/familias/[id]/page.tsx</code>: Parseo seguro de arrays JSON y corrección de estado de Modal IA.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>dashboard/admin/mantenimiento/analisis/services/analisisApi.ts</code>: Inclusión del módulo de Familias en las analíticas estáticas de dashboards.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>package.json</code>: Versión incrementada a 0.1.23.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Auto-guardado 100% operativo en familias. El flujo del Modal de Chequeo pasa todas las pruebas con arrays parseados.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
               <strong>09/06/2026 19:16 – Despliegue v0.1.17 - Despliegue General</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>

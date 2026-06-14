@@ -35,6 +35,8 @@ export const FRIENDLY_NAMES: Record<string, string> = {
   '/dashboard/demo-rangos': '📊 Demo: Rangos',
   '/dashboard/admin/especies': '🌍 Especies globales: Listado',
   '/dashboard/admin/especies/[id]': '🌍 Especies globales: Edición',
+  '/dashboard/admin/familias': '🧬 Familias botánicas: Listado',
+  '/dashboard/admin/familias/[id]': '🧬 Familias botánicas: Edición',
   '/dashboard/admin/labores/nueva': '🧹 Labores: Creación',
   '/dashboard/admin/especies/nueva': '🌍 Especies globales: Creación',
   '/dashboard/admin/meteo': '🌦️ Meteorología: Ajustes',
@@ -58,6 +60,7 @@ export const DASHBOARD_GROUPS = [
   { id: 'inicio', label: '🏠 Inicio' },
   { id: 'mantenimiento', label: '🛠️ Mantenimiento' },
   { id: 'especies', label: '🌍 Especies globales' },
+  { id: 'familias', label: '🧬 Familias botánicas' },
   { id: 'labores', label: '🧹 Labores' },
   { id: 'fases', label: '🌱 Fases de cultivo' },
   { id: 'blog', label: '📰 Blog' },
@@ -76,6 +79,7 @@ export const getDashboardGroup = (path: string): string => {
   if (path === '/dashboard') return 'inicio';
   if (path.includes('/mantenimiento')) return 'mantenimiento';
   if (path.includes('/especies')) return 'especies';
+  if (path.includes('/familias')) return 'familias';
   if (path.includes('/labores')) return 'labores';
   if (path.includes('/fases')) return 'fases';
   if (path.includes('/blog')) return 'blog';
@@ -116,8 +120,9 @@ export const dashboards: DashboardItem[] = [
   { lines: 1215, path: '/dashboard/semillas/[id]', file: 'semillas/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 1066, path: '/dashboard/admin/blog', file: 'admin/blog/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 1035, path: '/dashboard/mis-plantas', file: 'mis-plantas/page.tsx', refactoredAt: null, responsiveAt: null },
-  { lines: 128, path: '/dashboard/admin/mantenimiento/analisis', file: 'admin/mantenimiento/analisis/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026' },
   { lines: 996, path: '/dashboard/admin/blog/[id]', file: 'admin/blog/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
+  { lines: 913, path: '/dashboard/admin/familias/[id]', file: 'admin/familias/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
+  { lines: 128, path: '/dashboard/admin/mantenimiento/analisis', file: 'admin/mantenimiento/analisis/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026' },
   { lines: 134, path: '/dashboard/admin/mantenimiento', file: 'admin/mantenimiento/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026' },
   { lines: 560, path: '/dashboard/cultivos', file: 'cultivos/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 130, path: '/dashboard/admin/mantenimiento/biblia', file: 'admin/mantenimiento/biblia/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026' },
@@ -125,6 +130,7 @@ export const dashboards: DashboardItem[] = [
   { lines: 91, path: '/dashboard/admin/fases/[id]', file: 'admin/fases/[id]/page.tsx', refactoredAt: '13/06/2026', responsiveAt: null },
   { lines: 447, path: '/dashboard/semillas', file: 'semillas/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 439, path: '/dashboard/comunidad', file: 'comunidad/page.tsx', refactoredAt: null, responsiveAt: null },
+  { lines: 422, path: '/dashboard/admin/familias', file: 'admin/familias/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 383, path: '/dashboard/cultivos/[id]', file: 'cultivos/[id]/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 327, path: '/dashboard/admin/usuarios', file: 'admin/usuarios/page.tsx', refactoredAt: null, responsiveAt: null },
   { lines: 286, path: '/dashboard/admin/ajustes/avisos', file: 'admin/ajustes/avisos/page.tsx', refactoredAt: null, responsiveAt: null },

@@ -9,9 +9,10 @@ export function useEspeciesAdmin() {
   const searchParams = useSearchParams();
   const focusParam = searchParams.get('focus');
 
-  const [especies, setEspecies] = useState<any[]>([]);
+  const [allEspecies, setAllEspecies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState('');
+  const [filterFamilia, setFilterFamilia] = useState('');
   const [filter, setFilter] = useState<'activas' | 'inactivas' | 'todas'>('activas');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -37,8 +38,8 @@ export function useEspeciesAdmin() {
     if (!userEmail) return;
     try {
       setLoading(true);
-      const data = await getEspecies(userEmail, filterTipo, filter);
-      setEspecies(data.especies || []);
+      const data = await getEspecies(userEmail, '', 'todas'); // Fetch all
+      setAllEspecies(data.especies || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -50,7 +51,7 @@ export function useEspeciesAdmin() {
     if (userEmail) {
       loadEspecies();
     }
-  }, [filterTipo, filter, userEmail]);
+  }, [userEmail]);
 
   useEffect(() => {
     if (!loading && focusParam) {
@@ -100,13 +101,62 @@ export function useEspeciesAdmin() {
     }
   };
 
+  const activeFiltered = allEspecies.filter(e => {
+    if (filter === 'activas') return e.especiesvisibilidadsino === 1;
+    if (filter === 'inactivas') return e.especiesvisibilidadsino === 0;
+    return true;
+  });
+
+  const countsStatus = {
+    activas: allEspecies.filter(e => e.especiesvisibilidadsino === 1).length,
+    inactivas: allEspecies.filter(e => e.especiesvisibilidadsino === 0).length,
+    todas: allEspecies.length,
+  };
+
+  const counts = {
+    '': activeFiltered.length,
+    'hortaliza': activeFiltered.filter(e => e.especiestipo?.includes('hortaliza')).length,
+    'fruta': activeFiltered.filter(e => e.especiestipo?.includes('fruta')).length,
+    'aromatica': activeFiltered.filter(e => e.especiestipo?.includes('aromatica')).length,
+    'leguminosa': activeFiltered.filter(e => e.especiestipo?.includes('leguminosa')).length,
+    'cereal': activeFiltered.filter(e => e.especiestipo?.includes('cereal')).length,
+    'otra': activeFiltered.filter(e => e.especiestipo?.includes('otra')).length,
+  };
+
+  const especies = activeFiltered.filter(e => {
+    if (filterTipo && !e.especiestipo?.includes(filterTipo)) return false;
+    if (filterFamilia && e.xespeciesidfamilias?.toString() !== filterFamilia) return false;
+    return true;
+  });
+
+  const uniqueFamiliasMap = new Map();
+  allEspecies.forEach(e => {
+    if (e.xespeciesidfamilias && e.familiasnombre) {
+      if (!uniqueFamiliasMap.has(e.xespeciesidfamilias)) {
+        uniqueFamiliasMap.set(e.xespeciesidfamilias, { 
+          id: e.xespeciesidfamilias, 
+          nombre: e.familiasnombre, 
+          emoji: e.familiasemoji, 
+          count: 0 
+        });
+      }
+      uniqueFamiliasMap.get(e.xespeciesidfamilias).count += 1;
+    }
+  });
+  const uniqueFamilias = Array.from(uniqueFamiliasMap.values()).sort((a: any, b: any) => a.nombre.localeCompare(b.nombre));
+
   return {
     router,
     focusParam,
     especies,
+    counts,
+    countsStatus,
+    uniqueFamilias,
     loading,
     filterTipo,
     setFilterTipo,
+    filterFamilia,
+    setFilterFamilia,
     filter,
     setFilter,
     userEmail,

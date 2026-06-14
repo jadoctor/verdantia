@@ -711,8 +711,11 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={goBack} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          🌍 Volver a Labores Globales
+        <button onClick={() => {
+          if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
+          if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/labores'); }
+        }} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          {typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a la Especie' : '🔙 Volver a Labores'}
         </button>
       </div>
 

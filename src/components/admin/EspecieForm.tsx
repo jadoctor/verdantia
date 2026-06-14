@@ -39,7 +39,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   }, []);
 
     const defaultFormData = {
-    especiesnombre: '', especiesnombrecientifico: '', especiesfamilia: '',
+    especiesnombre: '', especiesnombrecientifico: '', xespeciesidfamilias: '',
     especiestipo: [], especiesciclo: [], especiescolor: '', especiestamano: 'mediano',
     especiesviabilidadsemilla: '',
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
@@ -50,8 +50,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     especiesfecharecolecciondesde: '', especiesfecharecoleccionhasta: '',
     especieshistoria: '', especiesdescripcion: '', especiesfuentesinformacion: '',
     especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
-    especiesicono: '',    especiesbiodinamicacategoria: '', especiesbiodinamicanotas: '', especiesprofundidadtrasplante: '',
-    especiesphsuelo: '', especiesnecesidadriego: '', especiestiposiembra: [], especiestiposiembrapreferente: [],
+    especiesicono: '',    especiesorganocomestible: '', especiesbiodinamicanotas: '', especiesprofundidadtrasplante: '',
+    especiesphminimosuelo: '', especiesphmaximosuelo: '', especiesnecesidadriego: '', especiestiposiembra: [], especiestiposiembrapreferente: [],
     especiesvolumenmaceta: '', especiesemillerovolumendesde: '', especiesemillerovolumenhasta: '', especiesluzsolar: '', especiescaracteristicassuelo: '', especiesdificultad: '', especiestemperaturamaxima: '',
     especiespreparacionconvencional: '', especiespreparacionminima: '', especiespreparacionnolaboreo: '',
     especiespeso1000semillas: '',
@@ -60,6 +60,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     especieslunarobservaciones: '',
     especiesbiodinamicafasesiembra: '',
     especiesbiodinamicafasetrasplante: '',
+    especiesresistenciahelada: '',
+    especiesnecesidadtutoraje: '',
+    especiesporteplanta: '',
+    especiesrendimientoestimado: '',
+    especiespartecosechable: [],
+    especiesgerminaroscuridad: '',
     fases_duracion: {}
   };
 
@@ -83,7 +89,66 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [aiProposal, setAiProposal] = useState<any>(null);
   const [selectedRels, setSelectedRels] = useState<{ ben: any[], per: any[], pla: any[] }>({ ben: [], per: [], pla: [] });
   const [showAiModal, setShowAiModal] = useState(false);
+  const [aiModalActiveTab, setAiModalActiveTab] = useState('taxonomia');
+  const [selectedAiFields, setSelectedAiFields] = useState<Record<string, boolean>>({});
+  const [showOnlyDiffs, setShowOnlyDiffs] = useState(false);
+  const [collapsedAiGroups, setCollapsedAiGroups] = useState<Record<string, boolean>>({});
   const [isAssimilatingRels, setIsAssimilatingRels] = useState(false);
+
+  const [showAiConfig, setShowAiConfig] = useState(false);
+  const [aiConfigPrompt, setAiConfigPrompt] = useState('Busca información botánica detallada de esta especie, incluyendo su taxonomía, requerimientos, ecosistema de asociaciones, sinónimos locales y principales variedades comerciales y tradicionales.');
+  const [aiConfigTabs, setAiConfigTabs] = useState<Record<string, boolean>>({
+    taxonomia: true,
+    cultivo: true,
+    fases: true,
+    biodinamica: true,
+    asociaciones: true,
+    textos: true,
+    sinonimos: true,
+    variedades: true
+  });
+  const [selectedAiSinonimos, setSelectedAiSinonimos] = useState<any[]>([]);
+  const [selectedAiVariedades, setSelectedAiVariedades] = useState<any[]>([]);
+  const [isAssimilatingSinonimos, setIsAssimilatingSinonimos] = useState(false);
+  const [isAssimilatingVariedades, setIsAssimilatingVariedades] = useState(false);
+  const [assimilatedVarietyNames, setAssimilatedVarietyNames] = useState<string[]>([]);
+
+  const [aiSeconds, setAiSeconds] = useState(0);
+  const aiTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [isAssimilating, setIsAssimilating] = useState(false);
+  const [assimilationSeconds, setAssimilationSeconds] = useState(0);
+  const assimilationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const runWithAssimilationLoading = async (fn: () => Promise<void> | void) => {
+    if (isAssimilating) {
+      await fn();
+      return;
+    }
+    setAssimilationSeconds(0);
+    setIsAssimilating(true);
+    const interval = setInterval(() => {
+      setAssimilationSeconds(s => s + 1);
+    }, 1000);
+    assimilationTimerRef.current = interval;
+    try {
+      await fn();
+    } finally {
+      setIsAssimilating(false);
+      clearInterval(interval);
+      if (assimilationTimerRef.current === interval) {
+        assimilationTimerRef.current = null;
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (aiTimerRef.current) clearInterval(aiTimerRef.current);
+      if (assimilationTimerRef.current) clearInterval(assimilationTimerRef.current);
+    };
+  }, []);
+
   const [photos, setPhotos] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -102,6 +167,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [masterEspecies, setMasterEspecies] = useState<any[]>([]);
   const [masterPlagas, setMasterPlagas] = useState<any[]>([]);
   const [masterFases, setMasterFases] = useState<any[]>([]);
+  const [masterFamilias, setMasterFamilias] = useState<any[]>([]);
+
+  // -- Chekeo y Variedades Existentes State --
+  const [existingVarieties, setExistingVarieties] = useState<any[]>([]);
+  const [checking, setChecking] = useState(false);
+  const [checkResults, setCheckResults] = useState<any>(null);
+  const [showCheckModal, setShowCheckModal] = useState(false);
 
   // -- Sinonimos State --
   const [sinonimos, setSinonimos] = useState<any[]>([]);
@@ -242,6 +314,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       fetch('/api/admin/fases', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterFases(data.fases || []));
+      fetch('/api/admin/familias', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterFamilias(data.familias || []));
       fetch('/api/admin/ajustes/idiomas')
         .then(res => res.json())
         .then(data => setMasterIdiomas(Array.isArray(data) ? data : []));
@@ -256,8 +331,25 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       loadRelaciones(especieId);
       loadSinonimos(especieId);
       loadPautas(especieId);
+      loadExistingVarieties(especieId);
     }
   }, [especieId, userEmail]);
+
+  const loadExistingVarieties = async (id: string) => {
+    if (!userEmail) return;
+    try {
+      const res = await fetch(`/api/admin/variedades?filter=todas`, {
+        headers: { 'x-user-email': userEmail },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const filtered = (data.variedades || []).filter((v: any) => v.xvariedadesidespecies == id);
+        setExistingVarieties(filtered);
+      }
+    } catch (e) {
+      console.error('Error loading existing varieties:', e);
+    }
+  };
 
   const loadSinonimos = async (id: string) => {
     try {
@@ -533,129 +625,170 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
   };
 
-  const callAI = async () => {
+  const handleCheckSpecies = async () => {
+    if (!especieId) {
+      alert('Guarda primero la especie para realizar el chequeo.');
+      return;
+    }
+    setChecking(true);
+    try {
+      const varRes = await fetch(`/api/admin/variedades?filter=todas`, {
+        headers: { 'x-user-email': userEmail || '' }
+      });
+      let varCount = 0;
+      if (varRes.ok) {
+        const varData = await varRes.json();
+        const filtered = (varData.variedades || []).filter((v: any) => v.xvariedadesidespecies == especieId);
+        varCount = filtered.length;
+      }
+
+      const missingFields: string[] = [];
+      let score = 0;
+      
+      const basicFields = [
+        { key: 'especiesnombrecientifico', label: 'Nombre científico' },
+        { key: 'xespeciesidfamilias', label: 'Familia botánica (ID)' },
+        { key: 'especiesdescripcion', label: 'Descripción / Historia' },
+        { key: 'especiesicono', label: 'Icono / Emoji' },
+        { key: 'especiesphminimosuelo', label: 'pH mínimo del suelo' },
+        { key: 'especiesphmaximosuelo', label: 'pH máximo del suelo' },
+        { key: 'especiesnecesidadriego', label: 'Riego' },
+        { key: 'especiesluzsolar', label: 'Luz solar' },
+        { key: 'especiesdificultad', label: 'Dificultad' },
+        { key: 'especiesresistenciahelada', label: 'Resistencia a heladas' },
+        { key: 'especiesnecesidadtutoraje', label: 'Necesidad de tutoraje' },
+        { key: 'especiesporteplanta', label: 'Porte de la planta' },
+        { key: 'especiesrendimientoestimado', label: 'Rendimiento estimado' },
+      ];
+
+      basicFields.forEach(f => {
+        if (!formData[f.key]) {
+          missingFields.push(f.label);
+        } else {
+          score += 5;
+        }
+      });
+
+      const hasSinonimos = sinonimos.length > 0;
+      const hasLabores = pautas.length > 0;
+      const hasPhotos = photos.length > 0;
+      const hasPdfs = pdfs.length > 0;
+      const hasEcosystem = relaciones.beneficiosas.length > 0 || relaciones.perjudiciales.length > 0 || relaciones.plagas.length > 0;
+      const hasVarieties = varCount > 0;
+
+      if (hasSinonimos) score += 10;
+      if (hasLabores) score += 10;
+      if (hasPhotos) score += 10;
+      if (hasPdfs) score += 10;
+      if (hasEcosystem) score += 10;
+      if (hasVarieties) score += 10;
+
+      setCheckResults({
+        score,
+        missingFields,
+        hasSinonimos,
+        hasLabores,
+        hasPhotos,
+        hasPdfs,
+        hasEcosystem,
+        hasVarieties,
+        sinonimosCount: sinonimos.length,
+        laboresCount: pautas.length,
+        photosCount: photos.length,
+        pdfsCount: pdfs.length,
+        ecosystemCount: relaciones.beneficiosas.length + relaciones.perjudiciales.length + relaciones.plagas.length,
+        varietiesCount: varCount
+      });
+      setShowCheckModal(true);
+    } catch (err) {
+      console.error(err);
+      alert('Error al realizar el chequeo de la especie.');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const callAI = () => {
     if (!formData.especiesnombre) {
       alert('Introduce primero el nombre común de la especie.');
       return;
     }
-    setAiLoading(true);
-    try {
-      const res = await fetch('/api/ai/especie-assistant', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-email': userEmail || ''
-        },
-        body: JSON.stringify({ nombre: formData.especiesnombre })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAiProposal(data.data);
-        setSelectedRels({
-          ben: data.data.asociaciones_beneficiosas || [],
-          per: data.data.asociaciones_perjudiciales || [],
-          pla: data.data.plagas_asociadas || []
-        });
-        setShowAiModal(true);
-      } else {
-        alert('Error IA: ' + data.error);
-      }
-    } catch (err) {
-      alert('Error llamando a la IA');
-    } finally {
-      setAiLoading(false);
-    }
+    setShowAiConfig(true);
   };
 
   const aiGroups = [
     {
       id: 'taxonomia',
-      title: '🧬 Taxonomía',
-      keys: ['especiesnombrecientifico', 'especiesfamilia', 'especiestipo', 'especiesciclo', 'especiescolor', 'especiestamano'],
+      title: '🧬 Identificación',
+      keys: ['especiesnombrecientifico', 'xespeciesidfamilias', 'especiescolor', 'especiestamano', 'especiesicono', 'especiestipo', 'especiesciclo'],
       labels: {
-        especiesnombrecientifico: 'Nombre Científico',
+        especiesnombrecientifico: 'Nombre científico',
+        xespeciesidfamilias: 'Familia (ID)',
         especiesfamilia: 'Familia',
+        especiescolor: 'Color Fenotípico',
+        especiestamano: 'Tamaño',
+        especiesicono: 'Icono/Emoji',
         especiestipo: 'Tipos',
-        especiesciclo: 'Ciclo',
-        especiescolor: 'Color',
-        especiestamano: 'Tamaño'
-      }
-    },
-    {
-      id: 'fisiologia',
-      title: '🌱 Fisiología',
-      keys: ['fases_duracion', 'especiesviabilidadsemilla', 'especiespeso1000semillas', 'especiestemperaturaminima', 'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 'especiesprofundidadtrasplante', 'especiesluzsolar'],
-      labels: {
-        fases_duracion: 'Duración de Fases',
-        especiesviabilidadsemilla: 'Viabilidad Semilla',
-        especiespeso1000semillas: 'Peso de 1.000 Semillas (g)',
-        especiestemperaturaminima: 'Temp. Mínima',
-        especiestemperaturaoptima: 'Temp. Óptima',
-        especiestemperaturamaxima: 'Temp. Máxima',
-        especiesprofundidadsiembra: 'Profundidad Siembra',
-        especiesprofundidadtrasplante: 'Profundidad Trasplante',
-        especiesluzsolar: 'Luz Solar'
+        especiesciclo: 'Ciclo'
       }
     },
     {
       id: 'cultivo',
-      title: '🚜 Cultivo y Suelo',
-      keys: ['especiesphsuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 'especiestiposiembra', 'especiestiposiembrapreferente', 'especiesvolumenmaceta', 'especiesemillerovolumendesde', 'especiesemillerovolumenhasta', 'especiesdificultad'],
-      labels: {
-        especiesphsuelo: 'pH Suelo',
-        especiescaracteristicassuelo: 'Tipo de Suelo',
-        especiesnecesidadriego: 'Nec. Riego',
-        especiestiposiembra: 'Tipo Siembra',
-        especiestiposiembrapreferente: 'Siembra Preferida',
-        especiesvolumenmaceta: 'Vol. Maceta (L)',
-        especiesemillerovolumendesde: 'Vol. Semillero Mín',
-        especiesemillerovolumenhasta: 'Vol. Semillero Máx',
-        especiesdificultad: 'Dificultad'
-      }
-    },
-    {
-      id: 'autosuficiencia',
-      title: 'Autosuficiencia y Marcos',
-      keys: ['especiesmarcoplantas', 'especiesmarcofilas', 'especiesmarcomargen', 'especiesautosuficienciaparcial', 'especiesautosuficiencia', 'especiesautosuficienciaconserva'],
-      labels: {
-        especiesmarcoplantas: 'Marco Plantas',
-        especiesmarcofilas: 'Marco Filas',
-        especiesmarcomargen: 'Margen al Borde',
-        especiesautosuficienciaparcial: 'Autosuf. Parcial',
-        especiesautosuficiencia: 'Autosuf. Completa',
-        especiesautosuficienciaconserva: 'Autosuf. Conserva'
-      }
-    },
-    {
-      id: 'biodinamica',
-      title: 'Luna y Biodinámica',
+      title: '🌱 Requisitos y Suelo',
       keys: [
-        'especieslunarfasesiembra', 
-        'especieslunarfasetrasplante', 
-        'especieslunarobservaciones',
-        'especiesbiodinamicacategoria', 
-        'especiesbiodinamicafasesiembra',
-        'especiesbiodinamicafasetrasplante',
-        'especiesbiodinamicanotas'
+        'especiesphminimosuelo', 'especiesphmaximosuelo', 'especiescaracteristicassuelo', 'especiesnecesidadriego', 
+        'especiestiposiembra', 'especiestiposiembrapreferente', 'especiesvolumenmaceta', 
+        'especiesemillerovolumendesde', 'especiesemillerovolumenhasta', 'especiesdificultad', 
+        'especiesviabilidadsemilla', 'especiespeso1000semillas', 'especiestemperaturaminima', 
+        'especiestemperaturaoptima', 'especiestemperaturamaxima', 'especiesprofundidadsiembra', 
+        'especiesprofundidadtrasplante', 'especiesluzsolar',
+        'especiespreparacionconvencional', 'especiespreparacionminima', 'especiespreparacionnolaboreo',
+        'especiesmarcoplantas', 'especiesmarcofilas', 'especiesmarcomargen',
+        'especiesresistenciahelada', 'especiesnecesidadtutoraje', 'especiesporteplanta',
+        'especiesrendimientoestimado', 'especiespartecosechable', 'especiesgerminaroscuridad'
       ],
       labels: {
-        especieslunarfasesiembra: 'Fase Siembra (Lunar)',
-        especieslunarfasetrasplante: 'Fase Trasplante (Lunar)',
-        especieslunarobservaciones: 'Notas (Lunar)',
-        especiesbiodinamicacategoria: 'Categoría (Biodinámica)',
-        especiesbiodinamicafasesiembra: 'Fase Siembra (Biodinámica)',
-        especiesbiodinamicafasetrasplante: 'Fase Trasplante (Biodinámica)',
-        especiesbiodinamicanotas: 'Notas (Biodinámica)'
+        especiesphminimosuelo: 'pH Mín. Suelo',
+        especiesphmaximosuelo: 'pH Máx. Suelo',
+        especiescaracteristicassuelo: 'Tipo de Suelo',
+        especiesnecesidadriego: 'Nec. Riego',
+        especiestiposiembra: 'Tipos de Siembra',
+        especiestiposiembrapreferente: 'Siembra Preferida',
+        especiesvolumenmaceta: 'Volumen Maceta (L)',
+        especiesemillerovolumendesde: 'Vol. Semillero Mín (cc)',
+        especiesemillerovolumenhasta: 'Vol. Semillero Máx (cc)',
+        especiesdificultad: 'Dificultad',
+        especiesviabilidadsemilla: 'Viabilidad Semilla (Años)',
+        especiespeso1000semillas: 'Peso 1000 Semillas (g)',
+        especiestemperaturaminima: 'Temp. Mínima (°C)',
+        especiestemperaturaoptima: 'Temp. Óptima (°C)',
+        especiestemperaturamaxima: 'Temp. Máxima (°C)',
+        especiesprofundidadsiembra: 'Profundidad Siembra (cm)',
+        especiesprofundidadtrasplante: 'Profundidad Trasplante (cm)',
+        especiesluzsolar: 'Luz Solar',
+        especiespreparacionconvencional: 'Prep. Convencional (días)',
+        especiespreparacionminima: 'Prep. Mínima (días)',
+        especiespreparacionnolaboreo: 'Prep. Sin Laboreo (días)',
+        especiesmarcoplantas: 'Marco entre Plantas (cm)',
+        especiesmarcofilas: 'Marco entre Filas (cm)',
+        especiesmarcomargen: 'Margen al Borde (cm)',
+        especiesresistenciahelada: 'Resistencia a Heladas',
+        especiesnecesidadtutoraje: 'Necesidad de Tutoraje',
+        especiesporteplanta: 'Porte de la Planta',
+        especiesrendimientoestimado: 'Rendimiento Estimado',
+        especiespartecosechable: 'Parte Cosechable',
+        especiesgerminaroscuridad: '¿Germina en Oscuridad?'
       }
     },
     {
-      id: 'calendarios',
-      title: '📅 Calendarios',
+      id: 'fases',
+      title: '📅 Calendarios y Fases',
       keys: [
         'especiesfechasemillerodesde', 'especiesfechasemillerohasta',
         'especiesfechasiembradirectadesde', 'especiesfechasiembradirectahasta',
         'especiestrasplantedesde', 'especiestrasplantehasta',
-        'especiesfecharecolecciondesde', 'especiesfecharecoleccionhasta'
+        'especiesfecharecolecciondesde', 'especiesfecharecoleccionhasta',
+        'fases_duracion'
       ],
       labels: {
         especiesfechasemillerodesde: 'Semillero (Desde)',
@@ -665,34 +798,321 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         especiestrasplantedesde: 'Trasplante (Desde)',
         especiestrasplantehasta: 'Trasplante (Hasta)',
         especiesfecharecolecciondesde: 'Recolección (Desde)',
-        especiesfecharecoleccionhasta: 'Recolección (Hasta)'
+        especiesfecharecoleccionhasta: 'Recolección (Hasta)',
+        fases_duracion: 'Duración de Fases'
       }
     },
     {
+      id: 'biodinamica',
+      title: '🌙 Luna y Biodinámica',
+      keys: [
+        'especieslunarfasesiembra', 
+        'especieslunarfasetrasplante', 
+        'especieslunarobservaciones',
+        'especiesorganocomestible', 
+        'especiesbiodinamicafasesiembra',
+        'especiesbiodinamicafasetrasplante',
+        'especiesbiodinamicanotas'
+      ],
+      labels: {
+        especieslunarfasesiembra: 'Fase Siembra (Lunar)',
+        especieslunarfasetrasplante: 'Fase Trasplante (Lunar)',
+        especieslunarobservaciones: 'Notas (Lunar)',
+        especiesorganocomestible: 'Órgano Comestible',
+        especiesbiodinamicafasesiembra: 'Fase Siembra (Biodinámica)',
+        especiesbiodinamicafasetrasplante: 'Fase Trasplante (Biodinámica)',
+        especiesbiodinamicanotas: 'Notas (Biodinámica)'
+      }
+    },
+    {
+      id: 'asociaciones',
+      title: '🤝 Asociaciones',
+      keys: [],
+      labels: {}
+    },
+    {
       id: 'textos',
-      title: 'Textos y Otros',
-      keys: ['especieshistoria', 'especiesdescripcion', 'especiesfuentesinformacion'],
+      title: '📝 Textos y Autosuficiencia',
+      keys: [
+        'especieshistoria', 'especiesdescripcion', 'especiesfuentesinformacion',
+        'especiesautosuficienciaparcial', 'especiesautosuficiencia', 'especiesautosuficienciaconserva'
+      ],
       labels: {
         especieshistoria: 'Historia',
         especiesdescripcion: 'Descripción',
-        especiesfuentesinformacion: 'Fuentes'
+        especiesfuentesinformacion: 'Fuentes',
+        especiesautosuficienciaparcial: 'Autosuf. Parcial (pl/pers)',
+        especiesautosuficiencia: 'Autosuf. Completa (pl/pers)',
+        especiesautosuficienciaconserva: 'Autosuf. Conserva (pl/pers)'
       }
+    },
+    {
+      id: 'sinonimos',
+      title: '🗣️ Sinónimos',
+      keys: [],
+      labels: {}
+    },
+    {
+      id: 'variedades',
+      title: '🌾 Variedades',
+      keys: [],
+      labels: {}
     }
   ];
 
-  const assimilateGroup = (keys: string[]) => {
-    if (!aiProposal) return;
-    const updates: any = {};
-    keys.forEach(k => {
-      if (aiProposal[k] !== undefined && aiProposal[k] !== null) {
-        updates[k] = aiProposal[k];
+  const saveFormData = async (customFormData: any) => {
+    if (!especieId || !userEmail) return;
+    setSaveStatus('saving');
+    const { fases_duracion, ...dataToSave } = customFormData;
+    try {
+      const res = await fetch(`/api/admin/especies/${especieId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail
+        },
+        body: JSON.stringify(dataToSave)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInitialData(customFormData);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('idle');
       }
-    });
-    setFormData((prev: any) => ({ ...prev, ...updates }));
-
-    if (updates['fases_duracion']) {
-      autoSaveFases(updates['fases_duracion']);
+    } catch (e) {
+      console.error('Error saving form data:', e);
+      setSaveStatus('idle');
     }
+  };
+
+  const runUnifiedAiSearch = async () => {
+    const selectedCount = Object.values(aiConfigTabs).filter(Boolean).length;
+    if (selectedCount === 0) {
+      alert('Debes seleccionar al menos una pestaña para realizar la comparación.');
+      return;
+    }
+
+    setAiLoading(true);
+    setShowAiConfig(false);
+    setAiSeconds(0);
+    if (aiTimerRef.current) clearInterval(aiTimerRef.current);
+    aiTimerRef.current = setInterval(() => {
+      setAiSeconds(s => s + 1);
+    }, 1000);
+
+    try {
+      const promises: Promise<any>[] = [];
+      const keys: string[] = [];
+
+      const needsCore = aiConfigTabs.taxonomia || aiConfigTabs.cultivo || aiConfigTabs.fases || aiConfigTabs.biodinamica || aiConfigTabs.asociaciones || aiConfigTabs.textos;
+      if (needsCore) {
+        keys.push('core');
+        promises.push(
+          fetch('/api/ai/especie-assistant', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-email': userEmail || ''
+            },
+            body: JSON.stringify({
+              nombre: formData.especiesnombre,
+              customPrompt: aiConfigPrompt
+            })
+          }).then(res => res.json())
+        );
+      }
+
+      if (aiConfigTabs.sinonimos) {
+        keys.push('sinonimos');
+        promises.push(
+          fetch('/api/ai/proponer-sinonimos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              especieNombre: formData.especiesnombre,
+              especieCientifico: formData.especiesnombrecientifico,
+              existingSinonimos: sinonimos.map(s => ({
+                nombre: s.especiessinonimosnombre,
+                idPais: s.xespeciessinonimosidpaises
+              })),
+              extraInstructions: aiConfigPrompt
+            })
+          }).then(res => res.json())
+        );
+      }
+
+      if (aiConfigTabs.variedades) {
+        keys.push('variedades');
+        promises.push(
+          fetch('/api/ai/proponer-variedades', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-email': userEmail || ''
+            },
+            body: JSON.stringify({
+              especieNombre: formData.especiesnombre,
+              existingVariedades: [],
+              extraInstructions: aiConfigPrompt
+            })
+          }).then(res => res.json())
+        );
+      }
+
+      const results = await Promise.all(promises);
+      let coreData: any = null;
+      let sinonimosData: any[] = [];
+      let variedadesData: any[] = [];
+
+      keys.forEach((key, index) => {
+        const resObj = results[index];
+        if (resObj.success) {
+          if (key === 'core') coreData = resObj.data;
+          if (key === 'sinonimos') sinonimosData = resObj.sinonimos;
+          if (key === 'variedades') variedadesData = resObj.variedades || resObj.data;
+        } else {
+          console.warn(`Error en petición IA ${key}:`, resObj.error);
+        }
+      });
+
+      if (needsCore && !coreData) {
+        throw new Error('Error al obtener datos principales de la especie');
+      }
+
+      if (coreData && coreData.fases_duracion && typeof coreData.fases_duracion === 'object') {
+        const normalized: Record<string, any> = {};
+        Object.entries(coreData.fases_duracion).forEach(([k, val]) => {
+          const matchedById = masterFases.find((f: any) => f.idfasescultivo.toString() === k);
+          if (matchedById) {
+            normalized[matchedById.idfasescultivo.toString()] = val;
+            return;
+          }
+          const matchedByClave = masterFases.find((f: any) => f.fasescultivoclave.toLowerCase().trim() === k.toLowerCase().trim());
+          if (matchedByClave) {
+            normalized[matchedByClave.idfasescultivo.toString()] = val;
+            return;
+          }
+          const matchedByName = masterFases.find((f: any) => f.fasescultivonombre.toLowerCase().trim() === k.toLowerCase().trim());
+          if (matchedByName) {
+            normalized[matchedByName.idfasescultivo.toString()] = val;
+            return;
+          }
+          const lowerKey = k.toLowerCase().trim();
+          if (lowerKey.includes('pregerminacion') || lowerKey === 'germinacion' || lowerKey.includes('germina')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'pregerminacion');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          } else if (lowerKey.includes('postgerminacion') || lowerKey.includes('postgermina')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'postgerminacion');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          } else if (lowerKey.includes('semillero')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'semillero');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          } else if (lowerKey.includes('crecimiento')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'crecimiento');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          } else if (lowerKey.includes('cosecha')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'cosecha');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          } else if (lowerKey.includes('enraizamiento') || lowerKey.includes('posplantacion')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'enraizamiento');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          } else if (lowerKey.includes('floracion')) {
+            const f = masterFases.find((x: any) => x.fasescultivoclave === 'floracion');
+            if (f) normalized[f.idfasescultivo.toString()] = val;
+          }
+        });
+        coreData.fases_duracion = normalized;
+      }
+
+      const proposal: any = {
+        ...(coreData || {}),
+        _sinonimos: (sinonimosData || []).map((s: any) => ({ ...s, _selected: true })),
+        _variedades: (variedadesData || []).map((v: any) => ({ ...v, _selected: true }))
+      };
+
+      setAiProposal(proposal);
+
+      const initialSelected: Record<string, boolean> = {};
+      aiGroups.forEach(group => {
+        if (group.id === 'sinonimos' || group.id === 'variedades') return;
+        group.keys.forEach(k => {
+          if (k === 'fases_duracion') {
+            const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
+            phasesList.forEach((f: any) => {
+              const fid = f.idfasescultivo.toString();
+              const currentVal = formData.fases_duracion?.[fid] != null ? String(formData.fases_duracion[fid]) : '';
+              const aiVal = proposal.fases_duracion?.[fid] != null ? String(proposal.fases_duracion[fid]) : '';
+              initialSelected[`fase_${fid}`] = aiVal !== '' && currentVal !== aiVal;
+            });
+          } else {
+            let currentVal = formData[k] != null ? formData[k] : '';
+            let aiVal = proposal[k] != null ? proposal[k] : '';
+            if (Array.isArray(currentVal)) currentVal = [...currentVal].sort().join(',');
+            else currentVal = String(currentVal);
+            if (Array.isArray(aiVal)) aiVal = [...aiVal].sort().join(',');
+            else aiVal = String(aiVal);
+            initialSelected[k] = aiVal !== '' && currentVal !== aiVal;
+          }
+        });
+      });
+
+      setSelectedAiFields(initialSelected);
+
+      if (proposal.asociaciones_beneficiosas || proposal.asociaciones_perjudiciales || proposal.plagas_asociadas) {
+        setSelectedRels({
+          ben: proposal.asociaciones_beneficiosas || [],
+          per: proposal.asociaciones_perjudiciales || [],
+          pla: proposal.plagas_asociadas || []
+        });
+      } else {
+        setSelectedRels({ ben: [], per: [], pla: [] });
+      }
+
+      setSelectedAiSinonimos((sinonimosData || []).map((_, i) => i));
+      setSelectedAiVariedades((variedadesData || []).map((_, i) => i));
+      setAssimilatedVarietyNames([]);
+      setShowOnlyDiffs(false);
+
+      const firstActiveTab = Object.keys(aiConfigTabs).find(tabKey => aiConfigTabs[tabKey]) || 'taxonomia';
+      setAiModalActiveTab(firstActiveTab);
+      setShowAiModal(true);
+
+    } catch (err: any) {
+      console.error(err);
+      alert('Error en búsqueda unificada IA: ' + err.message);
+    } finally {
+      setAiLoading(false);
+      if (aiTimerRef.current) {
+        clearInterval(aiTimerRef.current);
+        aiTimerRef.current = null;
+      }
+    }
+  };
+
+  const assimilateSingleField = async (key: string, value: any) => {
+    await runWithAssimilationLoading(async () => {
+      const next = { ...formData, [key]: value };
+      await autoSaveField(key, value, next);
+      setFormData(next);
+      setSelectedAiFields(prev => ({ ...prev, [key]: false }));
+    });
+  };
+
+  const assimilateSinglePhase = async (fid: string, value: any) => {
+    await runWithAssimilationLoading(async () => {
+      const nextFases = {
+        ...formData.fases_duracion,
+        [fid]: value
+      };
+      setFormData((prev: any) => {
+        const next = { ...prev, fases_duracion: nextFases };
+        return next;
+      });
+      await autoSaveFases(nextFases);
+      setSelectedAiFields(prev => ({ ...prev, [`fase_${fid}`]: false }));
+    });
   };
 
   const assimilateRelacionesAI = async () => {
@@ -813,14 +1233,213 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
   };
 
+  const assimilateSinonimosAI = async () => {
+    if (!aiProposal || !aiProposal._sinonimos) return;
+    const selectedList = aiProposal._sinonimos.filter((_: any, idx: number) => selectedAiSinonimos.includes(idx));
+    if (selectedList.length === 0) return;
+
+    await runWithAssimilationLoading(async () => {
+      const merged = [...sinonimos];
+      const added: any[] = [];
+      selectedList.forEach((item: any) => {
+        const exists = merged.some(s =>
+          s.especiessinonimosnombre?.toLowerCase().trim() === item.especiessinonimosnombre?.toLowerCase().trim() &&
+          String(s.xespeciessinonimosidpaises || '') === String(item.xespeciessinonimosidpaises || '')
+        );
+        if (!exists) {
+          const newSin = {
+            especiessinonimosnombre: item.especiessinonimosnombre,
+            xespeciessinonimosididiomas: item.xespeciessinonimosididiomas,
+            xespeciessinonimosidpaises: item.xespeciessinonimosidpaises,
+            especiessinonimosnotas: item.especiessinonimosnotas || 'Sugerido por IA',
+            idespeciessinonimos: null
+          };
+          merged.push(newSin);
+          added.push(newSin);
+        }
+      });
+
+      if (added.length > 0) {
+        setSinonimos(merged);
+        setSinonimosDirty(true);
+        if (especieId) {
+          try {
+            for (const s of added) {
+              await fetch(`/api/admin/especies/${especieId}/sinonimos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(s)
+              });
+            }
+            await loadSinonimos(especieId);
+          } catch (err) {
+            console.error('Error guardando sinónimos asimilados:', err);
+          }
+        }
+      }
+      setSelectedAiSinonimos([]);
+    });
+  };
+
+  const assimilateVariedadesAI = async () => {
+    if (!aiProposal || !aiProposal._variedades || !especieId || !userEmail) return;
+    const selectedList = aiProposal._variedades.filter((_: any, idx: number) => selectedAiVariedades.includes(idx));
+    if (selectedList.length === 0) return;
+
+    await runWithAssimilationLoading(async () => {
+      const newlyAddedNames: string[] = [];
+      for (const item of selectedList) {
+        try {
+          const res = await fetch('/api/admin/variedades', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-email': userEmail
+            },
+            body: JSON.stringify({
+              variedadesnombre: item.variedadesnombre,
+              xvariedadesidespecies: especieId,
+              variedadestamano: item.variedadestamano || 'mediano',
+              variedadesdiasgerminacion: item.variedadesdiasgerminacion || null,
+              variedadescolor: item.variedadescolor || null,
+              variedadesdescripcion: item.variedadesdescripcion || null,
+              variedadesvisibilidadsino: 1
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            newlyAddedNames.push(item.variedadesnombre);
+          }
+        } catch (err) {
+          console.error(`Error guardando variedad ${item.variedadesnombre}:`, err);
+        }
+      }
+      if (newlyAddedNames.length > 0) {
+        setAssimilatedVarietyNames(prev => [...prev, ...newlyAddedNames]);
+        await loadExistingVarieties(especieId);
+      }
+      setSelectedAiVariedades([]);
+    });
+  };
+
+  const assimilateTab = async (tabId: string) => {
+    await runWithAssimilationLoading(async () => {
+      if (tabId === 'asociaciones') {
+        await assimilateRelacionesAI();
+        return;
+      }
+      if (tabId === 'sinonimos') {
+        await assimilateSinonimosAI();
+        return;
+      }
+      if (tabId === 'variedades') {
+        await assimilateVariedadesAI();
+        return;
+      }
+
+      const group = aiGroups.find(g => g.id === tabId);
+      if (!group) return;
+
+      const updates: any = {};
+      let nextFases = { ...formData.fases_duracion };
+      let phasesChanged = false;
+
+      group.keys.forEach(k => {
+        if (k === 'fases_duracion') {
+          const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
+          phasesList.forEach((f: any) => {
+            const fid = f.idfasescultivo.toString();
+            const vKey = `fase_${fid}`;
+            if (selectedAiFields[vKey] && aiProposal.fases_duracion?.[fid] !== undefined && aiProposal.fases_duracion?.[fid] !== null) {
+              nextFases[fid] = aiProposal.fases_duracion[fid];
+              phasesChanged = true;
+              setSelectedAiFields(prev => ({ ...prev, [vKey]: false }));
+            }
+          });
+        } else {
+          if (selectedAiFields[k] && aiProposal[k] !== undefined && aiProposal[k] !== null) {
+            updates[k] = aiProposal[k];
+            setSelectedAiFields(prev => ({ ...prev, [k]: false }));
+          }
+        }
+      });
+
+      if (Object.keys(updates).length > 0 || phasesChanged) {
+        const next = { ...formData, ...updates };
+        if (phasesChanged) {
+          next.fases_duracion = nextFases;
+          await autoSaveFases(nextFases);
+        }
+        await saveFormData(next);
+        setFormData(next);
+      }
+    });
+  };
+
   const assimilateAll = async () => {
     if (!aiProposal) return;
-    const allKeys = aiGroups.flatMap(g => g.keys);
-    assimilateGroup(allKeys);
-    if (aiProposal.asociaciones_beneficiosas || aiProposal.asociaciones_perjudiciales || aiProposal.plagas_asociadas) {
-      await assimilateRelacionesAI();
-    }
+    
+    await runWithAssimilationLoading(async () => {
+      // 1. Core fields
+      const allKeys = aiGroups.flatMap(g => g.keys);
+      const updates: any = {};
+      let nextFases = { ...formData.fases_duracion };
+      let phasesChanged = false;
+
+      allKeys.forEach(k => {
+        if (k === 'fases_duracion') {
+          const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
+          phasesList.forEach((f: any) => {
+            const fid = f.idfasescultivo.toString();
+            const vKey = `fase_${fid}`;
+            if (selectedAiFields[vKey] && aiProposal.fases_duracion?.[fid] !== undefined && aiProposal.fases_duracion?.[fid] !== null) {
+              nextFases[fid] = aiProposal.fases_duracion[fid];
+              phasesChanged = true;
+              setSelectedAiFields(prev => ({ ...prev, [vKey]: false }));
+            }
+          });
+        } else {
+          if (selectedAiFields[k] && aiProposal[k] !== undefined && aiProposal[k] !== null) {
+            updates[k] = aiProposal[k];
+            setSelectedAiFields(prev => ({ ...prev, [k]: false }));
+          }
+        }
+      });
+
+      if (Object.keys(updates).length > 0 || phasesChanged) {
+        const next = { ...formData, ...updates };
+        if (phasesChanged) {
+          next.fases_duracion = nextFases;
+          await autoSaveFases(nextFases);
+        }
+        await saveFormData(next);
+        setFormData(next);
+      }
+
+      // 2. Relationships
+      if (aiProposal.asociaciones_beneficiosas || aiProposal.asociaciones_perjudiciales || aiProposal.plagas_asociadas) {
+        await assimilateRelacionesAI();
+      }
+
+      // 3. Synonyms
+      if (aiProposal._sinonimos && selectedAiSinonimos.length > 0) {
+        await assimilateSinonimosAI();
+      }
+
+      // 4. Varieties
+      if (aiProposal._variedades && selectedAiVariedades.length > 0) {
+        await assimilateVariedadesAI();
+      }
+
+      setShowAiModal(false);
+    });
+  };
+
+  const closeAiModal = () => {
     setShowAiModal(false);
+    if (assimilatedVarietyNames.length > 0) {
+      window.location.reload();
+    }
   };
 
   const openSinonimosConfig = () => {
@@ -973,8 +1592,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     const files = e.target ? e.target.files : e;
     if (!files || files.length === 0) return;
 
-    if (type === 'photos') setUploadingPhotos(true);
-    else setUploadingPdfs(true);
+    if (type === 'photos') {
+      const remainingSlots = 4 - photos.length;
+      if (files.length > remainingSlots) {
+        alert(`Solo puedes subir ${remainingSlots} fotos más (Límite estricto de 4).`);
+        return;
+      }
+      setUploadingPhotos(true);
+    } else {
+      setUploadingPdfs(true);
+    }
 
     try {
       let imageCompression: any = null;
@@ -1081,7 +1708,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const buildPromptPreview = () => {
     const nombre = formData.especiesnombre || 'especie';
     const sciCtx = formData.especiesnombrecientifico ? ` Nombre científico: ${formData.especiesnombrecientifico}.` : '';
-    const famCtx = formData.especiesfamilia ? ` Familia botánica: ${formData.especiesfamilia}.` : '';
+    const famCtx = formData.xespeciesidfamilias ? ` ID Familia: ${formData.xespeciesidfamilias}.` : '';
     const defaultConcept = `varios ejemplares de ${nombre} recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
     return `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.\nSujeto principal: ${nombre} (hortaliza/planta comestible de huerto).${sciCtx}${famCtx}\nEscena concreta: ${aiImageConcept || defaultConcept}.\nComposición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.\nREGLAS ESTRICTAS:\n1. El sujeto es SIEMPRE una planta, hortaliza, fruto o semilla comestible de huerto.\n2. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura.\n3. El entorno debe ser siempre agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica.\n4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n5. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible.`;
   };
@@ -1098,7 +1725,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const body: any = {
         especieNombre: formData.especiesnombre,
         especieNombreCientifico: formData.especiesnombrecientifico,
-        especieFamilia: formData.especiesfamilia,
+        especieFamiliaId: formData.xespeciesidfamilias,
         concept: aiImageConcept
       };
       // Si el usuario ha editado manualmente el prompt, enviarlo como customPrompt
@@ -1768,8 +2395,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={() => router.push(`/dashboard/admin/especies?focus=${especieId}`)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          🌍 Volver a Especies Globales
+        <button onClick={() => {
+          if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
+          if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/especies'); }
+        }} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          {typeof window !== 'undefined' && document.referrer.includes('/labores') ? '🔙 Volver a Labores' : '🔙 Volver a Especies'}
         </button>
       </div>
 
@@ -1966,6 +2596,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 <button type="button" onClick={callAI} className="btn-ai" disabled={aiLoading} style={{ margin: 0 }}>
                   {aiLoading ? 'Pensando...' : '✨ Asistente IA'}
                 </button>
+                {especieId && (
+                  <button type="button" onClick={handleCheckSpecies} className="btn-ai" disabled={checking} style={{ margin: 0, background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(2,132,199,0.2)' }}>
+                    {checking ? 'Chequeando...' : '🔍 Chekeo'}
+                  </button>
+                )}
               </div>
 
               <div className="form-tabs">
@@ -1994,9 +2629,19 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <label>Nombre Científico</label>
                     <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
                   </div>
-                  <div className="form-group">
-                    <label>Familia</label>
-                    <input type="text" name="especiesfamilia" value={formData.especiesfamilia || ''} onChange={handleChange} />
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Familia</span>
+                      <a href="/dashboard/admin/familias" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', textDecoration: 'none', background: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', color: '#475569' }}>⚙️ Gestionar</a>
+                    </label>
+                    <select name="xespeciesidfamilias" value={formData.xespeciesidfamilias || ''} onChange={handleChange} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                      <option value="">— Sin familia asignada —</option>
+                      {masterFamilias.map((f: any) => (
+                        <option key={f.idfamilias} value={f.idfamilias}>
+                          {f.familiasemoji} {f.familiasnombre} {f.familiasnombrecientifico ? `(${f.familiasnombrecientifico})` : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group full checkbox-group">
                     <label>Tipos</label>
@@ -2075,16 +2720,37 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', minWidth: '600px' }}>
                           <thead>
                             <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                              <th style={{ padding: '12px', textAlign: 'center', width: '10%' }}>Acciones</th>
                               <th style={{ padding: '12px', textAlign: 'left', width: '30%' }}>Nombre / Sinónimo</th>
                               <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Idioma</th>
                               <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>País / Región</th>
                               <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Notas</th>
-                              <th style={{ padding: '12px', textAlign: 'center', width: '10%' }}>Acciones</th>
                             </tr>
                           </thead>
                           <tbody>
                             {sinonimos.map((s, index) => (
                               <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: s.idespeciessinonimos === null ? '#fefce8' : 'transparent' }}>
+                                <td style={{ padding: '8px', textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const sinToDelete = sinonimos[index];
+                                      const newSin = [...sinonimos];
+                                      newSin.splice(index, 1);
+                                      setSinonimos(newSin);
+                                      if (sinToDelete.idespeciessinonimos && especieId) {
+                                        try {
+                                          await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
+                                        } catch (err) {
+                                          console.error('Error borrando sinónimo:', err);
+                                        }
+                                      }
+                                    }}
+                                    style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                                  >
+                                    🗑️
+                                  </button>
+                                </td>
                                 <td style={{ padding: '8px' }}>
                                   <input
                                     type="text"
@@ -2146,27 +2812,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                     style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                                     placeholder="Notas opcionales"
                                   />
-                                </td>
-                                <td style={{ padding: '8px', textAlign: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={async () => {
-                                      const sinToDelete = sinonimos[index];
-                                      const newSin = [...sinonimos];
-                                      newSin.splice(index, 1);
-                                      setSinonimos(newSin);
-                                      if (sinToDelete.idespeciessinonimos && especieId) {
-                                        try {
-                                          await fetch(`/api/admin/especies/${especieId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
-                                        } catch (err) {
-                                          console.error('Error borrando sinónimo:', err);
-                                        }
-                                      }
-                                    }}
-                                    style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
-                                  >
-                                    🗑️
-                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -2280,12 +2925,97 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </div>
 
                   <div className="form-group">
-                    <label>pH del Suelo</label>
-                    <input type="text" name="especiesphsuelo" placeholder="Ej: 5.5 - 6.5" value={formData.especiesphsuelo || ''} onChange={handleChange} />
+                    <label>pH Mínimo del Suelo</label>
+                    <input type="number" step="0.1" min="0" max="14" name="especiesphminimosuelo" placeholder="Ej: 5.5" value={formData.especiesphminimosuelo || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label>pH Máximo del Suelo</label>
+                    <input type="number" step="0.1" min="0" max="14" name="especiesphmaximosuelo" placeholder="Ej: 7.0" value={formData.especiesphmaximosuelo || ''} onChange={handleChange} />
                   </div>
                   <div className="form-group full">
                     <label>Características del Suelo</label>
                     <textarea name="especiescaracteristicassuelo" rows={2} value={formData.especiescaracteristicassuelo || ''} onChange={handleChange} />
+                  </div>
+
+                  {/* NUEVOS CAMPOS AGRONÓMICOS */}
+                  <div style={{ gridColumn: '1 / -1', margin: '8px 0 0', padding: '16px 0 0', borderTop: '2px solid #e2e8f0' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: '1rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>🌿 Datos Agronómicos Avanzados</h4>
+                  </div>
+                  <div className="form-group">
+                    <label>Resistencia a Heladas</label>
+                    <select name="especiesresistenciahelada" value={formData.especiesresistenciahelada || ''} onChange={handleChange}>
+                      <option value="">--</option>
+                      <option value="nula">❌ Nula (muere con primera helada)</option>
+                      <option value="baja">🥶 Baja (heladas suaves)</option>
+                      <option value="media">🧊 Media (hasta -5°C)</option>
+                      <option value="alta">💎 Alta (heladas severas)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Necesidad de Tutoraje</label>
+                    <select name="especiesnecesidadtutoraje" value={formData.especiesnecesidadtutoraje || ''} onChange={handleChange}>
+                      <option value="">--</option>
+                      <option value="no">🚫 No necesita</option>
+                      <option value="opcional">🔄 Opcional</option>
+                      <option value="obligatorio">📐 Obligatorio</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Porte de la Planta</label>
+                    <select name="especiesporteplanta" value={formData.especiesporteplanta || ''} onChange={handleChange}>
+                      <option value="">--</option>
+                      <option value="rastrero">🌊 Rastrero</option>
+                      <option value="arbusto">🌳 Arbusto</option>
+                      <option value="mata">🌿 Mata</option>
+                      <option value="trepador">🧗 Trepador</option>
+                      <option value="erecto">📏 Erecto</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Rendimiento Estimado</label>
+                    <input type="text" name="especiesrendimientoestimado" placeholder="Ej: 3-5 kg/planta" value={formData.especiesrendimientoestimado || ''} onChange={handleChange} />
+                  </div>
+                  <div className="form-group">
+                    <label title="Algunas semillas necesitan oscuridad (fotoblásticas negativas), otras necesitan luz para germinar (fotoblásticas positivas).">¿Germina en Oscuridad? 💡</label>
+                    <select name="especiesgerminaroscuridad" value={formData.especiesgerminaroscuridad === true || formData.especiesgerminaroscuridad === 1 ? '1' : formData.especiesgerminaroscuridad === false || formData.especiesgerminaroscuridad === 0 ? '0' : ''} onChange={(e) => {
+                      const val = e.target.value;
+                      handleChange({ target: { name: 'especiesgerminaroscuridad', value: val === '' ? null : val === '1' ? 1 : 0 } } as any);
+                    }}>
+                      <option value="">— Sin dato —</option>
+                      <option value="1">🌑 Sí (se entierra, necesita oscuridad)</option>
+                      <option value="0">☀️ No (necesita luz, se deja en superficie)</option>
+                    </select>
+                  </div>
+                  <div className="form-group full">
+                    <label>Parte Cosechable</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
+                      {['fruto', 'hoja', 'raiz', 'bulbo', 'tallo', 'flor', 'semilla'].map((parte) => {
+                        const emojis: Record<string, string> = { fruto: '🍅', hoja: '🥬', raiz: '🥕', bulbo: '🧅', tallo: '🌿', flor: '🌸', semilla: '🌰' };
+                        const isChecked = Array.isArray(formData.especiespartecosechable)
+                          ? formData.especiespartecosechable.includes(parte)
+                          : (formData.especiespartecosechable || '').split(',').filter(Boolean).includes(parte);
+                        return (
+                          <label key={parte} style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+                            background: isChecked ? '#dcfce7' : '#f8fafc',
+                            border: `1px solid ${isChecked ? '#86efac' : '#e2e8f0'}`,
+                            transition: 'all 0.2s', fontSize: '0.9rem'
+                          }}>
+                            <input type="checkbox" checked={isChecked} onChange={() => {
+                              const current = Array.isArray(formData.especiespartecosechable)
+                                ? formData.especiespartecosechable
+                                : (formData.especiespartecosechable || '').split(',').filter(Boolean);
+                              const next = isChecked ? current.filter((p: string) => p !== parte) : [...current, parte];
+                              const nextValue = next;
+                              handleChange({ target: { name: 'especiespartecosechable', value: nextValue } } as any);
+                              autoSaveField('especiespartecosechable', nextValue.join(','));
+                            }} style={{ display: 'none' }} />
+                            <span>{emojis[parte]} {parte.charAt(0).toUpperCase() + parte.slice(1)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* DATOS DE FISIOLOGÍA SEMILLAS */}
@@ -2591,7 +3321,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         📅 Calendario Anual (Temporadas)
                       </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-                        {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
+                        {['semillero', 'siembradirecta', 'trasplante', 'recoleccion'].map(tipo => {
                           const colorMap: Record<string, string> = {
                             siembradirecta: '#f97316',
                             semillero: '#3b82f6',
@@ -2648,7 +3378,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                               ))}
                             </div>
 
-                            {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map((tipo, idx) => {
+                            {['semillero', 'siembradirecta', 'trasplante', 'recoleccion'].map((tipo, idx) => {
                               const colorMap: Record<string, string> = { siembradirecta: '#f97316', semillero: '#3b82f6', trasplante: '#a855f7', recoleccion: '#22c55e' };
                               const labelMap: Record<string, string> = { siembradirecta: 'Siembra', semillero: 'Semillero', trasplante: 'Traspl.', recoleccion: 'Recol.' };
 
@@ -2732,17 +3462,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     </h3>
                     
                     <div className="form-group full" style={{ marginBottom: '16px' }}>
-                      <label style={{ fontWeight: 'bold', color: '#0f766e' }}>Categoría del Órgano Principal</label>
-                      <select name="especiesbiodinamicacategoria" value={formData.especiesbiodinamicacategoria || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', fontSize: '1rem', background: '#fff' }}>
+                      <label style={{ fontWeight: 'bold', color: '#0f766e' }} title="Determina en qué 'día de constelación' es óptimo sembrar según la biodinámica (Fruto=Fuego, Raíz=Tierra, Hoja=Agua, Flor=Aire). No confundir con el tipo de especie (hortaliza/fruta).">Organo Comestible Principal 💡</label>
+                      <select name="especiesorganocomestible" value={formData.especiesorganocomestible || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #99f6e4', fontSize: '1rem', background: '#fff' }}>
                         <option value="">— Sin categoría —</option>
                         <option value="fruto">🍅 Planta de Fruto (Días de Fuego/Calor)</option>
                         <option value="raiz">🥕 Planta de Raíz (Días de Tierra/Frío)</option>
                         <option value="hoja">🥬 Planta de Hoja (Días de Agua/Humedad)</option>
                         <option value="flor">🌸 Planta de Flor (Días de Aire/Luz)</option>
                       </select>
-                      {formData.especiesbiodinamicacategoria && (
+                      {formData.especiesorganocomestible && (
                         <p style={{ marginTop: '8px', fontSize: '0.85rem', color: '#0f766e', lineHeight: 1.5 }}>
-                          {({ fruto: 'Siembra y trasplanta en días Fruto. Recolecta también en días Fruto para mejor sabor y conservación.', raiz: 'Siembra en días Raíz. Recolecta en días Raíz para mejor conservación.', hoja: 'Siembra y trasplanta en días Hoja. Evita podar o cosechar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesbiodinamicacategoria]}
+                          {({ fruto: 'Siembra y trasplanta en días Fruto. Recolecta también en días Fruto para mejor sabor y conservación.', raiz: 'Siembra en días Raíz. Recolecta en días Raíz para mejor conservación.', hoja: 'Siembra y trasplanta en días Hoja. Evita podar o cosechar en días Fruto.', flor: 'Trabaja en días Flor para multiplicación y floración abundante. Cosecha en días Flor para mayor fragancia.' } as Record<string, string>)[formData.especiesorganocomestible]}
                         </p>
                       )}
                     </div>
@@ -3264,6 +3994,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                   <span style={{ fontSize: '1.2rem', padding: '6px', background: `${p.laborescolor || '#f1f5f9'}30`, borderRadius: '6px' }}>{p.laboresicono || '📋'}</span>
                                   <strong style={{ fontSize: '1rem', color: '#1e293b' }}>{p.laboresnombre}</strong>
+                                  <span onClick={() => router.push(`/dashboard/admin/labores/${p.xlaborespautaidlabores}`)} title="Editar labor original" style={{ cursor: 'pointer', fontSize: '1rem', opacity: 0.7 }} onMouseOver={e => e.currentTarget.style.opacity='1'} onMouseOut={e => e.currentTarget.style.opacity='0.7'}>⚙️</span>
                                   <span style={{ fontSize: '0.75rem', fontWeight: 'bold', background: `${faseDetail?.fasescultivocolor || '#64748b'}15`, color: faseDetail?.fasescultivocolor || '#64748b', padding: '3px 8px', borderRadius: '12px' }}>
                                     {faseDetail?.fasescultivoicono} {faseDetail?.fasescultivonombre || p.laborespautafase}
                                   </span>
@@ -3333,42 +4064,51 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
                 {/* FOTOS */}
                 <div style={{ display: activeTab === 'photos' ? 'block' : 'none' }}>
-                  <div
-                    className={`custom-file-upload drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
-                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setDragOverPhotos(false);
-                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
-                      }
-                    }}
-                  >
-                    <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
+                  {photos.length < 4 && (
+                    <div
+                      className={`custom-file-upload drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
+                      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDragOverPhotos(false);
+                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                          handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
+                        }
+                      }}
+                    >
+                      <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
 
-                    {uploadingPhotos ? (
-                      <div className="drop-zone-content">
-                        <span style={{ fontSize: '2rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                        <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Procesando imágenes...</span>
-                      </div>
-                    ) : (
-                      <div className="drop-zone-content">
-                        <span className="icon" style={{ fontSize: '2.5rem' }}>📷</span>
-                        <span style={{ fontWeight: 'bold', color: '#475569' }}>Arrastra tus imágenes aquí o pega desde el portapapeles</span>
-                        <div className="drop-zone-buttons">
-                          <label htmlFor="upload-photos" className="btn-upload primary">Seleccionar Archivos</label>
-                          <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload secondary" style={{ fontWeight: 'bold' }}>✨ Generar Imagen con IA</button>
+                      {uploadingPhotos ? (
+                        <div className="drop-zone-content">
+                          <span style={{ fontSize: '2rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                          <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Procesando imágenes...</span>
                         </div>
-                        <span className="drop-hint">Soporta JPG, PNG, WEBP, HEIC/HEIF</span>
-                      </div>
-                    )}
-                  </div>
+                      ) : (
+                        <div className="drop-zone-content">
+                          <span className="icon" style={{ fontSize: '2.5rem' }}>📷</span>
+                          <span style={{ fontWeight: 'bold', color: '#475569' }}>Arrastra tus imágenes aquí o pega desde el portapapeles</span>
+                          <div className="drop-zone-buttons">
+                            <label htmlFor="upload-photos" className="btn-upload primary">Seleccionar Archivos</label>
+                            <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload secondary" style={{ fontWeight: 'bold' }}>✨ Generar Imagen con IA</button>
+                          </div>
+                          <span className="drop-hint">Soporta JPG, PNG, WEBP, HEIC/HEIF</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {photos.length > 0 && (
                     <div className="gallery">
+                      {photos.length >= 4 && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fef3c7', border: '2px dashed #f59e0b', borderRadius: '12px', padding: '12px 16px', minHeight: '100px', textAlign: 'center', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '1.5rem' }}>📸</span>
+                          <span style={{ fontWeight: 700, color: '#92400e', fontSize: '0.85rem' }}>{photos.length}/4</span>
+                          <span style={{ color: '#92400e', fontSize: '0.7rem' }}>Límite alcanzado</span>
+                        </div>
+                      )}
                       {photos.map((photo, index) => {
                         let parsedResumen: any = {};
                         try {
@@ -3640,177 +4380,1333 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       </div>
 
       {/* MODAL DE COMPARACIÓN IA */}
+      {/* MODAL DE CONFIGURACIÓN IA */}
+      {showAiConfig && (
+        <div className="ai-modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="ai-modal-content" style={{ maxWidth: '600px' }}>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+              <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem' }}>✨ Configurar Búsqueda de IA</h2>
+              <button className="btn-close-modal" onClick={() => setShowAiConfig(false)} style={{ color: 'white' }}>✖</button>
+            </div>
+            <div className="ai-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
+                  Instrucciones personalizadas para la IA
+                </label>
+                <textarea
+                  value={aiConfigPrompt}
+                  onChange={(e) => setAiConfigPrompt(e.target.value)}
+                  placeholder="Ej: Busca información específica de variedades resistentes a heladas..."
+                  rows={4}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
+                  Pestañas y Secciones a Incluir:
+                </label>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
+                  <button type="button" onClick={() => setAiConfigTabs({
+                    taxonomia: true, cultivo: true, fases: true, biodinamica: true, asociaciones: true, textos: true, sinonimos: true, variedades: true
+                  })} style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', padding: 0 }}>
+                    ➕ Seleccionar todas
+                  </button>
+                  <button type="button" onClick={() => setAiConfigTabs({
+                    taxonomia: false, cultivo: false, fases: false, biodinamica: false, asociaciones: false, textos: false, sinonimos: false, variedades: false
+                  })} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', padding: 0 }}>
+                    ➖ Desmarcar todas
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                  {Object.keys(aiConfigTabs).map((tabKey) => {
+                    const labelMap: Record<string, string> = {
+                      taxonomia: '🧬 Identificación',
+                      cultivo: '🌱 Requisitos y Suelo',
+                      fases: '📅 Cronología',
+                      biodinamica: '🌙 Lunar / Biodinámica',
+                      asociaciones: '🤝 Ecosistema',
+                      textos: '📝 Textos y Autosuf.',
+                      sinonimos: '🗣️ Sinónimos',
+                      variedades: '🌾 Variedades'
+                    };
+                    return (
+                      <label key={tabKey} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        <input
+                          type="checkbox"
+                          checked={aiConfigTabs[tabKey]}
+                          onChange={(e) => setAiConfigTabs(prev => ({ ...prev, [tabKey]: e.target.checked }))}
+                          style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                        />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155' }}>
+                          {labelMap[tabKey]}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                <button type="button" onClick={() => setShowAiConfig(false)} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '0.9rem', color: '#475569' }}>
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={runUnifiedAiSearch}
+                  disabled={aiLoading}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    cursor: aiLoading ? 'wait' : 'pointer',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 6px rgba(124,58,237,0.2)'
+                  }}
+                >
+                  {aiLoading ? `⏳ Buscando... (${aiSeconds}s)` : '🚀 Lanzar Búsqueda IA'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE COMPARACIÓN IA */}
       {showAiModal && aiProposal && (
-        <div className="ai-modal-overlay">
-          <div className="ai-modal-content">
-            <div className="ai-modal-header">
-              <h2>✨ Revisión de Inteligencia Artificial</h2>
-              <button className="btn-close-modal" onClick={() => setShowAiModal(false)}>✖ Cerrar</button>
+        <div className="ai-modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="ai-modal-content" style={{ maxWidth: '90%', width: '900px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>✨ Revisión de Inteligencia Artificial</span>
+              </h2>
+              <button type="button" className="btn-close-modal" onClick={closeAiModal} style={{ color: 'white', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}>✖</button>
             </div>
 
-            <div className="ai-modal-body">
-              <p style={{ marginBottom: '20px', color: '#475569' }}>
-                La IA ha sugerido los siguientes datos. Revisa cada bloque y asimila los cambios propuestos donde estés de acuerdo.
-                Los datos que difieren de tu versión actual están resaltados.
-              </p>
+            <div className="ai-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', fontWeight: 500 }}>
+                    La IA ha analizado <strong>{formData.especiesnombre}</strong>. Revisa los cambios propuestos y asimílalos en tu ficha.
+                  </p>
+                  <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
+                    Puedes asimilar campos individuales, por pestañas o aplicar todo el bloque.
+                  </small>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontSize: '0.85rem', fontWeight: 600, color: '#475569', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={showOnlyDiffs}
+                    onChange={(e) => setShowOnlyDiffs(e.target.checked)}
+                    style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                  />
+                  <span>⚠️ Solo parámetros con cambios</span>
+                </label>
+              </div>
 
-              {aiGroups.map(group => {
-                const hasDifferences = group.keys.some(k => {
-                  let currentVal = formData[k] != null ? formData[k] : '';
-                  let aiVal = aiProposal[k] != null ? aiProposal[k] : '';
-                  
-                  if (Array.isArray(currentVal)) currentVal = [...currentVal].sort().join(',');
-                  else currentVal = String(currentVal);
-                  
-                  if (Array.isArray(aiVal)) aiVal = [...aiVal].sort().join(',');
-                  else aiVal = String(aiVal);
+              {!showOnlyDiffs ? (
+                <>
+                  {/* Pestañas del Modal */}
+                  <div className="ai-modal-tabs" style={{ display: 'flex', gap: '6px', borderBottom: '2px solid #e2e8f0', paddingBottom: '4px', overflowX: 'auto' }}>
+                    {aiGroups.map(group => {
+                      if (!aiConfigTabs[group.id]) return null;
 
-                  return aiVal !== '' && currentVal !== aiVal;
-                });
-
-                return (
-                  <div key={group.id} className="ai-group-section">
-                    <div className="ai-group-header">
-                      <h3>{group.title} {hasDifferences && <span style={{ fontSize: '0.8rem', background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', marginLeft: '10px' }}>Cambios detectados</span>}</h3>
-                      <button type="button" className="btn-assimilate-group" onClick={() => assimilateGroup(group.keys)}>
-                        ✨ Asimilar este bloque
-                      </button>
-                    </div>
-
-                    <div className="ai-comparison-grid header">
-                      <div>Campo</div>
-                      <div>Valor Actual</div>
-                      <div>Propuesta IA</div>
-                    </div>
-
-                    {group.keys.map(k => {
-                      const rawCurrent = formData[k];
-                      const rawAi = aiProposal[k];
-                      
-                      let currentStr = Array.isArray(rawCurrent) ? [...rawCurrent].sort().join(',') : (rawCurrent != null ? String(rawCurrent) : '');
-                      let aiStr = Array.isArray(rawAi) ? [...rawAi].sort().join(',') : (rawAi != null ? String(rawAi) : '');
-                      
-                      if (!Array.isArray(rawCurrent) && !isNaN(Number(rawCurrent)) && rawCurrent !== '' && rawCurrent != null) {
-                        currentStr = parseFloat(String(rawCurrent)).toString();
-                      }
-                      if (!Array.isArray(rawAi) && !isNaN(Number(rawAi)) && rawAi !== '' && rawAi != null) {
-                        aiStr = parseFloat(String(rawAi)).toString();
-                      }
-
-                      if (!aiStr) return null;
-
-                      const isDifferent = currentStr !== aiStr;
-                      const displayCurrent = Array.isArray(rawCurrent) ? rawCurrent.join(', ') : currentStr;
-                      const displayAi = Array.isArray(rawAi) ? rawAi.join(', ') : aiStr;
+                      const hasDiff = group.id === 'asociaciones'
+                        ? ((aiProposal.asociaciones_beneficiosas?.length > 0) || (aiProposal.asociaciones_perjudiciales?.length > 0) || (aiProposal.plagas_asociadas?.length > 0))
+                        : group.id === 'sinonimos'
+                          ? (aiProposal._sinonimos?.length > 0)
+                          : group.id === 'variedades'
+                            ? (aiProposal._variedades?.length > 0)
+                            : group.keys.some(k => {
+                                if (k === 'fases_duracion') {
+                                  const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
+                                  return phasesList.some((f: any) => {
+                                    const fid = f.idfasescultivo.toString();
+                                    const currentVal = formData.fases_duracion?.[fid] != null ? String(formData.fases_duracion[fid]) : '';
+                                    const aiVal = aiProposal.fases_duracion?.[fid] != null ? String(aiProposal.fases_duracion[fid]) : '';
+                                    return aiVal !== '' && currentVal !== aiVal;
+                                  });
+                                } else {
+                                  let currentVal = formData[k] != null ? formData[k] : '';
+                                  let aiVal = aiProposal[k] != null ? aiProposal[k] : '';
+                                  if (Array.isArray(currentVal)) currentVal = [...currentVal].sort().join(',');
+                                  else currentVal = String(currentVal);
+                                  if (Array.isArray(aiVal)) aiVal = [...aiVal].sort().join(',');
+                                  else aiVal = String(aiVal);
+                                  return aiVal !== '' && currentVal !== aiVal;
+                                }
+                              });
 
                       return (
-                        <div key={k} className={`ai-comparison-grid ${isDifferent ? 'ai-row-diff' : 'ai-row-same'}`}>
-                          <div style={{ fontWeight: '600', color: '#475569' }}>{(group.labels as any)[k]}</div>
-                          <div style={{ color: '#64748b' }}>{displayCurrent || <em style={{ opacity: 0.5 }}>Vacío</em>}</div>
-                          <div>
-                            <span className={isDifferent ? 'ai-value-changed' : ''}>
-                              {displayAi} {isDifferent && ' ✨'}
-                            </span>
-                          </div>
-                        </div>
+                        <button
+                          key={group.id}
+                          type="button"
+                          className={`ai-modal-tab-btn ${aiModalActiveTab === group.id ? 'active' : ''}`}
+                          onClick={() => setAiModalActiveTab(group.id)}
+                          style={{
+                            padding: '10px 16px',
+                            border: 'none',
+                            background: 'none',
+                            borderBottom: aiModalActiveTab === group.id ? '3px solid #8b5cf6' : '3px solid transparent',
+                            color: aiModalActiveTab === group.id ? '#8b5cf6' : '#64748b',
+                            fontWeight: aiModalActiveTab === group.id ? '700' : '500',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.2s',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <span>{group.title}</span>
+                          {hasDiff && (
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#8b5cf6' }} />
+                          )}
+                        </button>
                       );
                     })}
                   </div>
-                );
-              })}
 
-              {(aiProposal.asociaciones_beneficiosas?.length > 0 || aiProposal.asociaciones_perjudiciales?.length > 0 || aiProposal.plagas_asociadas?.length > 0) && (
-                <div className="ai-group-section" style={{ marginTop: '20px' }}>
-                  <div className="ai-group-header" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                    <h3 style={{ color: '#166534' }}>🤝 Asociaciones y Plagas sugeridas</h3>
-                    <button type="button" className="btn-assimilate-group" onClick={assimilateRelacionesAI} disabled={isAssimilatingRels}>
-                      {isAssimilatingRels ? '⏳ Asimilando...' : '✨ Asimilar Asociaciones'}
-                    </button>
-                  </div>
-                  <div style={{ padding: '15px' }}>
-                    {aiProposal.asociaciones_beneficiosas?.length > 0 && (
-                      <div style={{ marginBottom: '15px' }}>
-                        <h4 style={{ color: '#10b981', marginBottom: '5px' }}>Beneficiosas</h4>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {aiProposal.asociaciones_beneficiosas.map((item: any) => {
-                            const name = typeof item === 'string' ? item : item?.nombre;
-                            const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
-                            if (!name) return null;
-                            const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
-                            const isChecked = selectedRels.ben.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
-                            return (
-                              <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                <input type="checkbox" checked={isChecked} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({ ...p, ben: [...p.ben, item] }));
-                                  else setSelectedRels(p => ({ ...p, ben: p.ben.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
-                                }} style={{ width: '16px', height: '16px', accentColor: '#10b981', cursor: 'pointer' }} />
-                                <span>{exists ? '✅' : '➕'}</span>
-                                <div><span style={{ fontWeight: 'bold' }}>{name}</span>{motivo ? <span style={{ color: '#64748b', fontSize: '0.85rem' }}> — {motivo}</span> : ''} {exists ? <small style={{ color: '#64748b' }}>(Existente)</small> : <small style={{ color: '#f59e0b' }}>(Se creará inactiva)</small>}</div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
+                  {/* Contenido de la Pestaña Activa */}
+                  {aiGroups.map(group => {
+                    if (group.id !== aiModalActiveTab || !aiConfigTabs[group.id]) return null;
 
-                    {aiProposal.asociaciones_perjudiciales?.length > 0 && (
-                      <div style={{ marginBottom: '15px' }}>
-                        <h4 style={{ color: '#ef4444', marginBottom: '5px' }}>Perjudiciales</h4>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {aiProposal.asociaciones_perjudiciales.map((item: any) => {
-                            const name = typeof item === 'string' ? item : item?.nombre;
-                            const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
-                            if (!name) return null;
-                            const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
-                            const isChecked = selectedRels.per.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
-                            return (
-                              <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                <input type="checkbox" checked={isChecked} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({ ...p, per: [...p.per, item] }));
-                                  else setSelectedRels(p => ({ ...p, per: p.per.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
-                                }} style={{ width: '16px', height: '16px', accentColor: '#ef4444', cursor: 'pointer' }} />
-                                <span>{exists ? '✅' : '➕'}</span>
-                                <div><span style={{ fontWeight: 'bold' }}>{name}</span>{motivo ? <span style={{ color: '#64748b', fontSize: '0.85rem' }}> — {motivo}</span> : ''} {exists ? <small style={{ color: '#64748b' }}>(Existente)</small> : <small style={{ color: '#f59e0b' }}>(Se creará inactiva)</small>}</div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
+                    if (group.id === 'asociaciones') {
+                      const hasRels = (aiProposal.asociaciones_beneficiosas?.length > 0 || aiProposal.asociaciones_perjudiciales?.length > 0 || aiProposal.plagas_asociadas?.length > 0);
+                      return (
+                        <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div>
+                              <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>Ecosistema de Asociaciones y Plagas</h4>
+                              <small style={{ color: '#64748b' }}>Se crearán como especies/plagas inactivas en el catálogo si no existen.</small>
+                            </div>
+                            <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('asociaciones')}>
+                              ✨ Asimilar Asociaciones
+                            </button>
+                          </div>
 
-                    {aiProposal.plagas_asociadas?.length > 0 && (
-                      <div>
-                        <h4 style={{ color: '#f97316', marginBottom: '5px' }}>Plagas y Enfermedades</h4>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {aiProposal.plagas_asociadas.map((item: any) => {
-                            const name = typeof item === 'string' ? item : item?.nombre;
-                            const notas = typeof item === 'string' ? '' : (item?.notas || '');
-                            if (!name) return null;
-                            const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
-                            const isChecked = selectedRels.pla.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
-                            return (
-                              <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                                <input type="checkbox" checked={isChecked} onChange={(e) => {
-                                  if (e.target.checked) setSelectedRels(p => ({ ...p, pla: [...p.pla, item] }));
-                                  else setSelectedRels(p => ({ ...p, pla: p.pla.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
-                                }} style={{ width: '16px', height: '16px', accentColor: '#f97316', cursor: 'pointer' }} />
-                                <span>{exists ? '✅' : '➕'}</span>
-                                <div><span style={{ fontWeight: 'bold' }}>{name}</span>{notas ? <span style={{ color: '#64748b', fontSize: '0.85rem' }}> — {notas}</span> : ''} {exists ? <small style={{ color: '#64748b' }}>(Existente)</small> : <small style={{ color: '#f59e0b' }}>(Se creará inactiva)</small>}</div>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                          {!hasRels ? (
+                            <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay asociaciones propuestas.</p>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              {aiProposal.asociaciones_beneficiosas?.length > 0 && (
+                                <div>
+                                  <h5 style={{ color: '#10b981', margin: '0 0 8px', fontSize: '0.9rem' }}>➕ Beneficiosas</h5>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {aiProposal.asociaciones_beneficiosas.map((item: any, idx: number) => {
+                                      const name = typeof item === 'string' ? item : item?.nombre;
+                                      const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
+                                      if (!name) return null;
+                                      const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                      const isChecked = selectedRels.ben.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
+                                      return (
+                                        <label key={`ben_tab_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                                          <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                            if (e.target.checked) setSelectedRels(p => ({ ...p, ben: [...p.ben, item] }));
+                                            else setSelectedRels(p => ({ ...p, ben: p.ben.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
+                                          }} style={{ accentColor: '#10b981', width: '16px', height: '16px' }} />
+                                          <span style={{ fontSize: '0.85rem' }}>{exists ? '✅' : '➕'}</span>
+                                          <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{name}</span>
+                                          {motivo && <span style={{ color: '#64748b', fontSize: '0.8rem' }}> — {motivo}</span>}
+                                          {exists ? <small style={{ color: '#64748b', marginLeft: 'auto' }}>(Existente)</small> : <small style={{ color: '#f59e0b', marginLeft: 'auto' }}>(Se creará inactiva)</small>}
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {aiProposal.asociaciones_perjudiciales?.length > 0 && (
+                                <div>
+                                  <h5 style={{ color: '#ef4444', margin: '0 0 8px', fontSize: '0.9rem' }}>➖ Perjudiciales</h5>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {aiProposal.asociaciones_perjudiciales.map((item: any, idx: number) => {
+                                      const name = typeof item === 'string' ? item : item?.nombre;
+                                      const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
+                                      if (!name) return null;
+                                      const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                      const isChecked = selectedRels.per.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
+                                      return (
+                                        <label key={`per_tab_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                                          <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                            if (e.target.checked) setSelectedRels(p => ({ ...p, per: [...p.per, item] }));
+                                            else setSelectedRels(p => ({ ...p, per: p.per.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
+                                          }} style={{ accentColor: '#ef4444', width: '16px', height: '16px' }} />
+                                          <span style={{ fontSize: '0.85rem' }}>{exists ? '✅' : '➕'}</span>
+                                          <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{name}</span>
+                                          {motivo && <span style={{ color: '#64748b', fontSize: '0.8rem' }}> — {motivo}</span>}
+                                          {exists ? <small style={{ color: '#64748b', marginLeft: 'auto' }}>(Existente)</small> : <small style={{ color: '#f59e0b', marginLeft: 'auto' }}>(Se creará inactiva)</small>}
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {aiProposal.plagas_asociadas?.length > 0 && (
+                                <div>
+                                  <h5 style={{ color: '#f97316', margin: '0 0 8px', fontSize: '0.9rem' }}>🐛 Plagas y Enfermedades</h5>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {aiProposal.plagas_asociadas.map((item: any, idx: number) => {
+                                      const name = typeof item === 'string' ? item : item?.nombre;
+                                      const notas = typeof item === 'string' ? '' : (item?.notas || '');
+                                      if (!name) return null;
+                                      const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                      const isChecked = selectedRels.pla.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
+                                      return (
+                                        <label key={`pla_tab_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                                          <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                            if (e.target.checked) setSelectedRels(p => ({ ...p, pla: [...p.pla, item] }));
+                                            else setSelectedRels(p => ({ ...p, pla: p.pla.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
+                                          }} style={{ accentColor: '#f97316', width: '16px', height: '16px' }} />
+                                          <span style={{ fontSize: '0.85rem' }}>{exists ? '✅' : '➕'}</span>
+                                          <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{name}</span>
+                                          {notas && <span style={{ color: '#64748b', fontSize: '0.8rem' }}> — {notas}</span>}
+                                          {exists ? <small style={{ color: '#64748b', marginLeft: 'auto' }}>(Existente)</small> : <small style={{ color: '#f59e0b', marginLeft: 'auto' }}>(Se creará inactiva)</small>}
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (group.id === 'sinonimos') {
+                      const sProps = aiProposal._sinonimos || [];
+                      return (
+                        <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div>
+                              <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>Sinónimos Propuestos por la IA</h4>
+                              <small style={{ color: '#64748b' }}>Los sinónimos asimilados se agregarán a tu lista de sinónimos editable.</small>
+                            </div>
+                            <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('sinonimos')}>
+                              ✨ Asimilar Sinónimos
+                            </button>
+                          </div>
+
+                          {sProps.length === 0 ? (
+                            <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay sinónimos propuestos.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedAiSinonimos.length === sProps.length}
+                                      onChange={(e) => {
+                                        if (e.target.checked) setSelectedAiSinonimos(sProps.map((_: any, idx: number) => idx));
+                                        else setSelectedAiSinonimos([]);
+                                      }}
+                                      style={{ accentColor: '#7c3aed' }}
+                                    />
+                                  </th>
+                                  <th style={{ padding: '10px 12px' }}>Nombre</th>
+                                  <th style={{ padding: '10px 12px' }}>Idioma</th>
+                                  <th style={{ padding: '10px 12px' }}>País</th>
+                                  <th style={{ padding: '10px 12px' }}>Notas</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sProps.map((item: any, idx: number) => {
+                                  const isChecked = selectedAiSinonimos.includes(idx);
+                                  const exists = sinonimos.some(s =>
+                                    s.especiessinonimosnombre?.toLowerCase().trim() === item.especiessinonimosnombre?.toLowerCase().trim() &&
+                                    String(s.xespeciessinonimosidpaises || '') === String(item.xespeciessinonimosidpaises || '')
+                                  );
+                                  const idioma = masterIdiomas.find(i => i.ididiomas.toString() === String(item.xespeciessinonimosididiomas || ''));
+                                  const pais = masterPaises.find(p => p.idpaises.toString() === String(item.xespeciessinonimosidpaises || ''));
+
+                                  return (
+                                    <tr key={idx} className="ai-comparison-grid-with-actions" style={{ borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', opacity: exists ? 0.7 : 1 }}>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        {!exists && (
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedAiSinonimos(prev => [...prev, idx]);
+                                              else setSelectedAiSinonimos(prev => prev.filter(v => v !== idx));
+                                            }}
+                                            style={{ accentColor: '#7c3aed' }}
+                                          />
+                                        )}
+                                        {exists && <span>✅</span>}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{item.especiessinonimosnombre}</td>
+                                      <td style={{ padding: '10px 12px' }}>{idioma ? idioma.idiomasnombre : <em style={{ color: '#94a3b8' }}>No indicado</em>}</td>
+                                      <td style={{ padding: '10px 12px' }}>{pais ? pais.paisesnombre : <em style={{ color: '#94a3b8' }}>General</em>}</td>
+                                      <td style={{ padding: '10px 12px', fontStyle: 'italic', color: '#64748b' }}>{item.especiessinonimosnotas || '—'}</td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                        {!exists ? (
+                                          <button type="button" className="btn-assimilate-row" style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }} onClick={async () => {
+                                            await runWithAssimilationLoading(async () => {
+                                              try {
+                                                await fetch(`/api/admin/especies/${especieId}/sinonimos`, {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify(item)
+                                                });
+                                                if (especieId) {
+                                                  await loadSinonimos(especieId);
+                                                }
+                                              } catch (err) {
+                                                console.error(err);
+                                              }
+                                            });
+                                          }}>
+                                            Agregar
+                                          </button>
+                                        ) : (
+                                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Incluido</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (group.id === 'variedades') {
+                      const vProps = aiProposal._variedades || [];
+                      return (
+                        <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div>
+                              <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>Variedades Propuestas por la IA</h4>
+                              <small style={{ color: '#64748b' }}>Las variedades asimiladas se guardan de inmediato en la base de datos.</small>
+                            </div>
+                            <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('variedades')}>
+                              ✨ Asimilar Variedades
+                            </button>
+                          </div>
+
+                          {vProps.length === 0 ? (
+                            <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay variedades propuestas.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedAiVariedades.length === vProps.length}
+                                      onChange={(e) => {
+                                        if (e.target.checked) setSelectedAiVariedades(vProps.map((_: any, idx: number) => idx));
+                                        else setSelectedAiVariedades([]);
+                                      }}
+                                      style={{ accentColor: '#7c3aed' }}
+                                    />
+                                  </th>
+                                  <th style={{ padding: '10px 12px' }}>Nombre</th>
+                                  <th style={{ padding: '10px 12px' }}>Tamaño</th>
+                                  <th style={{ padding: '10px 12px' }}>Germinación</th>
+                                  <th style={{ padding: '10px 12px' }}>Color</th>
+                                  <th style={{ padding: '10px 12px' }}>Descripción</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {vProps.map((item: any, idx: number) => {
+                                  const isChecked = selectedAiVariedades.includes(idx);
+                                  const isAlreadyInDb = existingVarieties.some(ev => ev.variedadesnombre?.toLowerCase().trim() === item.variedadesnombre?.toLowerCase().trim());
+                                  const isAddedNow = assimilatedVarietyNames.includes(item.variedadesnombre);
+                                  const isAdded = isAlreadyInDb || isAddedNow;
+
+                                  return (
+                                    <tr key={idx} className="ai-comparison-grid-with-actions" style={{ borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', opacity: isAdded ? 0.7 : 1 }}>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        {!isAdded && (
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedAiVariedades(prev => [...prev, idx]);
+                                              else setSelectedAiVariedades(prev => prev.filter(v => v !== idx));
+                                            }}
+                                            style={{ accentColor: '#7c3aed' }}
+                                          />
+                                        )}
+                                        {isAdded && <span>✅</span>}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>
+                                        {item.variedadesnombre}
+                                        {isAlreadyInDb && <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 'normal', marginLeft: '8px' }}>(Ya integrada)</span>}
+                                        {isAddedNow && <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 'normal', marginLeft: '8px' }}>(Agregada ahora)</span>}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', textTransform: 'capitalize' }}>{item.variedadestamano || 'mediano'}</td>
+                                      <td style={{ padding: '10px 12px' }}>{item.variedadesdiasgerminacion ? `${item.variedadesdiasgerminacion} días` : '—'}</td>
+                                      <td style={{ padding: '10px 12px' }}>{item.variedadescolor || '—'}</td>
+                                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{item.variedadesdescripcion || '—'}</td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                        {!isAdded ? (
+                                          <button type="button" className="btn-assimilate-row" style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }} onClick={async () => {
+                                            await runWithAssimilationLoading(async () => {
+                                              try {
+                                                const res = await fetch('/api/admin/variedades', {
+                                                  method: 'POST',
+                                                  headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'x-user-email': userEmail || ''
+                                                  },
+                                                  body: JSON.stringify({
+                                                    variedadesnombre: item.variedadesnombre,
+                                                    xvariedadesidespecies: especieId,
+                                                    variedadestamano: item.variedadestamano || 'mediano',
+                                                    variedadesdiasgerminacion: item.variedadesdiasgerminacion || null,
+                                                    variedadescolor: item.variedadescolor || null,
+                                                    variedadesdescripcion: item.variedadesdescripcion || null,
+                                                    variedadesvisibilidadsino: 1
+                                                  })
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                  setAssimilatedVarietyNames(prev => [...prev, item.variedadesnombre]);
+                                                  if (especieId) await loadExistingVarieties(especieId);
+                                                }
+                                              } catch (err) {
+                                                console.error(err);
+                                              }
+                                            });
+                                          }}>
+                                            Agregar
+                                          </button>
+                                        ) : (
+                                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{isAlreadyInDb ? 'Integrada' : 'Agregado'}</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
+                          <div>
+                            <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>{group.title}</h4>
+                            <small style={{ color: '#64748b' }}>Marca los checkboxes individuales de cada campo o asimila todo este bloque.</small>
+                          </div>
+                          <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab(group.id)}>
+                            ✨ Asimilar Pestaña
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '80px 180px 1fr 1fr', gap: '10px', background: '#f1f5f9', padding: '10px 16px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.8rem', color: '#475569' }}>
+                          <div>Incluir</div>
+                          <div>Campo</div>
+                          <div>Valor Actual</div>
+                          <div>Propuesta IA</div>
+                        </div>
+
+                        {group.keys.map(k => {
+                          if (k === 'fases_duracion') {
+                            const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
+                            return phasesList.map((f: any) => {
+                              const fid = f.idfasescultivo.toString();
+                              const vKey = `fase_${fid}`;
+                              const currentVal = formData.fases_duracion?.[fid] != null ? String(formData.fases_duracion[fid]) : '';
+                              const aiVal = aiProposal.fases_duracion?.[fid] != null ? String(aiProposal.fases_duracion[fid]) : '';
+
+                              if (aiVal === '') return null;
+                              const isDifferent = currentVal !== aiVal;
+                              const isChecked = !!selectedAiFields[vKey];
+
+                              return (
+                                <div key={vKey} className="ai-comparison-grid-with-actions" style={{ display: 'grid', gridTemplateColumns: '80px 180px 1fr 1fr', gap: '10px', padding: '10px 16px', borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', borderLeft: isDifferent ? '4px solid #8b5cf6' : '4px solid transparent', alignItems: 'center', fontSize: '0.85rem' }}>
+                                  <div>
+                                    {isDifferent ? (
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => setSelectedAiFields(prev => ({ ...prev, [vKey]: e.target.checked }))}
+                                        style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                                      />
+                                    ) : (
+                                      <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>—</span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>⏱ {f.fasescultivonombre}</div>
+                                  <div style={{ color: '#64748b' }}>{currentVal ? `${currentVal} días` : <em style={{ opacity: 0.5 }}>No config.</em>}</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className={isDifferent ? 'ai-value-changed' : ''} style={{ fontWeight: isDifferent ? 'bold' : 'normal', color: isDifferent ? '#7c3aed' : '#334155' }}>
+                                      {aiVal} días {isDifferent && ' ✨'}
+                                    </span>
+                                    {isDifferent && (
+                                      <button type="button" className="btn-assimilate-row" style={{ marginLeft: 'auto', padding: '2px 8px', background: '#f5f3ff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }} onClick={() => assimilateSinglePhase(fid, aiProposal.fases_duracion[fid])}>
+                                        Aplicar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            });
+                          }
+
+                          const rawCurrent = formData[k];
+                          const rawAi = aiProposal[k];
+                          
+                          let currentStr = Array.isArray(rawCurrent) ? [...rawCurrent].sort().join(',') : (rawCurrent != null ? String(rawCurrent) : '');
+                          let aiStr = Array.isArray(rawAi) ? [...rawAi].sort().join(',') : (rawAi != null ? String(rawAi) : '');
+                          
+                          if (!Array.isArray(rawCurrent) && !isNaN(Number(rawCurrent)) && rawCurrent !== '' && rawCurrent != null) {
+                            currentStr = parseFloat(String(rawCurrent)).toString();
+                          }
+                          if (!Array.isArray(rawAi) && !isNaN(Number(rawAi)) && rawAi !== '' && rawAi != null) {
+                            aiStr = parseFloat(String(rawAi)).toString();
+                          }
+
+                          if (aiStr === '') return null;
+
+                          const isDifferent = currentStr !== aiStr;
+                          const displayCurrent = Array.isArray(rawCurrent) ? rawCurrent.join(', ') : currentStr;
+                          const displayAi = Array.isArray(rawAi) ? rawAi.join(', ') : aiStr;
+                          const isChecked = !!selectedAiFields[k];
+
+                          return (
+                            <div key={k} className="ai-comparison-grid-with-actions" style={{ display: 'grid', gridTemplateColumns: '80px 180px 1fr 1fr', gap: '10px', padding: '10px 16px', borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', borderLeft: isDifferent ? '4px solid #8b5cf6' : '4px solid transparent', alignItems: 'center', fontSize: '0.85rem' }}>
+                              <div>
+                                {isDifferent ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => setSelectedAiFields(prev => ({ ...prev, [k]: e.target.checked }))}
+                                    style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                                  />
+                                ) : (
+                                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>—</span>
+                                )}
+                              </div>
+                              <div style={{ fontWeight: 600, color: '#334155' }}>{(group.labels as any)[k]}</div>
+                              <div style={{ color: '#64748b', whiteSpace: 'pre-line', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                                {displayCurrent || <em style={{ opacity: 0.5 }}>Vacío</em>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                <span className={isDifferent ? 'ai-value-changed' : ''} style={{ fontWeight: isDifferent ? 'bold' : 'normal', color: isDifferent ? '#7c3aed' : '#334155', whiteSpace: 'pre-line', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                                  {displayAi} {isDifferent && ' ✨'}
+                                </span>
+                                {isDifferent && (
+                                  <button type="button" className="btn-assimilate-row" style={{ marginLeft: 'auto', padding: '2px 8px', background: '#f5f3ff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }} onClick={() => assimilateSingleField(k, rawAi)}>
+                                    Aplicar
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Vista continua de diferencias agrupada por pestañas */}
+                  {(() => {
+                    const groupsWithChanges: React.ReactNode[] = [];
+
+                    // 1. Core Fields Groups
+                    aiGroups.forEach(group => {
+                      if (!aiConfigTabs[group.id]) return;
+                      if (group.id === 'asociaciones' || group.id === 'sinonimos' || group.id === 'variedades') return;
+
+                      const fieldElements: React.ReactNode[] = [];
+
+                      group.keys.forEach(k => {
+                        if (k === 'fases_duracion') {
+                          const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
+                          phasesList.forEach((f: any) => {
+                            const fid = f.idfasescultivo.toString();
+                            const vKey = `fase_${fid}`;
+                            const currentVal = formData.fases_duracion?.[fid] != null ? String(formData.fases_duracion[fid]) : '';
+                            const aiVal = aiProposal.fases_duracion?.[fid] != null ? String(aiProposal.fases_duracion[fid]) : '';
+
+                            if (aiVal === '') return;
+                            const isDifferent = currentVal !== aiVal;
+                            if (!isDifferent) return;
+                            const isChecked = !!selectedAiFields[vKey];
+
+                            fieldElements.push(
+                              <div key={vKey} className="ai-comparison-grid-with-actions" style={{ display: 'grid', gridTemplateColumns: '80px 180px 1fr 1fr', gap: '10px', padding: '10px 16px', borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', borderLeft: '4px solid #8b5cf6', alignItems: 'center', fontSize: '0.85rem' }}>
+                                <div>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => setSelectedAiFields(prev => ({ ...prev, [vKey]: e.target.checked }))}
+                                    style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                                  />
+                                </div>
+                                <div style={{ fontWeight: 600, color: '#334155' }}>⏱ {f.fasescultivonombre}</div>
+                                <div style={{ color: '#64748b' }}>{currentVal ? `${currentVal} días` : <em style={{ opacity: 0.5 }}>No config.</em>}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span className="ai-value-changed" style={{ fontWeight: 'bold', color: '#7c3aed' }}>
+                                    {aiVal} días ✨
+                                  </span>
+                                  <button type="button" className="btn-assimilate-row" style={{ marginLeft: 'auto', padding: '2px 8px', background: '#f5f3ff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }} onClick={() => assimilateSinglePhase(fid, aiProposal.fases_duracion[fid])}>
+                                    Aplicar
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          });
+                        } else {
+                          const rawCurrent = formData[k];
+                          const rawAi = aiProposal[k];
+                          let currentStr = Array.isArray(rawCurrent) ? [...rawCurrent].sort().join(',') : (rawCurrent != null ? String(rawCurrent) : '');
+                          let aiStr = Array.isArray(rawAi) ? [...rawAi].sort().join(',') : (rawAi != null ? String(rawAi) : '');
+
+                          if (!Array.isArray(rawCurrent) && !isNaN(Number(rawCurrent)) && rawCurrent !== '' && rawCurrent != null) {
+                            currentStr = parseFloat(String(rawCurrent)).toString();
+                          }
+                          if (!Array.isArray(rawAi) && !isNaN(Number(rawAi)) && rawAi !== '' && rawAi != null) {
+                            aiStr = parseFloat(String(rawAi)).toString();
+                          }
+
+                          if (aiStr === '') return;
+                          const isDifferent = currentStr !== aiStr;
+                          if (!isDifferent) return;
+                          const isChecked = !!selectedAiFields[k];
+                          const displayCurrent = Array.isArray(rawCurrent) ? rawCurrent.join(', ') : currentStr;
+                          const displayAi = Array.isArray(rawAi) ? rawAi.join(', ') : aiStr;
+
+                          fieldElements.push(
+                            <div key={k} className="ai-comparison-grid-with-actions" style={{ display: 'grid', gridTemplateColumns: '80px 180px 1fr 1fr', gap: '10px', padding: '10px 16px', borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', borderLeft: '4px solid #8b5cf6', alignItems: 'center', fontSize: '0.85rem' }}>
+                              <div>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => setSelectedAiFields(prev => ({ ...prev, [k]: e.target.checked }))}
+                                  style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                                />
+                              </div>
+                              <div style={{ fontWeight: 600, color: '#334155' }}>{(group.labels as any)[k]}</div>
+                              <div style={{ color: '#64748b', whiteSpace: 'pre-line', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                                {displayCurrent || <em style={{ opacity: 0.5 }}>Vacío</em>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                <span className="ai-value-changed" style={{ fontWeight: 'bold', color: '#7c3aed', whiteSpace: 'pre-line', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                                  {displayAi} ✨
+                                </span>
+                                <button type="button" className="btn-assimilate-row" style={{ marginLeft: 'auto', padding: '2px 8px', background: '#f5f3ff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }} onClick={() => assimilateSingleField(k, rawAi)}>
+                                  Aplicar
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      });
+
+                      if (fieldElements.length > 0) {
+                        const isCollapsed = !!collapsedAiGroups[group.id];
+                        groupsWithChanges.push(
+                          <div key={group.id} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div 
+                              onClick={() => setCollapsedAiGroups(prev => ({ ...prev, [group.id]: !prev[group.id] }))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f1f5f9', cursor: 'pointer', userSelect: 'none', borderBottom: isCollapsed ? 'none' : '1px solid #cbd5e1' }}
+                            >
+                              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>{group.title}</span>
+                              </span>
+                              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>
+                                {isCollapsed ? '➕ Mostrar' : '➖ Ocultar'}
+                              </span>
+                            </div>
+                            <div style={{ display: isCollapsed ? 'none' : 'block' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '80px 180px 1fr 1fr', gap: '10px', background: '#f8fafc', padding: '10px 16px', borderBottom: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '0.8rem', color: '#475569' }}>
+                                <div>Incluir</div>
+                                <div>Campo</div>
+                                <div>Valor Actual</div>
+                                <div>Propuesta IA</div>
+                              </div>
+                              {fieldElements}
+                            </div>
+                          </div>
+                        );
+                      }
+                    });
+
+                    // 2. Associations Group
+                    if (aiConfigTabs.asociaciones) {
+                      const benNames = aiProposal.asociaciones_beneficiosas || [];
+                      const perNames = aiProposal.asociaciones_perjudiciales || [];
+                      const plaNames = aiProposal.plagas_asociadas || [];
+
+                      const filteredBen = benNames.filter((item: any) => {
+                        const name = typeof item === 'string' ? item : item?.nombre;
+                        return !relaciones.beneficiosas.some(b => b.especie_destino_nombre?.toLowerCase().trim() === name.toLowerCase().trim());
+                      });
+                      const filteredPer = perNames.filter((item: any) => {
+                        const name = typeof item === 'string' ? item : item?.nombre;
+                        return !relaciones.perjudiciales.some(p => p.especie_destino_nombre?.toLowerCase().trim() === name.toLowerCase().trim());
+                      });
+                      const filteredPla = plaNames.filter((item: any) => {
+                        const name = typeof item === 'string' ? item : item?.nombre;
+                        return !relaciones.plagas.some(p => p.plagasnombre?.toLowerCase().trim() === name.toLowerCase().trim());
+                      });
+
+                      const hasNewRels = filteredBen.length > 0 || filteredPer.length > 0 || filteredPla.length > 0;
+                      if (hasNewRels) {
+                        const isCollapsed = !!collapsedAiGroups.asociaciones;
+                        groupsWithChanges.push(
+                          <div key="asociaciones" style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div 
+                              onClick={() => setCollapsedAiGroups(prev => ({ ...prev, asociaciones: !prev.asociaciones }))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f1f5f9', cursor: 'pointer', userSelect: 'none', borderBottom: isCollapsed ? 'none' : '1px solid #cbd5e1' }}
+                            >
+                              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🤝 Asociaciones</span>
+                              </span>
+                              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>
+                                {isCollapsed ? '➕ Mostrar' : '➖ Ocultar'}
+                              </span>
+                            </div>
+                            <div style={{ display: isCollapsed ? 'none' : 'block', padding: '16px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
+                                <div>
+                                  <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>🤝 Nuevas Asociaciones y Plagas propuestas</h4>
+                                  <small style={{ color: '#64748b' }}>Se agregarán a las relaciones de la especie al asimilar.</small>
+                                </div>
+                                <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('asociaciones')}>
+                                  ✨ Asimilar Ecosistema
+                                </button>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingLeft: '16px' }}>
+                                {filteredBen.length > 0 && (
+                                  <div>
+                                    <h5 style={{ color: '#10b981', margin: '0 0 6px', fontSize: '0.85rem' }}>➕ Beneficiosas</h5>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      {filteredBen.map((item: any, idx: number) => {
+                                        const name = typeof item === 'string' ? item : item?.nombre;
+                                        const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
+                                        const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                        const isChecked = selectedRels.ben.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
+                                        return (
+                                          <label key={`ben_diff_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                              if (e.target.checked) setSelectedRels(p => ({ ...p, ben: [...p.ben, item] }));
+                                              else setSelectedRels(p => ({ ...p, ben: p.ben.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
+                                            }} style={{ accentColor: '#10b981', width: '16px', height: '16px' }} />
+                                            <span style={{ fontSize: '0.85rem' }}>{exists ? '✅' : '➕'}</span>
+                                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{name}</span>
+                                            {motivo && <span style={{ color: '#64748b', fontSize: '0.8rem' }}> — {motivo}</span>}
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {filteredPer.length > 0 && (
+                                  <div style={{ marginTop: '8px' }}>
+                                    <h5 style={{ color: '#ef4444', margin: '0 0 6px', fontSize: '0.85rem' }}>➖ Perjudiciales</h5>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      {filteredPer.map((item: any, idx: number) => {
+                                        const name = typeof item === 'string' ? item : item?.nombre;
+                                        const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
+                                        const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                        const isChecked = selectedRels.per.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
+                                        return (
+                                          <label key={`per_diff_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                              if (e.target.checked) setSelectedRels(p => ({ ...p, per: [...p.per, item] }));
+                                              else setSelectedRels(p => ({ ...p, per: p.per.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
+                                            }} style={{ accentColor: '#ef4444', width: '16px', height: '16px' }} />
+                                            <span style={{ fontSize: '0.85rem' }}>{exists ? '✅' : '➕'}</span>
+                                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{name}</span>
+                                            {motivo && <span style={{ color: '#64748b', fontSize: '0.8rem' }}> — {motivo}</span>}
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {filteredPla.length > 0 && (
+                                  <div style={{ marginTop: '8px' }}>
+                                    <h5 style={{ color: '#f97316', margin: '0 0 6px', fontSize: '0.85rem' }}>🐛 Plagas y Enfermedades</h5>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      {filteredPla.map((item: any, idx: number) => {
+                                        const name = typeof item === 'string' ? item : item?.nombre;
+                                        const notas = typeof item === 'string' ? '' : (item?.notas || '');
+                                        const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                        const isChecked = selectedRels.pla.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
+                                        return (
+                                          <label key={`pla_diff_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                              if (e.target.checked) setSelectedRels(p => ({ ...p, pla: [...p.pla, item] }));
+                                              else setSelectedRels(p => ({ ...p, pla: p.pla.filter((n: any) => (typeof n === 'string' ? n : n?.nombre) !== name) }));
+                                            }} style={{ accentColor: '#f97316', width: '16px', height: '16px' }} />
+                                            <span style={{ fontSize: '0.85rem' }}>{exists ? '✅' : '➕'}</span>
+                                            <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{name}</span>
+                                            {notas && <span style={{ color: '#64748b', fontSize: '0.8rem' }}> — {notas}</span>}
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                    }
+
+                    // 3. Synonyms Group
+                    if (aiConfigTabs.sinonimos) {
+                      const sProps = aiProposal._sinonimos || [];
+                      const filteredSin = sProps.filter((item: any) => {
+                        return !sinonimos.some(s =>
+                          s.especiessinonimosnombre?.toLowerCase().trim() === item.especiessinonimosnombre?.toLowerCase().trim() &&
+                          String(s.xespeciessinonimosidpaises || '') === String(item.xespeciessinonimosidpaises || '')
+                        );
+                      });
+
+                      if (filteredSin.length > 0) {
+                        const isCollapsed = !!collapsedAiGroups.sinonimos;
+                        groupsWithChanges.push(
+                          <div key="sinonimos" style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div 
+                              onClick={() => setCollapsedAiGroups(prev => ({ ...prev, sinonimos: !prev.sinonimos }))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f1f5f9', cursor: 'pointer', userSelect: 'none', borderBottom: isCollapsed ? 'none' : '1px solid #cbd5e1' }}
+                            >
+                              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🗣️ Sinónimos</span>
+                              </span>
+                              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>
+                                {isCollapsed ? '➕ Mostrar' : '➖ Ocultar'}
+                              </span>
+                            </div>
+                            <div style={{ display: isCollapsed ? 'none' : 'block', padding: '16px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
+                                <div>
+                                  <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>🗣️ Nuevos Sinónimos propuestos</h4>
+                                  <small style={{ color: '#64748b' }}>Se agregarán a tu lista de sinónimos al asimilar.</small>
+                                </div>
+                                <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('sinonimos')}>
+                                  ✨ Asimilar Sinónimos
+                                </button>
+                              </div>
+
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                <thead>
+                                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                                    <th style={{ padding: '10px 12px', width: '40px' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedAiSinonimos.length === sProps.length}
+                                        onChange={(e) => {
+                                          if (e.target.checked) setSelectedAiSinonimos(sProps.map((_: any, idx: number) => idx));
+                                          else setSelectedAiSinonimos([]);
+                                        }}
+                                        style={{ accentColor: '#7c3aed' }}
+                                      />
+                                    </th>
+                                    <th style={{ padding: '10px 12px' }}>Nombre</th>
+                                    <th style={{ padding: '10px 12px' }}>Idioma</th>
+                                    <th style={{ padding: '10px 12px' }}>País</th>
+                                    <th style={{ padding: '10px 12px' }}>Notas</th>
+                                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Acción</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sProps.map((item: any, idx: number) => {
+                                    const isChecked = selectedAiSinonimos.includes(idx);
+                                    const exists = sinonimos.some(s =>
+                                      s.especiessinonimosnombre?.toLowerCase().trim() === item.especiessinonimosnombre?.toLowerCase().trim() &&
+                                      String(s.xespeciessinonimosidpaises || '') === String(item.xespeciessinonimosidpaises || '')
+                                    );
+                                    if (exists) return null;
+
+                                    const idioma = masterIdiomas.find(i => i.ididiomas.toString() === String(item.xespeciessinonimosididiomas || ''));
+                                    const pais = masterPaises.find(p => p.idpaises.toString() === String(item.xespeciessinonimosidpaises || ''));
+
+                                    return (
+                                      <tr key={`sin_diff_${idx}`} className="ai-comparison-grid-with-actions" style={{ borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent' }}>
+                                        <td style={{ padding: '10px 12px' }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedAiSinonimos(prev => [...prev, idx]);
+                                              else setSelectedAiSinonimos(prev => prev.filter(v => v !== idx));
+                                            }}
+                                            style={{ accentColor: '#7c3aed' }}
+                                          />
+                                        </td>
+                                        <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{item.especiessinonimosnombre}</td>
+                                        <td style={{ padding: '10px 12px' }}>{idioma ? idioma.idiomasnombre : <em style={{ color: '#94a3b8' }}>No indicado</em>}</td>
+                                        <td style={{ padding: '10px 12px' }}>{pais ? pais.paisesnombre : <em style={{ color: '#94a3b8' }}>General</em>}</td>
+                                        <td style={{ padding: '10px 12px', fontStyle: 'italic', color: '#64748b' }}>{item.especiessinonimosnotas || '—'}</td>
+                                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                          <button type="button" className="btn-assimilate-row" style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }} onClick={async () => {
+                                            await runWithAssimilationLoading(async () => {
+                                              try {
+                                                await fetch(`/api/admin/especies/${especieId}/sinonimos`, {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify(item)
+                                                });
+                                                if (especieId) {
+                                                  await loadSinonimos(especieId);
+                                                }
+                                              } catch (err) {
+                                                console.error(err);
+                                              }
+                                            });
+                                          }}>
+                                            Agregar
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      }
+                    }
+
+                    // 4. Varieties Group
+                    if (aiConfigTabs.variedades) {
+                      const vProps = aiProposal._variedades || [];
+                      const filteredVar = vProps.filter((item: any) => {
+                        const isAdded = assimilatedVarietyNames.includes(item.variedadesnombre) || existingVarieties.some(ev => ev.variedadesnombre?.toLowerCase().trim() === item.variedadesnombre?.toLowerCase().trim());
+                        return !isAdded;
+                      });
+
+                      if (filteredVar.length > 0) {
+                        const isCollapsed = !!collapsedAiGroups.variedades;
+                        groupsWithChanges.push(
+                          <div key="variedades" style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div 
+                              onClick={() => setCollapsedAiGroups(prev => ({ ...prev, variedades: !prev.variedades }))}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f1f5f9', cursor: 'pointer', userSelect: 'none', borderBottom: isCollapsed ? 'none' : '1px solid #cbd5e1' }}
+                            >
+                              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🌾 Variedades</span>
+                              </span>
+                              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>
+                                {isCollapsed ? '➕ Mostrar' : '➖ Ocultar'}
+                              </span>
+                            </div>
+                            <div style={{ display: isCollapsed ? 'none' : 'block', padding: '16px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
+                                <div>
+                                  <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>🌾 Nuevas Variedades propuestas</h4>
+                                  <small style={{ color: '#64748b' }}>Se agregarán a la base de datos de inmediato al asimilar.</small>
+                                </div>
+                                <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('variedades')}>
+                                  ✨ Asimilar Variedades
+                                </button>
+                              </div>
+
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                <thead>
+                                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                                    <th style={{ padding: '10px 12px', width: '40px' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedAiVariedades.length === vProps.length}
+                                        onChange={(e) => {
+                                          if (e.target.checked) setSelectedAiVariedades(vProps.map((_: any, idx: number) => idx));
+                                          else setSelectedAiVariedades([]);
+                                        }}
+                                        style={{ accentColor: '#7c3aed' }}
+                                      />
+                                    </th>
+                                    <th style={{ padding: '10px 12px' }}>Nombre</th>
+                                    <th style={{ padding: '10px 12px' }}>Tamaño</th>
+                                    <th style={{ padding: '10px 12px' }}>Germinación</th>
+                                    <th style={{ padding: '10px 12px' }}>Color</th>
+                                    <th style={{ padding: '10px 12px' }}>Descripción</th>
+                                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>Acción</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {vProps.map((item: any, idx: number) => {
+                                    const isChecked = selectedAiVariedades.includes(idx);
+                                    const isAdded = assimilatedVarietyNames.includes(item.variedadesnombre) || existingVarieties.some(ev => ev.variedadesnombre?.toLowerCase().trim() === item.variedadesnombre?.toLowerCase().trim());
+                                    if (isAdded) return null;
+
+                                    return (
+                                      <tr key={`var_diff_${idx}`} className="ai-comparison-grid-with-actions" style={{ borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent' }}>
+                                        <td style={{ padding: '10px 12px' }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedAiVariedades(prev => [...prev, idx]);
+                                              else setSelectedAiVariedades(prev => prev.filter(v => v !== idx));
+                                            }}
+                                            style={{ accentColor: '#7c3aed' }}
+                                          />
+                                        </td>
+                                        <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{item.variedadesnombre}</td>
+                                        <td style={{ padding: '10px 12px', textTransform: 'capitalize' }}>{item.variedadestamano || 'mediano'}</td>
+                                        <td style={{ padding: '10px 12px' }}>{item.variedadesdiasgerminacion ? `${item.variedadesdiasgerminacion} días` : '—'}</td>
+                                        <td style={{ padding: '10px 12px' }}>{item.variedadescolor || '—'}</td>
+                                        <td style={{ padding: '10px 12px', color: '#64748b' }}>{item.variedadesdescripcion || '—'}</td>
+                                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                          <button type="button" className="btn-assimilate-row" style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }} onClick={async () => {
+                                            await runWithAssimilationLoading(async () => {
+                                              try {
+                                                const res = await fetch('/api/admin/variedades', {
+                                                  method: 'POST',
+                                                  headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'x-user-email': userEmail || ''
+                                                  },
+                                                  body: JSON.stringify({
+                                                    variedadesnombre: item.variedadesnombre,
+                                                    xvariedadesidespecies: especieId,
+                                                    variedadestamano: item.variedadestamano || 'mediano',
+                                                    variedadesdiasgerminacion: item.variedadesdiasgerminacion || null,
+                                                    variedadescolor: item.variedadescolor || null,
+                                                    variedadesdescripcion: item.variedadesdescripcion || null,
+                                                    variedadesvisibilidadsino: 1
+                                                  })
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                  setAssimilatedVarietyNames(prev => [...prev, item.variedadesnombre]);
+                                                  if (especieId) await loadExistingVarieties(especieId);
+                                                }
+                                              } catch (err) {
+                                                console.error(err);
+                                              }
+                                            });
+                                          }}>
+                                            Agregar
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      }
+                    }
+
+                    return (
+                      <>
+                        {groupsWithChanges.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {groupsWithChanges}
+                          </div>
+                        ) : (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontStyle: 'italic' }}>
+                            No hay diferencias en los parámetros botánicos principales.
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
 
-            <div className="ai-modal-footer">
-              <button className="btn-assimilate-all" onClick={assimilateAll}>
+            <div className="ai-modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+              <button type="button" className="btn-secondary" onClick={closeAiModal}>
+                Descartar Cambios
+              </button>
+              <button className="btn-assimilate-all" style={{ margin: 0, padding: '10px 24px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(16,185,129,0.2)' }} onClick={assimilateAll}>
                 ✨ Asimilar TODOS los cambios de la IA
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE DIAGNÓSTICO DE COMPLETITUD (CHEOKEO) */}
+      {showCheckModal && checkResults && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', zIndex: 10500, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px) saturate(180%)' }} onClick={() => setShowCheckModal(false)}>
+          <div style={{ background: '#fff', borderRadius: '20px', border: '1px solid rgba(2, 132, 199, 0.2)', width: '90%', maxWidth: '650px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(2, 132, 199, 0.3)' }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🔍 Diagnóstico de Completitud</span>
+              </h2>
+              <button type="button" onClick={() => setShowCheckModal(false)} style={{ color: 'white', background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', opacity: 0.85, transition: 'opacity 0.2s' }}>✖</button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* Completeness Health/Progress Bar */}
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#334155' }}>Nivel de Completitud:</span>
+                  <span style={{ fontSize: '1.2rem', fontWeight: '900', color: checkResults.score >= 80 ? '#10b981' : checkResults.score >= 50 ? '#f59e0b' : '#ef4444' }}>
+                    {checkResults.score}%
+                  </span>
+                </div>
+                
+                {/* Progress bar container */}
+                <div style={{ width: '100%', height: '12px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{
+                    width: `${checkResults.score}%`,
+                    height: '100%',
+                    background: `linear-gradient(90deg, 
+                      ${checkResults.score >= 80 ? '#10b981, #059669' : checkResults.score >= 50 ? '#f59e0b, #d97706' : '#ef4444, #dc2626'}
+                    )`,
+                    borderRadius: '999px',
+                    transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }} />
+                </div>
+                
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b', lineHeight: '1.4' }}>
+                  {checkResults.score === 100 
+                    ? '🎉 ¡Enhorabuena! La ficha de esta especie está 100% completa.'
+                    : checkResults.score >= 80 
+                      ? '✨ ¡Excelente trabajo! Solo faltan algunos detalles menores.'
+                      : '💡 Completa las secciones y campos vacíos indicados abajo para mejorar la calidad de esta ficha en el catálogo.'}
+                </p>
+              </div>
+
+              {/* Related Sections Checklist */}
+              <div>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#1e293b', fontWeight: 'bold' }}>📋 Secciones de Contenido</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                  {[
+                    { label: '🗣️ Sinónimos', active: checkResults.hasSinonimos, count: checkResults.sinonimosCount, desc: 'Nombres locales o alternativos', tab: 'taxonomia' },
+                    { label: '📋 Labores/Tareas', active: checkResults.hasLabores, count: checkResults.laboresCount, desc: 'Instrucciones y pautas de cuidado', tab: 'pautas' },
+                    { label: '📷 Fotos', active: checkResults.hasPhotos, count: checkResults.photosCount, desc: 'Imágenes botánicas o de cultivos', tab: 'photos' },
+                    { label: '📄 PDFs', active: checkResults.hasPdfs, count: checkResults.pdfsCount, desc: 'Fichas técnicas y guías en PDF', tab: 'pdfs' },
+                    { label: '🤝 Ecosistema (Asociaciones)', active: checkResults.hasEcosystem, count: checkResults.ecosystemCount, desc: 'Relaciones beneficiosas y plagas', tab: 'asociaciones' },
+                    { label: '🌱 Variedades', active: checkResults.hasVarieties, count: checkResults.varietiesCount, desc: 'Variedades registradas de la especie', tab: 'variedades' },
+                  ].map((sec, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.15rem' }}>{sec.active ? '✅' : '❌'}</span>
+                        <div>
+                          <strong style={{ color: '#1e293b' }}>{sec.label}</strong>
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>
+                            {sec.active ? `${sec.count} ${sec.count === 1 ? 'registrado' : 'registrados'}` : sec.desc}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {!sec.active && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(sec.tab);
+                            setShowCheckModal(false);
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            background: '#fff',
+                            color: '#475569',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            transition: 'all 0.2s',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                          }}
+                        >
+                          Ir a sección →
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Missing Basic Fields */}
+              {checkResults.missingFields.length > 0 && (
+                <div>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#1e293b', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: '#ef4444' }}>⚠️</span>
+                    <span>Campos Básicos Vacíos ({checkResults.missingFields.length})</span>
+                  </h3>
+                  <div style={{ background: '#fff5f5', border: '1px solid #fee2e2', borderRadius: '12px', padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {checkResults.missingFields.map((field: string, idx: number) => (
+                      <span key={idx} style={{ background: '#fecaca', color: '#b91c1c', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>
+                        {field}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <button
+                type="button"
+                onClick={() => setShowCheckModal(false)}
+                style={{ padding: '10px 20px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', boxShadow: '0 4px 6px rgba(2,132,199,0.2)', transition: 'all 0.2s' }}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY DE CARGA PARA LA BÚSQUEDA DE IA (HOURGLASS LOADING) */}
+      {aiLoading && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', zIndex: 11000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', color: 'white' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: '#1e293b', border: '1px solid #334155', padding: '40px 60px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center', maxWidth: '450px', width: '90%' }}>
+            <div style={{ fontSize: '4.5rem', display: 'inline-block', animation: 'flipHourglass 2.5s cubic-bezier(0.77, 0, 0.175, 1) infinite' }}>
+              ⏳
+            </div>
+            <h3 style={{ margin: '10px 0 4px 0', color: '#38bdf8', fontSize: '1.4rem', fontWeight: 'bold' }}>Consultando a la IA...</h3>
+            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              Buscando y organizando datos botánicos, ecológicos, sinónimos y variedades para {formData.especiesnombre}.
+            </p>
+            <div style={{ marginTop: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '8px 20px', display: 'inline-block' }}>
+              <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                Tiempo transcurrido: {aiSeconds}s
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY DE CARGA PARA LA ASIMILACIÓN (HOURGLASS LOADING) */}
+      {isAssimilating && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', zIndex: 11000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', color: 'white' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: '#1e293b', border: '1px solid #334155', padding: '40px 60px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center', maxWidth: '450px', width: '90%' }}>
+            <div style={{ fontSize: '4.5rem', display: 'inline-block', animation: 'flipHourglass 2.5s cubic-bezier(0.77, 0, 0.175, 1) infinite' }}>
+              ⏳
+            </div>
+            <h3 style={{ margin: '10px 0 4px 0', color: '#38bdf8', fontSize: '1.4rem', fontWeight: 'bold' }}>Asimilando Cambios...</h3>
+            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              Procesando y guardando los datos seleccionados en tu ficha de cultivo en Verdantia.
+            </p>
+            <div style={{ marginTop: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '8px 20px', display: 'inline-block' }}>
+              <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                Tiempo transcurrido: {assimilationSeconds}s
+              </span>
             </div>
           </div>
         </div>

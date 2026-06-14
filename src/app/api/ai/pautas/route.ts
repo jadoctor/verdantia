@@ -25,10 +25,12 @@ ${laboresList}
 Tu objetivo es proponer las "Pautas de Labores" necesarias para esta especie, especificando cuándo y con qué frecuencia deben realizarse.
 
 Fases válidas permitidas (elige SOLO una de estas para cada pauta):
-- planificado (labores preparatorias ANTES de sembrar. Frecuencia: null si es puntual)
-- siembra (momento puntual de depositar la semilla o plantón. Siempre con frecuencia: null)
-- postsiembra (periodo desde la siembra hasta que germina la semilla)
+- planificacion (labores preparatorias ANTES de sembrar/plantar. Frecuencia: null si es puntual)
+- siembra (momento puntual de depositar la semilla. Siempre con frecuencia: null)
+- adquisicion (momento puntual en que se compra un plantón. Frecuencia: null)
+- pregerminacion (latencia de la semilla bajo tierra)
 - germinacion (momento puntual cuando asoma el primer brote a la superficie)
+- postgerminacion (desarrollo de las primeras hojas verdaderas)
 - semillero (desarrollo de la planta en entorno protegido antes del trasplante)
 - trasplante (mudanza puntual al suelo definitivo)
 - enraizamiento (periodo de estrés post-trasplante y desarrollo radicular primario)
@@ -38,9 +40,9 @@ Fases válidas permitidas (elige SOLO una de estas para cada pauta):
 - finalizado (fin de ciclo o arrancado. Tareas finales de limpieza)
 
 IMPORTANTE sobre las fases:
-- "planificado" = pre-siembra, preparar bancal.
-- "siembra", "germinacion", "trasplante", "finalizado" = hitos puntuales. Frecuencia DEBE ser null.
-- "semillero" = aplica SOLO a hortalizas que no son de siembra directa.
+- "planificacion" = pre-siembra, preparar bancal.
+- "siembra", "adquisicion", "germinacion", "trasplante", "finalizado" = hitos puntuales. Frecuencia DEBE ser null.
+- "semillero" = aplica SOLO a hortalizas que se trasplantan.
 - "floracion" = labores específicas cuando salen flores (ej. polinización manual, abono rico en P/K).
 - "cosecha" = época en la que la planta ya da fruto recolectable.
 
@@ -49,17 +51,17 @@ ${extraText}
 REGLAS ESTRICTAS Y EXHAUSTIVIDAD:
 1. SE EXTREMADAMENTE EXHAUSTIVO. No te saltes ninguna fase lógica. Piensa en TODO el ciclo biológico. Es OBLIGATORIO considerar si la especie necesita:
    - Riego o preparación el día exacto de la "siembra" o "trasplante".
-   - Mantenimiento de humedad durante la "postsiembra" (hasta que germina).
+   - Mantenimiento de humedad durante la "pregerminacion" (hasta que germina).
    - Cuidados especiales durante la "germinacion" (cuando asoma el brote).
    - Abonados o podas específicos en "crecimiento" y "floracion".
    - Tareas finales en "cosecha" y "finalizado".
-2. PROHIBIDO crear fases o grupos como "general", "todo el ciclo", "todas las fases". Tienes que obligar a la labor a pertenecer a una fase concreta de las permitidas arriba.
+2. PROHIBIDO crear fases o grupos genéricos. Tienes que obligar a la labor a pertenecer a una fase concreta de las permitidas arriba.
 3. Responde ÚNICAMENTE con un array JSON. Nada más.
 4. Usa SOLAMENTE las labores (por su ID numérico) que se listan arriba. NO inventes IDs.
-4. Para la "frecuencia", proporciona un número entero (en días). Si es una labor puntual (como la cosecha final), pon null.
-5. Para el "offset", proporciona un número entero (en días). Usa valores negativos para adelantar la labor respecto al inicio de su fase teórica (ej: -180 para 6 meses antes de la siembra), valores positivos para retrasarla, o 0 si debe ir en su tiempo normal.
-6. Las "notas_ia" deben ser concisas y útiles (máx 150 caracteres).
-7. Agrega el campo "selected": true a todas las pautas.
+5. Para la "frecuencia", proporciona un número entero (en días). Si es una labor puntual (como la cosecha final), pon null.
+6. Para el "offset", proporciona un número entero (en días). Usa valores negativos para adelantar la labor respecto al inicio de su fase teórica (ej: -180 para 6 meses antes de la siembra), valores positivos para retrasarla, o 0 si debe ir en su tiempo normal.
+7. Las "notas_ia" deben ser concisas y útiles (máx 150 caracteres).
+8. Agrega el campo "selected": true a todas las pautas.
 
 Ejemplo de respuesta:
 [

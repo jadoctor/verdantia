@@ -136,6 +136,7 @@ function DashboardLayoutContent({
     '/dashboard/admin/labores/nueva': { label: 'Nueva Labor', icon: '🛠️' },
     '/dashboard/admin/plagas': { label: 'Plagas Globales', icon: '🐛' },
     '/dashboard/admin/tareas/contenedores': { label: 'Contenedores', icon: '🌱' },
+    '/dashboard/admin/familias': { label: 'Familias Botánicas', icon: '🧬' },
     '/dashboard/admin/usuarios': { label: 'Usuarios', icon: '👥' },
     '/dashboard/admin/chat': { label: 'Chat Admin', icon: '💬' },
     '/dashboard/admin/meteo': { label: 'Meteo Red Global', icon: '🌐' },
@@ -178,6 +179,13 @@ function DashboardLayoutContent({
         { label: 'Detalle Labor', icon: '🔨' },
       ];
     }
+    const familiaMatch = pathname.match(/^\/dashboard\/admin\/familias\/(\d+)$/);
+    if (familiaMatch) {
+      return [
+        ROUTE_MAP['/dashboard/admin/familias'],
+        { label: 'Detalle Familia', icon: '🧬' },
+      ];
+    }
     const contenedorMatch = pathname.match(/^\/dashboard\/admin\/tareas\/contenedores\/(.+)$/);
     if (contenedorMatch) {
       return [
@@ -218,6 +226,8 @@ function DashboardLayoutContent({
     if (faseMatch) return '/dashboard/admin/fases';
     const laborMatch = pathname.match(/^\/dashboard\/admin\/labores\/(\d+)$/);
     if (laborMatch) return '/dashboard/admin/labores';
+    const familiaMatch = pathname.match(/^\/dashboard\/admin\/familias\/(\d+)$/);
+    if (familiaMatch) return '/dashboard/admin/familias';
     const usuarioMatch = pathname.match(/^\/dashboard\/admin\/usuarios\/(\d+)$/);
     if (usuarioMatch) return '/dashboard/admin/usuarios';
     const misPlantasMatch = pathname.match(/^\/dashboard\/mis-plantas\/(\d+)$/);
@@ -578,19 +588,20 @@ function DashboardLayoutContent({
                     <span>Usuarios</span>
                   </a>
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setTareasAgricolasHover(true)} onMouseLeave={() => setTareasAgricolasHover(false)}>
-                    <button type="button" className={`nav-item ${pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'active' : ''}`}
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/familias') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setTareasAgricolasHover(h => !h); }}
                       style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">🚜</span>
                       <span style={{flex: 1}}>Tareas Agrícolas</span>
-                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/familias') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                     </button>
-                    <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/fases') || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                    <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/fases') || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/familias') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
                       <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌍 Especies Globales</a>
                       <a href="/dashboard/admin/fases" className={`nav-item ${isActive('/dashboard/admin/fases')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Fases de Cultivo</a>
                       <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔧 Labores Globales</a>
                       <a href="/dashboard/admin/plagas" className={`nav-item ${isActive('/dashboard/admin/plagas')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🐛 Plagas Globales</a>
                       <a href="/dashboard/admin/tareas/contenedores" className={`nav-item ${isActive('/dashboard/admin/tareas/contenedores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Contenedores</a>
+                      <a href="/dashboard/admin/familias" className={`nav-item ${isActive('/dashboard/admin/familias')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🧬 Familias Botánicas</a>
                     </div>
                   </div>
                   <a href="/dashboard/admin/blog" className={`nav-item ${isActive('/dashboard/admin/blog')}`} onClick={handleNavClick}>

@@ -3,8 +3,13 @@ import React from 'react';
 interface EspeciesHeaderProps {
   filterTipo: string;
   setFilterTipo: (t: string) => void;
+  filterFamilia: string;
+  setFilterFamilia: (f: string) => void;
   filter: 'activas' | 'inactivas' | 'todas';
   setFilter: (f: 'activas' | 'inactivas' | 'todas') => void;
+  counts: Record<string, number>;
+  countsStatus: Record<string, number>;
+  uniqueFamilias: any[];
   onNewEspecie: () => void;
   onGoHome: () => void;
   isMobile?: boolean;
@@ -13,8 +18,13 @@ interface EspeciesHeaderProps {
 export default function EspeciesHeader({
   filterTipo,
   setFilterTipo,
+  filterFamilia,
+  setFilterFamilia,
   filter,
   setFilter,
+  counts,
+  countsStatus,
+  uniqueFamilias,
   onNewEspecie,
   onGoHome,
   isMobile = false
@@ -119,10 +129,36 @@ export default function EspeciesHeader({
                     }
                   }}
                 >
-                  {tag.label}
+                  {tag.label} ({counts[tag.value] || 0})
                 </button>
               );
             })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Familia:</span>
+            <select
+              value={filterFamilia}
+              onChange={(e) => setFilterFamilia(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.3)',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="" style={{ color: 'black' }}>🌱 Todas las familias</option>
+              {uniqueFamilias.map(f => (
+                <option key={f.id} value={f.id} style={{ color: 'black' }}>
+                  {f.emoji} {f.nombre} ({f.count})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Filtro Activo/Inactivo */}
@@ -130,9 +166,9 @@ export default function EspeciesHeader({
             {(['activas', 'inactivas', 'todas'] as const).map((opt) => {
               const isActive = filter === opt;
               const labels = {
-                activas: '🟢 Activas',
-                inactivas: '🔴 Inactivas',
-                todas: '👁️ Todas'
+                activas: `🟢 Activas (${countsStatus.activas || 0})`,
+                inactivas: `🔴 Inactivas (${countsStatus.inactivas || 0})`,
+                todas: `👁️ Todas (${countsStatus.todas || 0})`
               };
               return (
                 <button

@@ -19,16 +19,23 @@ export async function GET(request: Request) {
         e.idespecies,
         e.especiesnombre,
         e.especiesicono,
-        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, e.especiesdiasgerminacion) AS dias_germinacion,
-        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, e.especiesdiashastatrasplante) AS dias_trasplante,
-        COALESCE(vu.variedadesdiascrecimientofirme, vg.variedadesdiascrecimientofirme, e.especiesdiascrecimientofirme) AS dias_crecimiento,
-        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, e.especiesdiashastafructificacion) AS dias_fructificacion,
-        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, e.especiesdiashastarecoleccion) AS dias_recoleccion,
-        COALESCE(vu.variedadesduraciontotal, vg.variedadesduraciontotal, e.especiesduraciontotal) AS duracion_total
+        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, ef_germ.especiesfasesduraciondias) AS dias_germinacion,
+        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, ef_trasp.especiesfasesduraciondias) AS dias_trasplante,
+        COALESCE(vu.variedadesdiascrecimientofirme, vg.variedadesdiascrecimientofirme, ef_crec.especiesfasesduraciondias) AS dias_crecimiento,
+        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, ef_fruct.especiesfasesduraciondias) AS dias_fructificacion,
+        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, ef_cosecha.especiesfasesduraciondias) AS dias_recoleccion,
+        COALESCE(vu.variedadesduraciontotal, vg.variedadesduraciontotal, (
+          SELECT SUM(ef_all.especiesfasesduraciondias) FROM especiesfases ef_all WHERE ef_all.xespeciesfasesidespecies = e.idespecies
+        )) AS duracion_total
       FROM cultivos c
       JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
+      LEFT JOIN especiesfases ef_germ ON ef_germ.xespeciesfasesidespecies = e.idespecies AND ef_germ.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'germinacion' LIMIT 1)
+      LEFT JOIN especiesfases ef_trasp ON ef_trasp.xespeciesfasesidespecies = e.idespecies AND ef_trasp.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'trasplante' LIMIT 1)
+      LEFT JOIN especiesfases ef_crec ON ef_crec.xespeciesfasesidespecies = e.idespecies AND ef_crec.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'crecimiento' LIMIT 1)
+      LEFT JOIN especiesfases ef_fruct ON ef_fruct.xespeciesfasesidespecies = e.idespecies AND ef_fruct.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'floracion' LIMIT 1)
+      LEFT JOIN especiesfases ef_cosecha ON ef_cosecha.xespeciesfasesidespecies = e.idespecies AND ef_cosecha.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'cosecha' LIMIT 1)
       WHERE c.xcultivosidusuarios = ? AND c.cultivosactivosino = 1 AND c.cultivosestado != 'perdido' AND c.cultivosestado != 'finalizado'
     `, [user.id]);
 

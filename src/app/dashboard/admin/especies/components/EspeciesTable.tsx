@@ -158,7 +158,7 @@ export default function EspeciesTable({
                       <span>{e.especiesnombre}</span>
                     </td>
                     {!isMobile && <td style={{ padding: '12px', fontStyle: 'italic', color: '#64748b' }}>{e.especiesnombrecientifico || '-'}</td>}
-                    {!isMobile && <td style={{ padding: '12px' }}>{e.especiesfamilia || '-'}</td>}
+                    {!isMobile && <td style={{ padding: '12px' }}>{e.familiasnombre ? `${e.familiasemoji || '🌿'} ${e.familiasnombre}` : '-'}</td>}
                     <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                         {e.especiestipo?.split(',').map((t: string) => (

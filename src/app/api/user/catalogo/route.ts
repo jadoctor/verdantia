@@ -17,7 +17,8 @@ export async function GET(request: Request) {
 
     // Especies visibles con su foto principal
     let especiesQuery = `
-      SELECT e.idespecies, e.especiesnombre, e.especiesnombrecientifico, e.especiesfamilia, 
+      SELECT e.idespecies, e.especiesnombre, e.especiesnombrecientifico, 
+             f.familiasnombre, f.familiasemoji, f.familiascolor,
              e.especiestipo, e.especiesicono, e.especiesdescripcion, e.especiesdificultad, e.especiespeso1000semillas,
              (SELECT datosadjuntosruta FROM datosadjuntos 
               WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' 
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
               AND v.variedadesesgenerica = 0
               AND v.variedadesvisibilidadsino = 1) as total_variedades
       FROM especies e 
+      LEFT JOIN familias f ON e.xespeciesidfamilias = f.idfamilias
       WHERE e.especiesvisibilidadsino = 1
     `;
     const params: any[] = [];

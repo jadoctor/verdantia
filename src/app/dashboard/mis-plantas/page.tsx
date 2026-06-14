@@ -38,7 +38,8 @@ interface CatalogoEspecie {
   idespecies: number;
   especiesnombre: string;
   especiesnombrecientifico: string;
-  especiesfamilia: string;
+  familiasnombre?: string;
+  familiasemoji?: string;
   especiestipo: string;
   especiesicono: string;
   especiesdescripcion: string;

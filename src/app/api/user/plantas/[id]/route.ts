@@ -33,9 +33,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         COALESCE(vu.variedadesdescripcion, vg.variedadesdescripcion, e.especiesdescripcion) AS descripcion,
         COALESCE(vu.variedadescolor, vg.variedadescolor, e.especiescolor) AS color,
         COALESCE(vu.variedadestamano, vg.variedadestamano, e.especiestamano) AS tamano,
-        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, e.especiesdiasgerminacion) AS diasgerminacion,
+        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, ef_germ.especiesfasesduraciondias) AS diasgerminacion,
         COALESCE(vu.variedadesviabilidadsemilla, vg.variedadesviabilidadsemilla, e.especiesviabilidadsemilla) AS viabilidadsemilla,
-        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, e.especiesdiashastafructificacion) AS diashastafructificacion,
+        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, ef_fruct.especiesfasesduraciondias) AS diashastafructificacion,
         COALESCE(vu.variedadestemperaturaminima, vg.variedadestemperaturaminima, e.especiestemperaturaminima) AS temperaturaminima,
         COALESCE(vu.variedadestemperaturaoptima, vg.variedadestemperaturaoptima, e.especiestemperaturaoptima) AS temperaturaoptima,
         COALESCE(vu.variedadestemperaturamaxima, vg.variedadestemperaturamaxima, e.especiestemperaturamaxima) AS temperaturamaxima,
@@ -56,10 +56,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         COALESCE(vu.variedadesautosuficiencia, vg.variedadesautosuficiencia, e.especiesautosuficiencia) AS autosuficiencia,
         COALESCE(vu.variedadesautosuficienciaparcial, vg.variedadesautosuficienciaparcial, e.especiesautosuficienciaparcial) AS autosuficienciaparcial,
         COALESCE(vu.variedadesautosuficienciaconserva, vg.variedadesautosuficienciaconserva, e.especiesautosuficienciaconserva) AS autosuficienciaconserva,
-        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, e.especiesdiashastatrasplante) AS diashastatrasplante,
-        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, e.especiesdiashastarecoleccion) AS diashastarecoleccion,
+        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, ef_trasp.especiesfasesduraciondias) AS diashastatrasplante,
+        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, ef_cosecha.especiesfasesduraciondias) AS diashastarecoleccion,
         COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesicono) AS icono,
-        COALESCE(vu.variedadesbiodinamicacategoria, vg.variedadesbiodinamicacategoria, e.especiesbiodinamicacategoria) AS biodinamicacategoria,
+        COALESCE(vu.variedadesbiodinamicacategoria, vg.variedadesbiodinamicacategoria, e.especiesorganocomestible) AS biodinamicacategoria,
         COALESCE(vu.variedadesbiodinamicanotas, vg.variedadesbiodinamicanotas, e.especiesbiodinamicanotas) AS biodinamicanotas,
         COALESCE(vu.variedadeslunarfasesiembra, vg.variedadeslunarfasesiembra, e.especieslunarfasesiembra) AS lunarfasesiembra,
         COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
@@ -67,7 +67,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         COALESCE(vu.variedadeslunarobservaciones, vg.variedadeslunarobservaciones, e.especieslunarobservaciones) AS lunarobservaciones,
         COALESCE(vu.variedadesbiodinamicafasesiembra, vg.variedadesbiodinamicafasesiembra, e.especiesbiodinamicafasesiembra) AS biodinamicafasesiembra,
         COALESCE(vu.variedadesbiodinamicafasetrasplante, vg.variedadesbiodinamicafasetrasplante, e.especiesbiodinamicafasetrasplante) AS biodinamicafasetrasplante,
-        COALESCE(vu.variedadesphsuelo, vg.variedadesphsuelo, e.especiesphsuelo) AS phsuelo,
+        COALESCE(vu.variedadesphsuelo, vg.variedadesphsuelo, CONCAT(e.especiesphminimosuelo, ' - ', e.especiesphmaximosuelo)) AS phsuelo,
         COALESCE(vu.variedadesnecesidadriego, vg.variedadesnecesidadriego, e.especiesnecesidadriego) AS necesidadriego,
         COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
         COALESCE(vu.variedadesvolumenmaceta, vg.variedadesvolumenmaceta, e.especiesvolumenmaceta) AS volumenmaceta,
@@ -123,6 +123,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
+      LEFT JOIN especiesfases ef_germ ON ef_germ.xespeciesfasesidespecies = e.idespecies AND ef_germ.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'germinacion' LIMIT 1)
+      LEFT JOIN especiesfases ef_trasp ON ef_trasp.xespeciesfasesidespecies = e.idespecies AND ef_trasp.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'trasplante' LIMIT 1)
+      LEFT JOIN especiesfases ef_fruct ON ef_fruct.xespeciesfasesidespecies = e.idespecies AND ef_fruct.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'floracion' LIMIT 1)
+      LEFT JOIN especiesfases ef_cosecha ON ef_cosecha.xespeciesfasesidespecies = e.idespecies AND ef_cosecha.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'cosecha' LIMIT 1)
       WHERE vu.idvariedades = ? AND vu.xvariedadesidusuarios = ?
     `, [plantaId, user.id]);
 
