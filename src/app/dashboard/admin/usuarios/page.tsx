@@ -18,6 +18,28 @@ export default function UsuariosAdminPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 1 });
   const [actionMsg, setActionMsg] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSort = sessionStorage.getItem('usuariosSortConfig');
+      if (savedSort) {
+        try { setSortConfig(JSON.parse(savedSort)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    const newConfig = { key, direction };
+    setSortConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('usuariosSortConfig', JSON.stringify(newConfig));
+    }
+  };
 
   // Auth guard
   useEffect(() => {
@@ -161,13 +183,41 @@ export default function UsuariosAdminPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                  {['Avatar', 'Nombre', 'Email', 'Rol', 'Plan', 'Registro', 'Acciones'].map(h => (
-                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
+                  <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Avatar</th>
+                  <th onClick={() => handleSort('nombre')} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+                    Nombre {sortConfig?.key === 'nombre' ? (sortConfig.direction === 'asc' ? '🔼' : '🔽') : '↕️'}
+                  </th>
+                  <th onClick={() => handleSort('email')} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+                    Email {sortConfig?.key === 'email' ? (sortConfig.direction === 'asc' ? '🔼' : '🔽') : '↕️'}
+                  </th>
+                  <th onClick={() => handleSort('roles')} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+                    Rol {sortConfig?.key === 'roles' ? (sortConfig.direction === 'asc' ? '🔼' : '🔽') : '↕️'}
+                  </th>
+                  <th onClick={() => handleSort('suscripcion')} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+                    Plan {sortConfig?.key === 'suscripcion' ? (sortConfig.direction === 'asc' ? '🔼' : '🔽') : '↕️'}
+                  </th>
+                  <th onClick={() => handleSort('fechaRegistro')} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+                    Registro {sortConfig?.key === 'fechaRegistro' ? (sortConfig.direction === 'asc' ? '🔼' : '🔽') : '↕️'}
+                  </th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {usuarios.map((u, i) => {
+                {(() => {
+                  const sortedUsuarios = [...usuarios].sort((a, b) => {
+                    if (!sortConfig) return 0;
+                    const { key, direction } = sortConfig;
+                    let valA = a[key] || '';
+                    let valB = b[key] || '';
+                    
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+                    
+                    if (valA < valB) return direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                  });
+                  return sortedUsuarios.map((u, i) => {
                   const planCfg = getPlanConfig(u.suscripcion);
                   const rolCfg = getRolConfig(u.roles);
                   const firstRol = (u.roles || '').split(',')[0].trim();
@@ -177,8 +227,8 @@ export default function UsuariosAdminPage() {
                       onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'white' : '#fafafa')}>
 
                       {/* Avatar */}
-                      <td style={{ padding: '10px 14px' }}>
-                        <div style={{ width: '52px', height: '64px', borderRadius: '10px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${u.fotoPrincipal && !u.fotoValidada ? '#f59e0b' : '#93c5fd'}`, flexShrink: 0, position: 'relative' }}>
+                      <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: 'inherit', cursor: 'pointer', width: '80px', minWidth: '80px', textAlign: 'center' }} onClick={() => router.push(`/dashboard/admin/usuarios/${u.id}`)} title="Ver/Editar Usuario">
+                        <div style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${u.fotoPrincipal && !u.fotoValidada ? '#f59e0b' : '#93c5fd'}`, margin: '0 auto', flexShrink: 0, position: 'relative' }}>
                           {u.fotoPrincipal ? (
                             <>
                               <img 
@@ -298,7 +348,8 @@ export default function UsuariosAdminPage() {
                       </td>
                     </tr>
                   );
-                })}
+                });
+              })()}
               </tbody>
             </table>
           </div>

@@ -88,7 +88,7 @@ export default function EspeciesHeader({
 
         {/* Tags de filtros */}
         <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '16px' : '24px', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '16px' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
+          <div style={{ display: 'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', gap: '8px', width: isMobile ? '100%' : 'auto', overflowX: isMobile ? 'auto' : 'visible', paddingBottom: isMobile ? '4px' : '0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
             {[
               { value: '', label: '🌱 Todas' },
               { value: 'hortaliza', label: '🥦 Hortalizas' },
@@ -105,7 +105,8 @@ export default function EspeciesHeader({
                   type="button"
                   onClick={() => setFilterTipo(tag.value)}
                   style={{
-                    padding: isMobile ? '4px 10px' : '6px 14px',
+                    flexShrink: 0,
+                    padding: isMobile ? '6px 12px' : '6px 14px',
                     borderRadius: '20px',
                     border: isSelected ? '1px solid white' : '1px solid rgba(255,255,255,0.3)',
                     background: isSelected ? 'white' : 'rgba(255,255,255,0.1)',
@@ -135,13 +136,14 @@ export default function EspeciesHeader({
             })}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Familia:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', minWidth: isMobile ? '60px' : 'auto' }}>Familia:</span>
             <select
               value={filterFamilia}
               onChange={(e) => setFilterFamilia(e.target.value)}
               style={{
-                padding: '6px 12px',
+                width: isMobile ? '100%' : 'auto',
+                padding: '8px 12px',
                 borderRadius: '8px',
                 border: '1px solid rgba(255,255,255,0.3)',
                 background: 'rgba(255,255,255,0.1)',
@@ -177,7 +179,7 @@ export default function EspeciesHeader({
                   onClick={() => setFilter(opt)}
                   style={{
                     flex: isMobile ? 1 : 'none',
-                    padding: isMobile ? '6px 8px' : '6px 14px',
+                    padding: isMobile ? '8px 4px' : '6px 14px',
                     borderRadius: '6px',
                     border: 'none',
                     background: isActive ? 'white' : 'transparent',

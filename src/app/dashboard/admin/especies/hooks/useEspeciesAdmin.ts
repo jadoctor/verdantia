@@ -16,6 +16,30 @@ export function useEspeciesAdmin() {
   const [filter, setFilter] = useState<'activas' | 'inactivas' | 'todas'>('activas');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSort = sessionStorage.getItem('especiesSortConfig');
+      if (savedSort) {
+        try {
+          setSortConfig(JSON.parse(savedSort));
+        } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    const newConfig = { key, direction };
+    setSortConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('especiesSortConfig', JSON.stringify(newConfig));
+    }
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -127,6 +151,17 @@ export function useEspeciesAdmin() {
     if (filterTipo && !e.especiestipo?.includes(filterTipo)) return false;
     if (filterFamilia && e.xespeciesidfamilias?.toString() !== filterFamilia) return false;
     return true;
+  }).sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let valA = a[key];
+    let valB = b[key];
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const uniqueFamiliasMap = new Map();
@@ -164,6 +199,8 @@ export function useEspeciesAdmin() {
     handleDelete,
     handleReactivate,
     loadEspecies,
-    isMobile
+    isMobile,
+    sortConfig,
+    handleSort
   };
 }

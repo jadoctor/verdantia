@@ -34,13 +34,13 @@ export default function FaseCultivoEditorPage({ params }: { params: Promise<{ id
       <div style={{ marginBottom: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button 
           onClick={() => router.push('/dashboard')} 
-          style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           🏠 Volver al Inicio
         </button>
         <button 
           onClick={() => router.push('/dashboard/admin/fases')} 
-          style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           🔙 Volver a Fases
         </button>
@@ -81,6 +81,7 @@ export default function FaseCultivoEditorPage({ params }: { params: Promise<{ id
         <FaseEditorFooter 
           isNew={isNew} 
           saving={saving} 
+          isMobile={isMobile}
           onSaveManual={handleSaveManual} 
           onCancel={() => router.push('/dashboard/admin/fases')} 
         />

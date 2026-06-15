@@ -14,9 +14,11 @@ interface VariedadMediaManagerProps {
   especieFamilia?: string;
   section?: 'photos' | 'pdfs' | 'all';
   onMediaChange?: () => void;
+  apiBasePath?: string;
 }
 
-export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange }: VariedadMediaManagerProps) {
+export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange, apiBasePath }: VariedadMediaManagerProps) {
+  const basePath = apiBasePath || `/api/admin/variedades/${variedadId}`;
   const [photos, setPhotos] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -122,17 +124,33 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
 
   const loadMedia = async () => {
     try {
-      const [resPhotos, resPdfs, resBlogs] = await Promise.all([
-        fetch(`/api/admin/variedades/${variedadId}/photos`, { headers: { 'x-user-email': userEmail } }),
-        fetch(`/api/admin/variedades/${variedadId}/pdfs`, { headers: { 'x-user-email': userEmail } }),
-        fetch(`/api/admin/variedades/${variedadId}/blogs`, { headers: { 'x-user-email': userEmail } })
-      ]);
-      const dataPhotos = await resPhotos.json();
-      const dataPdfs = await resPdfs.json();
-      const dataBlogs = await resBlogs.json();
-      setPhotos(dataPhotos.photos || []);
-      setPdfs(dataPdfs.pdfs || []);
-      setBlogs(dataBlogs.blogs || []);
+      const promises: Promise<void>[] = [];
+      
+      if (section === 'all' || section === 'photos') {
+        promises.push(
+          fetch(`${basePath}/photos`, { headers: { 'x-user-email': userEmail } })
+            .then(res => res.json())
+            .then(data => setPhotos(data.photos || []))
+            .catch(e => console.error('Error loading photos:', e))
+        );
+      }
+      
+      if (section === 'all' || section === 'pdfs') {
+        promises.push(
+          fetch(`${basePath}/pdfs`, { headers: { 'x-user-email': userEmail } })
+            .then(res => res.json())
+            .then(data => setPdfs(data.pdfs || []))
+            .catch(e => console.error('Error loading pdfs:', e))
+        );
+        promises.push(
+          fetch(`${basePath}/blogs`, { headers: { 'x-user-email': userEmail } })
+            .then(res => res.json())
+            .then(data => setBlogs(data.blogs || []))
+            .catch(e => console.error('Error loading blogs:', e))
+        );
+      }
+
+      await Promise.allSettled(promises);
       onMediaChange?.();
     } catch (e) {
       console.error('Error loading media:', e);
@@ -155,7 +173,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
         const rawStoragePath = storageRef.fullPath;
 
         // 2. Send to API for processing
-        const res = await fetch(`/api/admin/variedades/${variedadId}/${type}`, {
+        const res = await fetch(`${basePath}/${type}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
           body: JSON.stringify({ rawStoragePath, originalFilename: file.name })
@@ -180,7 +198,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
     if (!confirm('¿Seguro que quieres eliminar este archivo?')) return;
     
     try {
-      const res = await fetch(`/api/admin/variedades/${variedadId}/${type}?id=${id}`, {
+      const res = await fetch(`${basePath}/${type}?id=${id}`, {
         method: 'DELETE',
         headers: { 'x-user-email': userEmail }
       });
@@ -194,7 +212,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
 
   const setPrimaryPhoto = async (photoId: string) => {
     try {
-      const res = await fetch(`/api/admin/variedades/${variedadId}/photos`, {
+      const res = await fetch(`${basePath}/photos`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({ action: 'setPrimary', photoId })
@@ -226,7 +244,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
 
     setPdfEditorSaveStatus('saving');
     try {
-      await fetch(`/api/admin/variedades/${variedadId}/pdfs`, {
+      await fetch(`${basePath}/pdfs`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -259,7 +277,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
       });
       const data = await res.json();
       if (data.success && data.base64) {
-        await fetch(`/api/admin/variedades/${variedadId}/pdfs`, {
+        await fetch(`${basePath}/pdfs`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
           body: JSON.stringify({
@@ -336,7 +354,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
     try {
       // Usamos el endpoint genérico de links que se conecta con Firebase y crea el registro
       // Haremos una pequeña adaptación enviando variedadId a su propio endpoint
-      const res = await fetch(`/api/admin/variedades/${variedadId}/pdfs/link`, {
+      const res = await fetch(`${basePath}/pdfs/link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({ title, url, summary, apuntes, targetModel: 'variedad' })
@@ -494,7 +512,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
       seo_alt: editorSeoAlt
     });
     try {
-      const res = await fetch(`/api/admin/variedades/${variedadId}/photos`, {
+      const res = await fetch(`${basePath}/photos`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({ 
@@ -595,7 +613,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
       const storageRef = ref(storage, tempPath);
       await uploadBytes(storageRef, file);
       
-      const saveRes = await fetch(`/api/admin/variedades/${variedadId}/photos`, {
+      const saveRes = await fetch(`${basePath}/photos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({

@@ -110,7 +110,7 @@ export default function AvisosPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '12px', background: '#f8fafc', color: '#475569', minWidth: '200px' }}>Concepto</th>
+                  <th style={{ padding: '12px', background: '#f8fafc', color: '#475569', minWidth: '200px', position: 'sticky', left: 0, zIndex: 2 }}>Concepto</th>
                   <th style={{ padding: '12px', background: '#f8fafc', color: '#475569', textAlign: 'center' }}>Canal</th>
                   {avisosData.suscripciones.map((sub: any) => (
                     <th key={sub.idsuscripciones} style={{ padding: '12px', textAlign: 'center', background: '#f8fafc', color: '#0f172a' }}>
@@ -127,7 +127,7 @@ export default function AvisosPage() {
                   return (
                     <React.Fragment key={aviso.idtiposavisos}>
                       <tr style={{ borderBottom: '1px solid #e2e8f0', background: isTareasHuerto ? '#f8fafc' : 'white' }}>
-                        <td style={{ padding: '12px' }}>
+                        <td style={{ padding: '12px', position: 'sticky', left: 0, zIndex: 1, background: 'inherit', cursor: 'pointer' }} onClick={() => setEditingAviso(aviso)} title="Editar Aviso">
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {isTareasHuerto && (
                               <button 
@@ -199,7 +199,7 @@ export default function AvisosPage() {
                       </tr>
                       {isTareasHuerto && showLabores && laboresData.map(labor => (
                         <tr key={`labor-${labor.idlabores}`} style={{ borderBottom: '1px solid #f1f5f9', background: '#fdfdfd' }}>
-                          <td style={{ padding: '8px 12px 8px 40px' }}>
+                          <td style={{ padding: '8px 12px 8px 40px', position: 'sticky', left: 0, zIndex: 1, background: 'inherit' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ color: '#94a3b8' }}>↳</span>
                               <strong style={{ color: '#475569', fontSize: '0.95rem' }}>{labor.laboresnombre}</strong>

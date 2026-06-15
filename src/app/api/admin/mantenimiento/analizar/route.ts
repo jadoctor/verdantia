@@ -49,15 +49,24 @@ function analyzeResponsiveness(content: string, relPath: string) {
   const gridRegex = /gridTemplateColumns\s*:\s*['"]([^'"]+)['"]/g;
   let gridMatch;
   let hasFixedGrid = false;
+  let hasRigidMinMax = false;
   while ((gridMatch = gridRegex.exec(content)) !== null) {
     const gridVal = gridMatch[1];
     if ((gridVal.includes('repeat') && /\d+/.test(gridVal) && !gridVal.includes('auto-fit') && !gridVal.includes('auto-fill')) ||
         (gridVal.split(/\s+/).length > 2 && !gridVal.includes('auto-fit') && !gridVal.includes('auto-fill'))) {
       hasFixedGrid = true;
     }
+    // Detección de minmax() rígido sin min(100%, ...)
+    if (gridVal.match(/minmax\(\s*\d+px/)) {
+      hasRigidMinMax = true;
+    }
   }
   if (hasFixedGrid) {
-    diagnostics.push(`🧩 Rejillas rígidas (Grid): Se detectaron columnas de Grid fijas en estilos en línea. Se recomienda usar la sintaxis responsiva \`repeat(auto-fit, minmax(280px, 1fr))\` o definir comportamientos según el tamaño de la pantalla.`);
+    diagnostics.push(`🧩 Rejillas rígidas (Grid): Se detectaron columnas de Grid fijas en estilos en línea. Se recomienda usar la sintaxis responsiva \`repeat(auto-fit, minmax(min(100%, 280px), 1fr))\` o definir comportamientos según el tamaño de la pantalla.`);
+    score -= 15;
+  }
+  if (hasRigidMinMax) {
+    diagnostics.push(`⚠️ Rejillas Grid desbordantes (minmax): Se detectó el uso de \`minmax(Xpx, 1fr)\` puro. En pantallas de móviles estrechas, esto forzará un ancho mínimo fijo y provocará scroll horizontal incontrolado. Se debe reemplazar OBLIGATORIAMENTE por \`minmax(min(100%, Xpx), 1fr)\` para garantizar que la tarjeta se encoja si la pantalla es más pequeña.`);
     score -= 15;
   }
 
@@ -93,7 +102,7 @@ Instrucciones adicionales:
 - Envuelve las tablas en contenedores scrollable (ej. \`<div style={{ overflowX: 'auto', width: '100%' }}>\`).
 - Convierte anchos fijos de píxeles grandes en valores porcentuales (\`100%\`) o auto-ajustables.
 - Aplica \`flexWrap: 'wrap'\` en contenedores Flexbox.
-- Modifica rejillas Grid para usar \`repeat(auto-fit, minmax(280px, 1fr))\`.
+- Modifica rejillas Grid para usar \`repeat(auto-fit, minmax(min(100%, 280px), 1fr))\`.
 - Si es necesario, implementa lógica dinámica usando un hook de tamaño de ventana.`;
   } else {
     improvementsForAgent = `Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/${relPath}'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles.`;

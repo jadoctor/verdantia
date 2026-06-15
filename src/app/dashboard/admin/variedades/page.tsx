@@ -9,6 +9,28 @@ export default function VariedadesAdminPage() {
   const [variedades, setVariedades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSort = sessionStorage.getItem('variedadesSortConfig');
+      if (savedSort) {
+        try { setSortConfig(JSON.parse(savedSort)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    const newConfig = { key, direction };
+    setSortConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('variedadesSortConfig', JSON.stringify(newConfig));
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -70,6 +92,31 @@ export default function VariedadesAdminPage() {
     }
   };
 
+  const renderSortIndicator = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return <span style={{ color: '#cbd5e1', marginLeft: '4px', fontSize: '0.8rem' }}>↕️</span>;
+    return sortConfig.direction === 'asc' ? <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔼</span> : <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔽</span>;
+  };
+
+  const getHeaderStyle = (key: string) => ({
+    padding: '12px',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const
+  });
+
+  const sortedVariedades = [...variedades].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let valA = a[key];
+    let valB = b[key];
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="dashboard-content" style={{ padding: '20px' }}>
       <div style={{ marginBottom: '16px' }}>
@@ -105,18 +152,18 @@ export default function VariedadesAdminPage() {
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
                 <th style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center' }}>📷</th>
-                <th style={{ padding: '12px' }}>Nombre de Variedad</th>
-                <th style={{ padding: '12px' }}>Especie Padre</th>
-                <th style={{ padding: '12px' }}>Tamaño</th>
-                <th style={{ padding: '12px' }}>Germinación</th>
+                <th onClick={() => handleSort('variedadesnombre')} style={getHeaderStyle('variedadesnombre')}>Nombre de Variedad {renderSortIndicator('variedadesnombre')}</th>
+                <th onClick={() => handleSort('especiesnombre')} style={getHeaderStyle('especiesnombre')}>Especie Padre {renderSortIndicator('especiesnombre')}</th>
+                <th onClick={() => handleSort('variedadestamano')} style={getHeaderStyle('variedadestamano')}>Tamaño {renderSortIndicator('variedadestamano')}</th>
+                <th onClick={() => handleSort('variedadesdiasgerminacion')} style={getHeaderStyle('variedadesdiasgerminacion')}>Germinación {renderSortIndicator('variedadesdiasgerminacion')}</th>
                 <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {variedades.map((v, i) => (
+              {sortedVariedades.map((v, i) => (
                 <tr key={v.idvariedades} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
-                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
-                    {v.especiesicono ? <span style={{ fontSize: '2rem' }}>{v.especiesicono}</span> : <span style={{ fontSize: '2rem' }}>🌱</span>}
+                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => handleEdit(v.idvariedades.toString())} title="Editar Variedad">
+                    <div style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>{v.especiesicono ? <span style={{ fontSize: '2rem' }}>{v.especiesicono}</span> : <span style={{ fontSize: '2rem' }}>🌱</span>}</div>
                   </td>
                   <td style={{ padding: '12px', fontWeight: 'bold', color: '#1e293b' }}>
                     <span>{v.variedadesnombre}</span>

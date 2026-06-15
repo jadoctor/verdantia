@@ -3019,7 +3019,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   </div>
 
                   {/* DATOS DE FISIOLOGÍA SEMILLAS */}
-                  <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px' }}>
+                  <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '15px', marginTop: '15px' }}>
                     <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <label style={{ color: '#1e293b', fontWeight: 'bold' }}>Viabilidad de la Semilla (Años)</label>
                       <input type="number" name="especiesviabilidadsemilla" value={formData.especiesviabilidadsemilla || ''} onChange={handleChange} style={{ marginTop: '8px' }} />
@@ -3041,7 +3041,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <h3 style={{ margin: '0 0 15px 0', color: '#be123c', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       🌡️ Requisitos Térmicos (°C)
                     </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '15px' }}>
                       <div className="form-group" style={{ margin: 0, background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
                         <label style={{ color: '#0369a1' }}>Mínima (Sobrevive)</label>
                         <input type="number" step="0.1" name="especiestemperaturaminima" value={formData.especiestemperaturaminima || ''} onChange={handleChange} />
@@ -3216,7 +3216,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         Establece los días de preparación del suelo según la técnica de laboreo a emplear.
                       </p>
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '12px' }}>
                         <div className="form-group" style={{ margin: 0, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                           <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span style={{ fontSize: '1.2rem' }}>🚜</span>
@@ -3281,7 +3281,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <h4 style={{ margin: '0 0 12px 0', color: '#334155', fontSize: '0.95rem', fontWeight: 'bold' }}>
                         🌱 Fases del Ciclo de Vida
                       </h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 250px), 1fr))', gap: '15px' }}>
                         {masterFases
                           .filter(f => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion')
                           .map(fase => (
@@ -3320,7 +3320,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       <h3 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         📅 Calendario Anual (Temporadas)
                       </h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px', marginBottom: '20px' }}>
                         {['semillero', 'siembradirecta', 'trasplante', 'recoleccion'].map(tipo => {
                           const colorMap: Record<string, string> = {
                             siembradirecta: '#f97316',
@@ -3428,7 +3428,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <h3 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       🌕 Calendario Lunar
                     </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px', marginBottom: '16px' }}>
                       <div className="form-group" style={{ margin: 0 }}>
                         <label style={{ fontWeight: 'bold' }}>Fase de Siembra</label>
                         <select name="especieslunarfasesiembra" value={formData.especieslunarfasesiembra || ''} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
@@ -3921,6 +3921,17 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         {masterLabores.map(l => <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>)}
                       </select>
 
+                      <select 
+                        value={pautasFiltroLaboreo} 
+                        onChange={(e) => setPautasFiltroLaboreo(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                      >
+                        <option value="">Método de Tierra...</option>
+                        <option value="convencional">🚜 Convencional</option>
+                        <option value="minimo">⛏️ Mínimo</option>
+                        <option value="nolaboreo">🚫 No laboreo</option>
+                      </select>
+
                       <button 
                         type="button" 
                         onClick={() => { setPautasFiltroFase(''); setPautasFiltroLabor(''); setPautasFiltroLaboreo(''); }} 
@@ -3984,6 +3995,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         .filter(p => {
                           if (pautasFiltroFase && p.laborespautafase !== pautasFiltroFase) return false;
                           if (pautasFiltroLabor && p.xlaborespautaidlabores?.toString() !== pautasFiltroLabor) return false;
+                          if (pautasFiltroLaboreo) {
+                            const laborObj = masterLabores.find(l => l.idlabores === p.xlaborespautaidlabores);
+                            if (laborObj) {
+                              if (pautasFiltroLaboreo === 'convencional' && laborObj.laboresaplicaconvencional !== 1) return false;
+                              if (pautasFiltroLaboreo === 'minimo' && laborObj.laboresaplicaminimo !== 1) return false;
+                              if (pautasFiltroLaboreo === 'nolaboreo' && laborObj.laboresaplicanolaboreo !== 1) return false;
+                            }
+                          }
                           return true;
                         })
                         .map(p => {

@@ -19,17 +19,17 @@ export async function GET(request: Request) {
         COALESCE(vu.xvariedadesidvariedadorigen, vu.idvariedades) AS global_variedad_id,
         s.semillasnumerocoleccion,
         s.semillasorigen,
-        s.semillaslugarcompra,
         s.semillasmarca,
-        s.semillasfecharecoleccion,
-        s.semillasfechaenvasado,
-        s.semillasfechaadquisicion,
+        s.semillasfechaorigen,
+        s.semillasprecio,
         s.semillasprecio,
         s.semillasfechacaducidad,
         s.semillaslote,
         s.semillasstockinicial,
         s.semillasstockactual,
+        s.semillasunidadmedida,
         s.semillasobservaciones,
+        s.semillasubicacionfisica,
         s.semillasfechacreacion,
         s.semillasactivosino,
         s.semillascompartir,
@@ -94,15 +94,15 @@ export async function POST(request: Request) {
     const { 
       xsemillasidvariedades, 
       semillasorigen, 
-      semillasfecharecoleccion, 
-      semillasfechaenvasado,
+      semillasfechaorigen, 
       semillasfechacaducidad, 
       semillaslote, 
       semillasstockinicial,
       semillasstockactual, 
+      semillasunidadmedida,
       semillasobservaciones,
+      semillasubicacionfisica,
       semillasnumerocoleccion,
-      semillaslugarcompra,
       semillasmarca,
       semillasdonante,
       semillascompartir
@@ -163,42 +163,82 @@ export async function POST(request: Request) {
         xsemillasidvariedades, 
         semillasnumerocoleccion,
         semillasorigen, 
-        semillaslugarcompra,
         semillasmarca,
-        semillasfecharecoleccion, 
-        semillasfechaenvasado,
-        semillasfechaadquisicion,
+        semillasfechaorigen, 
         semillasprecio,
         semillasfechacaducidad, 
         semillaslote, 
         semillasstockinicial,
         semillasstockactual, 
+        semillasunidadmedida,
         semillasobservaciones,
+        semillasubicacionfisica,
         semillasdonante,
         xsemillasidusuariodonante,
         semillascompartir
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.id, 
         xsemillasidvariedades, 
         finalNumero,
         semillasorigen || 'sobre_comprado',
-        semillaslugarcompra || null,
         semillasmarca || null,
-        semillasfecharecoleccion || null,
-        semillasfechaenvasado || null,
-        body.semillasfechaadquisicion || null,
+        semillasfechaorigen || null,
         body.semillasprecio || null,
         semillasfechacaducidad || null,
         semillaslote || null,
         semillasstockinicial || null,
         semillasstockactual || null,
+        semillasunidadmedida || 'unidades',
         semillasobservaciones || null,
+        semillasubicacionfisica || null,
         finalDonante,
         finalUsuarioDonanteId,
         semillascompartir ? 1 : 0
       ]
     );
+
+    const newSeedId = result.insertId;
+
+    // GUARDAR IMAGEN ESCANEADA SI EXISTE
+    if (body.scannedImageBase64) {
+      try {
+        let base64Data = body.scannedImageBase64;
+        let mimeType = 'image/jpeg';
+        let extension = 'jpg';
+
+        if (base64Data.startsWith('data:')) {
+          const parts = base64Data.split(',');
+          const match = parts[0].match(/:(.*?);/);
+          if (match) {
+            mimeType = match[1];
+            extension = mimeType.split('/')[1] || 'jpg';
+          }
+          base64Data = parts[1];
+        }
+
+        const buffer = Buffer.from(base64Data, 'base64');
+        const filename = `semilla_${newSeedId}_${Date.now()}.${extension}`;
+        const destination = `usuarios/${user.id}/semillas/${filename}`;
+
+        const { uploadToStorage } = await import('@/lib/firebase/storage');
+        await uploadToStorage(buffer, destination, mimeType);
+
+        await pool.query(`
+          INSERT INTO datosadjuntos (
+            xdatosadjuntosidusuarios,
+            xdatosadjuntosidsemillas,
+            datosadjuntosruta,
+            datosadjuntostipo,
+            datosadjuntosnombre,
+            datosadjuntosactivo,
+            datosadjuntosesprincipal
+          ) VALUES (?, ?, ?, 'imagen', ?, 1, 1)
+        `, [user.id, newSeedId, destination, filename]);
+      } catch (uploadErr) {
+        console.error('Error subiendo imagen escaneada:', uploadErr);
+      }
+    }
 
     // AUTO-ASIGNAR VARIEDAD Y ESPECIE
     try {
@@ -294,9 +334,14 @@ export async function POST(request: Request) {
       data: { variedad: variedadNombre, compartir: semillascompartir ? 1 : 0 }
     }).catch(console.error);
 
+    const [newSemilla]: any = await pool.query(
+      'SELECT idsemillas FROM semillas WHERE idsemillas = ? AND xsemillasidusuarios = ?',
+      [result.insertId, user.id]
+    );
+
     return NextResponse.json({ 
       success: true, 
-      id: result.insertId,
+      semilla: newSemilla[0],
       message: 'Semillas añadidas al inventario'
     });
   } catch (error: any) {

@@ -99,16 +99,18 @@ export default function IdiomasPage() {
             <tbody>
               {idiomas.map((idioma, idx) => (
                 <tr key={idioma.ididiomas} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
-                  <td style={{ padding: '12px', textAlign: 'center', position: 'sticky', left: 0, zIndex: 1, background: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                  <td style={{ padding: '8px', textAlign: 'center', position: 'sticky', left: 0, zIndex: 1, background: idx % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', cursor: 'pointer' }} onClick={() => setEditingIdioma(idioma)} title="Editar Idioma">
+                    <div style={{ width: '60px', height: '80px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto', fontSize: '2rem', background: '#f1f5f9' }}>
                     {idioma.idiomasiso ? (
                       <img 
                         src={getLanguageFlagUrl(idioma.idiomasiso)!} 
-                        alt={idioma.idiomasiso} 
-                        crossOrigin="anonymous"
-                        style={{ width: '28px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', verticalAlign: 'middle' }} 
-                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '🌐'; }}
+                        alt={idioma.idiomasnombre} 
+                        style={{ width: '32px', height: '24px', objectFit: 'cover', borderRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} 
                       />
-                    ) : <span style={{ fontSize: '1.4rem' }}>🌐</span>}
+                    ) : (
+                      <span style={{ fontSize: '1.5rem' }}>{idioma.idiomasbandera || '🏳️'}</span>
+                    )}
+                    </div>
                   </td>
                   <td style={{ padding: '12px', fontWeight: 'bold', color: '#334155' }}>{idioma.idiomasnombre}</td>
                   <td style={{ padding: '12px' }}><span style={{ background: '#e2e8f0', color: '#475569', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold' }}>{idioma.idiomasiso || '-'}</span></td>

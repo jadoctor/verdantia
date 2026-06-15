@@ -9,6 +9,7 @@ import './EspecieForm.css'; // Reuse the EspecieForm CSS for the common classes
 interface LaborFormProps {
   laborId: string | null;
   userEmail: string | null;
+  isMobile?: boolean;
 }
 
 const MDI_TO_EMOJI: Record<string, string> = {
@@ -59,7 +60,7 @@ const STYLE_FILTERS: Record<string, string> = {
   none: 'none'
 };
 
-export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
+export default function LaborForm({ laborId, userEmail, isMobile = false }: LaborFormProps) {
   const router = useRouter();
 
   const defaultFormData = {
@@ -690,9 +691,11 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
   return (
     <>
       {/* Floating Save Button */}
-      <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 100, display: 'flex', gap: '12px', transition: 'all 0.3s ease', transform: isDirty ? 'translateY(0)' : 'translateY(100px)', opacity: isDirty ? 1 : 0, pointerEvents: isDirty ? 'auto' : 'none' }}>
+      <div style={{ position: 'fixed', bottom: isMobile ? '20px' : '30px', right: isMobile ? '20px' : '30px', left: isMobile ? '20px' : 'auto', zIndex: 100, display: 'flex', gap: '12px', transition: 'all 0.3s ease', transform: isDirty ? 'translateY(0)' : 'translateY(100px)', opacity: isDirty ? 1 : 0, pointerEvents: isDirty ? 'auto' : 'none' }}>
         <button className="btn-save-floating" onClick={handleSave} disabled={saveStatus === 'saving'} style={{
-          background: saveStatus === 'no-changes' ? '#10b981' : '#3b82f6', color: 'white', border: 'none', padding: '16px 32px', borderRadius: '50px',
+          flex: isMobile ? 1 : 'none',
+          justifyContent: 'center',
+          background: saveStatus === 'no-changes' ? '#10b981' : '#3b82f6', color: 'white', border: 'none', padding: isMobile ? '14px 20px' : '16px 32px', borderRadius: '50px',
           fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 10px 25px rgba(59, 130, 246, 0.4)',
           display: 'flex', alignItems: 'center', gap: '10px'
         }}>
@@ -708,22 +711,22 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
 
       {/* Navigation Buttons */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <button onClick={() => router.push('/dashboard')} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
         <button onClick={() => {
           if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
           if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/labores'); }
-        }} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          {typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a la Especie' : '🔙 Volver a Labores'}
+        }} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a Especie' : '🔙 Volver a Labores'}
         </button>
       </div>
 
       {/* ── Subheader Integrado ── */}
-      <div style={{ background: 'linear-gradient(135deg, #b45309, #f59e0b)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ background: 'linear-gradient(135deg, #b45309, #f59e0b)', borderRadius: '16px', padding: isMobile ? '16px 20px' : '24px 28px', marginBottom: '24px', color: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'flex-start', flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               {laborId ? `Editar Labor: ${formData.laboresnombre}` : 'Nueva Labor'}
               {isDirty && <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Cambios sin guardar</span>}
             </h1>
@@ -743,10 +746,10 @@ export default function LaborForm({ laborId, userEmail }: LaborFormProps) {
       </div>
 
       {/* ── Tipos de Laboreo Bar ── */}
-      <div style={{ background: 'white', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid #cbd5e1`, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '16px 20px' : '16px 24px', marginBottom: '24px', border: `1px solid #cbd5e1`, display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Aplica a sistemas de cultivo</h3>
         <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Selecciona en qué métodos de laboreo tiene sentido esta labor. Por ejemplo, "Arar" no aplica a "No laboreo".</p>
-        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginTop: '4px' }}>
+        <div style={{ display: 'flex', gap: isMobile ? '12px' : '24px', flexWrap: 'wrap', marginTop: '4px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569', fontSize: '0.95rem' }}>
             <input type="checkbox" name="laboresaplicaconvencional" checked={formData.laboresaplicaconvencional === 1} onChange={handleFormChange} style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
             🚜 Convencional

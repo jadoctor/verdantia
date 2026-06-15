@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 export default function NuevaLaborPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -19,8 +20,8 @@ export default function NuevaLaborPage() {
   }, []);
 
   return (
-    <div style={{ padding: '0px', height: '100%' }}>
-      <LaborForm laborId={null} userEmail={userEmail} />
+    <div style={{ padding: isMobile ? '10px' : '20px', height: '100%' }}>
+      <LaborForm laborId={null} userEmail={userEmail} isMobile={isMobile} />
     </div>
   );
 }

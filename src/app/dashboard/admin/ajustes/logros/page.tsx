@@ -128,7 +128,7 @@ export default function LogrosAdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
-                <th style={{ padding: '12px 20px', width: '330px' }}>Insignia & Privilegios</th>
+                <th style={{ padding: '12px 20px', width: '330px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Insignia & Privilegios</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Meses de antigüedad">📅 Antig.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Semillas">🌾 Sem.</th>
                 <th style={{ padding: '12px 6px', textAlign: 'center' }} title="Siembras">🪴 Siem.</th>
@@ -147,7 +147,7 @@ export default function LogrosAdminPage() {
                 return (
                   <tr key={l.idlogros} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
                     {/* INSIGNIA & PRIVILEGIOS */}
-                    <td style={{ padding: '10px 16px' }}>
+                    <td style={{ padding: '10px 16px', position: 'sticky', left: 0, zIndex: 1, background: 'inherit' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         
                         {/* Contenedor Unificado (Medalla Superpuesta) */}

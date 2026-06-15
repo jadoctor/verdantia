@@ -114,6 +114,12 @@ export default function CultivosDashboard() {
     return searchMatch && statusMatch;
   });
 
+  const getStatusCount = (id: string) => {
+    if (id === 'todos') return cultivos.length;
+    if (id === 'activos') return activeCropsCount;
+    return cultivos.filter(c => c.cultivosestado === id).length;
+  };
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'germinacion':
@@ -347,7 +353,7 @@ export default function CultivosDashboard() {
                   }
                 }}
               >
-                {tab.label}
+                {tab.label} ({getStatusCount(tab.id)})
               </button>
             );
           })}

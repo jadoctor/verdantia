@@ -13,6 +13,28 @@ export default function FasesCultivoAdminPage() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSort = sessionStorage.getItem('fasesSortConfig');
+      if (savedSort) {
+        try { setSortConfig(JSON.parse(savedSort)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    const newConfig = { key, direction };
+    setSortConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('fasesSortConfig', JSON.stringify(newConfig));
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -115,6 +137,38 @@ export default function FasesCultivoAdminPage() {
     }
   };
 
+  const renderSortIndicator = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return <span style={{ color: '#cbd5e1', marginLeft: '4px', fontSize: '0.8rem' }}>↕️</span>;
+    return sortConfig.direction === 'asc' ? <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔼</span> : <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔽</span>;
+  };
+
+  const getHeaderStyle = (key: string) => ({
+    padding: '12px',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const
+  });
+
+  const sortedFases = [...fases].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let valA = a[key];
+    let valB = b[key];
+    
+    // Convert to number for `fasescultivoorden`
+    if (key === 'fasescultivoorden') {
+      valA = Number(valA) || 0;
+      valB = Number(valB) || 0;
+    } else {
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+    }
+    
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="dashboard-content" style={{ padding: isMobile ? '10px 0' : '20px', width: '100%' }}>
       <div style={{ marginBottom: '16px', paddingLeft: isMobile ? '10px' : 0 }}>
@@ -186,11 +240,11 @@ export default function FasesCultivoAdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s ease-in-out', minWidth: isMobile ? '900px' : '100%' }}>
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
-                <th style={{ padding: '12px', width: '60px', textAlign: 'center' }}>Orden</th>
-                <th style={{ padding: '12px', width: '60px', textAlign: 'center' }}>Icono</th>
-                <th style={{ padding: '12px' }}>Nombre</th>
-                <th style={{ padding: '12px' }}>Clave Interna</th>
-                <th style={{ padding: '12px' }}>Tipo</th>
+                <th style={{ padding: '12px', width: '80px', textAlign: 'center', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Icono</th>
+                <th onClick={() => handleSort('fasescultivoorden')} style={{ ...getHeaderStyle('fasescultivoorden'), width: '60px', textAlign: 'center' }}>Orden {renderSortIndicator('fasescultivoorden')}</th>
+                <th onClick={() => handleSort('fasescultivonombre')} style={getHeaderStyle('fasescultivonombre')}>Nombre {renderSortIndicator('fasescultivonombre')}</th>
+                <th onClick={() => handleSort('fasescultivoclave')} style={getHeaderStyle('fasescultivoclave')}>Clave Interna {renderSortIndicator('fasescultivoclave')}</th>
+                <th onClick={() => handleSort('fasescultivotipo')} style={getHeaderStyle('fasescultivotipo')}>Tipo {renderSortIndicator('fasescultivotipo')}</th>
                 <th style={{ padding: '12px' }}>Desde</th>
                 <th style={{ padding: '12px' }}>Hasta</th>
                 <th style={{ padding: '12px' }}>Descripción</th>
@@ -198,7 +252,7 @@ export default function FasesCultivoAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {fases.map((f, i) => (
+              {sortedFases.map((f, i) => (
                 <tr 
                   key={f.idfasescultivo} 
                   style={{ 
@@ -207,11 +261,13 @@ export default function FasesCultivoAdminPage() {
                     transition: 'all 0.5s ease'
                   }}
                 >
+                  <td style={{ padding: '8px', textAlign: 'center', position: 'sticky', left: 0, zIndex: 1, background: 'inherit', width: '80px', minWidth: '80px', cursor: 'pointer' }} onClick={() => handleEdit(f.idfasescultivo.toString())} title="Editar Fase">
+                    <div style={{ width: '56px', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', margin: '0 auto', fontSize: '2rem', background: '#f1f5f9' }}>
+                      {f.fasescultivoicono}
+                    </div>
+                  </td>
                   <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>
                     {f.fasescultivoorden}
-                  </td>
-                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '1.5rem' }}>
-                    {f.fasescultivoicono}
                   </td>
                   <td style={{ padding: '12px', fontWeight: 'bold', color: '#1e293b' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

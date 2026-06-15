@@ -144,11 +144,11 @@ export default function ContenedoresPage() {
             <tbody>
               {contenedores.filter(c => filterUso === 'todos' ? true : c.contenedoresclasificacion === filterUso).length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>No hay contenedores registrados que coincidan con este filtro.</td>
+                  <td colSpan={7} style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>No hay contenedores registrados que coincidan con este filtro.</td>
                 </tr>
               ) : contenedores.filter(c => filterUso === 'todos' ? true : c.contenedoresclasificacion === filterUso).map((c, i) => (
                 <tr key={c.idcontenedores} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc', transition: 'background 0.2s' }}>
-                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => router.push(`/dashboard/admin/tareas/contenedores/${c.idcontenedores}`)} title="Editar Contenedor">
                     {(() => {
                       if (c.primary_photo_ruta) {
                         let meta: any = {};
@@ -158,7 +158,7 @@ export default function ContenedoresPage() {
                           baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
                         }
                         return (
-                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
+                          <div style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
                             {meta.blurhash && (
                               <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                                 <Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} />
@@ -179,7 +179,7 @@ export default function ContenedoresPage() {
                           </div>
                         );
                       }
-                      return <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: '#94a3b8', fontSize: '1.2rem' }}>📦</div>;
+                      return <div style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: '#94a3b8', fontSize: '1.2rem' }}>📦</div>;
                     })()}
                   </td>
                   <td style={{ padding: '16px', fontWeight: 'bold', color: '#0f172a' }}>{c.contenedoresnombre}</td>

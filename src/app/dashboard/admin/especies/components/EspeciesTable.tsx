@@ -10,6 +10,8 @@ interface EspeciesTableProps {
   onDelete: (id: string, hasDependencies: boolean) => void;
   onReactivate: (id: string) => void;
   isMobile: boolean;
+  sortConfig?: { key: string, direction: 'asc' | 'desc' } | null;
+  onSort?: (key: string) => void;
 }
 
 const STYLE_FILTERS: Record<string, string> = {
@@ -31,8 +33,22 @@ export default function EspeciesTable({
   onEdit,
   onDelete,
   onReactivate,
-  isMobile
+  isMobile,
+  sortConfig,
+  onSort
 }: EspeciesTableProps) {
+  const renderSortIndicator = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return <span style={{ color: '#cbd5e1', marginLeft: '4px', fontSize: '0.8rem' }}>↕️</span>;
+    return sortConfig.direction === 'asc' ? <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔼</span> : <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔽</span>;
+  };
+
+  const getHeaderStyle = (key: string) => ({
+    padding: '12px',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const
+  });
+
   return (
     <div style={{ position: 'relative', minHeight: '200px', width: '100%' }}>
       {/* Carga sin Flickering (Overlay) - Regla 7 */}
@@ -78,12 +94,12 @@ export default function EspeciesTable({
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
                 <th style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc', width: '80px', minWidth: '80px' }}>📷</th>
-                <th style={{ padding: '12px' }}>Nombre</th>
-                {!isMobile && <th style={{ padding: '12px' }}>Científico</th>}
-                {!isMobile && <th style={{ padding: '12px' }}>Familia</th>}
-                <th style={{ padding: '12px' }}>Tipo</th>
-                {!isMobile && <th style={{ padding: '12px' }}>Variedades</th>}
-                {!isMobile && <th style={{ padding: '12px' }}>Global</th>}
+                <th onClick={() => onSort && onSort('especiesnombre')} style={getHeaderStyle('especiesnombre')}>Nombre {renderSortIndicator('especiesnombre')}</th>
+                {!isMobile && <th onClick={() => onSort && onSort('especiesnombrecientifico')} style={getHeaderStyle('especiesnombrecientifico')}>Científico {renderSortIndicator('especiesnombrecientifico')}</th>}
+                {!isMobile && <th onClick={() => onSort && onSort('familiasnombre')} style={getHeaderStyle('familiasnombre')}>Familia {renderSortIndicator('familiasnombre')}</th>}
+                <th onClick={() => onSort && onSort('especiestipo')} style={getHeaderStyle('especiestipo')}>Tipo {renderSortIndicator('especiestipo')}</th>
+                {!isMobile && <th onClick={() => onSort && onSort('total_variedades')} style={getHeaderStyle('total_variedades')}>Variedades {renderSortIndicator('total_variedades')}</th>}
+                {!isMobile && <th onClick={() => onSort && onSort('especiesvisibilidadsino')} style={getHeaderStyle('especiesvisibilidadsino')}>Global {renderSortIndicator('especiesvisibilidadsino')}</th>}
                 <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
@@ -113,7 +129,7 @@ export default function EspeciesTable({
                       transition: 'all 0.5s ease'
                     }}
                   >
-                    <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: isEven ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
+                    <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: isEven ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => onEdit(e.idespecies.toString())} title="Editar Especie">
                       {(() => {
                         if (e.primary_photo_ruta) {
                           let meta: any = {};
@@ -123,7 +139,7 @@ export default function EspeciesTable({
                             baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
                           }
                           return (
-                            <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
+                            <div style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
                               {meta.blurhash && (
                                 <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                                   <Blurhash hash={meta.blurhash} width="100%" height="100%" resolutionX={32} resolutionY={32} punch={1} />

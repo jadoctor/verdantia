@@ -467,7 +467,7 @@ ${fichaRapidaEjemplo}
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                <th style={{ padding: '16px 20px', color: '#475569', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>Artículo</th>
+                <th style={{ padding: '16px 20px', color: '#475569', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Artículo</th>
                 <th style={{ padding: '16px 20px', color: '#475569', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>Ficha Vinculada</th>
                 <th style={{ padding: '16px 20px', color: '#475569', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>Estado</th>
                 <th style={{ padding: '16px 20px', color: '#475569', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>Autor</th>
@@ -489,7 +489,7 @@ ${fichaRapidaEjemplo}
                     <tr key={art.idblog} className="table-row" style={{ background: isZebra ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
                       
                       {/* Titulo */}
-                      <td style={{ padding: '16px 20px' }}>
+                      <td style={{ padding: '16px 20px', position: 'sticky', left: 0, zIndex: 1, background: 'inherit', cursor: 'pointer' }} onClick={() => router.push(`/dashboard/admin/blog/${art.idblog}`)} title="Editar Artículo">
                         <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem', marginBottom: '4px' }}>
                           {art.blogtitulo}
                         </div>

@@ -22,7 +22,9 @@ export default function EspeciesAdminPage() {
     handleEdit,
     handleDelete,
     handleReactivate,
-    isMobile
+    isMobile,
+    sortConfig,
+    handleSort
   } = useEspeciesAdmin();
 
   return (
@@ -49,6 +51,8 @@ export default function EspeciesAdminPage() {
         onDelete={handleDelete}
         onReactivate={handleReactivate}
         isMobile={isMobile}
+        sortConfig={sortConfig}
+        onSort={handleSort}
       />
     </div>
   );

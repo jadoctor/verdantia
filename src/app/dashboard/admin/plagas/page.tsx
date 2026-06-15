@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import PlagaForm from '@/components/admin/PlagaForm';
 import { getMediaUrl } from '@/lib/media-url';
 
 export default function PlagasAdminPage() {
@@ -14,9 +13,29 @@ export default function PlagasAdminPage() {
   const [plagas, setPlagas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlagaId, setEditingPlagaId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSort = sessionStorage.getItem('plagasSortConfig');
+      if (savedSort) {
+        try { setSortConfig(JSON.parse(savedSort)); } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    const newConfig = { key, direction };
+    setSortConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('plagasSortConfig', JSON.stringify(newConfig));
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -76,6 +95,32 @@ export default function PlagasAdminPage() {
     p.plagasnombrecientifico?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const sortedPlagas = [...filteredPlagas].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let valA = a[key] || '';
+    let valB = b[key] || '';
+    
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const renderSortIndicator = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) return <span style={{ color: '#cbd5e1', marginLeft: '4px', fontSize: '0.8rem' }}>↕️</span>;
+    return sortConfig.direction === 'asc' ? <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔼</span> : <span style={{ marginLeft: '4px', fontSize: '0.8rem' }}>🔽</span>;
+  };
+
+  const getHeaderStyle = (key: string) => ({
+    padding: '12px',
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const
+  });
+
   const getPlagaIcon = (nombre: string, tipo: string) => {
     const nameLower = (nombre || '').toLowerCase();
     
@@ -126,7 +171,7 @@ export default function PlagasAdminPage() {
         </div>
         <div>
           <button 
-            onClick={() => { setEditingPlagaId(null); setIsModalOpen(true); }}
+            onClick={() => router.push('/dashboard/admin/plagas/nueva')}
             style={{
               background: '#10b981', color: 'white', border: 'none',
               padding: '12px 24px', borderRadius: '12px', fontSize: '1rem',
@@ -161,16 +206,16 @@ export default function PlagasAdminPage() {
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.05em' }}>
                 <th style={{ padding: '12px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc' }}>Foto</th>
-                <th style={{ padding: '12px' }}>Nombre</th>
-                <th style={{ padding: '12px' }}>Nombre Científico</th>
-                <th style={{ padding: '12px' }}>Tipo</th>
+                <th onClick={() => handleSort('plagasnombre')} style={getHeaderStyle('plagasnombre')}>Nombre {renderSortIndicator('plagasnombre')}</th>
+                <th onClick={() => handleSort('plagasnombrecientifico')} style={getHeaderStyle('plagasnombrecientifico')}>Nombre Científico {renderSortIndicator('plagasnombrecientifico')}</th>
+                <th onClick={() => handleSort('plagastipo')} style={getHeaderStyle('plagastipo')}>Tipo {renderSortIndicator('plagastipo')}</th>
                 <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPlagas.map((plaga, i) => (
+              {sortedPlagas.map((plaga, i) => (
                 <tr key={plaga.idplagas} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
-                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '8px', position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? 'white' : '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', verticalAlign: 'middle', cursor: 'pointer' }} onClick={() => router.push(`/dashboard/admin/plagas/${plaga.idplagas}`)} title="Editar Plaga">
                     {(() => {
                       if (plaga.primary_photo_ruta) {
                         let meta: any = {};
@@ -185,7 +230,7 @@ export default function PlagasAdminPage() {
                           baseFilter = `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%) ${meta.profile_style ? STYLE_FILTERS[meta.profile_style] : ''}`.trim();
                         }
                         return (
-                          <div style={{ width: '56px', height: '56px', borderRadius: '8px', overflow: 'hidden', margin: '0 auto', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: meta.dominant_color || '#f1f5f9', position: 'relative' }}>
+                          <div style={{ width: '56px', height: '56px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', position: 'relative' }}>
                             <img 
                               src={getMediaUrl(plaga.primary_photo_ruta)} 
                               alt={plaga.plagasnombre}
@@ -228,7 +273,7 @@ export default function PlagasAdminPage() {
                   <td style={{ padding: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
                       <button 
-                        onClick={() => { setEditingPlagaId(plaga.idplagas); setIsModalOpen(true); }}
+                        onClick={() => router.push(`/dashboard/admin/plagas/${plaga.idplagas}`)}
                         style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold' }}
                       >
                         Editor de Plaga
@@ -253,18 +298,6 @@ export default function PlagasAdminPage() {
         <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
           <span style={{ fontSize: '3rem' }}>🍃</span>
           <h3 style={{ color: '#475569', marginTop: '16px' }}>No hay plagas registradas</h3>
-        </div>
-      )}
-
-      {isModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', width: '100%', maxWidth: '600px', borderRadius: '16px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <PlagaForm 
-              plagaId={editingPlagaId} 
-              userEmail={userEmail || ''} 
-              onClose={() => { setIsModalOpen(false); fetchPlagas(); }} 
-            />
-          </div>
         </div>
       )}
     </div>

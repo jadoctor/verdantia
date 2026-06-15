@@ -11,32 +11,66 @@ export async function POST(request: Request) {
     const user = await getUserByEmail(email);
     if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
-    // Si queremos restringirlo a Premium/Profesional, lo haríamos aquí. 
-    // Por ahora lo permitimos para todos como indica el usuario, pero comprobamos:
-    const isPremium = user.suscripcion === 'Premium' || user.suscripcion === 'Profesional';
-    // Si en un futuro se requiere bloquear:
-    // if (!isPremium) return NextResponse.json({ error: 'Función exclusiva Premium' }, { status: 403 });
+    // Comprobar límite de IA
+    const cleanName = (user.suscripcion || '').toLowerCase();
+    let maxConsultas = 5; // Básica
+    if (cleanName.includes('premium')) maxConsultas = 100;
+    else if (cleanName.includes('avanzado') || cleanName.includes('profesional')) maxConsultas = 50;
+    else if (cleanName.includes('esencial') || cleanName.includes('avanzada')) maxConsultas = 20;
+
+    if (user.roles.includes('superadministrador')) {
+      maxConsultas = 100;
+    }
+
+    const { default: pool } = await import('@/lib/db');
+    const [rows]: any = await pool.query(`
+      SELECT COUNT(*) as count 
+      FROM historialia 
+      WHERE xhistorialiaidusuarios = ? 
+        AND MONTH(historialiafecha) = MONTH(CURRENT_DATE())
+        AND YEAR(historialiafecha) = YEAR(CURRENT_DATE())
+    `, [user.id]);
+
+    const usedConsultas = rows[0].count;
+    if (usedConsultas >= maxConsultas) {
+      return NextResponse.json({ error: 'Has superado el límite de consultas IA de tu plan' }, { status: 403 });
+    }
 
     const body = await request.json();
-    const { storagePath } = body;
+    const { storagePath, base64Image: directBase64 } = body;
 
-    if (!storagePath) {
-      return NextResponse.json({ error: 'Ruta de imagen requerida' }, { status: 400 });
+    if (!storagePath && !directBase64) {
+      return NextResponse.json({ error: 'Ruta de imagen o base64 requerida' }, { status: 400 });
     }
 
-    // 1. Descargar la imagen de Firebase Storage
-    const { getAdminBucket } = await import('@/lib/firebase/admin');
-    const bucket = getAdminBucket();
-    const fileRef = bucket.file(storagePath);
+    let finalBase64Image = directBase64;
+    let mimeType = 'image/jpeg';
     
-    let downloadedFile: Buffer;
-    try {
-      [downloadedFile] = await fileRef.download();
-    } catch (e) {
-      return NextResponse.json({ error: 'No se pudo descargar la imagen original' }, { status: 404 });
+    if (directBase64 && directBase64.startsWith('data:')) {
+      const parts = directBase64.split(',');
+      const match = parts[0].match(/:(.*?);/);
+      if (match) {
+         mimeType = match[1];
+      }
+      finalBase64Image = parts[1];
     }
 
-    const base64Image = downloadedFile.toString('base64');
+    if (!directBase64 && storagePath) {
+      // 1. Descargar la imagen de Firebase Storage
+      const { getAdminBucket } = await import('@/lib/firebase/admin');
+      const bucket = getAdminBucket();
+      const fileRef = bucket.file(storagePath);
+      
+      let downloadedFile: Buffer;
+      try {
+        [downloadedFile] = await fileRef.download();
+      } catch (e) {
+        return NextResponse.json({ error: 'No se pudo descargar la imagen original' }, { status: 404 });
+      }
+
+      finalBase64Image = downloadedFile.toString('base64');
+      mimeType = 'image/webp';
+    }
 
     // 2. Preparar llamada a Gemini Vision
     const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -67,7 +101,7 @@ REGLAS ESTRICTAS:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [
-          { inlineData: { mimeType: 'image/webp', data: base64Image } }, // Firebase guarda en webp, gemini lo lee
+          { inlineData: { mimeType: mimeType, data: finalBase64Image } },
           { text: prompt }
         ] }],
         generationConfig: { 
@@ -81,7 +115,7 @@ REGLAS ESTRICTAS:
     if (!response.ok) {
       const errText = await response.text();
       console.error('[OCR Error]', response.status, errText);
-      return NextResponse.json({ error: 'Error al contactar con la IA' }, { status: 500 });
+      return NextResponse.json({ error: `Error de la IA: ${errText}` }, { status: 500 });
     }
 
     const data = await response.json();
@@ -92,9 +126,21 @@ REGLAS ESTRICTAS:
 
     try {
       const parsedData = JSON.parse(cleanText);
+      
+      // Registrar interacción exitosa
+      await pool.query(`
+        INSERT INTO historialia (xhistorialiaidusuarios, historialiamodulo, historialiaprompt, historialiarespuesta, historialiaexito)
+        VALUES (?, 'OCR_WIZARD_SEMILLAS', ?, ?, 1)
+      `, [user.id, 'Petición OCR desde Asistente de Semillas', cleanText]);
+
       return NextResponse.json({ success: true, data: parsedData });
     } catch (parseError) {
       console.error('Error parseando JSON de Gemini:', cleanText);
+      // Registrar error
+      await pool.query(`
+        INSERT INTO historialia (xhistorialiaidusuarios, historialiamodulo, historialiaprompt, historialiarespuesta, historialiaexito)
+        VALUES (?, 'OCR_WIZARD_SEMILLAS', ?, ?, 0)
+      `, [user.id, 'Petición OCR desde Asistente de Semillas', cleanText]);
       return NextResponse.json({ error: 'La IA no devolvió un formato válido', raw: cleanText }, { status: 500 });
     }
 

@@ -9,6 +9,7 @@ export default function EditarLaborPage() {
   const params = useParams();
   const id = params?.id as string;
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -24,8 +25,8 @@ export default function EditarLaborPage() {
   if (!id) return <div>ID no vǭlido</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <LaborForm laborId={id} userEmail={userEmail} />
+    <div style={{ padding: isMobile ? '10px' : '20px' }}>
+      <LaborForm laborId={id} userEmail={userEmail} isMobile={isMobile} />
     </div>
   );
 }

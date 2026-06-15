@@ -21,17 +21,16 @@ export default function EditarSemillaPage() {
     xsemillasidvariedades: '',
     semillasnumerocoleccion: '',
     semillasorigen: 'cosecha_propia',
-    semillaslugarcompra: '',
     semillasmarca: '',
-    semillasfecharecoleccion: '',
-    semillasfechaenvasado: '',
-    semillasfechaadquisicion: '',
+    semillasfechaorigen: '',
     semillasprecio: '',
     semillasfechacaducidad: '',
     semillaslote: '',
     semillasstockinicial: '',
     semillasstockactual: '',
+    semillasunidadmedida: 'unidades',
     semillasobservaciones: '',
+    semillasubicacionfisica: '',
     semillasdonante: '',
     semillasactivosino: 1,
     semillascompartir: 0
@@ -50,11 +49,24 @@ export default function EditarSemillaPage() {
   const [suscripcion, setSuscripcion] = useState('Básica');
   const [draggedHeroPhotoId, setDraggedHeroPhotoId] = useState<number | null>(null);
   const [draggedOverHeroPhotoId, setDraggedOverHeroPhotoId] = useState<number | null>(null);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   // IA OCR State
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [aiSeconds, setAiSeconds] = useState(0);
   const [ocrData, setOcrData] = useState<any>(null);
   const [showOcrModal, setShowOcrModal] = useState(false);
+
+  const [isMainTabsOpen, setIsMainTabsOpen] = useState(true);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (ocrLoading) {
+      setAiSeconds(0);
+      interval = setInterval(() => setAiSeconds(s => s + 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [ocrLoading]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -195,17 +207,16 @@ export default function EditarSemillaPage() {
             xsemillasidvariedades: semilla.xsemillasidvariedades || '',
             semillasnumerocoleccion: semilla.semillasnumerocoleccion || '',
             semillasorigen: semilla.semillasorigen || 'cosecha_propia',
-            semillaslugarcompra: semilla.semillaslugarcompra || '',
             semillasmarca: semilla.semillasmarca || '',
-            semillasfecharecoleccion: semilla.semillasfecharecoleccion ? semilla.semillasfecharecoleccion.split('T')[0] : '',
-            semillasfechaenvasado: semilla.semillasfechaenvasado ? semilla.semillasfechaenvasado.split('T')[0] : '',
-            semillasfechaadquisicion: semilla.semillasfechaadquisicion ? semilla.semillasfechaadquisicion.split('T')[0] : '',
+            semillasfechaorigen: semilla.semillasfechaorigen ? semilla.semillasfechaorigen.split('T')[0] : '',
             semillasprecio: semilla.semillasprecio || '',
             semillasfechacaducidad: semilla.semillasfechacaducidad ? semilla.semillasfechacaducidad.split('T')[0] : '',
             semillaslote: semilla.semillaslote || '',
             semillasstockinicial: semilla.semillasstockinicial || '',
             semillasstockactual: semilla.semillasstockactual || '',
+            semillasunidadmedida: semilla.semillasunidadmedida || 'unidades',
             semillasobservaciones: semilla.semillasobservaciones || '',
+            semillasubicacionfisica: semilla.semillasubicacionfisica || '',
             semillasdonante: semilla.donante_nombreusuario ? `@${semilla.donante_nombreusuario}` : (semilla.semillasdonante || ''),
             semillasactivosino: semilla.semillasactivosino !== undefined ? semilla.semillasactivosino : 1,
             semillascompartir: semilla.semillascompartir !== undefined ? semilla.semillascompartir : 0
@@ -294,21 +305,21 @@ export default function EditarSemillaPage() {
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', width: '100%' }}>
       
       {/* ── Navegación ── */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button 
-          onClick={() => {
-            if (from === 'dashboard') {
-              router.push('/dashboard');
-            } else {
-              router.push('/dashboard/semillas');
-            }
-          }} 
+          onClick={() => router.push('/dashboard')} 
           style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          {from === 'dashboard' ? '← Volver al Dashboard' : '← Volver a Inventario'}
+          🏠 Volver al Inicio
+        </button>
+        <button 
+          onClick={() => router.push('/dashboard/semillas')} 
+          style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          🔙 Volver a Inventario
         </button>
       </div>
 
@@ -334,7 +345,7 @@ export default function EditarSemillaPage() {
               )}
             </h1>
             <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
-              Editor de Semilla en Inventario (Autoguardado activado)
+              Editor de Semilla en Inventario
             </p>
           </div>
         </div>
@@ -620,7 +631,31 @@ export default function EditarSemillaPage() {
         );
       })()}
 
-      <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'visible' }}>
+      <div style={{ marginTop: '24px' }}>
+        <div 
+          onClick={() => setIsMainTabsOpen(!isMainTabsOpen)}
+          style={{ cursor: 'pointer', padding: '12px 16px', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '24px', border: '1px solid #e2e8f0', marginBottom: '16px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ transition: 'transform 0.2s', transform: isMainTabsOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶️</span>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#334155', fontWeight: 'bold' }}>Detalles de la Semilla</h2>
+          </div>
+          {!isMainTabsOpen && (
+            <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: '#64748b', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#e2e8f0', padding: '4px 8px', borderRadius: '6px' }}>✅ {formData.semillasstockactual} {formData.semillasunidadmedida}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#e2e8f0', padding: '4px 8px', borderRadius: '6px' }}>✅ Origen: {formData.semillasorigen.replace(/_/g, ' ')}</span>
+              {formData.semillasfechaorigen && <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#e2e8f0', padding: '4px 8px', borderRadius: '6px' }}>✅ Origen/Cosecha: {formData.semillasfechaorigen}</span>}
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsMainTabsOpen(true); }}
+                style={{ background: 'white', border: '1px solid #cbd5e1', padding: '4px 12px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold', color: '#475569' }}
+              >
+                Cambiar
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: isMainTabsOpen ? 'block' : 'none', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'visible' }}>
         
         {/* HEADER TAB */}
         <div style={{ padding: '0 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '24px' }}>
@@ -632,13 +667,14 @@ export default function EditarSemillaPage() {
           <div 
             onClick={() => setActiveTab('fotos')}
             style={{ padding: '16px 0', borderBottom: activeTab === 'fotos' ? '3px solid #0f766e' : '3px solid transparent', color: activeTab === 'fotos' ? '#0f766e' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-            📸 Fotos ({photos.filter(p => p.origen === 'usuario').length})
+            📷 Fotos ({photos.filter(p => p.origen === 'usuario').length})
           </div>
         </div>
 
-        {activeTab === 'datos' ? (
-          <>
-            <div style={{ padding: '32px', display: 'grid', gap: '32px' }}>
+        {/* TABS CON CSS CONTROLLED DISPLAY */}
+        <div style={{ display: activeTab === 'datos' ? 'block' : 'none' }}>
+          
+          <div style={{ padding: '32px 32px 32px 32px', display: 'grid', gap: '32px' }}>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -778,167 +814,177 @@ export default function EditarSemillaPage() {
             )}
           </div>
 
-          {(formData.semillasorigen === 'sobre_comprado' || formData.semillasorigen === 'intercambio') && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-              
-              {formData.semillasorigen === 'sobre_comprado' && (
-                <>
+          <div style={{ marginTop: '12px' }}>
+            <div 
+              onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+            >
+              <span style={{ fontWeight: 'bold', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1rem', transition: 'transform 0.2s', transform: isAdvancedOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶️</span>
+                Datos Avanzados del Lote
+              </span>
+            </div>
+
+            <div style={{ display: isAdvancedOpen ? 'grid' : 'none', gap: '32px', marginTop: '24px', animation: 'fadeIn 0.3s ease-in-out' }}>
+              {(formData.semillasorigen === 'sobre_comprado' || formData.semillasorigen === 'intercambio') && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                  
+                  {formData.semillasorigen === 'sobre_comprado' && (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Marca Comercial</label>
+                        <input 
+                          list="main-brands"
+                          type="text" 
+                          name="semillasmarca" 
+                          placeholder="Ej. Fito, Batlle..." 
+                          value={formData.semillasmarca} 
+                          onChange={handleChange} 
+                          style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
+                        />
+                        <datalist id="main-brands">
+                          <option value="Semillas Fitó" />
+                          <option value="Semillas Batlle" />
+                          <option value="Rocalba" />
+                          <option value="Vilmorin" />
+                          <option value="Clemente Viven" />
+                          <option value="EuroGarden" />
+                          <option value="Koprima" />
+                          <option value="Semillas Madre Tierra" />
+                          <option value="Fito Agrícola" />
+                          <option value="Semillas Cantueso" />
+                          <option value="Semillas Silvestres" />
+                        </datalist>
+                      </div>
+                    </>
+                  )}
+
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Marca Comercial</label>
+                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Precio (€)</label>
                     <input 
-                      list="main-brands"
-                      type="text" 
-                      name="semillasmarca" 
-                      placeholder="Ej. Fito, Batlle..." 
-                      value={formData.semillasmarca} 
+                      type="number" 
+                      step="0.01"
+                      min="0"
+                      name="semillasprecio" 
+                      placeholder="0.00" 
+                      value={formData.semillasprecio} 
                       onChange={handleChange} 
                       style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
                     />
-                    <datalist id="main-brands">
-                      <option value="Semillas Fitó" />
-                      <option value="Semillas Batlle" />
-                      <option value="Rocalba" />
-                      <option value="Vilmorin" />
-                      <option value="Clemente Viven" />
-                      <option value="EuroGarden" />
-                      <option value="Koprima" />
-                      <option value="Semillas Madre Tierra" />
-                      <option value="Fito Agrícola" />
-                      <option value="Semillas Cantueso" />
-                      <option value="Semillas Silvestres" />
-                    </datalist>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Lugar de Compra</label>
-                    <input 
-                      list="buy-places"
-                      type="text" 
-                      name="semillaslugarcompra" 
-                      placeholder="Ej. Leroy Merlin, Vivero Local" 
-                      value={formData.semillaslugarcompra} 
-                      onChange={handleChange} 
-                      style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
-                    />
-                    <datalist id="buy-places">
-                      <option value="Leroy Merlin" />
-                      <option value="Verdecora" />
-                      <option value="Vivero local" />
-                      <option value="Amazon" />
-                      <option value="Lidl" />
-                      <option value="Aldi" />
-                      <option value="Ferretería local" />
-                      <option value="Cooperativa agrícola" />
-                    </datalist>
-                  </div>
-                </>
+                </div>
               )}
 
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Calculadora (Gramos)</label>
+                  <input type="number" step="0.01" min="0" placeholder={
+                    (() => {
+                      if (selectedEspecieId) {
+                        const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
+                        let peso1000 = especie?.especiespeso1000semillas;
+                        if (formData.xsemillasidvariedades && especie?.variedades) {
+                          const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
+                          if (variedad?.variedadespeso1000semillas) {
+                            peso1000 = variedad.variedadespeso1000semillas;
+                          }
+                        }
+                        if (peso1000) {
+                          return `1g ≈ ${Math.round(1000 / parseFloat(peso1000))} uds`;
+                        }
+                      }
+                      return "Ej. 1.5";
+                    })()
+                  } onChange={(e) => {
+                    const gramos = parseFloat(e.target.value);
+                    if (gramos > 0 && selectedEspecieId) {
+                      const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
+                      let peso1000 = especie?.especiespeso1000semillas;
+                      if (formData.xsemillasidvariedades && especie?.variedades) {
+                        const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
+                        if (variedad?.variedadespeso1000semillas) {
+                          peso1000 = variedad.variedadespeso1000semillas;
+                        }
+                      }
+                      if (peso1000) {
+                        const uds = Math.round((gramos / parseFloat(peso1000)) * 1000);
+                        setFormData((prev: any) => ({ ...prev, semillasstockinicial: uds.toString(), semillasstockactual: uds.toString() }));
+                      } else {
+                        alert('No hay datos de peso para esta especie/variedad. Introduce las unidades a mano.');
+                      }
+                    }
+                  }} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Stock Inicial</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="number" min="0" name="semillasstockinicial" value={formData.semillasstockinicial} onChange={handleChange} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} />
+                    <select 
+                      name="semillasunidadmedida"
+                      value={formData.semillasunidadmedida}
+                      onChange={handleChange}
+                      style={{ width: '100px', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                    >
+                      <option value="unidades">Uds</option>
+                      <option value="gramos">Gramos</option>
+                      <option value="kilos">Kilos</option>
+                      <option value="sobres">Sobres</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#16a34a' }}>Stock Actual Disponible</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="number" min="0" name="semillasstockactual" value={formData.semillasstockactual} onChange={handleChange} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #16a34a', fontSize: '1rem', background: '#f0fdf4', outline: 'none' }} />
+                    <select 
+                      disabled
+                      value={formData.semillasunidadmedida}
+                      style={{ width: '100px', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.9rem', outline: 'none', color: '#94a3b8' }}
+                    >
+                      <option value={formData.semillasunidadmedida}>
+                        {formData.semillasunidadmedida === 'unidades' ? 'Uds' : formData.semillasunidadmedida.charAt(0).toUpperCase() + formData.semillasunidadmedida.slice(1)}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Lote / Identificador</label>
+                  <input type="text" name="semillaslote" value={formData.semillaslote} onChange={handleChange} placeholder="Ej. L-2026-A" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Fecha Origen / Cosecha</label>
+                  <input type="date" name="semillasfechaorigen" value={formData.semillasfechaorigen} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Caducidad / Viabilidad</label>
+                  <input type="date" name="semillasfechacaducidad" value={formData.semillasfechacaducidad} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Ubicación Física</label>
+                  <input type="text" name="semillasubicacionfisica" value={formData.semillasubicacionfisica} onChange={handleChange} placeholder="Ej. Caja 3 - Nevera, Bote Despensa..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} />
+                </div>
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Precio (€)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  min="0"
-                  name="semillasprecio" 
-                  placeholder="0.00" 
-                  value={formData.semillasprecio} 
+                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Observaciones del Lote</label>
+                <textarea 
+                  name="semillasobservaciones" 
+                  value={formData.semillasobservaciones} 
                   onChange={handleChange} 
-                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
+                  placeholder="Escribe aquí notas adicionales sobre cómo guardaste este lote, viabilidad, porcentaje de germinación probado..."
+                  style={{ padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', minHeight: '120px', fontFamily: 'inherit', resize: 'vertical' }} 
                 />
               </div>
             </div>
-          )}
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Calculadora (Gramos)</label>
-              <input type="number" step="0.01" min="0" placeholder={
-                (() => {
-                  if (selectedEspecieId) {
-                    const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
-                    let peso1000 = especie?.especiespeso1000semillas;
-                    if (formData.xsemillasidvariedades && especie?.variedades) {
-                      const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
-                      if (variedad?.variedadespeso1000semillas) {
-                        peso1000 = variedad.variedadespeso1000semillas;
-                      }
-                    }
-                    if (peso1000) {
-                      return `1g ≈ ${Math.round(1000 / parseFloat(peso1000))} uds`;
-                    }
-                  }
-                  return "Ej. 1.5";
-                })()
-              } onChange={(e) => {
-                const gramos = parseFloat(e.target.value);
-                if (gramos > 0 && selectedEspecieId) {
-                  const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
-                  let peso1000 = especie?.especiespeso1000semillas;
-                  if (formData.xsemillasidvariedades && especie?.variedades) {
-                    const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
-                    if (variedad?.variedadespeso1000semillas) {
-                      peso1000 = variedad.variedadespeso1000semillas;
-                    }
-                  }
-                  if (peso1000) {
-                    const uds = Math.round((gramos / parseFloat(peso1000)) * 1000);
-                    setFormData((prev: any) => ({ ...prev, semillasstockinicial: uds.toString(), semillasstockactual: uds.toString() }));
-                  } else {
-                    alert('No hay datos de peso para esta especie/variedad. Introduce las unidades a mano.');
-                  }
-                }
-              }} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Stock Inicial (Unidades)</label>
-              <input type="number" min="0" name="semillasstockinicial" value={formData.semillasstockinicial} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#16a34a' }}>Stock Actual Disponible</label>
-              <input type="number" min="0" name="semillasstockactual" value={formData.semillasstockactual} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #16a34a', fontSize: '1rem', background: '#f0fdf4' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Lote / Identificador</label>
-              <input type="text" name="semillaslote" value={formData.semillaslote} onChange={handleChange} placeholder="Ej. L-2026-A" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
           </div>
+        </div>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
-            {(formData.semillasorigen === 'cosecha_propia' || formData.semillasorigen === 'intercambio') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Fecha de Recolección</label>
-                <input type="date" name="semillasfecharecoleccion" value={formData.semillasfecharecoleccion} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Fecha de Envasado</label>
-              <input type="date" name="semillasfechaenvasado" value={formData.semillasfechaenvasado} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Fecha de Adquisición</label>
-              <input type="date" name="semillasfechaadquisicion" value={formData.semillasfechaadquisicion} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Caducidad / Viabilidad</label>
-              <input type="date" name="semillasfechacaducidad" value={formData.semillasfechacaducidad} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Observaciones del Lote</label>
-            <textarea 
-              name="semillasobservaciones" 
-              value={formData.semillasobservaciones} 
-              onChange={handleChange} 
-              placeholder="Escribe aquí notas adicionales sobre cómo guardaste este lote, viabilidad, porcentaje de germinación probado..."
-              style={{ padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', minHeight: '120px', fontFamily: 'inherit', resize: 'vertical' }} 
-            />
-          </div>
-
-            </div>
-                 </>
-        ) : (
+        <div style={{ display: activeTab === 'fotos' ? 'block' : 'none' }}>
           <UserSemillaMediaManager 
             semillaId={semillaId} 
             userEmail={userEmail!}
@@ -946,7 +992,8 @@ export default function EditarSemillaPage() {
             initialPhotos={photos}
             onMediaChange={() => loadPhotos()}
           />
-        )}
+        </div>
+        </div>
 
       </div>
       {/* MODAL IA OCR COMPARE */}
@@ -966,7 +1013,7 @@ export default function EditarSemillaPage() {
                   onClick={() => {
                     try {
                       const updates: any = {};
-                      ['semillasmarca', 'semillaslote', 'semillasfechaenvasado', 'semillasfechacaducidad', 'semillasobservaciones'].forEach(k => {
+                      ['semillasmarca', 'semillaslote', 'semillasfechaorigen', 'semillasfechacaducidad', 'semillasobservaciones'].forEach(k => {
                         if (ocrData[k]) updates[k] = ocrData[k];
                       });
 
@@ -1039,7 +1086,7 @@ export default function EditarSemillaPage() {
                 {[
                   { key: 'semillasmarca', label: 'Marca / Semillera' },
                   { key: 'semillaslote', label: 'Lote' },
-                  { key: 'semillasfechaenvasado', label: 'Envasado' },
+                  { key: 'semillasfechaorigen', label: 'Origen / Cosecha' },
                   { key: 'semillasfechacaducidad', label: 'Caducidad' },
                   { key: 'semillasobservaciones', label: 'Observaciones' }
                 ].map(({ key, label }) => {
