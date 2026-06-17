@@ -37,25 +37,29 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { storagePath, base64Image: directBase64 } = body;
+    const { storagePath, base64Image: directBase64, base64Images } = body;
 
-    if (!storagePath && !directBase64) {
-      return NextResponse.json({ error: 'Ruta de imagen o base64 requerida' }, { status: 400 });
+    const inputImages = base64Images && base64Images.length > 0 ? base64Images : (directBase64 ? [directBase64] : []);
+
+    if (!storagePath && inputImages.length === 0) {
+      return NextResponse.json({ error: 'Ruta de imagen o array de imágenes base64 requerido' }, { status: 400 });
     }
 
-    let finalBase64Image = directBase64;
-    let mimeType = 'image/jpeg';
-    
-    if (directBase64 && directBase64.startsWith('data:')) {
-      const parts = directBase64.split(',');
-      const match = parts[0].match(/:(.*?);/);
-      if (match) {
-         mimeType = match[1];
+    const processedImages: { mimeType: string, data: string }[] = [];
+
+    if (inputImages.length > 0) {
+      for (const b64 of inputImages) {
+        let currentB64 = b64;
+        let mime = 'image/jpeg';
+        if (currentB64.startsWith('data:')) {
+          const parts = currentB64.split(',');
+          const match = parts[0].match(/:(.*?);/);
+          if (match) mime = match[1];
+          currentB64 = parts[1];
+        }
+        processedImages.push({ mimeType: mime, data: currentB64 });
       }
-      finalBase64Image = parts[1];
-    }
-
-    if (!directBase64 && storagePath) {
+    } else if (storagePath) {
       // 1. Descargar la imagen de Firebase Storage
       const { getAdminBucket } = await import('@/lib/firebase/admin');
       const bucket = getAdminBucket();
@@ -68,8 +72,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'No se pudo descargar la imagen original' }, { status: 404 });
       }
 
-      finalBase64Image = downloadedFile.toString('base64');
-      mimeType = 'image/webp';
+      processedImages.push({ mimeType: 'image/webp', data: downloadedFile.toString('base64') });
     }
 
     // 2. Preparar llamada a Gemini Vision
@@ -85,14 +88,17 @@ DEBES devolver EXCLUSIVAMENTE un objeto JSON válido con las siguientes claves (
   "semillaslote": "Número de lote (Batch/Lote)",
   "semillasfechaenvasado": "Fecha de envasado, control o test (formato YYYY-MM-DD)",
   "semillasfechacaducidad": "Fecha de caducidad o uso preferente (formato YYYY-MM-DD)",
-  "especie_detectada": "Nombre común de la planta, variedad o especie que figura en el envase",
-  "peso_gramos": "Peso o contenido neto en gramos (solo el número, si indica 5g devuelve 5, si indica 0.5g devuelve 0.5)",
-  "semillasobservaciones": "Resumen de las instrucciones de siembra o descripción de la variedad. SOLO EN CASTELLANO. Máximo 30 palabras. Si NO hay instrucciones ni texto descriptivo, devuelve un texto vacío."
+  "especie_detectada": "Nombre común de la especie u hortaliza principal (ej: Tomate, Lechuga)",
+  "variedad_detectada": "Nombre específico de la variedad si aparece (ej: Muchamiel, Romana). Si no aparece, devuelve texto vacío",
+  "peso_gramos": "String o número con el peso NETO detectado del contenido de las semillas. SOLO el peso de las semillas, no del sobre entero ni embalaje exterior. Extraer el valor numérico (ej. '5' o '1.5' o '0.5'). Dejar vacío si no aparece.",
+  "semillasobservaciones": "Resumen de las instrucciones de siembra o descripción de la variedad. SOLO EN CASTELLANO. Máximo 30 palabras. Si NO hay instrucciones ni texto descriptivo, devuelve un texto vacío.",
+  "precio": "String o número con el precio impreso o etiquetado en el sobre, si aparece (ej. '1.50' o '2'). Dejar vacío si no aparece.",
+  "lugar_compra": "Nombre del lugar o tienda donde se ha comprado, si aparece en alguna etiqueta de precio o logo comercial (ej. 'Leroy Merlin', 'Verdecora'). Dejar vacío si no aparece."
 }
 
-REGLAS ESTRICTAS:
-1. No incluyas explicaciones, saludos ni markdown de bloques de código. Devuelve SOLO el JSON en crudo.
-2. Si las fechas solo tienen mes y año (ej: 04/2026), asume el último día del mes (ej: 2026-04-30). Si tiene solo año (ej. 2025), asume 2025-12-31.
+INSTRUCCIONES IMPORTANTES:
+1. Asegúrate de devolver ÚNICAMENTE el JSON crudo, sin bloques de código ni formato markdown.
+2. Formatea las fechas al estándar de base de datos YYYY-MM-DD. Si solo indica año (ej. 2025), asume 2025-01-01. Si tiene mes y año (ej. 04/2026), asume el último día del mes (ej. 2026-04-30).
 3. Extrae la información literalmente, sin inventar nada.`;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -101,7 +107,7 @@ REGLAS ESTRICTAS:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [
-          { inlineData: { mimeType: mimeType, data: finalBase64Image } },
+          ...processedImages.map(img => ({ inlineData: { mimeType: img.mimeType, data: img.data } })),
           { text: prompt }
         ] }],
         generationConfig: { 

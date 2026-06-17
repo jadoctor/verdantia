@@ -99,8 +99,8 @@ export async function fetchCatalogoVariedades(email: string, especieId: number) 
   return data.variedades || [];
 }
 
-export async function fetchNextSeedNumero(email: string) {
-  const res = await fetch('/api/user/semillas/next-numero', {
+export async function fetchNextSeedNumero(email: string, ubicacion: string = '') {
+  const res = await fetch(`/api/user/semillas/next-numero?ubicacion=${encodeURIComponent(ubicacion)}`, {
     headers: { 'x-user-email': email }
   });
   if (!res.ok) throw new Error('Error al cargar número de colección');

@@ -22,14 +22,14 @@ export async function GET(request: Request) {
         s.semillasmarca,
         s.semillasfechaorigen,
         s.semillasprecio,
-        s.semillasprecio,
+        s.semillaslugarcompra,
         s.semillasfechacaducidad,
         s.semillaslote,
         s.semillasstockinicial,
         s.semillasstockactual,
         s.semillasunidadmedida,
         s.semillasobservaciones,
-        s.semillasubicacionfisica,
+        s.semillascoleccion,
         s.semillasfechacreacion,
         s.semillasactivosino,
         s.semillascompartir,
@@ -101,11 +101,12 @@ export async function POST(request: Request) {
       semillasstockactual, 
       semillasunidadmedida,
       semillasobservaciones,
-      semillasubicacionfisica,
+      semillascoleccion,
       semillasnumerocoleccion,
       semillasmarca,
       semillasdonante,
-      semillascompartir
+      semillascompartir,
+      customVarietyName
     } = body;
 
     if (!xsemillasidvariedades) {
@@ -114,14 +115,31 @@ export async function POST(request: Request) {
 
     let finalNumero = semillasnumerocoleccion;
     if (!finalNumero) {
-      const currentYear = new Date().getFullYear();
-      const [rowsNum]: any = await pool.query(`
-        SELECT semillasnumerocoleccion 
-        FROM semillas 
-        WHERE xsemillasidusuarios = ? 
-          AND YEAR(semillasfechacreacion) = ?
-          AND semillasnumerocoleccion IS NOT NULL
-      `, [user.id, currentYear]);
+      const u = semillascoleccion || '';
+      let query = '';
+      let queryParams = [];
+
+      if (u.trim() === '') {
+        query = `
+          SELECT semillasnumerocoleccion 
+          FROM semillas 
+          WHERE xsemillasidusuarios = ? 
+            AND (semillascoleccion IS NULL OR TRIM(semillascoleccion) = '')
+            AND semillasnumerocoleccion IS NOT NULL
+        `;
+        queryParams = [user.id];
+      } else {
+        query = `
+          SELECT semillasnumerocoleccion 
+          FROM semillas 
+          WHERE xsemillasidusuarios = ? 
+            AND TRIM(semillascoleccion) = ?
+            AND semillasnumerocoleccion IS NOT NULL
+        `;
+        queryParams = [user.id, u.trim()];
+      }
+
+      const [rowsNum]: any = await pool.query(query, queryParams);
 
       const numbers = rowsNum
         .map((r: any) => parseInt(r.semillasnumerocoleccion))
@@ -157,6 +175,30 @@ export async function POST(request: Request) {
       }
     }
 
+    let finalVariedadId = xsemillasidvariedades;
+
+    if (customVarietyName) {
+      const [espRows]: any = await pool.query(`
+        SELECT xvariedadesidespecies FROM variedades WHERE idvariedades = ? LIMIT 1
+      `, [xsemillasidvariedades]);
+      
+      const especieId = espRows.length > 0 ? espRows[0].xvariedadesidespecies : null;
+
+      if (especieId) {
+        const [varResult]: any = await pool.query(`
+          INSERT INTO variedades (
+            xvariedadesidespecies,
+            xvariedadesidusuarios,
+            xvariedadesidvariedadorigen,
+            variedadesnombre,
+            variedadesesgenerica
+          ) VALUES (?, ?, ?, ?, 0)
+        `, [especieId, user.id, xsemillasidvariedades, customVarietyName]);
+        
+        finalVariedadId = varResult.insertId;
+      }
+    }
+
     const [result]: any = await pool.query(
       `INSERT INTO semillas (
         xsemillasidusuarios, 
@@ -164,6 +206,7 @@ export async function POST(request: Request) {
         semillasnumerocoleccion,
         semillasorigen, 
         semillasmarca,
+        semillaslugarcompra,
         semillasfechaorigen, 
         semillasprecio,
         semillasfechacaducidad, 
@@ -172,17 +215,18 @@ export async function POST(request: Request) {
         semillasstockactual, 
         semillasunidadmedida,
         semillasobservaciones,
-        semillasubicacionfisica,
+        semillascoleccion,
         semillasdonante,
         xsemillasidusuariodonante,
         semillascompartir
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.id, 
-        xsemillasidvariedades, 
+        finalVariedadId, 
         finalNumero,
         semillasorigen || 'sobre_comprado',
         semillasmarca || null,
+        body.semillaslugarcompra || null,
         semillasfechaorigen || null,
         body.semillasprecio || null,
         semillasfechacaducidad || null,
@@ -191,7 +235,7 @@ export async function POST(request: Request) {
         semillasstockactual || null,
         semillasunidadmedida || 'unidades',
         semillasobservaciones || null,
-        semillasubicacionfisica || null,
+        semillascoleccion || null,
         finalDonante,
         finalUsuarioDonanteId,
         semillascompartir ? 1 : 0
@@ -200,43 +244,51 @@ export async function POST(request: Request) {
 
     const newSeedId = result.insertId;
 
-    // GUARDAR IMAGEN ESCANEADA SI EXISTE
-    if (body.scannedImageBase64) {
-      try {
-        let base64Data = body.scannedImageBase64;
-        let mimeType = 'image/jpeg';
-        let extension = 'jpg';
+    // GUARDAR IMÁGENES ESCANEADAS SI EXISTEN
+    const inputImages = body.scannedImagesBase64 || (body.scannedImageBase64 ? [body.scannedImageBase64] : []);
+    
+    if (inputImages.length > 0) {
+      const { uploadToStorage } = await import('@/lib/firebase/storage');
+      
+      for (let i = 0; i < inputImages.length; i++) {
+        try {
+          let base64Data = inputImages[i];
+          let mimeType = 'image/jpeg';
+          let extension = 'jpg';
 
-        if (base64Data.startsWith('data:')) {
-          const parts = base64Data.split(',');
-          const match = parts[0].match(/:(.*?);/);
-          if (match) {
-            mimeType = match[1];
-            extension = mimeType.split('/')[1] || 'jpg';
+          if (base64Data.startsWith('data:')) {
+            const parts = base64Data.split(',');
+            const match = parts[0].match(/:(.*?);/);
+            if (match) {
+              mimeType = match[1];
+              extension = mimeType.split('/')[1] || 'jpg';
+            }
+            base64Data = parts[1];
           }
-          base64Data = parts[1];
+
+          const buffer = Buffer.from(base64Data, 'base64');
+          const filename = `semilla_${newSeedId}_${Date.now()}_${i}.${extension}`;
+          const destination = `uploads/usuarios/${user.id}/semillas/${filename}`;
+
+          await uploadToStorage(buffer, destination, mimeType);
+
+          await pool.query(`
+            INSERT INTO datosadjuntos (
+              xdatosadjuntosidusuarios,
+              xdatosadjuntosidsemillas,
+              datosadjuntosruta,
+              datosadjuntostipo,
+              datosadjuntosnombreoriginal,
+              datosadjuntosmime,
+              datosadjuntospesobytes,
+              datosadjuntosactivo,
+              datosadjuntosesprincipal,
+              datosadjuntosvalidado
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 0)
+          `, [user.id, newSeedId, destination, 'imagen', filename, mimeType, buffer.byteLength, i === 0 ? 1 : 0]);
+        } catch (imgError) {
+          console.error(`Error guardando la imagen ${i}:`, imgError);
         }
-
-        const buffer = Buffer.from(base64Data, 'base64');
-        const filename = `semilla_${newSeedId}_${Date.now()}.${extension}`;
-        const destination = `usuarios/${user.id}/semillas/${filename}`;
-
-        const { uploadToStorage } = await import('@/lib/firebase/storage');
-        await uploadToStorage(buffer, destination, mimeType);
-
-        await pool.query(`
-          INSERT INTO datosadjuntos (
-            xdatosadjuntosidusuarios,
-            xdatosadjuntosidsemillas,
-            datosadjuntosruta,
-            datosadjuntostipo,
-            datosadjuntosnombre,
-            datosadjuntosactivo,
-            datosadjuntosesprincipal
-          ) VALUES (?, ?, ?, 'imagen', ?, 1, 1)
-        `, [user.id, newSeedId, destination, filename]);
-      } catch (uploadErr) {
-        console.error('Error subiendo imagen escaneada:', uploadErr);
       }
     }
 
@@ -246,11 +298,12 @@ export async function POST(request: Request) {
         SELECT 
           v.idvariedades, 
           v.xvariedadesidespecies AS especie_id_var,
+          v.xvariedadesidusuarios,
           vg.xvariedadesidespecies AS especie_id_gen
         FROM variedades v
         LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
         WHERE v.idvariedades = ?
-      `, [xsemillasidvariedades]);
+      `, [finalVariedadId]);
 
       if (varRows.length > 0) {
         const variedadInfo = varRows[0];
@@ -260,21 +313,21 @@ export async function POST(request: Request) {
         const [userVarRows]: any = await pool.query(`
           SELECT idvariedadesusuarios FROM variedadesusuarios 
           WHERE Xvariedadesusuariosidusuarios = ? AND xvariedadesusuariosidvariedades = ?
-        `, [user.id, xsemillasidvariedades]);
+        `, [user.id, finalVariedadId]);
 
         if (userVarRows.length === 0) {
           await pool.query(`
             INSERT INTO variedadesusuarios (Xvariedadesusuariosidusuarios, xvariedadesusuariosidvariedades)
             VALUES (?, ?)
-          `, [user.id, xsemillasidvariedades]);
+          `, [user.id, finalVariedadId]);
         }
 
         // 2. Adquirir la variedad en la tabla 'variedades' (como planta propia del usuario para que aparezca en "Mis Plantas") si no la tiene ya
-        if (especieId) {
+        if (especieId && (!variedadInfo.xvariedadesidusuarios || variedadInfo.xvariedadesidusuarios !== user.id)) {
           const [userOwnedVarCheck]: any = await pool.query(`
             SELECT idvariedades, variedadesvisibilidadsino FROM variedades 
             WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?
-          `, [user.id, xsemillasidvariedades]);
+          `, [user.id, finalVariedadId]);
 
           if (userOwnedVarCheck.length === 0) {
             await pool.query(`
@@ -284,7 +337,7 @@ export async function POST(request: Request) {
                 xvariedadesidvariedadorigen, 
                 variedadesesgenerica
               ) VALUES (?, ?, ?, 0)
-            `, [especieId, user.id, xsemillasidvariedades]);
+            `, [especieId, user.id, finalVariedadId]);
           } else if (userOwnedVarCheck[0].variedadesvisibilidadsino === 0) {
             await pool.query(`
               UPDATE variedades SET variedadesvisibilidadsino = 1 WHERE idvariedades = ?
@@ -323,8 +376,8 @@ export async function POST(request: Request) {
     let variedadNombre = 'sus semillas';
     try {
       const [vRows]: any = await pool.query(
-        'SELECT COALESCE(NULLIF(v.variedadesnombre, \"\"), vg.variedadesnombre, e.especiesnombre) AS nombre FROM variedades v LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies OR vg.xvariedadesidespecies = e.idespecies WHERE v.idvariedades = ? LIMIT 1',
-        [xsemillasidvariedades]
+        'SELECT COALESCE(NULLIF(v.variedadesnombre, ""), vg.variedadesnombre, e.especiesnombre) AS nombre FROM variedades v LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies OR vg.xvariedadesidespecies = e.idespecies WHERE v.idvariedades = ? LIMIT 1',
+        [finalVariedadId]
       );
       if (vRows.length > 0 && vRows[0].nombre) variedadNombre = vRows[0].nombre;
     } catch(e) {}

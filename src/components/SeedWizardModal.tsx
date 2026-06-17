@@ -21,32 +21,43 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
   const [selectedEspecie, setSelectedEspecie] = useState<any | null>(null);
   const [selectedVariedad, setSelectedVariedad] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [lugaresCompra, setLugaresCompra] = useState<string[]>([]);
+  const [ubicacionesFisicas, setUbicacionesFisicas] = useState<string[]>([]);
+
   const [seedFormData, setSeedFormData] = useState<{
-    semillasorigen: string;
-    semillasstockinicial: number | string;
-    semillasstockactual: number | string;
-    semillasmarca: string;
-    semillasfechaorigen: string;
-    semillasfechacaducidad: string;
-    semillasobservaciones: string;
-    semillasnumerocoleccion: string;
-    semillasunidadmedida: string;
-    semillasubicacionfisica: string;
-    semillaslote?: string;
+    semillasorigen: string,
+    semillasstockinicial: number | string,
+    semillasstockactual: number | string,
+    semillasmarca: string,
+    semillaslugarcompra?: string,
+    semillasprecio?: string | number,
+    semillasfechaorigen: string,
+    semillasfechacaducidad: string,
+    semillasobservaciones: string,
+    semillasnumerocoleccion: string,
+    semillasunidadmedida: string,
+    semillascoleccion: string,
+    semillaslote?: string,
+    customVarietyName?: string
   }>({
     semillasorigen: '',
     semillasstockinicial: '',
     semillasstockactual: '',
     semillasmarca: '',
+    semillaslugarcompra: '',
+    semillasprecio: '',
     semillaslote: '',
     semillasfechaorigen: '',
     semillasfechacaducidad: '',
     semillasobservaciones: '',
     semillasnumerocoleccion: '',
     semillasunidadmedida: 'unidades',
-    semillasubicacionfisica: ''
+    semillascoleccion: '',
+    customVarietyName: ''
   });
+
   const [savingSeed, setSavingSeed] = useState(false);
+  const [showCollectionsDropdown, setShowCollectionsDropdown] = useState(false);
   const [nextNumero, setNextNumero] = useState<number | null>(null);
   const [inputGramos, setInputGramos] = useState<string>('');
   const [customSemillasPorGramo, setCustomSemillasPorGramo] = useState<string>('');
@@ -54,31 +65,34 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
   // Estados para OCR Inteligente
   const [ocrLoading, setOcrLoading] = useState(false);
   const [aiSeconds, setAiSeconds] = useState(0);
-  const [scannedImageBase64, setScannedImageBase64] = useState<string | null>(null);
-  const [aiStats, setAiStats] = useState<{ used: number, max: number, remaining: number } | null>(null);
+  const [scannedImagesBase64, setScannedImagesBase64] = useState<string[]>([]);
+  const [aiStats, setAiStats] = useState<{ used: number, max: number, remaining: number, maxImages?: number } | null>(null);
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [showAiDiff, setShowAiDiff] = useState(false);
   const [aiProposals, setAiProposals] = useState<any>(null);
   const [selectedProposals, setSelectedProposals] = useState<Record<string, boolean>>({});
 
   const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
+    if (acceptedFiles.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64String = reader.result as string;
-      setScannedImageBase64(base64String);
-      setOcrError(null);
-      setShowAiDiff(false);
-      setAiProposals(null);
-    };
-
-    reader.readAsDataURL(file);
+    const newBase64Images: string[] = [];
+    for (const file of acceptedFiles) {
+      const base64String = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      newBase64Images.push(base64String);
+    }
+    
+    setScannedImagesBase64(prev => [...prev, ...newBase64Images].slice(0, aiStats?.maxImages || 1));
+    setOcrError(null);
+    setShowAiDiff(false);
+    setAiProposals(null);
   };
 
   const analyzeImageWithAI = async () => {
-    if (!scannedImageBase64) return;
+    if (scannedImagesBase64.length === 0) return;
     
     setOcrLoading(true);
     setAiSeconds(0);
@@ -93,7 +107,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
           'Content-Type': 'application/json',
           'x-user-email': userEmail,
         },
-        body: JSON.stringify({ base64Image: scannedImageBase64 }),
+        body: JSON.stringify({ base64Images: scannedImagesBase64 }),
       });
 
       if (!res.ok) {
@@ -107,8 +121,11 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
         setAiProposals(data);
         setSelectedProposals({
           especie_detectada: true,
+          variedad_detectada: true,
           semillasmarca: true,
           semillaslote: true,
+          semillaslugarcompra: true,
+          semillasprecio: true,
           semillasfechaorigen: true,
           semillasfechacaducidad: true,
           semillasstockinicial: true,
@@ -131,46 +148,136 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
     }
   };
 
-  const applyAiProposals = () => {
-    if (selectedProposals.especie_detectada && aiProposals?.especie_detectada) {
-      setSearchTerm(aiProposals.especie_detectada);
+  const applyAiProposals = async () => {
+    // 1. Detect species first to use its weight for conversion
+    const detectedEspecie = aiProposals?.especie_detectada;
+    const detectedVariedad = aiProposals?.variedad_detectada;
+
+    // Try to find the matched especie to get its seed weight
+    const matchedEspecie = detectedEspecie
+      ? catalogoEspecies.find(e => e.especiesnombre.toLowerCase() === detectedEspecie.toLowerCase())
+      : null;
+
+    // 2. Calculate stock in seeds if possible
+    let stockValue: number | string = '';
+    let stockUnidad = 'unidades';
+
+    if (selectedProposals.semillasstockinicial && aiProposals?.peso_gramos) {
+      const gramos = parseFloat(String(aiProposals.peso_gramos));
+      const peso1000 = matchedEspecie?.especiespeso1000semillas
+        ? parseFloat(String(matchedEspecie.especiespeso1000semillas))
+        : 0;
+
+      if (peso1000 > 0 && !isNaN(gramos)) {
+        // Convert grams → number of seeds
+        stockValue = Math.round(gramos * (1000 / peso1000));
+        stockUnidad = 'unidades';
+      } else {
+        // No weight data → keep as grams
+        stockValue = gramos;
+        stockUnidad = 'gramos';
+      }
     }
+
+    // 3. Apply all form data from AI proposals
     setSeedFormData(prev => ({
       ...prev,
+      semillasorigen: 'sobre_comprado',
       semillasmarca: (selectedProposals.semillasmarca && aiProposals?.semillasmarca) ? aiProposals.semillasmarca : prev.semillasmarca,
       semillaslote: (selectedProposals.semillaslote && aiProposals?.semillaslote) ? aiProposals.semillaslote : prev.semillaslote,
+      semillaslugarcompra: (selectedProposals.semillaslugarcompra && aiProposals?.lugar_compra) ? aiProposals.lugar_compra : prev.semillaslugarcompra,
+      semillasprecio: (selectedProposals.semillasprecio && aiProposals?.precio) ? aiProposals.precio : prev.semillasprecio,
       semillasfechaorigen: (selectedProposals.semillasfechaorigen && aiProposals?.semillasfechaenvasado) ? aiProposals.semillasfechaenvasado : prev.semillasfechaorigen,
       semillasfechacaducidad: (selectedProposals.semillasfechacaducidad && aiProposals?.semillasfechacaducidad) ? aiProposals.semillasfechacaducidad : prev.semillasfechacaducidad,
-      semillasstockinicial: (selectedProposals.semillasstockinicial && aiProposals?.peso_gramos) ? aiProposals.peso_gramos : prev.semillasstockinicial,
-      semillasunidadmedida: (selectedProposals.semillasstockinicial && aiProposals?.peso_gramos) ? 'gramos' : prev.semillasunidadmedida,
+      semillasstockinicial: stockValue !== '' ? stockValue : prev.semillasstockinicial,
+      semillasstockactual: stockValue !== '' ? stockValue : prev.semillasstockactual,
+      semillasunidadmedida: stockValue !== '' ? stockUnidad : prev.semillasunidadmedida,
       semillasobservaciones: (selectedProposals.semillasobservaciones && aiProposals?.semillasobservaciones) ? aiProposals.semillasobservaciones : prev.semillasobservaciones,
     }));
+
+    // 4. Close the diff modal
     setShowAiDiff(false);
     setAiProposals(null);
+
+    // 5. Auto-advance: match species -> fetch varieties -> match variety -> step 3
+    if (selectedProposals.especie_detectada && detectedEspecie) {
+      setSearchTerm(detectedEspecie);
+      if (matchedEspecie) {
+        setSelectedEspecie(matchedEspecie);
+        try {
+          const email = auth.currentUser?.email;
+          if (email) {
+            const res = await fetch(`/api/user/catalogo/${matchedEspecie.idespecies}/variedades`, { headers: { 'x-user-email': email } });
+            if (res.ok) {
+              const data = await res.json();
+              const vars = data.variedades || [];
+              setCatalogoVariedades(vars);
+
+              let matchedVariedad = null;
+              if (selectedProposals.variedad_detectada && detectedVariedad) {
+                matchedVariedad = vars.find((v: any) =>
+                  v.variedadesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
+                  detectedVariedad.toLowerCase().includes(v.variedadesnombre.toLowerCase())
+                );
+              }
+
+              if (matchedVariedad) {
+                setSelectedVariedad(matchedVariedad);
+                setSeedStep(3);
+              } else {
+                const genericVar = vars.find((v: any) => v.variedadesesgenerica === 1) || vars[0];
+                if (genericVar) {
+                  setSelectedVariedad(genericVar);
+                  setSeedStep(3);
+                } else {
+                  setSeedStep(2);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error auto-advancing after AI proposals:', e);
+          setSeedStep(2);
+        }
+      }
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.heic', '.heif'] },
-    maxFiles: 1
+    maxFiles: aiStats?.maxImages || 1
   });
 
   useEffect(() => {
     if (show) {
+      setSeedStep(1);
       setSearchTerm('');
       setInputGramos('');
       setCustomSemillasPorGramo('');
+      setSelectedEspecie(null);
+      setSelectedVariedad(null);
+      setShowAiDiff(false);
+      setAiProposals(null);
+      setSelectedProposals({});
+      setScannedImagesBase64([]);
+      setOcrError(null);
+      setOcrLoading(false);
+      setAiSeconds(0);
       setSeedFormData({
         semillasorigen: '',
         semillasstockinicial: '',
         semillasstockactual: '',
         semillasmarca: '',
+        semillaslugarcompra: '',
+        semillasprecio: '',
+        semillaslote: '',
         semillasfechaorigen: '',
         semillasfechacaducidad: '',
         semillasobservaciones: '',
         semillasnumerocoleccion: '',
         semillasunidadmedida: 'unidades',
-        semillasubicacionfisica: ''
+        semillascoleccion: ''
       });
 
       const loadCatalogData = async () => {
@@ -195,7 +302,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
             }
           }
 
-          const resNum = await fetch('/api/user/semillas/next-numero', { headers: { 'x-user-email': email } });
+          const resNum = await fetch(`/api/user/semillas/next-numero?ubicacion=${encodeURIComponent((seedFormData.semillascoleccion || '').trim())}`, { headers: { 'x-user-email': email } });
           if (resNum.ok) {
             const numData = await resNum.json();
             setNextNumero(numData.nextNumero);
@@ -206,6 +313,21 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
           if (resAi.ok) {
             const aiData = await resAi.json();
             setAiStats(aiData);
+          }
+
+          // Cargar lugares de compra previos del usuario
+          const resSemillas = await fetch('/api/user/semillas', { headers: { 'x-user-email': email } });
+          if (resSemillas.ok) {
+            const semillasData = await resSemillas.json();
+            const lugares = (semillasData.semillas || [])
+              .map((s: any) => s.semillaslugarcompra)
+              .filter((l: any) => l && l.trim() !== '');
+            setLugaresCompra([...new Set<string>(lugares)]);
+
+            const ubicaciones = (semillasData.semillas || [])
+              .map((s: any) => s.semillascoleccion)
+              .filter((u: any) => u && u.trim() !== '');
+            setUbicacionesFisicas([...new Set<string>(ubicaciones)]);
           }
 
           if (initialEspecieId) {
@@ -238,6 +360,34 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
       loadCatalogData();
     }
   }, [show, initialEspecieId, initialVariedadId]);
+
+  // Recalcular el número de colección al cambiar la colección en el asistente
+  useEffect(() => {
+    if (show && seedFormData.semillascoleccion !== undefined) {
+      const email = auth.currentUser?.email;
+      if (!email) return;
+
+      const currentUbicacion = seedFormData.semillascoleccion || '';
+      const timer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/user/semillas/next-numero?ubicacion=${encodeURIComponent(currentUbicacion.trim())}`, {
+            headers: { 'x-user-email': email }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setNextNumero(data.nextNumero);
+            setSeedFormData(prev => ({
+              ...prev,
+              semillasnumerocoleccion: String(data.nextNumero)
+            }));
+          }
+        } catch (err) {
+          console.error('Error al actualizar el número de colección en wizard:', err);
+        }
+      }, 300); // Debounce de 300ms
+      return () => clearTimeout(timer);
+    }
+  }, [seedFormData.semillascoleccion, show]);
 
   const selectSeedEspecie = async (esp: any) => {
     setSelectedEspecie(esp);
@@ -302,14 +452,17 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
         semillasorigen: seedFormData.semillasorigen,
         semillasnumerocoleccion: seedFormData.semillasnumerocoleccion,
         semillasmarca: seedFormData.semillasmarca || null,
+        semillaslote: seedFormData.semillaslote || null,
+        semillaslugarcompra: seedFormData.semillaslugarcompra || null,
+        semillasprecio: seedFormData.semillasprecio || null,
         semillasfechaorigen: seedFormData.semillasfechaorigen || null,
         semillasfechacaducidad: seedFormData.semillasfechacaducidad || null,
         semillasstockinicial: parseInt(String(seedFormData.semillasstockinicial)) || 0,
         semillasstockactual: parseInt(String(seedFormData.semillasstockactual)) || 0,
         semillasunidadmedida: seedFormData.semillasunidadmedida,
         semillasobservaciones: seedFormData.semillasobservaciones || null,
-        semillasubicacionfisica: seedFormData.semillasubicacionfisica || null,
-        scannedImageBase64: scannedImageBase64 || null
+        semillascoleccion: seedFormData.semillascoleccion || null,
+        scannedImagesBase64: scannedImagesBase64.length > 0 ? scannedImagesBase64 : null
       };
 
       const res = await fetch('/api/user/semillas', {
@@ -377,7 +530,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                   border: '1px solid rgba(255, 255, 255, 0.3)',
                   letterSpacing: '0.05em'
                 }}>
-                  SEMILLA Nº {seedFormData.semillasnumerocoleccion || nextNumero}
+                  {seedFormData.semillascoleccion ? `${seedFormData.semillascoleccion} (${seedFormData.semillasnumerocoleccion || nextNumero})` : `SEMILLA Nº ${seedFormData.semillasnumerocoleccion || nextNumero}`}
                 </span>
               )}
             </h2>
@@ -409,7 +562,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '28px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '28px' }}>
 
           {showAiDiff && aiProposals ? (
             <div style={{ animation: 'fadeIn 0.3s' }}>
@@ -433,8 +586,11 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
 
                 {[
                   { id: 'especie_detectada', label: 'Hortaliza', current: searchTerm || '(Vacío)', prop: aiProposals.especie_detectada },
+                  { id: 'variedad_detectada', label: 'Variedad (Nueva)', current: seedFormData.customVarietyName || '(Vacío)', prop: aiProposals.variedad_detectada },
                   { id: 'semillasmarca', label: 'Marca', current: seedFormData.semillasmarca || '(Vacío)', prop: aiProposals.semillasmarca },
                   { id: 'semillaslote', label: 'Lote', current: seedFormData.semillaslote || '(Vacío)', prop: aiProposals.semillaslote },
+                  { id: 'semillaslugarcompra', label: 'Lugar Compra', current: seedFormData.semillaslugarcompra || '(Vacío)', prop: aiProposals.lugar_compra },
+                  { id: 'semillasprecio', label: 'Precio', current: seedFormData.semillasprecio || '(Vacío)', prop: aiProposals.precio },
                   { id: 'semillasfechaorigen', label: 'F. Origen', current: seedFormData.semillasfechaorigen || '(Vacío)', prop: aiProposals.semillasfechaenvasado },
                   { id: 'semillasfechacaducidad', label: 'F. Caducidad', current: seedFormData.semillasfechacaducidad || '(Vacío)', prop: aiProposals.semillasfechacaducidad },
                   { id: 'semillasstockinicial', label: 'Peso', current: seedFormData.semillasstockinicial || '(Vacío)', prop: aiProposals.peso_gramos ? `${aiProposals.peso_gramos}g` : null },
@@ -497,11 +653,15 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Extrayendo variedad, peso y fechas ({aiSeconds}s)</p>
                           </div>
                         </div>
-                      ) : scannedImageBase64 ? (
+                      ) : scannedImagesBase64.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                          <div style={{ position: 'relative', width: '120px', height: '160px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                            <img src={scannedImageBase64} alt="Escaneada" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <button onClick={() => setScannedImageBase64(null)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            {scannedImagesBase64.map((imgBase64, idx) => (
+                              <div key={idx} style={{ position: 'relative', width: '120px', height: '160px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                                <img src={imgBase64} alt={`Escaneada ${idx+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <button onClick={() => setScannedImagesBase64(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                              </div>
+                            ))}
                           </div>
                           
                           <div style={{ width: '100%', maxWidth: '300px' }}>
@@ -563,7 +723,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             Seleccionar Archivos
                           </button>
                           <p style={{ margin: '16px 0 0', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                            Soporta JPG, PNG, WEBP, HEIC/HEIF (1 foto máx)
+                            Soporta JPG, PNG, WEBP, HEIC/HEIF
                           </p>
                         </div>
                       )}
@@ -616,7 +776,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
 
               {/* FASE 2: Variedad */}
               {selectedEspecie && (
-                <div style={{ marginLeft: '24px' }}>
+                <div>
                   {selectedVariedad ? (
                     <div style={{ background: '#eff6ff', border: '2px solid #3b82f6', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.1)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -684,14 +844,14 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
 
               {/* FASE 3: Procedencia */}
               {selectedVariedad && (
-                <div style={{ marginLeft: '48px' }}>
+                <div>
                    {seedFormData.semillasorigen ? (
                      <div style={{ background: '#f0fdf4', border: '2px solid #10b981', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.1)' }}>
                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <span style={{fontSize: '1.5rem'}}>✅</span>
                           <h3 style={{ margin: 0, color: '#065f46', fontSize: '1.1rem', fontWeight: 800 }}>
                             Origen: {
-                              seedFormData.semillasorigen === 'sobre_comprado' ? 'Sobre comprado 🛒' :
+                              seedFormData.semillasorigen === 'sobre_comprado' ? 'Sobre 🛒' :
                               seedFormData.semillasorigen === 'cosecha_propia' ? 'Propia / Extraída 🤲' :
                               seedFormData.semillasorigen === 'intercambio' ? 'Intercambio 🤝' :
                               seedFormData.semillasorigen === 'por_definir' ? 'Pendiente de asignar ⏳' : ''
@@ -752,7 +912,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             onMouseOut={e => e.currentTarget.style.borderColor = '#e2e8f0'}
                           >
                             <span style={{ fontSize: '1.6rem' }}>🛒</span>
-                            <span>Sobre comprado</span>
+                            <span>Sobre</span>
                           </button>
                           
                           <button
@@ -814,15 +974,106 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
 
               {/* FASE 4: Detalles Adicionales */}
               {selectedVariedad && seedFormData.semillasorigen !== '' && (
-                <div style={{ marginLeft: '72px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeInDown 0.3s', marginBottom: '20px' }}>
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', animation: 'fadeInDown 0.3s', marginBottom: '20px', overflow: 'hidden', boxSizing: 'border-box', maxWidth: '100%' }}>
                    <h3 style={{ margin: '0 0 20px', color: '#0f172a', fontSize: '1.2rem', fontWeight: 800 }}>4. Detalles Finales</h3>
-                   <div style={{ display: 'grid', gap: '18px' }}>
+                   <div style={{ display: 'grid', gap: '18px', width: '100%', minWidth: 0 }}>
                       
+                      <div style={{ position: 'relative' }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Colección</label>
+                        <div style={{ position: 'relative', width: '100%' }}>
+                          <input
+                            type="text"
+                            placeholder="Ej. Caja 3, Nevera, Despensa..."
+                            value={seedFormData.semillascoleccion}
+                            onChange={e => setSeedFormData({ ...seedFormData, semillascoleccion: e.target.value })}
+                            onFocus={() => setShowCollectionsDropdown(true)}
+                            style={{ width: '100%', padding: '10px 30px 10px 10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowCollectionsDropdown(!showCollectionsDropdown);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              right: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              color: '#64748b',
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            ▼
+                          </button>
+                        </div>
+
+                        {showCollectionsDropdown && (
+                          <>
+                            <div 
+                              onClick={() => setShowCollectionsDropdown(false)}
+                              style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              marginTop: '4px',
+                              background: 'white',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                              zIndex: 1000,
+                              maxHeight: '150px',
+                              overflowY: 'auto'
+                            }}>
+                              {ubicacionesFisicas.length === 0 ? (
+                                <div style={{ padding: '8px 10px', fontSize: '0.85rem', color: '#94a3b8' }}>
+                                  Sin colecciones previas
+                                </div>
+                              ) : (
+                                ubicacionesFisicas.map((ub, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => {
+                                      setSeedFormData(prev => ({ ...prev, semillascoleccion: ub }));
+                                      setShowCollectionsDropdown(false);
+                                    }}
+                                    style={{
+                                      padding: '8px 10px',
+                                      fontSize: '0.9rem',
+                                      color: '#1e293b',
+                                      cursor: 'pointer',
+                                      background: seedFormData.semillascoleccion === ub ? '#f0fdf4' : 'transparent',
+                                      fontWeight: seedFormData.semillascoleccion === ub ? '600' : 'normal',
+                                      textAlign: 'left',
+                                      transition: 'background 0.15s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = seedFormData.semillascoleccion === ub ? '#f0fdf4' : 'transparent'}
+                                  >
+                                    {ub}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
                       {/* Cantidad Inicial y Stock */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                        <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', minWidth: 0 }}>
+                        <div style={{ minWidth: 0 }}>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Cantidad Inicial</label>
-                          <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '8px', minWidth: 0 }}>
                             <input 
                               type="number" 
                               min="1"
@@ -831,23 +1082,23 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
                                 setSeedFormData({ ...seedFormData, semillasstockinicial: val, semillasstockactual: val });
                               }}
-                              style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                              style={{ flex: 1, minWidth: 0, padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
                             />
                             <select 
                               value={seedFormData.semillasunidadmedida}
                               onChange={e => setSeedFormData({ ...seedFormData, semillasunidadmedida: e.target.value })}
-                              style={{ width: '100px', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                              style={{ width: '80px', flexShrink: 0, padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
                             >
                               <option value="unidades">Uds</option>
                               <option value="gramos">Gramos</option>
                               <option value="kilos">Kilos</option>
-                              <option value="sobres">Sobres</option>
+                              <option value="sobre_comprado">Sobre</option>
                             </select>
                           </div>
                         </div>
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Stock Actual</label>
-                          <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '8px', minWidth: 0 }}>
                             <input 
                               type="number" 
                               min="0"
@@ -856,12 +1107,12 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
                                 setSeedFormData({ ...seedFormData, semillasstockactual: val });
                               }}
-                              style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }}
+                              style={{ flex: 1, minWidth: 0, padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
                             />
                             <select 
                               value={seedFormData.semillasunidadmedida}
                               disabled
-                              style={{ width: '100px', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.9rem', outline: 'none', color: '#94a3b8' }}
+                              style={{ width: '80px', flexShrink: 0, padding: '8px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.85rem', outline: 'none', color: '#94a3b8' }}
                             >
                               <option value={seedFormData.semillasunidadmedida}>
                                 {seedFormData.semillasunidadmedida === 'unidades' ? 'Uds' : seedFormData.semillasunidadmedida.charAt(0).toUpperCase() + seedFormData.semillasunidadmedida.slice(1)}
@@ -938,37 +1189,43 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                       
                       {seedFormData.semillasorigen !== 'por_definir' && (
                         <>
-                          {seedFormData.semillasorigen === 'sobre_comprado' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
                               <div>
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Marca / Comercial</label>
-                                <input list="main-brands" type="text" placeholder="Ej. Batlle, Rocalba..." value={seedFormData.semillasmarca} onChange={e => setSeedFormData({ ...seedFormData, semillasmarca: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }} />
+                                <input list="main-brands" type="text" placeholder="Ej. Batlle, Rocalba..." value={seedFormData.semillasmarca} onChange={e => setSeedFormData({ ...seedFormData, semillasmarca: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
                                 <datalist id="main-brands">
                                   <option value="Semillas Fitó" /><option value="Semillas Batlle" /><option value="Rocalba" /><option value="Vilmorin" /><option value="Clemente Viven" /><option value="EuroGarden" />
                                 </datalist>
                               </div>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Lugar de Compra</label>
+                                <input list="user-lugares-compra" type="text" placeholder="Ej. Leroy Merlin, Vivero local..." value={seedFormData.semillaslugarcompra || ''} onChange={e => setSeedFormData({ ...seedFormData, semillaslugarcompra: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
+                                <datalist id="user-lugares-compra">
+                                  {lugaresCompra.map((lugar, i) => <option key={i} value={lugar} />)}
+                                </datalist>
+                              </div>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Precio (€)</label>
+                                <input type="number" step="0.01" min="0" placeholder="0.00" value={seedFormData.semillasprecio || ''} onChange={e => setSeedFormData({ ...seedFormData, semillasprecio: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
+                              </div>
                             </div>
-                          )}
 
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Fecha Origen / Cosecha</label>
-                              <input type="date" value={seedFormData.semillasfechaorigen} onChange={e => setSeedFormData({ ...seedFormData, semillasfechaorigen: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }} />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', minWidth: 0 }}>
+                            <div style={{ minWidth: 0 }}>
+                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>F. Origen</label>
+                              <input type="date" value={seedFormData.semillasfechaorigen} onChange={e => setSeedFormData({ ...seedFormData, semillasfechaorigen: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box', minWidth: 0 }} />
                             </div>
-                            <div>
-                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Fecha Caducidad / Viabilidad</label>
-                              <input type="date" value={seedFormData.semillasfechacaducidad} onChange={e => setSeedFormData({ ...seedFormData, semillasfechacaducidad: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }} />
+                            <div style={{ minWidth: 0 }}>
+                              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>F. Caducidad</label>
+                              <input type="date" value={seedFormData.semillasfechacaducidad} onChange={e => setSeedFormData({ ...seedFormData, semillasfechacaducidad: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box', minWidth: 0 }} />
                             </div>
                           </div>
 
-                          <div>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Ubicación Física</label>
-                            <input type="text" placeholder="Ej. Caja 3 - Nevera, Bote Despensa..." value={seedFormData.semillasubicacionfisica} onChange={e => setSeedFormData({ ...seedFormData, semillasubicacionfisica: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', outline: 'none' }} />
-                          </div>
+
 
                           <div>
                             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Notas y Observaciones</label>
-                            <textarea placeholder="Ej. Guardadas en botes herméticos con gel de sílice..." value={seedFormData.semillasobservaciones} onChange={e => setSeedFormData({ ...seedFormData, semillasobservaciones: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical' }} />
+                            <textarea placeholder="Ej. Guardadas en botes herméticos con gel de sílice..." value={seedFormData.semillasobservaciones} onChange={e => setSeedFormData({ ...seedFormData, semillasobservaciones: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.95rem', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', maxWidth: '100%', overflow: 'auto' }} />
                           </div>
                         </>
                       )}

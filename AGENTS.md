@@ -71,6 +71,7 @@
     - **Ubicación:** Debe colocarse en una Barra de Acción Global (Action Bar Global) situada **debajo del subheader contextual (ej. el encabezado verde)** y **por encima de las pestañas de navegación**.
     - **Diseño del Botón (Solid Blue):** El estilo base debe ser fondo degradado azul (`background: 'linear-gradient(135deg, #0284c7, #0369a1)'`), texto blanco (`color: 'white'`), borde redondeado (`borderRadius: '8px'`), negrita (`fontWeight: 'bold'`), altura (`height: '38px'`), relleno (`padding: '0 16px'`) y sombra (`boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)'`).
     - **Estados e Iconografía:** Debe incluir obligatoriamente el emoji `🔍` al principio del texto (ej. `🔍 Chekeo`).
+19. **Estándar de Formato de Fechas:** En cualquier lugar del programa (tablas, dashboards, modales, alertas, etc.), las fechas se mostrarán SIEMPRE en formato de Día, Mes y Año (ej. `DD/MM/YYYY`). Queda prohibido mostrar formatos crudos de base de datos o anglosajones de cara al usuario.
 
 ## Protocolo de Refuerzo y Castigo (Contingencia de Incumplimiento)
 

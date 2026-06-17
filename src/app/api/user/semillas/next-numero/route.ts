@@ -8,16 +8,34 @@ export async function GET(request: Request) {
 
   const user = await getUserByEmail(email);
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
-
   try {
-    const currentYear = new Date().getFullYear();
-    const [rows]: any = await pool.query(`
-      SELECT semillasnumerocoleccion 
-      FROM semillas 
-      WHERE xsemillasidusuarios = ? 
-        AND YEAR(semillasfechacreacion) = ?
-        AND semillasnumerocoleccion IS NOT NULL
-    `, [user.id, currentYear]);
+    const { searchParams } = new URL(request.url);
+    const ubicacion = searchParams.get('ubicacion') || '';
+
+    let query = '';
+    let queryParams = [];
+
+    if (ubicacion.trim() === '') {
+      query = `
+        SELECT semillasnumerocoleccion 
+        FROM semillas 
+        WHERE xsemillasidusuarios = ? 
+          AND (semillascoleccion IS NULL OR TRIM(semillascoleccion) = '')
+          AND semillasnumerocoleccion IS NOT NULL
+      `;
+      queryParams = [user.id];
+    } else {
+      query = `
+        SELECT semillasnumerocoleccion 
+        FROM semillas 
+        WHERE xsemillasidusuarios = ? 
+          AND TRIM(semillascoleccion) = ?
+          AND semillasnumerocoleccion IS NOT NULL
+      `;
+      queryParams = [user.id, ubicacion.trim()];
+    }
+
+    const [rows]: any = await pool.query(query, queryParams);
 
     const numbers = rows
       .map((r: any) => parseInt(r.semillasnumerocoleccion))

@@ -27,13 +27,23 @@ export async function GET(request: Request) {
     // Calcular el máximo según el plan
     const cleanName = (user.suscripcion || '').toLowerCase();
     let maxConsultas = 5; // Básica
-    if (cleanName.includes('premium')) maxConsultas = 100;
-    else if (cleanName.includes('avanzado') || cleanName.includes('profesional')) maxConsultas = 50;
-    else if (cleanName.includes('esencial') || cleanName.includes('avanzada')) maxConsultas = 20;
+    let maxImages = 1; // Básica
+
+    if (cleanName.includes('premium')) {
+      maxConsultas = 100;
+      maxImages = 4;
+    } else if (cleanName.includes('avanzado') || cleanName.includes('profesional')) {
+      maxConsultas = 50;
+      maxImages = 3;
+    } else if (cleanName.includes('esencial') || cleanName.includes('avanzada')) {
+      maxConsultas = 20;
+      maxImages = 2;
+    }
 
     // Si es superadmin o tiene Premium ilimitado forzado en código
     if (user.roles.includes('superadministrador')) {
       maxConsultas = 100; // Trataremos 100 como Premium
+      maxImages = 4;
     }
 
     // Contar las de este mes
@@ -50,7 +60,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       used: usedConsultas,
       max: maxConsultas,
-      remaining: Math.max(0, maxConsultas - usedConsultas)
+      remaining: Math.max(0, maxConsultas - usedConsultas),
+      maxImages
     });
   } catch (error) {
     console.error('Error obteniendo stats de IA:', error);

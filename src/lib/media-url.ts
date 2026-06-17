@@ -83,7 +83,7 @@ export function getMediaUrl(value?: string | null, options: { cacheBust?: boolea
   const withoutPublic = clean.replace(/^\/?public\//, '');
   const path = withoutPublic.startsWith('/') ? withoutPublic.slice(1) : withoutPublic;
 
-  if (path.startsWith('uploads/')) {
+  if (path.startsWith('uploads/') || path.startsWith('usuarios/')) {
     return buildFirebaseUrl(path, Boolean(options.cacheBust));
   }
 

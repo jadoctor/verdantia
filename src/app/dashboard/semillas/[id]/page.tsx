@@ -30,7 +30,7 @@ export default function EditarSemillaPage() {
     semillasstockactual: '',
     semillasunidadmedida: 'unidades',
     semillasobservaciones: '',
-    semillasubicacionfisica: '',
+    semillascoleccion: '',
     semillasdonante: '',
     semillasactivosino: 1,
     semillascompartir: 0
@@ -50,12 +50,19 @@ export default function EditarSemillaPage() {
   const [draggedHeroPhotoId, setDraggedHeroPhotoId] = useState<number | null>(null);
   const [draggedOverHeroPhotoId, setDraggedOverHeroPhotoId] = useState<number | null>(null);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [lugaresCompra, setLugaresCompra] = useState<string[]>([]);
+  const [ubicacionesFisicas, setUbicacionesFisicas] = useState<string[]>([]);
+  const [showCollectionsDropdown, setShowCollectionsDropdown] = useState(false);
 
   // IA OCR State
   const [ocrLoading, setOcrLoading] = useState(false);
   const [aiSeconds, setAiSeconds] = useState(0);
   const [ocrData, setOcrData] = useState<any>(null);
   const [showOcrModal, setShowOcrModal] = useState(false);
+  const [aiStats, setAiStats] = useState<{ used: number; max: number; remaining: number } | null>(null);
+  const [historial, setHistorial] = useState<any[]>([]);
+  const [showPrintLabel, setShowPrintLabel] = useState(false);
+  const [labelSizeId, setLabelSizeId] = useState('a6');
 
   const [isMainTabsOpen, setIsMainTabsOpen] = useState(true);
 
@@ -77,6 +84,11 @@ export default function EditarSemillaPage() {
           .then(r => r.json())
           .then(d => { if (d.profile?.suscripcion) setSuscripcion(d.profile.suscripcion); })
           .catch(() => {});
+        // Obtener stats IA
+        fetch('/api/user/ai-stats', { headers: { 'x-user-email': user.email } })
+          .then(r => r.json())
+          .then(d => setAiStats(d))
+          .catch(() => {});
       } else {
         router.push('/login');
       }
@@ -89,8 +101,24 @@ export default function EditarSemillaPage() {
       loadSemilla();
       loadCatalogo();
       loadPhotos();
+      loadHistorial();
     }
   }, [userEmail, semillaId]);
+
+  const loadHistorial = async () => {
+    if (!userEmail || !semillaId) return;
+    try {
+      const res = await fetch('/api/user/cultivos', { headers: { 'x-user-email': userEmail } });
+      if (res.ok) {
+        const data = await res.json();
+        const related = (data.cultivos || []).filter((c: any) =>
+          String(c.xcultivoidsemilla) === String(semillaId) ||
+          String(c.idsemillas) === String(semillaId)
+        );
+        setHistorial(related);
+      }
+    } catch (e) { console.error('Error loading historial:', e); }
+  };
 
   const loadPhotos = async () => {
     if (!userEmail || !semillaId) return;
@@ -208,6 +236,7 @@ export default function EditarSemillaPage() {
             semillasnumerocoleccion: semilla.semillasnumerocoleccion || '',
             semillasorigen: semilla.semillasorigen || 'cosecha_propia',
             semillasmarca: semilla.semillasmarca || '',
+            semillaslugarcompra: semilla.semillaslugarcompra || '',
             semillasfechaorigen: semilla.semillasfechaorigen ? semilla.semillasfechaorigen.split('T')[0] : '',
             semillasprecio: semilla.semillasprecio || '',
             semillasfechacaducidad: semilla.semillasfechacaducidad ? semilla.semillasfechacaducidad.split('T')[0] : '',
@@ -216,7 +245,7 @@ export default function EditarSemillaPage() {
             semillasstockactual: semilla.semillasstockactual || '',
             semillasunidadmedida: semilla.semillasunidadmedida || 'unidades',
             semillasobservaciones: semilla.semillasobservaciones || '',
-            semillasubicacionfisica: semilla.semillasubicacionfisica || '',
+            semillascoleccion: semilla.semillascoleccion || '',
             semillasdonante: semilla.donante_nombreusuario ? `@${semilla.donante_nombreusuario}` : (semilla.semillasdonante || ''),
             semillasactivosino: semilla.semillasactivosino !== undefined ? semilla.semillasactivosino : 1,
             semillascompartir: semilla.semillascompartir !== undefined ? semilla.semillascompartir : 0
@@ -229,12 +258,28 @@ export default function EditarSemillaPage() {
             foto: semilla.foto,
             donante_nombreusuario: semilla.donante_nombreusuario,
             donante_email: semilla.donante_email,
-            fechacreacion: semilla.semillasfechacreacion ? new Date(semilla.semillasfechacreacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : null
+            fechacreacion: semilla.semillasfechacreacion ? new Date(semilla.semillasfechacreacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : null,
+            cultivos_activos_count: semilla.cultivos_activos_count || 0
           });
         } else {
           alert('Semilla no encontrada');
           router.push('/dashboard/semillas');
         }
+      }
+
+      // Cargar lugares de compra únicos del usuario
+      const allRes = await fetch('/api/user/semillas', { headers: { 'x-user-email': userEmail! } });
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        const lugares = (allData.semillas || [])
+          .map((s: any) => s.semillaslugarcompra)
+          .filter((l: any) => l && l.trim() !== '');
+        setLugaresCompra([...new Set<string>(lugares)]);
+
+        const ubicaciones = (allData.semillas || [])
+          .map((s: any) => s.semillascoleccion)
+          .filter((u: any) => u && u.trim() !== '');
+        setUbicacionesFisicas([...new Set<string>(ubicaciones)]);
       }
     } catch (e) {
       console.error(e);
@@ -287,6 +332,38 @@ export default function EditarSemillaPage() {
     }
   }, [formData, hasChanges, userEmail, semillaId]);
 
+  // Recalcular el número de colección al cambiar la colección
+  useEffect(() => {
+    if (userEmail && formData.semillascoleccion !== undefined) {
+      let initialUbicacion = '';
+      try {
+        const initObj = JSON.parse(initialData);
+        initialUbicacion = initObj.semillascoleccion || '';
+      } catch (e) {}
+
+      const currentUbicacion = formData.semillascoleccion || '';
+      if (initialData && currentUbicacion.trim() !== initialUbicacion.trim()) {
+        const timer = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/user/semillas/next-numero?ubicacion=${encodeURIComponent(currentUbicacion.trim())}`, {
+              headers: { 'x-user-email': userEmail }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              setFormData((prev: any) => ({
+                ...prev,
+                semillasnumerocoleccion: String(data.nextNumero)
+              }));
+            }
+          } catch (err) {
+            console.error('Error al actualizar el número de colección:', err);
+          }
+        }, 300); // Debounce de 300ms
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [formData.semillascoleccion, userEmail, initialData]);
+
   // Auto-off sharing Effect
   useEffect(() => {
     const noStock = formData.semillasstockactual !== '' && Number(formData.semillasstockactual) <= 0;
@@ -304,8 +381,27 @@ export default function EditarSemillaPage() {
     );
   }
 
+  const handleDeleteSemilla = async () => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta semilla de tu inventario? Esta acción no se puede deshacer.')) return;
+    try {
+      const res = await fetch(`/api/user/semillas/${semillaId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail! }
+      });
+      if (res.ok) {
+        router.push('/dashboard/semillas');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Error al eliminar semilla');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de red al eliminar');
+    }
+  };
+
   return (
-    <div style={{ padding: '20px', width: '100%' }}>
+    <div style={{ padding: '20px', width: '100%', boxSizing: 'border-box' }}>
       
       {/* ── Navegación ── */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -328,9 +424,7 @@ export default function EditarSemillaPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '2rem' }}>🌱</span> 
               {metaData.especiesnombre} {metaData.variedad_nombre ? `- ${metaData.variedad_nombre}` : ''} 
-              <span style={{ fontSize: '1.2rem', fontWeight: 600, color: '#a7f3d0' }}>(Nº {formData.semillasnumerocoleccion || semillaId})</span>
               
               {/* Indicador de Autoguardado */}
               {saveStatus === 'saving' && (
@@ -345,20 +439,168 @@ export default function EditarSemillaPage() {
               )}
             </h1>
             <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
-              Editor de Semilla en Inventario
+              Editor de Semilla en Inventario. {formData.semillascoleccion ? `Colección ${formData.semillascoleccion} (${formData.semillasnumerocoleccion || semillaId})` : `Nº ${formData.semillasnumerocoleccion || semillaId}`}
             </p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {metaData.cultivos_activos_count === 0 && (
+              <button 
+                onClick={handleDeleteSemilla}
+                title="Eliminar esta semilla permanentemente"
+                style={{ 
+                  background: 'rgba(239, 68, 68, 0.2)', 
+                  border: '1px solid rgba(255,255,255,0.3)', 
+                  color: 'white', 
+                  width: '40px', height: '40px', 
+                  borderRadius: '10px', 
+                  cursor: 'pointer', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  fontSize: '1.2rem'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                🗑️
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Toggles Activo y Compartir ── */}
+      {/* ── Ubicación, Número de Colección y Toggles unificados en la misma línea ── */}
       {(() => {
         const noStock = formData.semillasstockactual !== '' && Number(formData.semillasstockactual) <= 0;
         const caducada = formData.semillasfechacaducidad && new Date(formData.semillasfechacaducidad) < new Date();
         const disableShare = noStock || caducada;
 
         return (
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'flex-end', 
+            gap: '16px', 
+            marginBottom: '24px', 
+            flexWrap: 'wrap',
+            background: '#f8fafc', 
+            padding: '20px', 
+            borderRadius: '16px', 
+            border: '2px solid #cbd5e1',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)' 
+          }}>
+            {/* Inputs de Ubicación y Número de Colección agrupados y ajustados */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              {/* Colección */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '150px', position: 'relative' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f766e', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <span>📍</span> Colección
+                </label>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <input
+                    type="text"
+                    name="semillascoleccion"
+                    value={formData.semillascoleccion}
+                    onChange={handleChange}
+                    onFocus={() => setShowCollectionsDropdown(true)}
+                    placeholder="Ej. Caja 3..."
+                    style={{ padding: '12px 30px 12px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none', background: 'white', width: '100%', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowCollectionsDropdown(!showCollectionsDropdown);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      color: '#64748b',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ▼
+                  </button>
+                </div>
+
+                {showCollectionsDropdown && (
+                  <>
+                    <div 
+                      onClick={() => setShowCollectionsDropdown(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: '4px',
+                      background: 'white',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      zIndex: 1000,
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      {ubicacionesFisicas.length === 0 ? (
+                        <div style={{ padding: '10px 12px', fontSize: '0.85rem', color: '#94a3b8' }}>
+                          Sin colecciones previas
+                        </div>
+                      ) : (
+                        ubicacionesFisicas.map((ub, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setFormData((prev: any) => ({ ...prev, semillascoleccion: ub }));
+                              setShowCollectionsDropdown(false);
+                            }}
+                            style={{
+                              padding: '10px 12px',
+                              fontSize: '0.9rem',
+                              color: '#1e293b',
+                              cursor: 'pointer',
+                              background: formData.semillascoleccion === ub ? '#f0fdf4' : 'transparent',
+                              fontWeight: formData.semillascoleccion === ub ? '600' : 'normal',
+                              textAlign: 'left',
+                              transition: 'background 0.15s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = formData.semillascoleccion === ub ? '#f0fdf4' : 'transparent'}
+                          >
+                            {ub}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Número de Colección */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '175px' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 800, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <span>🔢</span> Número de Colección
+                </label>
+                <input 
+                  type="text" 
+                  name="semillasnumerocoleccion" 
+                  value={formData.semillasnumerocoleccion} 
+                  onChange={handleChange} 
+                  style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none', background: 'white', width: '100%' }} 
+                />
+              </div>
+            </div>
+
+            {/* Toggle Activo */}
             <div 
               onClick={() => setFormData({ ...formData, semillasactivosino: formData.semillasactivosino === 1 ? 0 : 1 })}
               style={{ 
@@ -374,24 +616,28 @@ export default function EditarSemillaPage() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 boxShadow: formData.semillasactivosino === 1 ? '0 2px 4px rgba(16,185,129,0.05)' : 'none',
-                flex: '1 1 min-content'
+                height: '48px',
+                width: '185px',
+                flex: '0 0 auto',
+                justifyContent: 'center'
               }}
             >
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '24px', height: '24px', borderRadius: '4px',
-            background: formData.semillasactivosino === 1 ? '#10b981' : '#cbd5e1',
-            color: 'white'
-          }}>
-            {formData.semillasactivosino === 1 ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            )}
-          </div>
-          <span>{formData.semillasactivosino === 1 ? 'Semilla Activa (Disponible)' : 'Semilla Inactiva (Archivada)'}</span>
-        </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '24px', height: '24px', borderRadius: '4px',
+                background: formData.semillasactivosino === 1 ? '#10b981' : '#cbd5e1',
+                color: 'white'
+              }}>
+                {formData.semillasactivosino === 1 ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                )}
+              </div>
+              <span>{formData.semillasactivosino === 1 ? 'Semilla Activa' : 'Semilla Inactiva'}</span>
+            </div>
 
+            {/* Toggle Compartir */}
             <div 
               onClick={() => {
                 if (disableShare) {
@@ -413,7 +659,10 @@ export default function EditarSemillaPage() {
                 cursor: disableShare ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
                 boxShadow: formData.semillascompartir === 1 ? '0 2px 4px rgba(59,130,246,0.05)' : 'none',
-                flex: '1 1 min-content',
+                height: '48px',
+                width: '250px',
+                flex: '0 0 auto',
+                justifyContent: 'center',
                 opacity: disableShare ? 0.7 : 1
               }}
               title={disableShare ? "No disponible: Sin stock o caducada" : ""}
@@ -432,14 +681,14 @@ export default function EditarSemillaPage() {
               </div>
               <span>
                 {formData.semillascompartir === 1 
-                  ? 'Compartida (Comunidad)' 
+                  ? 'Compartida' 
                   : (disableShare 
                       ? (noStock && caducada 
-                          ? 'Privada (Bloqueo: Sin stock y Caducada)' 
+                          ? 'Bloqueada (Stock/Caducidad)' 
                           : (noStock 
-                              ? 'Privada (Bloqueo: Sin stock)' 
-                              : 'Privada (Bloqueo: Caducada)')) 
-                      : 'Privada (Solo tú)')
+                              ? 'Bloqueada (Sin Stock)' 
+                              : 'Bloqueada (Caducada)')) 
+                      : 'Privada')
                 }
               </span>
             </div>
@@ -534,33 +783,39 @@ export default function EditarSemillaPage() {
                   }}
                   crossOrigin="anonymous"
                 />
-                
                 {/* Botón IA OCR */}
                 <button
                   type="button"
                   onClick={() => handleScanOCR(heroPhoto)}
-                  disabled={ocrLoading}
+                  disabled={ocrLoading || (aiStats !== null && aiStats.remaining <= 0)}
                   style={{
                     position: 'absolute', bottom: '8px', right: '8px', zIndex: 10,
-                    background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)',
-                    color: 'white', border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '20px', padding: '6px 12px', fontSize: '0.75rem',
-                    fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px',
-                    cursor: ocrLoading ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)', transition: 'all 0.2s'
+                    background: ocrLoading
+                      ? 'linear-gradient(135deg, #475569, #1e293b)'
+                      : (aiStats?.remaining === 0 ? '#94a3b8' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)'),
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '20px', padding: '5px 10px', fontSize: '0.72rem',
+                    fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px',
+                    cursor: (ocrLoading || aiStats?.remaining === 0) ? 'not-allowed' : 'pointer',
+                    boxShadow: ocrLoading ? 'none' : '0 4px 12px rgba(109,40,217,0.4)',
+                    transition: 'all 0.2s',
                   }}
-                  title="Extraer datos del sobre con IA"
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.9)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.7)'}
+                  title={aiStats?.remaining === 0 ? 'Has agotado tus escaneos del mes' : 'Extraer datos del sobre con IA'}
                 >
-                  {ocrLoading ? (
-                    <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
-                  ) : (
-                    <span>✨</span>
+                  {ocrLoading
+                    ? <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
+                    : <span>✨</span>}
+                  <span>{ocrLoading ? `${aiSeconds}s` : 'Escaneo IA'}</span>
+                  {!ocrLoading && aiStats !== null && (
+                    <span style={{
+                      background: aiStats.remaining > 0 ? 'rgba(255,255,255,0.25)' : 'rgba(239,68,68,0.6)',
+                      padding: '1px 5px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800
+                    }}>
+                      {aiStats.remaining}
+                    </span>
                   )}
-                  {ocrLoading ? 'Analizando...' : 'Escanear'}
                 </button>
-
               </div>
 
               {/* Thumbnails strip */}
@@ -632,6 +887,7 @@ export default function EditarSemillaPage() {
       })()}
 
       <div style={{ marginTop: '24px' }}>
+
         <div 
           onClick={() => setIsMainTabsOpen(!isMainTabsOpen)}
           style={{ cursor: 'pointer', padding: '12px 16px', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '24px', border: '1px solid #e2e8f0', marginBottom: '16px' }}
@@ -658,17 +914,27 @@ export default function EditarSemillaPage() {
         <div style={{ display: isMainTabsOpen ? 'block' : 'none', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'visible' }}>
         
         {/* HEADER TAB */}
-        <div style={{ padding: '0 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '24px' }}>
-          <div 
-            onClick={() => setActiveTab('datos')}
-            style={{ padding: '16px 0', borderBottom: activeTab === 'datos' ? '3px solid #0f766e' : '3px solid transparent', color: activeTab === 'datos' ? '#0f766e' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-            📋 Datos de la Semilla
+        <div style={{ padding: '0 24px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '24px', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '24px' }}>
+            <div onClick={() => setActiveTab('datos')} style={{ padding: '16px 0', borderBottom: activeTab === 'datos' ? '3px solid #0f766e' : '3px solid transparent', color: activeTab === 'datos' ? '#0f766e' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+              📋 Datos de la Semilla
+            </div>
+            <div onClick={() => setActiveTab('fotos')} style={{ padding: '16px 0', borderBottom: activeTab === 'fotos' ? '3px solid #0f766e' : '3px solid transparent', color: activeTab === 'fotos' ? '#0f766e' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+              📷 Fotos ({photos.filter(p => p.origen === 'usuario').length})
+            </div>
+            <div onClick={() => setActiveTab('historial')} style={{ padding: '16px 0', borderBottom: activeTab === 'historial' ? '3px solid #0f766e' : '3px solid transparent', color: activeTab === 'historial' ? '#0f766e' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+              📋 Historial {historial.length > 0 && <span style={{ background: '#dcfce7', color: '#166534', borderRadius: '10px', padding: '1px 7px', fontSize: '0.75rem' }}>{historial.length}</span>}
+            </div>
           </div>
-          <div 
-            onClick={() => setActiveTab('fotos')}
-            style={{ padding: '16px 0', borderBottom: activeTab === 'fotos' ? '3px solid #0f766e' : '3px solid transparent', color: activeTab === 'fotos' ? '#0f766e' : '#64748b', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.2s' }}>
-            📷 Fotos ({photos.filter(p => p.origen === 'usuario').length})
-          </div>
+          {/* Botón Imprimir Etiqueta */}
+          <button
+            type="button"
+            onClick={() => setShowPrintLabel(true)}
+            style={{ padding: '6px 14px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', marginRight: '4px' }}
+            title="Imprimir etiqueta de la semilla"
+          >
+            🖸️ Imprimir Etiqueta
+          </button>
         </div>
 
         {/* TABS CON CSS CONTROLLED DISPLAY */}
@@ -774,10 +1040,7 @@ export default function EditarSemillaPage() {
                 )}
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Número de Colección</label>
-              <input type="text" name="semillasnumerocoleccion" value={formData.semillasnumerocoleccion} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-            </div>
+
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
@@ -786,7 +1049,7 @@ export default function EditarSemillaPage() {
               <select name="semillasorigen" value={formData.semillasorigen} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}>
                 <option value="cosecha_propia">Propia / Extraída</option>
                 <option value="intercambio">Intercambio</option>
-                <option value="sobre_comprado">Sobre Comprado</option>
+                <option value="sobre_comprado">Sobre</option>
                 <option value="por_definir">Pendiente de asignar</option>
               </select>
             </div>
@@ -856,6 +1119,34 @@ export default function EditarSemillaPage() {
                           <option value="Semillas Silvestres" />
                         </datalist>
                       </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Lugar de Compra</label>
+                        <input 
+                          list="user-lugares-compra-detail"
+                          type="text" 
+                          name="semillaslugarcompra" 
+                          placeholder="Ej. Leroy Merlin, Vivero local..." 
+                          value={formData.semillaslugarcompra || ''} 
+                          onChange={handleChange} 
+                          style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
+                        />
+                        <datalist id="user-lugares-compra-detail">
+                          {lugaresCompra.map((lugar, i) => <option key={i} value={lugar} />)}
+                        </datalist>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Precio (€)</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          name="semillasprecio" 
+                          placeholder="0.00" 
+                          value={formData.semillasprecio || ''} 
+                          onChange={handleChange} 
+                          style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} 
+                        />
+                      </div>
                     </>
                   )}
 
@@ -891,7 +1182,7 @@ export default function EditarSemillaPage() {
                           }
                         }
                         if (peso1000) {
-                          return `1g ≈ ${Math.round(1000 / parseFloat(peso1000))} uds`;
+                          return `1 g = ${Math.round(1000 / parseFloat(peso1000))} uds`;
                         }
                       }
                       return "Ej. 1.5";
@@ -963,10 +1254,7 @@ export default function EditarSemillaPage() {
                   <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Caducidad / Viabilidad</label>
                   <input type="date" name="semillasfechacaducidad" value={formData.semillasfechacaducidad} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Ubicación Física</label>
-                  <input type="text" name="semillasubicacionfisica" value={formData.semillasubicacionfisica} onChange={handleChange} placeholder="Ej. Caja 3 - Nevera, Bote Despensa..." style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }} />
-                </div>
+
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -993,9 +1281,236 @@ export default function EditarSemillaPage() {
             onMediaChange={() => loadPhotos()}
           />
         </div>
+
+        {/* TAB HISTORIAL */}
+        <div style={{ display: activeTab === 'historial' ? 'block' : 'none', padding: '24px' }}>
+          <h3 style={{ margin: '0 0 16px', color: '#334155', fontSize: '1.1rem' }}>📋 Historial de Uso de esta Semilla</h3>
+          {historial.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🌱</div>
+              <p style={{ margin: 0 }}>Esta semilla aún no se ha usado en ningún cultivo registrado.</p>
+            </div>
+          ) : (
+            <div style={{ background: 'white', borderRadius: '12px', overflowX: 'auto', border: '1px solid #e2e8f0' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                  <tr>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', color: '#475569', fontWeight: 700 }}>Cultivo</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', color: '#475569', fontWeight: 700 }}>Bancal</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', color: '#475569', fontWeight: 700 }}>Fecha Inicio</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', color: '#475569', fontWeight: 700 }}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historial.map((c: any, i: number) => (
+                    <tr key={c.idcultivos || i} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
+                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{c.especiesnombre || c.variedad_nombre || `Cultivo #${c.idcultivos}`}</td>
+                      <td style={{ padding: '10px 12px', color: '#475569' }}>{c.bancalesnombre || '-'}</td>
+                      <td style={{ padding: '10px 12px', color: '#475569' }}>
+                        {c.cultivosfechainicio ? new Date(c.cultivosfechainicio).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ background: c.cultivosactivosino === 1 ? '#dcfce7' : '#f1f5f9', color: c.cultivosactivosino === 1 ? '#16a34a' : '#64748b', padding: '2px 8px', borderRadius: '10px', fontSize: '0.78rem', fontWeight: 700 }}>
+                          {c.cultivosactivosino === 1 ? '🌿 Activo' : '✅ Finalizado'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
         </div>
 
       </div>
+      {/* MODAL IMPRIMIR ETIQUETA */}
+      {showPrintLabel && formData && (() => {
+        const LABEL_SIZES = [
+          { id: 'a4',   name: 'A4',         desc: '210×297mm', w: '420px', h: 'auto',  printW: '210mm', printH: '297mm', compact: false },
+          { id: 'a5',   name: 'A5',         desc: '148×210mm', w: '300px', h: 'auto',  printW: '148mm', printH: '210mm', compact: false },
+          { id: 'a6',   name: 'A6',         desc: '105×148mm', w: '240px', h: 'auto',  printW: '105mm', printH: '148mm', compact: false },
+          { id: '10x5', name: 'Etiq. 10×5', desc: '100×50mm',  w: '320px', h: '160px', printW: '100mm', printH: '50mm',  compact: true  },
+          { id: '7x4',  name: 'Etiq. 7×4',  desc: '70×40mm',   w: '280px', h: '128px', printW: '70mm',  printH: '40mm',  compact: true  },
+          { id: '5x3',  name: 'Mini 5×3',   desc: '50×30mm',   w: '200px', h: '96px',  printW: '50mm',  printH: '30mm',  compact: true  },
+        ];
+        const sz = LABEL_SIZES.find(s => s.id === labelSizeId) || LABEL_SIZES[2];
+
+        const origenLabel = formData.semillasorigen === 'sobre_comprado' ? '🛒 Sobre'
+          : formData.semillasorigen === 'cosecha_propia' ? '🌱 Cosecha propia'
+          : formData.semillasorigen === 'donacion' ? '🤝 Donación'
+          : formData.semillasorigen === 'intercambio' ? '🔄 Intercambio'
+          : (formData.semillasorigen || '—').replace(/_/g, ' ');
+
+        const fechaCad = formData.semillasfechacaducidad
+          ? new Date(formData.semillasfechacaducidad).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null;
+        const fechaOri = formData.semillasfechaorigen
+          ? new Date(formData.semillasfechaorigen).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null;
+
+        // Clean species & variety display names to avoid duplication
+        const speciesName = (metaData.especiesnombre || '').trim();
+        let varietyName = (metaData.variedad_nombre || '').trim();
+        let cleanVariety = '';
+        if (varietyName && speciesName) {
+          const speciesLower = speciesName.toLowerCase();
+          const varietyLower = varietyName.toLowerCase();
+
+          if (speciesLower !== varietyLower) {
+            if (varietyLower.startsWith(speciesLower)) {
+              let suffix = varietyName.substring(speciesName.length).trim();
+              if (suffix.startsWith('(') && suffix.endsWith(')')) {
+                suffix = suffix.substring(1, suffix.length - 1).trim();
+              }
+              if (suffix) {
+                cleanVariety = suffix;
+              }
+            } else {
+              let tempVariety = varietyName;
+              if (tempVariety.startsWith('(') && tempVariety.endsWith(')')) {
+                tempVariety = tempVariety.substring(1, tempVariety.length - 1).trim();
+              }
+              cleanVariety = tempVariety;
+            }
+          }
+        } else if (varietyName) {
+          cleanVariety = varietyName;
+        }
+
+        const handlePrint = () => {
+          const el = document.getElementById('print-label-content');
+          if (!el) return;
+          const baseUrl = window.location.origin;
+          const fixedContent = el.innerHTML.split('/logo-verdantia-banner.jpg').join(baseUrl + '/logo-verdantia-banner.jpg');
+          const win = window.open('', '_blank');
+          if (!win) return;
+          win.document.write('<html><head><title>Etiqueta Semilla #' + semillaId + '</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:system-ui,sans-serif;background:white;}@media print{@page{size:' + sz.printW + ' ' + sz.printH + ';margin:0;}body{margin:0;padding:4mm;}}@media screen{body{padding:20px;}}</style></head><body>' + fixedContent + '</body></html>');
+          win.document.close();
+          win.focus();
+          const img = win.document.querySelector('img');
+          if (img && !img.complete) {
+            img.onload = () => { win.print(); win.close(); };
+          } else {
+            setTimeout(() => { win.print(); win.close(); }, 300);
+          }
+        };
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+            <div style={{ background: 'white', borderRadius: '16px', width: '94%', maxWidth: '600px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '95vh' }}>
+
+              {/* HEADER */}
+              <div style={{ padding: '14px 20px', background: 'linear-gradient(135deg, #0f766e, #10b981)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                <h2 style={{ margin: 0, fontSize: '1.05rem' }}>🖨️ Imprimir Etiqueta</h2>
+                <button onClick={() => setShowPrintLabel(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'white', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
+              </div>
+
+              {/* SELECTOR TAMAÑO */}
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', flexShrink: 0 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📐 Tamaño de etiqueta</div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {LABEL_SIZES.map(s => (
+                    <button key={s.id} onClick={() => setLabelSizeId(s.id)}
+                      style={{ padding: '6px 12px', borderRadius: '8px', border: '2px solid ' + (labelSizeId === s.id ? '#0f766e' : '#e2e8f0'), background: labelSizeId === s.id ? '#f0fdf4' : 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', transition: 'all 0.15s', minWidth: '72px' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.85rem', color: labelSizeId === s.id ? '#0f766e' : '#334155' }}>{s.name}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{s.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PREVIEW */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', background: '#e2e8f0' }}>
+                <div id="print-label-content" style={{ width: sz.w, height: sz.h === 'auto' ? undefined : sz.h, fontFamily: 'system-ui, sans-serif', background: 'white', border: '2px solid #0f766e', borderRadius: sz.compact ? '6px' : '10px', padding: sz.compact ? '8px 10px' : '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', overflow: 'hidden', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: sz.compact ? '4px' : '10px' }}>
+
+                  {/* Cabecera */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: sz.compact ? '0.8rem' : '1.2rem', fontWeight: 900, color: '#0f766e', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: sz.compact ? 'nowrap' : 'normal' }}>
+                        {speciesName || '—'}
+                        {cleanVariety && (
+                          <span style={{ fontWeight: 600, color: '#475569', fontSize: sz.compact ? '0.72rem' : '0.9rem', marginLeft: '5px' }}>
+                            ({cleanVariety})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ background: '#f0fdf4', border: '2px solid #0f766e', borderRadius: '6px', padding: sz.compact ? '3px 7px' : '6px 10px', textAlign: 'center', flexShrink: 0 }}>
+                      <div style={{ fontSize: '0.55rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Nº</div>
+                      <div style={{ fontWeight: 900, color: '#0f766e', fontSize: sz.compact ? '0.9rem' : '1.2rem', lineHeight: 1 }}>#{formData.semillasnumerocoleccion || semillaId}</div>
+                    </div>
+                  </div>
+
+                  {/* Datos */}
+                  {sz.compact ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: '0.7rem', borderTop: '1px solid #e2e8f0', paddingTop: '5px' }}>
+                      <span><span style={{ color: '#94a3b8' }}>Tipo:</span> <strong>{origenLabel}</strong></span>
+                      <span><span style={{ color: '#94a3b8' }}>Stock:</span> <strong>{formData.semillasstockactual} {formData.semillasunidadmedida === 'unidades' ? 'uds' : formData.semillasunidadmedida}</strong></span>
+                      {fechaCad && <span><span style={{ color: '#94a3b8' }}>Cad:</span> <strong style={{ color: '#92400e' }}>{fechaCad}</strong></span>}
+                      {fechaOri && sz.id !== '5x3' && <span><span style={{ color: '#94a3b8' }}>Cosecha:</span> <strong>{fechaOri}</strong></span>}
+                      {formData.semillasmarca && sz.id !== '5x3' && <span><span style={{ color: '#94a3b8' }}>Marca:</span> <strong>{formData.semillasmarca}</strong></span>}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px', borderTop: '2px solid #e2e8f0', paddingTop: '10px' }}>
+                      <div style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #0f766e' }}>
+                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Tipo / Origen</div>
+                        <strong style={{ fontSize: '0.82rem', color: '#1e293b' }}>{origenLabel}</strong>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #10b981' }}>
+                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Cantidad</div>
+                        <strong style={{ fontSize: '0.82rem', color: '#1e293b' }}>{formData.semillasstockactual} {formData.semillasunidadmedida === 'unidades' ? 'uds' : formData.semillasunidadmedida}</strong>
+                      </div>
+                      {fechaCad && (
+                        <div style={{ background: '#fef9f0', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #f59e0b' }}>
+                          <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Caduca</div>
+                          <strong style={{ fontSize: '0.82rem', color: '#92400e' }}>{fechaCad}</strong>
+                        </div>
+                      )}
+                      {fechaOri && (
+                        <div style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #64748b' }}>
+                          <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Cosecha / Origen</div>
+                          <strong style={{ fontSize: '0.82rem', color: '#1e293b' }}>{fechaOri}</strong>
+                        </div>
+                      )}
+                      {formData.semillasmarca && (
+                        <div style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #cbd5e1' }}>
+                          <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Marca</div>
+                          <strong style={{ fontSize: '0.82rem', color: '#1e293b' }}>{formData.semillasmarca}</strong>
+                        </div>
+                      )}
+                      {formData.semillascoleccion && (
+                        <div style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #cbd5e1' }}>
+                          <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Colección</div>
+                          <strong style={{ fontSize: '0.82rem', color: '#1e293b' }}>{formData.semillascoleccion}</strong>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Logo pie */}
+                  <div style={{ marginTop: 'auto', paddingTop: sz.compact ? '4px' : '8px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <img src="/logo-verdantia-banner.jpg" alt="Verdantia" style={{ height: sz.compact ? '18px' : '28px', objectFit: 'contain', opacity: 0.85 }} />
+                    {formData.semillaslote && <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Lote: {formData.semillaslote}</span>}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* FOOTER */}
+              <div style={{ padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Tamaño: <strong style={{ color: '#0f766e' }}>{sz.name}</strong> ({sz.desc})</span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => setShowPrintLabel(false)} style={{ padding: '8px 16px', border: '1px solid #cbd5e1', background: 'white', borderRadius: '8px', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>Cancelar</button>
+                  <button onClick={handlePrint} style={{ padding: '8px 20px', border: 'none', background: 'linear-gradient(135deg, #0f766e, #10b981)', color: 'white', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    🖨️ Imprimir
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
       {/* MODAL IA OCR COMPARE */}
       {showOcrModal && ocrData && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>

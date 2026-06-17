@@ -74,18 +74,67 @@ export async function PUT(
       xsemillasidvariedades,
       semillasnumerocoleccion, semillasorigen, semillasmarca,
       semillasfechaorigen, semillasprecio, semillasfechacaducidad,
-      semillaslote, semillasstockinicial, semillasstockactual, semillasunidadmedida, semillasobservaciones, semillasubicacionfisica,
+      semillaslote, semillasstockinicial, semillasstockactual, semillasunidadmedida, semillasobservaciones, semillascoleccion,
       semillasdonante, semillascompartir
     } = body;
 
     // Verificar que la semilla pertenezca al usuario
     const [rows]: any = await pool.query(
-      'SELECT idsemillas FROM semillas WHERE idsemillas = ? AND xsemillasidusuarios = ?',
+      'SELECT idsemillas, semillascoleccion, semillasnumerocoleccion FROM semillas WHERE idsemillas = ? AND xsemillasidusuarios = ?',
       [semillaId, user.id]
     );
 
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Semilla no encontrada o no autorizada' }, { status: 404 });
+    }
+
+    const currentUbicacion = rows[0].semillascoleccion || '';
+    const newUbicacion = semillascoleccion || '';
+
+    let finalNumero = semillasnumerocoleccion;
+
+    // Si cambia la ubicación o no hay número asignado, recalculamos de forma autónoma
+    if (currentUbicacion.trim() !== newUbicacion.trim() || !finalNumero) {
+      const u = newUbicacion;
+      let query = '';
+      let queryParams = [];
+
+      if (u.trim() === '') {
+        query = `
+          SELECT semillasnumerocoleccion 
+          FROM semillas 
+          WHERE xsemillasidusuarios = ? 
+            AND (semillascoleccion IS NULL OR TRIM(semillascoleccion) = '')
+            AND semillasnumerocoleccion IS NOT NULL
+        `;
+        queryParams = [user.id];
+      } else {
+        query = `
+          SELECT semillasnumerocoleccion 
+          FROM semillas 
+          WHERE xsemillasidusuarios = ? 
+            AND TRIM(semillascoleccion) = ?
+            AND semillasnumerocoleccion IS NOT NULL
+        `;
+        queryParams = [user.id, u.trim()];
+      }
+
+      const [rowsNum]: any = await pool.query(query, queryParams);
+
+      const numbers = rowsNum
+        .map((r: any) => parseInt(r.semillasnumerocoleccion))
+        .filter((n: number) => !isNaN(n))
+        .sort((a: number, b: number) => a - b);
+
+      let nextNum = 1;
+      for (const num of numbers) {
+        if (num === nextNum) {
+          nextNum++;
+        } else if (num > nextNum) {
+          break;
+        }
+      }
+      finalNumero = nextNum;
     }
 
     let finalDonante = null;
@@ -120,6 +169,7 @@ export async function PUT(
         semillasnumerocoleccion = ?,
         semillasorigen = ?,
         semillasmarca = ?,
+        semillaslugarcompra = ?,
         semillasfechaorigen = ?,
         semillasprecio = ?,
         semillasfechacaducidad = ?,
@@ -128,7 +178,7 @@ export async function PUT(
         semillasstockactual = ?,
         semillasunidadmedida = ?,
         semillasobservaciones = ?,
-        semillasubicacionfisica = ?,
+        semillascoleccion = ?,
         semillasdonante = ?,
         xsemillasidusuariodonante = ?,
         semillasactivosino = COALESCE(?, semillasactivosino),
@@ -136,9 +186,10 @@ export async function PUT(
        WHERE idsemillas = ? AND xsemillasidusuarios = ?`,
       [
         xsemillasidvariedades || null,
-        semillasnumerocoleccion || null,
+        finalNumero || null,
         semillasorigen || 'cosecha_propia',
         semillasmarca || null,
+        body.semillaslugarcompra || null,
         semillasfechaorigen || null,
         semillasprecio || null,
         semillasfechacaducidad || null,
@@ -147,7 +198,7 @@ export async function PUT(
         semillasstockactual || null,
         semillasunidadmedida || 'unidades',
         semillasobservaciones || null,
-        semillasubicacionfisica || null,
+        semillascoleccion || null,
         finalDonante,
         finalUsuarioDonanteId,
         body.semillasactivosino !== undefined ? body.semillasactivosino : null,
