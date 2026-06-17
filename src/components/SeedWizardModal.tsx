@@ -193,6 +193,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
       semillasstockactual: stockValue !== '' ? stockValue : prev.semillasstockactual,
       semillasunidadmedida: stockValue !== '' ? stockUnidad : prev.semillasunidadmedida,
       semillasobservaciones: (selectedProposals.semillasobservaciones && aiProposals?.semillasobservaciones) ? aiProposals.semillasobservaciones : prev.semillasobservaciones,
+      customVarietyName: (selectedProposals.variedad_detectada && aiProposals?.variedad_detectada) ? aiProposals.variedad_detectada : prev.customVarietyName
     }));
 
     // 4. Close the diff modal
@@ -216,18 +217,31 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
               let matchedVariedad = null;
               if (selectedProposals.variedad_detectada && detectedVariedad) {
                 matchedVariedad = vars.find((v: any) =>
-                  v.variedadesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
-                  detectedVariedad.toLowerCase().includes(v.variedadesnombre.toLowerCase())
+                  // Ignorar variedades sin nombre (un nombre vacío siempre haría match por includes(""))
+                  v.variedadesnombre && v.variedadesnombre.trim() !== '' &&
+                  (v.variedadesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
+                  detectedVariedad.toLowerCase().includes(v.variedadesnombre.toLowerCase()))
                 );
               }
 
               if (matchedVariedad) {
+                // Variedad exacta encontrada: la usamos y borramos el nombre personalizado
                 setSelectedVariedad(matchedVariedad);
+                setSeedFormData(prev => ({ ...prev, customVarietyName: '' }));
                 setSeedStep(3);
               } else {
-                const genericVar = vars.find((v: any) => v.variedadesesgenerica === 1) || vars[0];
+                // Variedad no reconocida: asignamos la variedad genérica como base
+                const validVars = vars.filter((v: any) => v.variedadesnombre && v.variedadesnombre.trim() !== '');
+                // eslint-disable-next-line eqeqeq
+                const genericVar = validVars.find((v: any) => v.variedadesesgenerica == 1 || v.variedadesesgenerica === true)
+                  || validVars[0];
                 if (genericVar) {
                   setSelectedVariedad(genericVar);
+                  // Forzamos explícitamente el nombre detectado por la IA como customVarietyName
+                  // usamos la variable local detectedVariedad (no depende del estado React)
+                  if (detectedVariedad) {
+                    setSeedFormData(prev => ({ ...prev, customVarietyName: detectedVariedad }));
+                  }
                   setSeedStep(3);
                 } else {
                   setSeedStep(2);
@@ -409,7 +423,10 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
   };
 
   const handleContinueWithoutVariety = () => {
-    const genericVar = catalogoVariedades.find(v => v.variedadesesgenerica === 1) || catalogoVariedades[0];
+    const validVars = catalogoVariedades.filter(v => v.variedadesnombre && v.variedadesnombre.trim() !== '');
+    // eslint-disable-next-line eqeqeq
+    const genericVar = validVars.find(v => v.variedadesesgenerica == 1 || v.variedadesesgenerica === true)
+      || validVars[0];
     if (genericVar) {
       setSelectedVariedad(genericVar);
       setSeedStep(3);
@@ -462,7 +479,8 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
         semillasunidadmedida: seedFormData.semillasunidadmedida,
         semillasobservaciones: seedFormData.semillasobservaciones || null,
         semillascoleccion: seedFormData.semillascoleccion || null,
-        scannedImagesBase64: scannedImagesBase64.length > 0 ? scannedImagesBase64 : null
+        scannedImagesBase64: scannedImagesBase64.length > 0 ? scannedImagesBase64 : null,
+        customVarietyName: seedFormData.customVarietyName || null
       };
 
       const res = await fetch('/api/user/semillas', {
@@ -537,7 +555,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
             <p style={{ margin: '4px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>
               {seedStep === 1 && 'Paso 1 de 3: Elige la hortaliza'}
               {seedStep === 2 && `Paso 2 de 3: Elige la variedad de ${selectedEspecie?.especiesnombre}`}
-              {seedStep === 3 && `Paso 3 de 3: Detalles de la semilla para ${selectedVariedad?.variedadesnombre}`}
+              {seedStep === 3 && `Paso 3 de 3: Detalles de la semilla para ${seedFormData.customVarietyName || selectedVariedad?.variedadesnombre}`}
               {seedStep === 4 && '¡Semilla guardada con éxito!'}
             </p>
           </div>
@@ -624,7 +642,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
               <div style={{ fontSize: '4.5rem', marginBottom: '16px' }}>🎉</div>
               <h3 style={{ color: '#0f766e', margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 900 }}>¡Semillas Registradas!</h3>
               <p style={{ color: '#64748b', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
-                La semilla de <strong>{selectedVariedad?.variedadesnombre}</strong> se ha añadido correctamente a tu banco de semillas.
+                La semilla de <strong>{seedFormData.customVarietyName || selectedVariedad?.variedadesnombre}</strong> se ha añadido correctamente a tu banco de semillas.
               </p>
             </div>
           ) : (
@@ -781,7 +799,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                     <div style={{ background: '#eff6ff', border: '2px solid #3b82f6', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.1)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                          <span style={{fontSize: '1.5rem'}}>✅</span>
-                         <h3 style={{ margin: 0, color: '#1e40af', fontSize: '1.1rem', fontWeight: 800 }}>Variedad: {selectedVariedad.variedadesnombre}</h3>
+                         <h3 style={{ margin: 0, color: '#1e40af', fontSize: '1.1rem', fontWeight: 800 }}>Variedad: {seedFormData.customVarietyName || selectedVariedad.variedadesnombre}</h3>
                       </div>
                       <button onClick={() => { setSelectedVariedad(null); setSeedStep(2); }} style={{ background: 'white', border: '1px solid #bfdbfe', color: '#3b82f6', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
                     </div>
@@ -825,7 +843,8 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             onMouseOver={e => e.currentTarget.style.borderColor = '#3b82f6'}
                             onMouseOut={e => e.currentTarget.style.borderColor = '#e2e8f0'}
                           >
-                            {v.variedadesesgenerica === 1 && <span style={{ fontSize: '0.65rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, alignSelf: 'flex-start' }}>🏅 Común / Gold</span>}
+                            {/* eslint-disable-next-line eqeqeq */}
+                            {(v.variedadesesgenerica == 1 || v.variedadesesgenerica === true) && <span style={{ fontSize: '0.65rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, alignSelf: 'flex-start' }}>🏅 Común / Gold</span>}
                             {v.foto ? (
                               <div style={{ width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
                                 <img src={getMediaUrl(v.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />

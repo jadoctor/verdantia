@@ -33,7 +33,8 @@ export default function EditarSemillaPage() {
     semillascoleccion: '',
     semillasdonante: '',
     semillasactivosino: 1,
-    semillascompartir: 0
+    semillascompartir: 0,
+    customVarietyName: ''
   });
   const [metaData, setMetaData] = useState<any>({});
   const [catalogo, setCatalogo] = useState<any[]>([]);
@@ -248,7 +249,8 @@ export default function EditarSemillaPage() {
             semillascoleccion: semilla.semillascoleccion || '',
             semillasdonante: semilla.donante_nombreusuario ? `@${semilla.donante_nombreusuario}` : (semilla.semillasdonante || ''),
             semillasactivosino: semilla.semillasactivosino !== undefined ? semilla.semillasactivosino : 1,
-            semillascompartir: semilla.semillascompartir !== undefined ? semilla.semillascompartir : 0
+            semillascompartir: semilla.semillascompartir !== undefined ? semilla.semillascompartir : 0,
+            customVarietyName: ''
           };
           setFormData(parsed);
           setInitialData(JSON.stringify(parsed));
@@ -308,7 +310,39 @@ export default function EditarSemillaPage() {
       });
       
       if (res.ok) {
-        setInitialData(JSON.stringify(dataToSave));
+        const resData = await res.json().catch(() => ({}));
+        if (resData.newVariedadId) {
+          const newVarIdStr = resData.newVariedadId.toString();
+          const updatedFormData = {
+            ...dataToSave,
+            xsemillasidvariedades: newVarIdStr,
+            customVarietyName: ''
+          };
+          setFormData(updatedFormData);
+          setInitialData(JSON.stringify(updatedFormData));
+          
+          if (resData.newVariedadNombre) {
+            setMetaData((prev: any) => ({
+              ...prev,
+              variedad_nombre: resData.newVariedadNombre
+            }));
+          }
+          
+          // Recargar para sincronizar catálogo y semilla
+          loadSemilla();
+          loadCatalogo();
+        } else {
+          if (dataToSave.customVarietyName) {
+            const updatedFormData = {
+              ...dataToSave,
+              customVarietyName: ''
+            };
+            setFormData(updatedFormData);
+            setInitialData(JSON.stringify(updatedFormData));
+          } else {
+            setInitialData(JSON.stringify(dataToSave));
+          }
+        }
         setSaveStatus('success');
         setTimeout(() => setSaveStatus('idle'), 1500);
       } else {
@@ -1008,7 +1042,7 @@ export default function EditarSemillaPage() {
                   }}>
                     {(() => {
                       const vars = catalogo.find(esp => esp.idespecies.toString() === selectedEspecieId)?.variedades || [];
-                      const globalVars = vars.filter((v: any) => !v.xvariedadesidusuarios);
+                      const globalVars = vars;
                       if (globalVars.length === 0) {
                         return (
                           <div style={{ padding: '10px 12px', color: '#94a3b8', fontStyle: 'italic' }}>
@@ -1533,17 +1567,32 @@ export default function EditarSemillaPage() {
                       });
 
                       let newEspecieId = selectedEspecieId;
-                      if (ocrData.especie_detectada) {
-                        const detected = ocrData.especie_detectada.toLowerCase();
-                        for (const esp of catalogo) {
-                          const vMatch = esp.variedades?.find((v: any) => {
-                            const vNombre = v.variedadesnombre?.toLowerCase() || '';
-                            return vNombre && (vNombre.includes(detected) || detected.includes(vNombre));
-                          });
-                          if (vMatch && vMatch.idvariedades) {
-                            updates.xsemillasidvariedades = vMatch.idvariedades.toString();
-                            newEspecieId = esp.idespecies?.toString();
-                            break;
+                      let matchedVariety: any = null;
+
+                      const detectedEspecie = ocrData.especie_detectada;
+                      const detectedVariedad = ocrData.variedad_detectada;
+
+                      if (detectedEspecie) {
+                        const esp = catalogo.find(e => e.especiesnombre.toLowerCase() === detectedEspecie.toLowerCase());
+                        if (esp) {
+                          newEspecieId = esp.idespecies.toString();
+                          
+                          if (detectedVariedad) {
+                            matchedVariety = esp.variedades?.find((v: any) =>
+                              v.variedadesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
+                              detectedVariedad.toLowerCase().includes(v.variedadesnombre.toLowerCase())
+                            );
+                          }
+                          
+                          if (matchedVariety) {
+                            updates.xsemillasidvariedades = matchedVariety.idvariedades.toString();
+                            updates.customVarietyName = '';
+                          } else {
+                            const genericVar = esp.variedades?.find((v: any) => v.variedadesesgenerica === 1) || esp.variedades?.[0];
+                            if (genericVar) {
+                              updates.xsemillasidvariedades = genericVar.idvariedades.toString();
+                              updates.customVarietyName = detectedVariedad;
+                            }
                           }
                         }
                       }
@@ -1637,13 +1686,48 @@ export default function EditarSemillaPage() {
                   <div style={{ marginTop: '8px', padding: '12px', background: '#f0fdfa', borderRadius: '8px', border: '1px dashed #14b8a6', fontSize: '0.85rem', color: '#0f766e' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <strong style={{ display: 'block', marginBottom: '4px' }}>🌱 Variedad sugerida por IA:</strong>
+                        <strong style={{ display: 'block', marginBottom: '4px' }}>🌱 Hortaliza sugerida por IA:</strong>
                         {ocrData.especie_detectada}
+                      </div>
+                      {(() => {
+                        const detected = ocrData.especie_detectada.toLowerCase();
+                        const esp = catalogo.find(e => e.especiesnombre.toLowerCase() === detected);
+                        if (esp) {
+                          return (
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setSelectedEspecieId(esp.idespecies.toString());
+                                const genericVar = esp.variedades?.find((v: any) => v.variedadesesgenerica === 1) || esp.variedades?.[0];
+                                if (genericVar) {
+                                  setFormData((prev: any) => ({ ...prev, xsemillasidvariedades: genericVar.idvariedades.toString() }));
+                                }
+                                setOcrData((prev: any) => ({ ...prev, especie_detectada: null }));
+                              }}
+                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(16,185,129,0.3)' }}
+                            >
+                              Aplicar Hortaliza
+                            </button>
+                          );
+                        }
+                        return <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin coincidencia en catálogo</span>;
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {ocrData.variedad_detectada && (
+                  <div style={{ marginTop: '8px', padding: '12px', background: '#f5f3ff', borderRadius: '8px', border: '1px dashed #8b5cf6', fontSize: '0.85rem', color: '#5b21b6' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong style={{ display: 'block', marginBottom: '4px' }}>✨ Variedad sugerida por IA:</strong>
+                        {ocrData.variedad_detectada}
                       </div>
                       {(() => {
                         let matchedVariety: any = null;
                         let matchedEspecieId: string | null = null;
-                        const detected = ocrData.especie_detectada.toLowerCase();
+                        const detected = ocrData.variedad_detectada.toLowerCase();
+                        
                         for (const esp of catalogo) {
                           const vMatch = esp.variedades?.find((v: any) => 
                             v.variedadesnombre.toLowerCase().includes(detected) || 
@@ -1655,23 +1739,51 @@ export default function EditarSemillaPage() {
                             break;
                           }
                         }
-                        
+
                         if (matchedVariety) {
                           return (
                             <button 
                               type="button"
                               onClick={() => {
                                 setSelectedEspecieId(matchedEspecieId!);
-                                setFormData((prev: any) => ({ ...prev, xsemillasidvariedades: matchedVariety.idvariedades.toString() }));
-                                setOcrData((prev: any) => ({ ...prev, especie_detectada: null }));
+                                setFormData((prev: any) => ({ 
+                                  ...prev, 
+                                  xsemillasidvariedades: matchedVariety.idvariedades.toString(),
+                                  customVarietyName: ''
+                                }));
+                                setOcrData((prev: any) => ({ ...prev, variedad_detectada: null }));
                               }}
-                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(16,185,129,0.3)' }}
+                              style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(139,92,246,0.3)' }}
                             >
                               Aplicar ({matchedVariety.variedadesnombre})
                             </button>
                           );
+                        } else {
+                          const activeEspId = matchedEspecieId || selectedEspecieId;
+                          const esp = catalogo.find(e => e.idespecies.toString() === activeEspId);
+                          const genericVar = esp?.variedades?.find((v: any) => v.variedadesesgenerica === 1) || esp?.variedades?.[0];
+                          
+                          if (genericVar) {
+                            return (
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  if (matchedEspecieId) setSelectedEspecieId(matchedEspecieId);
+                                  setFormData((prev: any) => ({ 
+                                    ...prev, 
+                                    xsemillasidvariedades: genericVar.idvariedades.toString(),
+                                    customVarietyName: ocrData.variedad_detectada
+                                  }));
+                                  setOcrData((prev: any) => ({ ...prev, variedad_detectada: null }));
+                                }}
+                                style={{ background: '#6d28d9', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(109,40,217,0.3)' }}
+                              >
+                                Aplicar (Nueva variedad)
+                              </button>
+                            );
+                          }
                         }
-                        return <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin coincidencia en catálogo</span>;
+                        return <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontStyle: 'italic' }}>Selecciona hortaliza primero</span>;
                       })()}
                     </div>
                   </div>

@@ -14,19 +14,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ espe
   try {
     const especieId = resolvedParams.especieId;
 
-    // Variedades globales (no de usuario) de esta especie
+    // Variedades globales y del usuario de esta especie
     const [variedades] = await pool.query(`
       SELECT v.idvariedades, v.variedadesnombre, v.variedadesdescripcion, v.variedadesicono,
              v.variedadescolor, v.variedadestamano, v.variedadesesgenerica, v.variedadesdificultad,
+             v.xvariedadesidusuarios,
              (SELECT datosadjuntosruta FROM datosadjuntos 
               WHERE xdatosadjuntosidvariedades = v.idvariedades AND datosadjuntostipo = 'imagen' 
               AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as foto
       FROM variedades v
       WHERE v.xvariedadesidespecies = ? 
-        AND v.xvariedadesidusuarios IS NULL
+        AND (v.xvariedadesidusuarios IS NULL OR v.xvariedadesidusuarios = ?)
         AND v.variedadesvisibilidadsino = 1
       ORDER BY v.variedadesesgenerica DESC, v.variedadesnombre
-    `, [especieId]);
+    `, [especieId, user.id]);
 
     // También traer el nombre de la especie para contexto
     const [especieRows]: any = await pool.query(

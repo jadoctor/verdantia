@@ -26,7 +26,7 @@ export default function MiPlantaDetail() {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'no-changes'>('idle');
   const [activeTab, setActiveTab] = useState('taxonomia');
-  const [fichaOpen, setFichaOpen] = useState(false);
+  const [fichaOpen, setFichaOpen] = useState(true);
   const [cultivosOpen, setCultivosOpen] = useState(true);
   const [showCultivoModal, setShowCultivoModal] = useState(false);
   
@@ -334,7 +334,7 @@ export default function MiPlantaDetail() {
     if (!planta) return null;
     const fieldWithoutPrefix = field.replace('variedades', '');
     const isOverridden = planta[`_p_${fieldWithoutPrefix}`] === 1 || (formData[field] !== undefined && formData[field] !== null);
-    const inheritedValue = planta[fieldWithoutPrefix] || '';
+    const inheritedValue = planta[`h_${fieldWithoutPrefix}`] !== undefined ? planta[`h_${fieldWithoutPrefix}`] : (planta[fieldWithoutPrefix] || '');
     const currentValue = formData[field] !== undefined ? formData[field] : '';
 
     return (
@@ -473,9 +473,10 @@ export default function MiPlantaDetail() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              {planta._p_nombre 
+              {/* Nombre: si el usuario ha puesto uno (y no es vacío), mostrarlo; si no, componer desde especie + variedad gold */}
+              {(planta._p_nombre && planta.nombre && planta.nombre.trim() !== '')
                 ? planta.nombre 
-                : `${planta.especiesnombre} ${!planta.es_generica && planta.nombre_gold ? planta.nombre_gold : ''}`}
+                : `${planta.especiesnombre}${!planta.es_generica && planta.nombre_gold ? ` ${planta.nombre_gold}` : ''}`}
               
               {isDirty && (
                 <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
@@ -495,8 +496,8 @@ export default function MiPlantaDetail() {
               )}
             </h1>
             <p style={{ margin: '4px 0 0', fontWeight: '500', fontStyle: 'italic', fontSize: '1.1rem', opacity: 0.9 }}>
-              {planta._p_nombre 
-                ? `${planta.especiesnombre} ${!planta.es_generica && planta.nombre_gold ? `· ${planta.nombre_gold}` : ''}`
+              {(planta._p_nombre && planta.nombre && planta.nombre.trim() !== '')
+                ? `${planta.especiesnombre}${!planta.es_generica && planta.nombre_gold ? ` · ${planta.nombre_gold}` : ''}`
                 : planta.especiesnombre}
             </p>
           </div>
@@ -772,7 +773,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -793,7 +794,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -818,7 +819,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -843,7 +844,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -868,7 +869,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">

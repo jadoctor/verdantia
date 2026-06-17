@@ -394,6 +394,53 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <ol style={{ color: '#14532d', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '24px' }}>
+              <strong>17/06/2026 20:00 – Despliegue v0.1.25 - Refactorización de Header de Edición y Datos del Usuario</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>El subheader de edición no centraba de forma horizontal el bloque de información a la derecha del título principal.</li>
+                  <li style={{ marginBottom: '8px' }}>Al colapsar el acordeón "Datos del Usuario", la información básica quedaba oculta, requiriendo expandirlo de forma redundante.</li>
+                  <li style={{ marginBottom: '8px' }}>Las tipografías de las pestañas en el panel de usuarios eran demasiado toscas en comparación con otros formularios de la plataforma.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>dashboard/admin/usuarios/[id]/page.tsx</code>: Centrado horizontal flex de subheader, maquetado de datos básicos inline al colapsar, y rediseño de las pestañas a tamaño <code>0.82rem</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>package.json</code> &amp; <code>src/app/page.tsx</code>: Versión del proyecto incrementada a 0.1.25 y estampada.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Diseño uniforme de subheader con centrado de datos, colapso dinámico con vista básica y pestañas compactas estilizadas.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
+              <strong>15/06/2026 21:41 – Despliegue v0.1.24 - Asistente de Semillas y Diff Modal</strong>
+              <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}>La numeración de semillas no se calculaba de forma secuencial correlativa e independiente por Colección.</li>
+                  <li style={{ marginBottom: '8px' }}>El asistente de autocompletar semillas no soportaba la inyección de variedades personalizadas de catálogo.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>api/user/semillas/next-numero/route.ts</code> y <code>api/user/semillas/route.ts</code>: Cálculo secuencial por colección en lugar de por año y soporte para variedades dinámicas de usuario.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>dashboard/semillas/[id]/page.tsx</code>: Integración de dropdown personalizado y formulario simplificado.</li>
+                </ul>
+              </div>
+              <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>C. Problemas resueltos</h5>
+              <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li>Numeración de colecciones e inyección de variedades custom funcionando perfectamente en tiempo real.</li>
+                </ul>
+              </div>
+            </li>
+            <li style={{ marginBottom: '24px' }}>
               <strong>14/06/2026 21:39 – Despliegue v0.1.23 - Integración del módulo de Familias y Análisis</strong>
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>

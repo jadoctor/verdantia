@@ -545,21 +545,39 @@ export default function MisPlantasPage() {
                       onClick={() => router.push(`/dashboard/mis-plantas/${p.idvariedades}`)}
                     >
                       {/* Header de la tarjeta */}
-                      <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '40px' }}>
+                      <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                           <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
                             {p.especiesnombre}
                           </span>
-                          {Number(p.variedadesvisibilidadsino ?? 1) === 0 && (
-                            <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                              💤 Inactiva
-                            </span>
-                          )}
-                          {Number(p.origen_visibilidad ?? 1) === 0 && (
-                            <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#dc2626', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }} title="Esta variedad ha sido descatalogada del catálogo general por el administrador.">
-                              🚫 Descatalogada
-                            </span>
-                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {Number(p.variedadesvisibilidadsino ?? 1) === 0 && (
+                              <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                💤 Inactiva
+                              </span>
+                            )}
+                            {Number(p.origen_visibilidad ?? 1) === 0 && (
+                              <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#dc2626', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }} title="Esta variedad ha sido descatalogada del catálogo general por el administrador.">
+                                🚫 Descatalogada
+                              </span>
+                            )}
+                            {/* Botón Editar explícito */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/mis-plantas/${p.idvariedades}`); }}
+                              title="Editar esta variedad"
+                              style={{
+                                background: 'white', border: '1px solid #cbd5e1', color: '#475569',
+                                width: 28, height: 28, borderRadius: '8px',
+                                cursor: 'pointer', fontSize: '0.85rem', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'all 0.2s', flexShrink: 0
+                              }}
+                              onMouseOver={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#86efac'; e.currentTarget.style.color = '#059669'; }}
+                              onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#475569'; }}
+                            >
+                              ✏️
+                            </button>
+                          </div>
                         </div>
                         {!p.es_generica && (
                           <span style={{ fontSize: '0.75rem', color: '#64748b' }}>

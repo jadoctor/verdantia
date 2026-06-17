@@ -29,60 +29,159 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vg.variedadesvisibilidadsino AS origen_visibilidad,
 
         -- Campos con herencia triple: usuario → gold → especie
-        COALESCE(vu.variedadesnombre, vg.variedadesnombre) AS nombre,
-        COALESCE(vu.variedadesdescripcion, vg.variedadesdescripcion, e.especiesdescripcion) AS descripcion,
-        COALESCE(vu.variedadescolor, vg.variedadescolor, e.especiescolor) AS color,
-        COALESCE(vu.variedadestamano, vg.variedadestamano, e.especiestamano) AS tamano,
-        COALESCE(vu.variedadesdiasgerminacion, vg.variedadesdiasgerminacion, ef_germ.especiesfasesduraciondias) AS diasgerminacion,
+        COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS nombre,
+        vg.variedadesnombre AS h_nombre,
+
+        COALESCE(NULLIF(vu.variedadesdescripcion, ''), vg.variedadesdescripcion, e.especiesdescripcion) AS descripcion,
+        COALESCE(vg.variedadesdescripcion, e.especiesdescripcion) AS h_descripcion,
+
+        COALESCE(NULLIF(vu.variedadescolor, ''), vg.variedadescolor, e.especiescolor) AS color,
+        COALESCE(vg.variedadescolor, e.especiescolor) AS h_color,
+
+        COALESCE(NULLIF(vu.variedadestamano, ''), vg.variedadestamano, e.especiestamano) AS tamano,
+        COALESCE(vg.variedadestamano, e.especiestamano) AS h_tamano,
+
         COALESCE(vu.variedadesviabilidadsemilla, vg.variedadesviabilidadsemilla, e.especiesviabilidadsemilla) AS viabilidadsemilla,
-        COALESCE(vu.variedadesdiashastafructificacion, vg.variedadesdiashastafructificacion, ef_fruct.especiesfasesduraciondias) AS diashastafructificacion,
+        COALESCE(vg.variedadesviabilidadsemilla, e.especiesviabilidadsemilla) AS h_viabilidadsemilla,
+
         COALESCE(vu.variedadestemperaturaminima, vg.variedadestemperaturaminima, e.especiestemperaturaminima) AS temperaturaminima,
+        COALESCE(vg.variedadestemperaturaminima, e.especiestemperaturaminima) AS h_temperaturaminima,
+
         COALESCE(vu.variedadestemperaturaoptima, vg.variedadestemperaturaoptima, e.especiestemperaturaoptima) AS temperaturaoptima,
+        COALESCE(vg.variedadestemperaturaoptima, e.especiestemperaturaoptima) AS h_temperaturaoptima,
+
         COALESCE(vu.variedadestemperaturamaxima, vg.variedadestemperaturamaxima, e.especiestemperaturamaxima) AS temperaturamaxima,
+        COALESCE(vg.variedadestemperaturamaxima, e.especiestemperaturamaxima) AS h_temperaturamaxima,
+
         COALESCE(vu.variedadesmarcoplantas, vg.variedadesmarcoplantas, e.especiesmarcoplantas) AS marcoplantas,
+        COALESCE(vg.variedadesmarcoplantas, e.especiesmarcoplantas) AS h_marcoplantas,
+
         COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesmarcofilas) AS marcofilas,
+        COALESCE(vg.variedadesmarcofilas, e.especiesmarcofilas) AS h_marcofilas,
+
         COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesmarcomargen) AS marcomargen,
+        COALESCE(vg.variedadesmarcomargen, e.especiesmarcomargen) AS h_marcomargen,
+
         COALESCE(vu.variedadesprofundidadsiembra, vg.variedadesprofundidadsiembra, e.especiesprofundidadsiembra) AS profundidadsiembra,
+        COALESCE(vg.variedadesprofundidadsiembra, e.especiesprofundidadsiembra) AS h_profundidadsiembra,
+
         COALESCE(vu.variedadesprofundidadtrasplante, vg.variedadesprofundidadtrasplante, e.especiesprofundidadtrasplante) AS profundidadtrasplante,
+        COALESCE(vg.variedadesprofundidadtrasplante, e.especiesprofundidadtrasplante) AS h_profundidadtrasplante,
+
         COALESCE(vu.variedadeshistoria, vg.variedadeshistoria, e.especieshistoria) AS historia,
+        COALESCE(vg.variedadeshistoria, e.especieshistoria) AS h_historia,
+
         COALESCE(vu.variedadessemillerodesde, vg.variedadessemillerodesde, e.especiesfechasemillerodesde) AS semillerodesde,
+        COALESCE(vg.variedadessemillerodesde, e.especiesfechasemillerodesde) AS h_semillerodesde,
+
         COALESCE(vu.variedadessemillerohasta, vg.variedadessemillerohasta, e.especiesfechasemillerohasta) AS semillerohasta,
+        COALESCE(vg.variedadessemillerohasta, e.especiesfechasemillerohasta) AS h_semillerohasta,
+
         COALESCE(vu.variedadessiembradirectadesde, vg.variedadessiembradirectadesde, e.especiesfechasiembradirectadesde) AS siembradirectadesde,
+        COALESCE(vg.variedadessiembradirectadesde, e.especiesfechasiembradirectadesde) AS h_siembradirectadesde,
+
         COALESCE(vu.variedadessiembradirectahasta, vg.variedadessiembradirectahasta, e.especiesfechasiembradirectahasta) AS siembradirectahasta,
+        COALESCE(vg.variedadessiembradirectahasta, e.especiesfechasiembradirectahasta) AS h_siembradirectahasta,
+
         COALESCE(vu.variedadestrasplantedesde, vg.variedadestrasplantedesde, e.especiestrasplantedesde) AS trasplantedesde,
+        COALESCE(vg.variedadestrasplantedesde, e.especiestrasplantedesde) AS h_trasplantedesde,
+
         COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS trasplantehasta,
+        COALESCE(vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS h_trasplantehasta,
+
         COALESCE(vu.variedadesrecolecciondesde, vg.variedadesrecolecciondesde, e.especiesfecharecolecciondesde) AS recolecciondesde,
+        COALESCE(vg.variedadesrecolecciondesde, e.especiesfecharecolecciondesde) AS h_recolecciondesde,
+
         COALESCE(vu.variedadesrecoleccionhasta, vg.variedadesrecoleccionhasta, e.especiesfecharecoleccionhasta) AS recoleccionhasta,
+        COALESCE(vg.variedadesrecoleccionhasta, e.especiesfecharecoleccionhasta) AS h_recoleccionhasta,
+
         COALESCE(vu.variedadesautosuficiencia, vg.variedadesautosuficiencia, e.especiesautosuficiencia) AS autosuficiencia,
+        COALESCE(vg.variedadesautosuficiencia, e.especiesautosuficiencia) AS h_autosuficiencia,
+
         COALESCE(vu.variedadesautosuficienciaparcial, vg.variedadesautosuficienciaparcial, e.especiesautosuficienciaparcial) AS autosuficienciaparcial,
+        COALESCE(vg.variedadesautosuficienciaparcial, e.especiesautosuficienciaparcial) AS h_autosuficienciaparcial,
+
         COALESCE(vu.variedadesautosuficienciaconserva, vg.variedadesautosuficienciaconserva, e.especiesautosuficienciaconserva) AS autosuficienciaconserva,
-        COALESCE(vu.variedadesdiashastatrasplante, vg.variedadesdiashastatrasplante, ef_trasp.especiesfasesduraciondias) AS diashastatrasplante,
-        COALESCE(vu.variedadesdiashastarecoleccion, vg.variedadesdiashastarecoleccion, ef_cosecha.especiesfasesduraciondias) AS diashastarecoleccion,
+        COALESCE(vg.variedadesautosuficienciaconserva, e.especiesautosuficienciaconserva) AS h_autosuficienciaconserva,
+
         COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesicono) AS icono,
+        COALESCE(vg.variedadesicono, e.especiesicono) AS h_icono,
+
         COALESCE(vu.variedadesbiodinamicacategoria, vg.variedadesbiodinamicacategoria, e.especiesorganocomestible) AS biodinamicacategoria,
+        COALESCE(vg.variedadesbiodinamicacategoria, e.especiesorganocomestible) AS h_biodinamicacategoria,
+
         COALESCE(vu.variedadesbiodinamicanotas, vg.variedadesbiodinamicanotas, e.especiesbiodinamicanotas) AS biodinamicanotas,
+        COALESCE(vg.variedadesbiodinamicanotas, e.especiesbiodinamicanotas) AS h_biodinamicanotas,
+
         COALESCE(vu.variedadeslunarfasesiembra, vg.variedadeslunarfasesiembra, e.especieslunarfasesiembra) AS lunarfasesiembra,
+        COALESCE(vg.variedadeslunarfasesiembra, e.especieslunarfasesiembra) AS h_lunarfasesiembra,
+
         COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
+        COALESCE(vg.variedadestiposiembra, e.especiestiposiembra) AS h_tiposiembra,
+
         COALESCE(vu.variedadeslunarfasetrasplante, vg.variedadeslunarfasetrasplante, e.especieslunarfasetrasplante) AS lunarfasetrasplante,
+        COALESCE(vg.variedadeslunarfasetrasplante, e.especieslunarfasetrasplante) AS h_lunarfasetrasplante,
+
         COALESCE(vu.variedadeslunarobservaciones, vg.variedadeslunarobservaciones, e.especieslunarobservaciones) AS lunarobservaciones,
+        COALESCE(vg.variedadeslunarobservaciones, e.especieslunarobservaciones) AS h_lunarobservaciones,
+
         COALESCE(vu.variedadesbiodinamicafasesiembra, vg.variedadesbiodinamicafasesiembra, e.especiesbiodinamicafasesiembra) AS biodinamicafasesiembra,
+        COALESCE(vg.variedadesbiodinamicafasesiembra, e.especiesbiodinamicafasesiembra) AS h_biodinamicafasesiembra,
+
         COALESCE(vu.variedadesbiodinamicafasetrasplante, vg.variedadesbiodinamicafasetrasplante, e.especiesbiodinamicafasetrasplante) AS biodinamicafasetrasplante,
+        COALESCE(vg.variedadesbiodinamicafasetrasplante, e.especiesbiodinamicafasetrasplante) AS h_biodinamicafasetrasplante,
+
         COALESCE(vu.variedadesphsuelo, vg.variedadesphsuelo, CONCAT(e.especiesphminimosuelo, ' - ', e.especiesphmaximosuelo)) AS phsuelo,
+        COALESCE(vg.variedadesphsuelo, CONCAT(e.especiesphminimosuelo, ' - ', e.especiesphmaximosuelo)) AS h_phsuelo,
+
         COALESCE(vu.variedadesnecesidadriego, vg.variedadesnecesidadriego, e.especiesnecesidadriego) AS necesidadriego,
-        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
+        COALESCE(vg.variedadesnecesidadriego, e.especiesnecesidadriego) AS h_necesidadriego,
+
         COALESCE(vu.variedadesvolumenmaceta, vg.variedadesvolumenmaceta, e.especiesvolumenmaceta) AS volumenmaceta,
+        COALESCE(vg.variedadesvolumenmaceta, e.especiesvolumenmaceta) AS h_volumenmaceta,
+
         COALESCE(vu.variedadesluzsolar, vg.variedadesluzsolar, e.especiesluzsolar) AS luzsolar,
+        COALESCE(vg.variedadesluzsolar, e.especiesluzsolar) AS h_luzsolar,
+
         COALESCE(vu.variedadescaracteristicassuelo, vg.variedadescaracteristicassuelo, e.especiescaracteristicassuelo) AS caracteristicassuelo,
+        COALESCE(vg.variedadescaracteristicassuelo, e.especiescaracteristicassuelo) AS h_caracteristicassuelo,
+
         COALESCE(vu.variedadesdificultad, vg.variedadesdificultad, e.especiesdificultad) AS dificultad,
+        COALESCE(vg.variedadesdificultad, e.especiesdificultad) AS h_dificultad,
+
+        -- Campos adicionales de variedades que sí existen en la tabla
+        COALESCE(NULLIF(vu.variedadesnombrecientifico, ''), vg.variedadesnombrecientifico, e.especiesnombrecientifico) AS nombrecientifico,
+        COALESCE(vg.variedadesnombrecientifico, e.especiesnombrecientifico) AS h_nombrecientifico,
+
+        COALESCE(NULLIF(vu.variedadesfamilia, ''), vg.variedadesfamilia, e.especiesfamilia) AS familia,
+        COALESCE(vg.variedadesfamilia, e.especiesfamilia) AS h_familia,
+
+        COALESCE(NULLIF(vu.variedadestipo, ''), vg.variedadestipo, e.especiestipo) AS tipo,
+        COALESCE(vg.variedadestipo, e.especiestipo) AS h_tipo,
+
+        COALESCE(NULLIF(vu.variedadesciclo, ''), vg.variedadesciclo, e.especiesciclo) AS ciclo,
+        COALESCE(vg.variedadesciclo, e.especiesciclo) AS h_ciclo,
+
+        -- Duraciones desde especiesfases (solo herencia, sin override de usuario por ahora)
+        ef_germ.especiesfasesduraciondias AS diasgerminacion,
+        ef_fruct.especiesfasesduraciondias AS diashastafructificacion,
+        ef_trasp.especiesfasesduraciondias AS diashastatrasplante,
+        ef_cosecha.especiesfasesduraciondias AS diashastarecoleccion,
+
+        -- Campos de especie solo lectura (sin override de usuario)
+        e.especiesresistenciahelada,
+        e.especiesnecesidadtutoraje,
+        e.especiesporteplanta,
+        e.especiesrendimientoestimado,
+        e.especiespartecosechable,
+        e.especiesgerminaroscuridad,
 
         -- Flags de personalización (para UI: saber qué viene del usuario)
         vu.variedadesnombre IS NOT NULL AS _p_nombre,
         vu.variedadesdescripcion IS NOT NULL AS _p_descripcion,
         vu.variedadescolor IS NOT NULL AS _p_color,
         vu.variedadestamano IS NOT NULL AS _p_tamano,
-        vu.variedadesdiasgerminacion IS NOT NULL AS _p_diasgerminacion,
         vu.variedadesviabilidadsemilla IS NOT NULL AS _p_viabilidadsemilla,
-        vu.variedadesdiashastafructificacion IS NOT NULL AS _p_diashastafructificacion,
         vu.variedadestemperaturaminima IS NOT NULL AS _p_temperaturaminima,
         vu.variedadestemperaturaoptima IS NOT NULL AS _p_temperaturaoptima,
         vu.variedadestemperaturamaxima IS NOT NULL AS _p_temperaturamaxima,
@@ -103,8 +202,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vu.variedadesautosuficiencia IS NOT NULL AS _p_autosuficiencia,
         vu.variedadesautosuficienciaparcial IS NOT NULL AS _p_autosuficienciaparcial,
         vu.variedadesautosuficienciaconserva IS NOT NULL AS _p_autosuficienciaconserva,
-        vu.variedadesdiashastatrasplante IS NOT NULL AS _p_diashastatrasplante,
-        vu.variedadesdiashastarecoleccion IS NOT NULL AS _p_diashastarecoleccion,
         vu.variedadesicono IS NOT NULL AS _p_icono,
         vu.variedadesbiodinamicacategoria IS NOT NULL AS _p_biodinamicacategoria,
         vu.variedadesbiodinamicanotas IS NOT NULL AS _p_biodinamicanotas,
@@ -118,7 +215,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vu.variedadesvolumenmaceta IS NOT NULL AS _p_volumenmaceta,
         vu.variedadesluzsolar IS NOT NULL AS _p_luzsolar,
         vu.variedadescaracteristicassuelo IS NOT NULL AS _p_caracteristicassuelo,
-        vu.variedadesdificultad IS NOT NULL AS _p_dificultad
+        vu.variedadesdificultad IS NOT NULL AS _p_dificultad,
+        vu.variedadesnombrecientifico IS NOT NULL AS _p_nombrecientifico,
+        vu.variedadesfamilia IS NOT NULL AS _p_familia,
+        vu.variedadestipo IS NOT NULL AS _p_tipo,
+        vu.variedadesciclo IS NOT NULL AS _p_ciclo
 
       FROM variedades vu
       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
@@ -170,7 +271,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Campos permitidos (solo los de variedades, nunca las FK)
     const allowedFields = [
       'variedadesnombre', 'variedadesdescripcion', 'variedadescolor', 'variedadestamano',
-      'variedadesdiasgerminacion', 'variedadesviabilidadsemilla', 'variedadesdiashastafructificacion',
+      'variedadesviabilidadsemilla',
       'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima',
       'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesmarcomargen', 'variedadesprofundidadsiembra',
       'variedadesprofundidadtrasplante', 'variedadeshistoria',
@@ -179,13 +280,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       'variedadestrasplantedesde', 'variedadestrasplantehasta',
       'variedadesrecolecciondesde', 'variedadesrecoleccionhasta',
       'variedadesautosuficiencia', 'variedadesautosuficienciaparcial', 'variedadesautosuficienciaconserva',
-      'variedadesdiashastatrasplante', 'variedadesdiashastarecoleccion',
       'variedadesicono', 'variedadesbiodinamicacategoria', 'variedadesbiodinamicanotas',
       'variedadesphsuelo', 'variedadesnecesidadriego', 'variedadestiposiembra',
       'variedadesvolumenmaceta', 'variedadesluzsolar', 'variedadescaracteristicassuelo',
       'variedadesdificultad',
       'variedadeslunarfasesiembra', 'variedadeslunarfasetrasplante', 'variedadeslunarobservaciones',
       'variedadesbiodinamicafasesiembra', 'variedadesbiodinamicafasetrasplante',
+      'variedadesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo',
+      'variedadespeso1000semillas',
       'variedadesvisibilidadsino'
     ];
 
