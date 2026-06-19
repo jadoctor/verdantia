@@ -677,9 +677,10 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
                     width: '100%', 
                     height: '100%', 
                     objectFit: 'cover',
-                    objectPosition: `${meta.profile_object_x || 50}% ${meta.profile_object_y || 50}%`,
+                    objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                    transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
                     filter: STYLE_FILTERS[meta.profile_style || ''],
-                    transform: `scale(${(meta.profile_object_zoom || 100) / 100})`
+                    transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
                   }} 
                   crossOrigin="anonymous" 
                 />

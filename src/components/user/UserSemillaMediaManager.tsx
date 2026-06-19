@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Force hot-reload: 2026-06-18T19:52:25
 import React, { useState, useEffect, useRef } from 'react';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
@@ -372,7 +372,10 @@ export default function UserSemillaMediaManager({ semillaId, userEmail, suscripc
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    objectPosition: `${meta.profile_object_x || 50}% ${meta.profile_object_y || 50}%`
+                    objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                    transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                    transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`,
+                    filter: `brightness(${meta.profile_brightness ?? 100}%) contrast(${meta.profile_contrast ?? 100}%)`
                   }}
                   crossOrigin="anonymous"
                 />

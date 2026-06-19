@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Force hot-reload: 2026-06-18T19:52:30
 import React, { useState, useEffect, useRef } from 'react';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
@@ -360,8 +360,9 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcio
                     width: '100%', 
                     height: '100%', 
                     objectFit: 'cover',
-                    objectPosition: `${meta.profile_object_x || 50}% ${meta.profile_object_y || 50}%`,
-                    transform: `scale(${(meta.profile_object_zoom || 100) / 100})`
+                    objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                    transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                    transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`
                   }} 
                   crossOrigin="anonymous" 
                 />

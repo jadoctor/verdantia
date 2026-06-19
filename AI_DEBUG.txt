@@ -1,0 +1,4384 @@
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"esapto": 1,
+"partes": "Hojas tiernas, brotes jóvenes, semillas",
+"notas": "Las hojas y brotes son comestibles, crudos o cocidos. Contienen oxalatos, por lo que se recomienda moderación en crudo y cocción para reducirlos. Las semillas pueden molerse para harina."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"esapto": 1,
+"partes": "Hojas, semillas",
+"notas": "Las gallinas pueden consumir hojas y semillas sin problemas, es una planta común en su dieta si tienen acceso a ella."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"esapto": 1,
+"partes": "Hojas",
+"notas": "Los conejos pueden comer las hojas del cenizo blanco como parte de su dieta, aportando nutrientes."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"esapto": 1,
+"partes": "Hojas, tallos",
+"notas": "Los cerdos pueden consumir las hojas y tallos de la planta, siendo una fuente de forraje."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"esapto": 1,
+"partes": "Hojas, semillas",
+"notas": "Los patos pueden alimentarse de las hojas y semillas del cenizo blanco, especialmente si la planta crece cerca de sus áreas."
+}
+],
+"especiesnombrecientifico": "Chenopodium album",
+"xespeciesidfamilias": 6,
+"especiestipo": [
+"hortaliza",
+"adventicia"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 10,
+"16": 12,
+"4": 25,
+"5": 60
+},
+"especiesviabilidadsemilla": 8,
+"especiespeso1000semillas": 1.0,
+"especiestemperaturaminima": 5.0,
+"especiestemperaturaoptima": 20.0,
+"especiestemperaturamaxima": 35.0,
+"especiesmarcoplantas": 20,
+"especiesmarcofilas": 40,
+"especiesmarcomargen": 10,
+"especiesprofundidadsiembra": 0.8,
+"especiesprofundidadtrasplante": 3.0,
+"especieshistoria": "El cenizo blanco, Chenopodium album, es una planta de origen euroasiático que se ha extendido por todo el mundo, siendo considerada una de las malas hierbas más comunes y cosmopolitas. A pesar de su reputación como adventicia, ha sido utilizada como alimento por diversas culturas desde la prehistoria, con evidencias arqueológicas de su consumo en Europa y Norteamérica.\n\nSu historia como alimento se remonta a miles de años, siendo una fuente importante de nutrientes en épocas de escasez o como complemento dietético. Sus semillas se han encontrado en yacimientos neolíticos y sus hojas han sido recolectadas y consumidas por pueblos indígenas. Hoy en día, sigue siendo valorada en algunas cocinas tradicionales y por recolectores de plantas silvestres comestibles.",
+"especiesdescripcion": "El cenizo blanco es una planta de crecimiento rápido y fácil cultivo, adaptable a diversas condiciones. Se puede sembrar directamente en el suelo en primavera, una vez pasadas las heladas. Prefiere suelos bien drenados y ricos en materia orgánica, aunque tolera suelos pobres. Requiere riego regular para mantener las hojas tiernas, especialmente en climas secos. La cosecha de hojas se realiza de forma continua, cortando los brotes jóvenes para estimular una mayor producción.",
+"especiescolor": "Verde grisáceo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 3,
+"especiesfechasemillerohasta": 5,
+"especiesfechasiembradirectadesde": 3,
+"especiesfechasiembradirectahasta": 8,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 4,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": "https://es.wikipedia.org/wiki/Chenopodium_album",
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 4,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "hoja",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "La siembra en fase ascendente favorece el crecimiento de la parte aérea, ideal para la producción de hojas. Se recomienda evitar los días de perigeo y nodos lunares para la siembra.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "Sembrar en luna creciente para estimular el crecimiento foliar y obtener hojas más grandes y jugosas. Evitar la siembra en luna nueva y llena, así como en los días de perigeo y apogeo lunar.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🌿",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 7.5,
+"especiesnecesidadriego": "media",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton"
+],
+"especiestiposiembrapreferente": [
+"directa"
+],
+"especiesvolumenmaceta": 8,
+"especiesemillerovolumendesde": 15,
+"especiesemillerovolumenhasta": 25,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, bien drenado, rico en materia orgánica",
+"especiesdificultad": "baja",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Trébol blanco",
+"motivo": "Fija nitrógeno en el suelo, mejorando su fertilidad y proporcionando cobertura."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Atrae insectos polinizadores y depredadores de plagas, beneficiando el ecosistema del huerto."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Lechuga",
+"motivo": "Compiten por luz, nutrientes y espacio, pudiendo inhibir el crecimiento de la lechuga si no se controla."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Compiten por nutrientes y espacio radicular, afectando el desarrollo de las raíces de la zanahoria."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "media",
+"notas": "Pueden colonizar los brotes tiernos y hojas, debilitando la planta y transmitiendo virus."
+},
+{
+"nombre": "Minador de hojas",
+"riesgo": "baja",
+"notas": "Las larvas crean galerías en las hojas, reduciendo la capacidad fotosintética de la planta."
+},
+{
+"nombre": "Mildiu",
+"riesgo": "baja",
+"notas": "Hongo que causa manchas amarillentas en el haz y un moho blanquecino en el envés de las hojas."
+}
+],
+"especiesresistenciahelada": "baja",
+"especiesnecesidadtutoraje": "no",
+"especiesporteplanta": "erecto",
+"especiesrendimientoestimado": "0.5-1 kg/planta",
+"especiespartecosechable": [
+"hoja",
+"semilla"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "usos_consumo": [
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "esapto": 1,
+      "partes": "Hojas jóvenes, brotes tiernos, semillas",
+      "notas": "Comestible cocinado o en pequeñas cantidades crudo. Rico en vitaminas y minerales. Contiene oxalatos, se recomienda moderación."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "esapto": 1,
+      "partes": "Hojas, semillas",
+      "notas": "Apto como forraje y suplemento alimenticio."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "esapto": 1,
+      "partes": "Hojas",
+      "notas": "Apto como parte de su dieta, especialmente las hojas jóvenes."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "esapto": 1,
+      "partes": "Hojas",
+      "notas": "Apto como forraje y suplemento en su alimentación."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "esapto": 1,
+      "partes": "Hojas, semillas",
+      "notas": "Apto como parte de su dieta, especialmente las hojas jóvenes y semillas."
+    }
+  ],
+  "especiesnombrecientifico": "Chenopodium album",
+  "xespeciesidfamilias": 6,
+  "especiestipo": ["adventicia", "hortaliza"],
+  "especiesciclo": ["anual"],
+  "fases_duracion": {
+    "1": 0,
+    "15": 10,
+    "16": 0,
+    "3": 0,
+    "11": 0,
+    "4": 45,
+    "12": 0,
+    "5": 90
+  },
+  "especiesviabilidadsemilla": 8,
+  "especiespeso1000semillas": 0.8,
+  "especiestemperaturaminima": 5.0,
+  "especiestemperaturaoptima": 20.0,
+  "especiestemperaturamaxima": 35.0,
+  "especiesmarcoplantas": 20,
+  "especiesmarcofilas": 30,
+  "especiesmarcomargen": 10,
+  "especiesprofundidadsiembra": 0.5,
+  "especiesprofundidadtrasplante": null,
+  "especieshistoria": "El cenizo blanco, Chenopodium album, es una planta con una larga historia de uso por parte de la humanidad, remontándose a tiempos prehistóricos. Se han encontrado semillas en yacimientos arqueológicos del Neolítico en Europa, lo que sugiere que fue recolectado y posiblemente cultivado como alimento mucho antes de la domesticación de muchos cultivos actuales. Su adaptabilidad y amplia distribución lo convirtieron en un recurso alimenticio valioso en diversas culturas.\n\nAunque hoy en día a menudo se le considera una 'mala hierba' en la agricultura moderna, en muchas partes del mundo sigue siendo valorado por sus hojas comestibles, ricas en nutrientes, y sus semillas, que pueden usarse de manera similar a la quinoa. Su capacidad para crecer en suelos pobres y su resistencia lo han mantenido como un componente importante de la dieta en épocas de escasez o en regiones con recursos limitados.",
+  "especiesdescripcion": "El cenizo blanco es una planta muy adaptable y fácil de cultivar, aunque a menudo se propaga de forma espontánea. Prefiere suelos bien drenados y pleno sol, pero tolera una amplia gama de condiciones. Las hojas jóvenes y los brotes tiernos son la parte más valorada para el consumo, con un sabor suave y ligeramente terroso. Se recomienda cosechar antes de la floración para mantener la ternura de las hojas. Es una planta de bajo mantenimiento que puede proporcionar una fuente constante de verdura fresca.",
+  "especiescolor": "Verde",
+  "especiestamano": "mediano",
+  "especiesfechasemillerodesde": 3,
+  "especiesfechasemillerohasta": 5,
+  "especiesfechasiembradirectadesde": 3,
+  "especiesfechasiembradirectahasta": 7,
+  "especiestrasplantedesde": null,
+  "especiestrasplantehasta": null,
+  "especiesfecharecolecciondesde": 5,
+  "especiesfecharecoleccionhasta": 10,
+  "especiesfuentesinformacion": "https://es.wikipedia.org/wiki/Chenopodium_album,https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica",
+  "especiesautosuficiencia": 8,
+  "especiesautosuficienciaparcial": 3,
+  "especiesautosuficienciaconserva": 12,
+  "especiesbiodinamicacategoria": "hoja",
+  "especiesbiodinamicafasesiembra": "Ascendente",
+  "especiesbiodinamicafasetrasplante": "Descendente",
+  "especiesbiodinamicanotas": "Para plantas de hoja, se recomienda sembrar en luna creciente y fase ascendente para favorecer el desarrollo foliar. Evitar siembra en perigeo.",
+  "especieslunarfasesiembra": "Creciente",
+  "especieslunarfasetrasplante": "Menguante",
+  "especieslunarobservaciones": "La siembra en luna creciente favorece el crecimiento de la parte aérea. El trasplante en luna menguante ayuda al enraizamiento, aunque esta planta se suele sembrar directamente. Evitar siembras en luna nueva o llena para mejor desarrollo.",
+  "especiespreparacionconvencional": 15,
+  "especiespreparacionminima": 10,
+  "especiespreparacionnolaboreo": 5,
+  "especiesicono": "🌿",
+  "especiesphminimosuelo": 6.0,
+  "especiesphmaximosuelo": 8.0,
+  "especiesnecesidadriego": "baja",
+  "especiestiposiembra": ["directa", "semillero"],
+  "especiestiposiembrapreferente": ["directa"],
+  "especiesvolumenmaceta": 8,
+  "especiesemillerovolumendesde": 10,
+  "especiesemillerovolumenhasta": 30,
+  "especiesluzsolar": "pleno_sol",
+  "especiescaracteristicassuelo": "franco-arcilloso, bien drenado, adaptable",
+  "especiesdificultad": "baja",
+  "asociaciones_beneficiosas": [],
+  "asociaciones_perjudiciales": [
+    {
+      "nombre": "Maíz",
+      "motivo": "Compiten fuertemente por nutrientes y agua, reduciendo el rendimiento del cultivo."
+    },
+    {
+      "nombre": "Patata",
+      "motivo": "Compiten por recursos y pueden albergar plagas o enfermedades comunes."
+    }
+  ],
+  "plagas_asociadas": [
+    {
+      "nombre": "Pulgón",
+      "riesgo": "media",
+      "notas": "Puede colonizar brotes tiernos, aunque a menudo actúa como planta trampa."
+    },
+    {
+      "nombre": "Minador de hojas",
+      "riesgo": "media",
+      "notas": "Las larvas excavan galerías en las hojas, reduciendo la superficie fotosintética."
+    },
+    {
+      "nombre": "Mildiu",
+      "riesgo": "baja",
+      "notas": "Hongo que causa manchas amarillentas y moho en el envés de las hojas."
+    }
+  ],
+  "especiesresistenciahelada": "baja",
+  "especiesnecesidadtutoraje": "no",
+  "especiesporteplanta": "erecto",
+  "especiesrendimientoestimado": "0.5-1 kg/m²",
+  "especiespartecosechable": ["hoja", "semilla"],
+  "especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+    "usos_consumo": [
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "esapto": 1,
+            "partes": "Hojas jóvenes, brotes tiernos",
+            "notas": "Comestible cocido, rico en vitaminas y minerales. Contiene oxalatos, por lo que se recomienda cocinar y consumir con moderación."
+        },
+        {
+            "idconsumidor": 2,
+            "nombre": "Gallina",
+            "esapto": 1,
+            "partes": "Toda la planta",
+            "notas": "Las gallinas suelen picotearla como parte de su dieta forrajera."
+        },
+        {
+            "idconsumidor": 3,
+            "nombre": "Conejo",
+            "esapto": 1,
+            "partes": "Toda la planta",
+            "notas": "Es una planta común en la dieta silvestre de los conejos y es bien tolerada."
+        },
+        {
+            "idconsumidor": 4,
+            "nombre": "Cerdo",
+            "esapto": 1,
+            "partes": "Toda la planta",
+            "notas": "Puede ser utilizada como forraje suplementario para cerdos."
+        },
+        {
+            "idconsumidor": 5,
+            "nombre": "Pato",
+            "esapto": 1,
+            "partes": "Toda la planta",
+            "notas": "Los patos pueden consumir el cenizo blanco como parte de su alimentación."
+        }
+    ],
+    "especiesnombrecientifico": "Chenopodium album",
+    "xespeciesidfamilias": 6,
+    "especiestipo": [
+        "hortaliza",
+        "adventicia"
+    ],
+    "especiesciclo": [
+        "anual"
+    ],
+    "fases_duracion": {
+        "1": 0,
+        "15": 10,
+        "16": 15,
+        "3": 0,
+        "11": 0,
+        "4": 40,
+        "12": 30,
+        "5": 90
+    },
+    "especiesviabilidadsemilla": 50,
+    "especiespeso1000semillas": 1.0,
+    "especiestemperaturaminima": 5.0,
+    "especiestemperaturaoptima": 15.0,
+    "especiestemperaturamaxima": 30.0,
+    "especiesmarcoplantas": 15,
+    "especiesmarcofilas": 30,
+    "especiesmarcomargen": 7,
+    "especiesprofundidadsiembra": 0.5,
+    "especiesprofundidadtrasplante": null,
+    "especieshistoria": "Chenopodium album, conocido como cenizo blanco o quínoa silvestre, tiene una historia milenaria como alimento y planta medicinal. Originario de Eurasia, se ha extendido por todo el mundo, adaptándose a diversos climas y suelos, lo que lo convierte en una de las malezas más cosmopolitas.\nSu uso como alimento se remonta a la prehistoria, con evidencias de consumo de sus semillas y hojas en yacimientos arqueológicos de Europa y América del Norte. Antes de la llegada de los cultivos modernos, era una fuente importante de nutrientes para muchas culturas, valorado por su resistencia y su capacidad para crecer en condiciones difíciles.",
+    "especiesdescripcion": "El cenizo blanco es una planta anual de crecimiento rápido, muy adaptable a diferentes tipos de suelo, aunque prefiere los ricos en nitrógeno. Se cultiva principalmente por sus hojas tiernas, que se consumen cocidas como verdura. Es resistente y requiere poco mantenimiento, siendo una excelente opción para huertos de bajo insumo.",
+    "especiescolor": "Verde",
+    "especiestamano": "mediano",
+    "especiesfechasemillerodesde": 3,
+    "especiesfechasemillerohasta": 5,
+    "especiesfechasiembradirectadesde": 3,
+    "especiesfechasiembradirectahasta": 9,
+    "especiestrasplantedesde": null,
+    "especiestrasplantehasta": null,
+    "especiesfecharecolecciondesde": 4,
+    "especiesfecharecoleccionhasta": 11,
+    "especiesfuentesinformacion": [
+        "https://es.wikipedia.org/wiki/Chenopodium_album",
+        "https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+    ],
+    "especiesautosuficiencia": 10,
+    "especiesautosuficienciaparcial": 3,
+    "especiesautosuficienciaconserva": 15,
+    "especiesorganocomestible": "hoja",
+    "especiesbiodinamicafasesiembra": "Ascendente",
+    "especiesbiodinamicafasetrasplante": null,
+    "especiesbiodinamicanotas": "Para las plantas de hoja, se recomienda sembrar durante la fase ascendente de la luna para favorecer el crecimiento foliar. Evitar perigeos y nodos.",
+    "especieslunarfasesiembra": "Creciente",
+    "especieslunarfasetrasplante": null,
+    "especieslunarobservaciones": "La siembra en luna creciente favorece la germinación y el desarrollo de las hojas. Evitar sembrar en luna nueva o llena para un mejor establecimiento.",
+    "especiespreparacionconvencional": 10,
+    "especiespreparacionminima": 5,
+    "especiespreparacionnolaboreo": 2,
+    "especiesicono": "🌿",
+    "especiesphminimosuelo": 6.0,
+    "especiesphmaximosuelo": 8.0,
+    "especiesnecesidadriego": "baja",
+    "especiestiposiembra": [
+        "directa",
+        "semillero"
+    ],
+    "especiestiposiembrapreferente": [
+        "directa"
+    ],
+    "especiesvolumenmaceta": 5,
+    "especiesemillerovolumendesde": 10,
+    "especiesemillerovolumenhasta": 30,
+    "especiesluzsolar": "pleno_sol",
+    "especiescaracteristicassuelo": "franco-arcilloso, bien drenado, rico en nitrógeno",
+    "especiesdificultad": "baja",
+    "asociaciones_beneficiosas": [],
+    "asociaciones_perjudiciales": [
+        {
+            "nombre": "Maíz",
+            "motivo": "Compiten fuertemente por nutrientes y luz, reduciendo el rendimiento del maíz"
+        },
+        {
+            "nombre": "Patata",
+            "motivo": "Compiten por nutrientes y agua, pudiendo reducir el tamaño de los tubérculos"
+        }
+    ],
+    "plagas_asociadas": [
+        {
+            "nombre": "Pulgón",
+            "riesgo": "baja",
+            "notas": "Puede aparecer en brotes tiernos, pero rara vez causa daños significativos."
+        },
+        {
+            "nombre": "Minador de hojas",
+            "riesgo": "baja",
+            "notas": "Las larvas excavan galerías en las hojas, pero la planta suele tolerarlo bien."
+        }
+    ],
+    "especiesresistenciahelada": "nula",
+    "especiesnecesidadtutoraje": "no",
+    "especiesporteplanta": "erecto",
+    "especiesrendimientoestimado": "0.5-1 kg/m²",
+    "especiespartecosechable": [
+        "hoja",
+        "semilla"
+    ],
+    "especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"esapto": 1,
+"partes": "Hojas jóvenes, brotes tiernos, semillas",
+"notas": "Las hojas son comestibles cocidas (similares a las espinacas) para reducir el contenido de oxalatos. Las semillas pueden usarse como cereal."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"esapto": 1,
+"partes": "Hojas, brotes, semillas",
+"notas": "Apta como forraje y suplemento alimenticio. Las semillas son una fuente de energía."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"esapto": 1,
+"partes": "Hojas jóvenes, brotes tiernos",
+"notas": "Puede ofrecerse como parte de la dieta, especialmente las partes más tiernas. Consumir con moderación."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"esapto": 1,
+"partes": "Hojas, brotes tiernos",
+"notas": "Apta como forraje. Las hojas y brotes son bien aceptados por los cerdos."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"esapto": 1,
+"partes": "Hojas, brotes, semillas",
+"notas": "Puede ser consumida por patos, especialmente las hojas y semillas que encuentran en el suelo."
+}
+],
+"especiesnombrecientifico": "Chenopodium album",
+"xespeciesidfamilias": 6,
+"especiestipo": [
+"hortaliza",
+"adventicia"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"1": 7,
+"15": 10,
+"16": 15,
+"3": 0,
+"11": 0,
+"4": 45,
+"12": 0,
+"5": 60
+},
+"especiesviabilidadsemilla": 5,
+"especiespeso1000semillas": 0.5,
+"especiestemperaturaminima": 5.0,
+"especiestemperaturaoptima": 20.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": 15,
+"especiesmarcofilas": 30,
+"especiesmarcomargen": 7,
+"especiesprofundidadsiembra": 0.5,
+"especiesprofundidadtrasplante": null,
+"especieshistoria": "El cenizo blanco, Chenopodium album, es una planta de origen euroasiático que se ha extendido por todo el mundo, convirtiéndose en una de las malezas más comunes y cosmopolitas. Su historia como alimento se remonta a miles de años, con evidencias de su consumo por parte de comunidades neolíticas en Europa, donde sus semillas y hojas eran recolectadas y utilizadas como fuente de alimento.\n\nAunque hoy en día es a menudo considerado una maleza en la agricultura moderna, en muchas culturas tradicionales ha sido valorado por sus propiedades nutritivas y medicinales. Sus hojas jóvenes se han consumido como verdura de hoja verde, similar a las espinacas, y sus semillas han sido utilizadas como un pseudocereal, moliéndose para hacer harina o cocinándose como grano.",
+"especiesdescripcion": "El cenizo blanco es una planta anual de crecimiento rápido y muy adaptable a diferentes tipos de suelo y condiciones climáticas. Para su cultivo como hortaliza, se recomienda sembrar directamente en primavera u otoño. Las hojas jóvenes son las más tiernas y sabrosas, ideales para consumir cocidas. Es una planta rústica que requiere pocos cuidados, pero un riego regular y un suelo bien drenado favorecerán un mejor desarrollo foliar.",
+"especiescolor": "Verde grisáceo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 3,
+"especiesfechasemillerohasta": 5,
+"especiesfechasiembradirectadesde": 3,
+"especiesfechasiembradirectahasta": 8,
+"especiestrasplantedesde": null,
+"especiestrasplantehasta": null,
+"especiesfecharecolecciondesde": 5,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Chenopodium_album",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 10,
+"especiesautosuficienciaparcial": 3,
+"especiesautosuficienciaconserva": 15,
+"especiesbiodinamicacategoria": "hoja",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Las plantas de hoja se benefician de la siembra en fases lunares ascendentes, favoreciendo el crecimiento foliar. Evitar perigeos y nodos.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece el desarrollo de la parte aérea. Evitar luna nueva y llena para siembra.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🌿",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 7.5,
+"especiesnecesidadriego": "media",
+"especiestiposiembra": [
+"directa",
+"semillero"
+],
+"especiestiposiembrapreferente": [
+"directa"
+],
+"especiesvolumenmaceta": 5,
+"especiesemillerovolumendesde": 10,
+"especiesemillerovolumenhasta": 30,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arcilloso, bien drenado, adaptable",
+"especiesdificultad": "baja",
+"asociaciones_beneficiosas": [],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Maíz",
+"motivo": "Competición por nutrientes y luz, reduciendo el rendimiento del cultivo."
+},
+{
+"nombre": "Trigo",
+"motivo": "Competición por recursos en cultivos de cereal, afectando el desarrollo."
+},
+{
+"nombre": "Remolacha",
+"motivo": "Fuerte competición por agua y nutrientes, especialmente en etapas tempranas del cultivo."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "media",
+"notas": "Puede colonizar brotes tiernos y hojas, debilitando la planta y transmitiendo virus."
+},
+{
+"nombre": "Minador de hojas",
+"riesgo": "baja",
+"notas": "Las larvas excavan galerías en las hojas, reduciendo la superficie fotosintética."
+},
+{
+"nombre": "Oídio",
+"riesgo": "baja",
+"notas": "Hongo que forma una capa blanquecina en las hojas, afectando la fotosíntesis en condiciones de humedad."
+}
+],
+"especiesresistenciahelada": "baja",
+"especiesnecesidadtutoraje": "no",
+"especiesporteplanta": "erecto",
+"especiesrendimientoestimado": "0.5-1 kg/planta",
+"especiespartecosechable": [
+"hoja",
+"semilla"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"esapto": 1,
+"partes": "Hojas jóvenes",
+"notas": "Las hojas jóvenes son comestibles en pequeñas cantidades, pero se vuelven muy amargas y contienen látex con propiedades sedantes a medida que la planta madura. El consumo excesivo puede causar malestar."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"esapto": 1,
+"partes": "Hojas, tallos tiernos",
+"notas": "Pueden picotear las hojas y tallos tiernos. El consumo moderado es generalmente seguro, pero grandes cantidades pueden ser amargas y no preferidas."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"esapto": 1,
+"partes": "Hojas, tallos tiernos",
+"notas": "Pueden consumir hojas y tallos tiernos. Ofrecer con moderación debido a la amargura y el látex. No debe ser la base de su dieta."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"esapto": 1,
+"partes": "Planta entera (hojas, tallos)",
+"notas": "Los cerdos pueden consumir la planta. Es poco probable que coman grandes cantidades debido a la amargura, pero el consumo moderado no es tóxico."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"esapto": 1,
+"partes": "Hojas, tallos tiernos",
+"notas": "Pueden consumir hojas y tallos tiernos. El consumo moderado es generalmente seguro, pero no es una fuente de alimento principal."
+}
+],
+"especiesnombrecientifico": "Lactuca serriola",
+"xespeciesidfamilias": 5,
+"especiestipo": [
+"adventicia"
+],
+"especiesciclo": [
+"anual",
+"bianual"
+],
+"fases_duracion": {
+"1": 0,
+"15": 20,
+"16": 45,
+"3": 0,
+"11": 0,
+"4": 90,
+"12": 45,
+"5": 0
+},
+"especiesviabilidadsemilla": 3,
+"especiespeso1000semillas": 0.8,
+"especiestemperaturaminima": 5.0,
+"especiestemperaturaoptima": 20.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": null,
+"especiesmarcofilas": null,
+"especiesmarcomargen": null,
+"especiesprofundidadsiembra": null,
+"especiesprofundidadtrasplante": null,
+"especieshistoria": "La lechuga silvestre, Lactuca serriola, es originaria de la región mediterránea y el oeste de Asia, pero se ha extendido ampliamente por todo el mundo, especialmente en zonas templadas. Es una especie ruderal y colonizadora, que prospera en suelos alterados, bordes de caminos, campos abandonados y áreas urbanas, lo que le ha valido su reputación como maleza.\n\nHistóricamente, ha sido utilizada por diversas culturas por sus propiedades medicinales, principalmente como un sedante suave y analgésico debido a la presencia de lactucarium en su látex, que le confiere un sabor amargo. Aunque no se cultiva activamente, sus hojas jóvenes han sido ocasionalmente recolectadas como verdura silvestre.",
+"especiesdescripcion": "La lechuga silvestre (Lactuca serriola) es una planta anual o bianual que puede alcanzar hasta 2 metros de altura. Se identifica por sus hojas profundamente lobuladas y espinosas a lo largo del nervio central en el envés, que abrazan el tallo. Al romperse, exuda un látex blanco lechoso. Sus flores son pequeñas y amarillas, similares a las del diente de león. Es una planta muy adaptable que crece en una amplia variedad de suelos y condiciones, prefiriendo el pleno sol. Su principal interés radica en su identificación botánica, su uso tradicional como forraje y sus propiedades medicinales, más que en su cultivo.",
+"especiescolor": "Verde",
+"especiestamano": "grande",
+"especiesfechasemillerodesde": null,
+"especiesfechasemillerohasta": null,
+"especiesfechasiembradirectadesde": null,
+"especiesfechasiembradirectahasta": null,
+"especiestrasplantedesde": null,
+"especiestrasplantehasta": null,
+"especiesfecharecolecciondesde": null,
+"especiesfecharecoleccionhasta": null,
+"especiesfuentesinformacion": "https://es.wikipedia.org/wiki/Lactuca_serriola,https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica",
+"especiesautosuficiencia": null,
+"especiesautosuficienciaparcial": null,
+"especiesautosuficienciaconserva": null,
+"especiesbiodinamicacategoria": "hoja",
+"especiesbiodinamicafasesiembra": null,
+"especiesbiodinamicafasetrasplante": null,
+"especiesbiodinamicanotas": null,
+"especieslunarfasesiembra": null,
+"especieslunarfasetrasplante": null,
+"especieslunarobservaciones": null,
+"especiespreparacionconvencional": null,
+"especiespreparacionminima": null,
+"especiespreparacionnolaboreo": null,
+"especiesicono": "🥬",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 7.5,
+"especiesnecesidadriego": "baja",
+"especiestiposiembra": [
+"directa",
+"semillero"
+],
+"especiestiposiembrapreferente": [
+"directa"
+],
+"especiesvolumenmaceta": null,
+"especiesemillerovolumendesde": null,
+"especiesemillerovolumenhasta": null,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "adaptable, bien drenado",
+"especiesdificultad": "baja",
+"asociaciones_beneficiosas": [],
+"asociaciones_perjudiciales": [],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "media",
+"notas": "Puede colonizar brotes tiernos, aunque la planta es generalmente robusta."
+},
+{
+"nombre": "Oídio",
+"riesgo": "baja",
+"notas": "Hongo blanco en hojas, rara vez causa daños severos en plantas silvestres."
+}
+],
+"especiesresistenciahelada": "media",
+"especiesnecesidadtutoraje": "no",
+"especiesporteplanta": "erecto",
+"especiesrendimientoestimado": null,
+"especiespartecosechable": [
+"hoja",
+"tallo"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"esapto": 1,
+"partes": "Hojas jóvenes",
+"notas": "Comestible en pequeñas cantidades, especialmente las hojas jóvenes antes de la floración. Contiene lactucarium, que puede tener efectos sedantes y amargos. Consumir con moderación."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"esapto": 0,
+"partes": null,
+"notas": "No se recomienda como alimento principal. El amargor y los compuestos de lactucarium pueden ser desagradables o perjudiciales en grandes cantidades."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"esapto": 0,
+"partes": null,
+"notas": "Aunque pueden consumirla en la naturaleza, no es ideal como forraje regular. Los compuestos amargos y sedantes pueden causar problemas digestivos o de salud en grandes cantidades."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"esapto": 0,
+"partes": null,
+"notas": "No es una fuente de alimento recomendada. Los compuestos de la planta pueden ser perjudiciales si se consume en grandes cantidades."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"esapto": 0,
+"partes": null,
+"notas": "No es una fuente de alimento común ni recomendada. Los compuestos pueden ser tóxicos o desagradables para las aves acuáticas."
+}
+],
+"especiesnombrecientifico": "Lactuca serriola",
+"xespeciesidfamilias": 5,
+"especiestipo": [
+"adventicia",
+"hortaliza"
+],
+"especiesciclo": [
+"anual",
+"bianual"
+],
+"fases_duracion": {
+"1": 0,
+"15": 0,
+"16": 0,
+"3": 0,
+"11": 0,
+"4": 0,
+"12": 0,
+"5": 0
+},
+"especiesviabilidadsemilla": 4,
+"especiespeso1000semillas": 0.8,
+"especiestemperaturaminima": 0.0,
+"especiestemperaturaoptima": 20.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": null,
+"especiesmarcofilas": null,
+"especiesmarcomargen": null,
+"especiesprofundidadsiembra": null,
+"especiesprofundidadtrasplante": null,
+"especieshistoria": "La lechuga silvestre, principalmente Lactuca serriola, tiene sus orígenes en Eurasia y el norte de África, desde donde se ha extendido como una especie cosmopolita, adaptándose a diversos climas y suelos. Históricamente, ha sido valorada no solo como una planta comestible en tiempos de escasez, sino también por sus propiedades medicinales.\nDesde la antigüedad, diversas culturas han utilizado la lechuga silvestre por sus efectos sedantes y analgésicos suaves, atribuidos a los compuestos lactucarium presentes en su látex. Se ha empleado en la medicina popular como un remedio para el insomnio, la ansiedad y dolores leves, siendo a veces referida como \"opio de lechuga\" por sus similitudes con los efectos del opio, aunque mucho más suaves y sin su potencial adictivo.",
+"especiesdescripcion": "La lechuga silvestre es una planta herbácea anual o bianual, fácilmente reconocible por sus hojas lobuladas y espinosas en el envés de la nervadura central, que se disponen en un plano vertical, orientándose de norte a sur. Produce una savia lechosa (látex) al ser cortada, característica de las especies de su género. Sus flores son pequeñas y amarillas, agrupadas en capítulos. Se encuentra comúnmente en bordes de caminos, campos abandonados y terrenos baldíos.",
+"especiescolor": "Verde",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": null,
+"especiesfechasemillerohasta": null,
+"especiesfechasiembradirectadesde": null,
+"especiesfechasiembradirectahasta": null,
+"especiestrasplantedesde": null,
+"especiestrasplantehasta": null,
+"especiesfecharecolecciondesde": 4,
+"especiesfecharecoleccionhasta": 7,
+"especiesfuentesinformacion": "https://es.wikipedia.org/wiki/Lactuca_serriola,https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica",
+"especiesautosuficiencia": null,
+"especiesautosuficienciaparcial": null,
+"especiesautosuficienciaconserva": null,
+"especiesbiodinamicacategoria": "hoja",
+"especiesbiodinamicafasesiembra": null,
+"especiesbiodinamicafasetrasplante": null,
+"especiesbiodinamicanotas": null,
+"especieslunarfasesiembra": null,
+"especieslunarfasetrasplante": null,
+"especieslunarobservaciones": null,
+"especiespreparacionconvencional": null,
+"especiespreparacionminima": null,
+"especiespreparacionnolaboreo": null,
+"especiesicono": "🥬",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 7.5,
+"especiesnecesidadriego": "baja",
+"especiestiposiembra": [
+"directa",
+"semillero"
+],
+"especiestiposiembrapreferente": [
+"directa"
+],
+"especiesvolumenmaceta": null,
+"especiesemillerovolumendesde": null,
+"especiesemillerovolumenhasta": null,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "adaptable, prefiere suelos bien drenados y fértiles, pero tolera pobres",
+"especiesdificultad": "baja",
+"asociaciones_beneficiosas": [],
+"asociaciones_perjudiciales": [],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "media",
+"notas": "Coloniza brotes tiernos y puede transmitir virus."
+},
+{
+"nombre": "Oídio",
+"riesgo": "media",
+"notas": "Hongo blanco en hojas, reduce la fotosíntesis."
+},
+{
+"nombre": "Caracoles y babosas",
+"riesgo": "media",
+"notas": "Consumen hojas jóvenes, especialmente en condiciones húmedas."
+}
+],
+"especiesresistenciahelada": "baja",
+"especiesnecesidadtutoraje": "no",
+"especiesporteplanta": "erecto",
+"especiesrendimientoestimado": null,
+"especiespartecosechable": [
+"hoja"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+    "usos_consumo": [
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "esapto": 1,
+            "partes": "Hojas tiernas, tallos jóvenes",
+            "notas": "Comestible cruda en ensaladas o cocida como verdura. Sabor ligeramente amargo."
+        },
+        {
+            "idconsumidor": 2,
+            "nombre": "Gallina",
+            "esapto": 1,
+            "partes": "Planta entera (hojas, tallos)",
+            "notas": "Comúnmente consumida por gallinas, fuente de nutrientes."
+        },
+        {
+            "idconsumidor": 3,
+            "nombre": "Conejo",
+            "esapto": 1,
+            "partes": "Planta entera (hojas, tallos)",
+            "notas": "Excelente forraje para conejos, muy palatable."
+        },
+        {
+            "idconsumidor": 4,
+            "nombre": "Cerdo",
+            "esapto": 1,
+            "partes": "Planta entera (hojas, tallos)",
+            "notas": "Apta como forraje suplementario para cerdos."
+        },
+        {
+            "idconsumidor": 5,
+            "nombre": "Pato",
+            "esapto": 1,
+            "partes": "Planta entera (hojas, tallos)",
+            "notas": "Los patos pueden consumir hojas y tallos tiernos."
+        }
+    ],
+    "especiesnombrecientifico": "Sonchus oleraceus",
+    "xespeciesidfamilias": 5,
+    "especiestipo": [
+        "adventicia"
+    ],
+    "especiesciclo": [
+        "anual"
+    ],
+    "fases_duracion": {
+        "15": 7,
+        "16": 14,
+        "4": 45,
+        "12": 30
+    },
+    "especiesviabilidadsemilla": 4,
+    "especiespeso1000semillas": 0.4,
+    "especiestemperaturaminima": null,
+    "especiestemperaturaoptima": null,
+    "especiestemperaturamaxima": null,
+    "especiesmarcoplantas": null,
+    "especiesmarcofilas": null,
+    "especiesmarcomargen": null,
+    "especiesprofundidadsiembra": 0.5,
+    "especiesprofundidadtrasplante": null,
+    "especieshistoria": "La Cerraja común (Sonchus oleraceus) es una planta originaria de Europa y Asia, que se ha extendido por todo el mundo como una maleza común en campos cultivados, jardines y bordes de caminos. Su presencia global se debe a su alta capacidad de adaptación y dispersión de semillas. \n\nHistóricamente, ha sido valorada en diversas culturas como una fuente de alimento y con fines medicinales, especialmente sus hojas tiernas que se consumían crudas o cocidas. A pesar de su clasificación como 'mala hierba' en la agricultura moderna, su uso como forraje y verdura silvestre persiste en muchas regiones.",
+    "especiesdescripcion": null,
+    "especiescolor": "Verde",
+    "especiestamano": "mediano",
+    "especiesfechasemillerodesde": null,
+    "especiesfechasemillerohasta": null,
+    "especiesfechasiembradirectadesde": 3,
+    "especiesfechasiembradirectahasta": 10,
+    "especiestrasplantedesde": null,
+    "especiestrasplantehasta": null,
+    "especiesfecharecolecciondesde": 3,
+    "especiesfecharecoleccionhasta": 11,
+    "especiesfuentesinformacion": [
+        "https://es.wikipedia.org/wiki/Sonchus_oleraceus",
+        "https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+    ],
+    "especiesautosuficiencia": null,
+    "especiesautosuficienciaparcial": null,
+    "especiesautosuficienciaconserva": null,
+    "especiesbiodinamicacategoria": "hoja",
+    "especiesbiodinamicafasesiembra": "Ascendente",
+    "especiesbiodinamicafasetrasplante": null,
+    "especiesbiodinamicanotas": "Las plantas de hoja se benefician de la siembra en días de hoja, preferiblemente durante la fase ascendente de la luna para potenciar el crecimiento vegetativo.",
+    "especieslunarfasesiembra": "Creciente",
+    "especieslunarfasetrasplante": null,
+    "especieslunarobservaciones": "Se recomienda sembrar en luna creciente para favorecer el desarrollo foliar y la vitalidad de las hojas. Evitar la siembra en luna nueva o llena, que pueden inhibir el crecimiento inicial.",
+    "especiespreparacionconvencional": null,
+    "especiespreparacionminima": null,
+    "especiespreparacionnolaboreo": null,
+    "especiesicono": "🌿",
+    "especiesphminimosuelo": 5.5,
+    "especiesphmaximosuelo": 7.5,
+    "especiesnecesidadriego": "baja",
+    "especiestiposiembra": [
+        "directa",
+        "semillero"
+    ],
+    "especiestiposiembrapreferente": [
+        "directa"
+    ],
+    "especiesvolumenmaceta": null,
+    "especiesemillerovolumendesde": 10,
+    "especiesemillerovolumenhasta": 30,
+    "especiesluzsolar": "pleno_sol",
+    "especiescaracteristicassuelo": "Adaptable, prefiere suelos fértiles y bien drenados, pero tolera suelos pobres y compactos.",
+    "especiesdificultad": "baja",
+    "asociaciones_beneficiosas": [],
+    "asociaciones_perjudiciales": [],
+    "plagas_asociadas": [
+        {
+            "nombre": "Pulgón",
+            "riesgo": "media",
+            "notas": "Puede ser atacada por pulgones, especialmente en brotes tiernos, causando deformaciones y debilitamiento."
+        },
+        {
+            "nombre": "Oídio",
+            "riesgo": "baja",
+            "notas": "En condiciones de alta humedad, puede aparecer oídio en las hojas, manifestándose como un polvo blanco."
+        }
+    ],
+    "especiesresistenciahelada": "media",
+    "especiesnecesidadtutoraje": "no",
+    "especiesporteplanta": "erecto",
+    "especiesrendimientoestimado": null,
+    "especiespartecosechable": [
+        "hoja",
+        "tallo"
+    ],
+    "especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"esapto": 1,
+"partes": "Hojas jóvenes, tallos tiernos",
+"notas": "Las hojas jóvenes se consumen crudas en ensaladas o cocidas como verdura. Sabor ligeramente amargo."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"esapto": 1,
+"partes": "Toda la planta",
+"notas": "Excelente forraje, muy apreciada por las gallinas como fuente de vitaminas y minerales."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"esapto": 1,
+"partes": "Toda la planta",
+"notas": "Una de las plantas silvestres favoritas de los conejos, muy nutritiva y bien tolerada."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"esapto": 1,
+"partes": "Toda la planta",
+"notas": "Comúnmente utilizada como forraje para cerdos, contribuye a una dieta variada."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"esapto": 1,
+"partes": "Toda la planta",
+"notas": "Los patos consumen la cerraja común, especialmente las hojas y tallos tiernos."
+}
+],
+"especiesnombrecientifico": "Sonchus oleraceus",
+"xespeciesidfamilias": 5,
+"especiestipo": [
+"adventicia"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 10,
+"16": 15,
+"4": 45,
+"12": 35,
+"5": 25
+},
+"especiesviabilidadsemilla": 4,
+"especiespeso1000semillas": 0.8,
+"especiestemperaturaminima": 5.0,
+"especiestemperaturaoptima": 20.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": null,
+"especiesmarcofilas": null,
+"especiesmarcomargen": null,
+"especiesprofundidadsiembra": 0.5,
+"especiesprofundidadtrasplante": null,
+"especieshistoria": "La cerraja común (Sonchus oleraceus) es una planta herbácea anual o bienal originaria de Europa y Asia, aunque actualmente se encuentra naturalizada en casi todas las regiones templadas y subtropicales del mundo. Su capacidad de adaptación y dispersión la ha convertido en una especie cosmopolita, prosperando en una amplia variedad de hábitats, desde campos cultivados y jardines hasta bordes de caminos y terrenos baldíos.\n\nHistóricamente, ha sido valorada en diversas culturas como una fuente de alimento y con fines medicinales, especialmente sus hojas jóvenes. A pesar de su consideración como \"mala hierba\" en la agricultura moderna, su presencia es un testimonio de su resiliencia y su papel en los ecosistemas naturales y antropizados.",
+"especiesdescripcion": "La cerraja común es una planta de rápido crecimiento que se propaga principalmente por semillas, las cuales son dispersadas eficazmente por el viento. Prefiere suelos fértiles y bien drenados, pero es muy adaptable a diferentes condiciones edáficas. Su ciclo de vida es corto, permitiéndole completar varias generaciones en un año en climas favorables. No requiere cuidados específicos y es conocida por su capacidad de rebrotar tras ser cortada.",
+"especiescolor": "Verde",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": null,
+"especiesfechasemillerohasta": null,
+"especiesfechasiembradirectadesde": 3,
+"especiesfechasiembradirectahasta": 10,
+"especiestrasplantedesde": null,
+"especiestrasplantehasta": null,
+"especiesfecharecolecciondesde": 3,
+"especiesfecharecoleccionhasta": 11,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Sonchus_oleraceus",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": null,
+"especiesautosuficienciaparcial": null,
+"especiesautosuficienciaconserva": null,
+"especiesbiodinamicacategoria": "hoja",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Las plantas de hoja se benefician de la siembra en días de hoja, preferentemente durante la fase ascendente de la luna.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "Para la siembra de cerraja, se recomienda la luna creciente para favorecer el desarrollo foliar. Evitar la luna nueva y llena para siembra.",
+"especiespreparacionconvencional": null,
+"especiespreparacionminima": null,
+"especiespreparacionnolaboreo": null,
+"especiesicono": "🌿",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 7.5,
+"especiesnecesidadriego": "baja",
+"especiestiposiembra": [
+"directa",
+"semilla"
+],
+"especiestiposiembrapreferente": [
+"directa"
+],
+"especiesvolumenmaceta": null,
+"especiesemillerovolumendesde": null,
+"especiesemillerovolumenhasta": null,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco, bien drenado",
+"especiesdificultad": "baja",
+"asociaciones_beneficiosas": [],
+"asociaciones_perjudiciales": [],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "media",
+"notas": "Puede ser hospedador de pulgones que luego afectan a cultivos cercanos."
+},
+{
+"nombre": "Oídio",
+"riesgo": "baja",
+"notas": "En condiciones de alta humedad, puede desarrollar oídio en las hojas."
+}
+],
+"especiesresistenciahelada": "baja",
+"especiesnecesidadtutoraje": "no",
+"especiesporteplanta": "erecto",
+"especiesrendimientoestimado": null,
+"especiespartecosechable": [
+"hoja",
+"tallo"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+    "usos_consumo": [
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "esapto": 1,
+            "partes": "Fruto maduro",
+            "notas": "El fruto maduro es comestible y nutritivo. Las hojas, tallos y frutos verdes contienen solanina y son tóxicos."
+        },
+        {
+            "idconsumidor": 2,
+            "nombre": "Gallina",
+            "esapto": 0,
+            "partes": "Fruto maduro (en muy pequeña cantidad)",
+            "notas": "Las hojas, tallos y frutos verdes son tóxicos. El fruto maduro puede darse ocasionalmente en cantidades muy limitadas, pero no es un alimento principal."
+        },
+        {
+            "idconsumidor": 3,
+            "nombre": "Conejo",
+            "esapto": 0,
+            "partes": "Ninguna",
+            "notas": "Todas las partes de la planta, incluyendo el fruto maduro, pueden ser perjudiciales para los conejos debido a su sensibilidad a los alcaloides. No se recomienda su consumo."
+        },
+        {
+            "idconsumidor": 4,
+            "nombre": "Cerdo",
+            "esapto": 0,
+            "partes": "Fruto maduro (en moderación)",
+            "notas": "Las hojas, tallos y frutos verdes son tóxicos. El fruto maduro puede ser consumido por cerdos en moderación, pero no debe ser la base de su dieta."
+        },
+        {
+            "idconsumidor": 5,
+            "nombre": "Pato",
+            "esapto": 0,
+            "partes": "Fruto maduro (en muy pequeña cantidad)",
+            "notas": "Las hojas, tallos y frutos verdes son tóxicos. El fruto maduro puede darse ocasionalmente en cantidades muy limitadas, pero no es un alimento principal."
+        }
+    ],
+    "especiesnombrecientifico": "Solanum lycopersicum",
+    "xespeciesidfamilias": 1,
+    "especiestipo": [
+        "hortaliza",
+        "fruta"
+    ],
+    "especiesciclo": [
+        "anual"
+    ],
+    "fases_duracion": {
+        "1": 7,
+        "15": 10,
+        "16": 15,
+        "3": 45,
+        "11": 10,
+        "4": 40,
+        "12": 20,
+        "5": 100
+    },
+    "especiesviabilidadsemilla": 5,
+    "especiespeso1000semillas": 3.0,
+    "especiestemperaturaminima": 10.0,
+    "especiestemperaturaoptima": 24.0,
+    "especiestemperaturamaxima": 32.0,
+    "especiesmarcoplantas": 50,
+    "especiesmarcofilas": 90,
+    "especiesmarcomargen": 25,
+    "especiesprofundidadsiembra": 0.8,
+    "especiesprofundidadtrasplante": 7.0,
+    "especieshistoria": "El tomate, Solanum lycopersicum, tiene sus orígenes en la región andina de América del Sur, donde sus ancestros silvestres aún crecen. Fue domesticado por primera vez en Mesoamérica, probablemente en México, donde se cultivaba y consumía mucho antes de la llegada de los europeos.\nLos conquistadores españoles llevaron el tomate a Europa en el siglo XVI. Inicialmente, fue visto con recelo y se pensó que era venenoso debido a su pertenencia a la familia de las solanáceas, que incluye plantas tóxicas como la belladona. Durante siglos, se cultivó principalmente como planta ornamental, hasta que en el siglo XVIII comenzó a ser aceptado como alimento en Italia y España, extendiéndose gradualmente al resto del mundo.",
+    "especiesdescripcion": "El tomate es una hortaliza de fruto que requiere pleno sol y suelos ricos en materia orgánica, bien drenados y con un pH ligeramente ácido a neutro. Es sensible a las heladas y necesita un riego constante y abundante, especialmente durante la floración y el desarrollo del fruto. La mayoría de las variedades requieren tutoraje para soportar el peso de los frutos y evitar el contacto con el suelo, lo que previene enfermedades. Es fundamental el aporte de nutrientes, especialmente potasio, para una buena fructificación.",
+    "especiescolor": "Rojo",
+    "especiestamano": "mediano",
+    "especiesfechasemillerodesde": 3,
+    "especiesfechasemillerohasta": 5,
+    "especiesfechasiembradirectadesde": 5,
+    "especiesfechasiembradirectahasta": 6,
+    "especiestrasplantedesde": 4,
+    "especiestrasplantehasta": 6,
+    "especiesfecharecolecciondesde": 7,
+    "especiesfecharecoleccionhasta": 10,
+    "especiesfuentesinformacion": [
+        "https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+        "https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+    ],
+    "especiesautosuficiencia": 12,
+    "especiesautosuficienciaparcial": 4,
+    "especiesautosuficienciaconserva": 25,
+    "especiesbiodinamicacategoria": "fruto",
+    "especiesbiodinamicafasesiembra": "Ascendente",
+    "especiesbiodinamicafasetrasplante": "Descendente",
+    "especiesbiodinamicanotas": "Las plantas de fruto se benefician de la siembra en días de fruto y de la fase ascendente de la luna, que favorece el crecimiento aéreo.",
+    "especieslunarfasesiembra": "Creciente",
+    "especieslunarfasetrasplante": "Menguante",
+    "especieslunarobservaciones": "La siembra en luna creciente favorece el desarrollo vegetativo. El trasplante en luna menguante ayuda al enraizamiento. Evitar luna llena para siembra y trasplante.",
+    "especiespreparacionconvencional": 15,
+    "especiespreparacionminima": 10,
+    "especiespreparacionnolaboreo": 5,
+    "especiesicono": "🍅",
+    "especiesphminimosuelo": 6.0,
+    "especiesphmaximosuelo": 6.8,
+    "especiesnecesidadriego": "alta",
+    "especiestiposiembra": [
+        "directa",
+        "semillero",
+        "planton",
+        "esqueje"
+    ],
+    "especiestiposiembrapreferente": [
+        "semillero",
+        "planton"
+    ],
+    "especiesvolumenmaceta": 25,
+    "especiesemillerovolumendesde": 20,
+    "especiesemillerovolumenhasta": 50,
+    "especiesluzsolar": "pleno_sol",
+    "especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+    "especiesdificultad": "media",
+    "asociaciones_beneficiosas": [
+        {
+            "nombre": "Albahaca",
+            "motivo": "Repele mosca blanca y mejora el sabor de los frutos."
+        },
+        {
+            "nombre": "Caléndula",
+            "motivo": "Repele nematodos y atrae insectos beneficiosos."
+        },
+        {
+            "nombre": "Cebolla",
+            "motivo": "Su olor ayuda a repeler pulgones y araña roja."
+        },
+        {
+            "nombre": "Zanahoria",
+            "motivo": "Ayuda a mejorar la estructura del suelo."
+        }
+    ],
+    "asociaciones_perjudiciales": [
+        {
+            "nombre": "Patata",
+            "motivo": "Comparten plagas (escarabajo de la patata) y enfermedades (mildiu), aumentando el riesgo de contagio."
+        },
+        {
+            "nombre": "Hinojo",
+            "motivo": "Puede inhibir el crecimiento del tomate por efectos alelopáticos."
+        },
+        {
+            "nombre": "Coles",
+            "motivo": "Compiten por nutrientes y espacio, pudiendo afectar el desarrollo del tomate."
+        }
+    ],
+    "plagas_asociadas": [
+        {
+            "nombre": "Pulgón",
+            "riesgo": "alta",
+            "notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+        },
+        {
+            "nombre": "Mosca blanca",
+            "riesgo": "alta",
+            "notas": "Debilita la planta, produce melaza y transmite virus."
+        },
+        {
+            "nombre": "Araña roja",
+            "riesgo": "media",
+            "notas": "Causa manchas amarillas en hojas y telarañas en el envés, especialmente en ambientes secos."
+        },
+        {
+            "nombre": "Mildiu",
+            "riesgo": "alta",
+            "notas": "Hongo que provoca manchas aceitosas en hojas y pudrición en frutos, favorecido por la humedad."
+        },
+        {
+            "nombre": "Tuta absoluta (Minador del tomate)",
+            "riesgo": "alta",
+            "notas": "Larvas que crean galerías en hojas, tallos y frutos, causando graves daños."
+        }
+    ],
+    "especiesresistenciahelada": "nula",
+    "especiesnecesidadtutoraje": "obligatorio",
+    "especiesporteplanta": "trepador",
+    "especiesrendimientoestimado": "3-5 kg/planta",
+    "especiespartecosechable": [
+        "fruto"
+    ],
+    "especiesgerminaroscuridad": true
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "fruto",
+"apto": "apto",
+"notas": "El fruto maduro es comestible y muy nutritivo."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen glicoalcaloides (solanina y tomatina) que son tóxicos."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen glicoalcaloides (solanina y tomatina) que son tóxicos."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "El fruto maduro puede darse en pequeñas cantidades. Evitar frutos verdes y partes de la planta."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos debido a los glicoalcaloides."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos debido a los glicoalcaloides."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "El fruto maduro puede ofrecerse en cantidades muy limitadas como golosina. Evitar frutos verdes."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos y pueden causar problemas digestivos graves."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos y pueden causar problemas digestivos graves."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "fruto",
+"apto": "apto",
+"notas": "El fruto maduro es seguro y puede ser un buen complemento en su dieta."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos y deben evitarse."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos y deben evitarse."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "El fruto maduro puede darse en pequeñas cantidades. Evitar frutos verdes y partes de la planta."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos debido a los glicoalcaloides."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos debido a los glicoalcaloides."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"1": 0,
+"15": 7,
+"16": 0,
+"3": 50,
+"11": 10,
+"4": 40,
+"12": 30,
+"5": 90
+},
+"especiesviabilidadsemilla": 4,
+"especiespeso1000semillas": 3.0,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 25.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 90,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 0.8,
+"especiesprofundidadtrasplante": 7.0,
+"especieshistoria": "El tomate (Solanum lycopersicum) tiene sus orígenes en la región andina de América del Sur, donde sus ancestros silvestres crecían en zonas montañosas. Fue domesticado por primera vez en Mesoamérica, probablemente en México, donde las culturas precolombinas como los aztecas ya lo cultivaban y consumían. La palabra 'tomate' deriva del náhuatl 'xitomatl'.\nFue introducido en Europa por los conquistadores españoles en el siglo XVI, inicialmente como planta ornamental debido a la desconfianza sobre su comestibilidad, ya que pertenece a la familia de las solanáceas, que incluye muchas plantas venenosas. Con el tiempo, su consumo se extendió por el Mediterráneo y luego por el resto del mundo, convirtiéndose en uno de los cultivos más importantes y versátiles de la gastronomía global.",
+"especiesdescripcion": "El tomate es una planta de crecimiento vigoroso que requiere pleno sol y suelos ricos y bien drenados. Es sensible a las heladas y necesita temperaturas cálidas para un desarrollo óptimo y una buena fructificación. El tutoraje es esencial para la mayoría de las variedades, especialmente las indeterminadas, para soportar el peso de los frutos y mejorar la aireación. Requiere riego constante y abundante, especialmente durante la floración y el desarrollo del fruto. La poda de chupones (brotes axilares) es común para dirigir la energía de la planta hacia la producción de frutos.",
+"especiescolor": "Rojo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 2,
+"especiesfechasemillerohasta": 4,
+"especiesfechasiembradirectadesde": 4,
+"especiesfechasiembradirectahasta": 5,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 4,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Para plantas de fruto, se recomienda sembrar o plantar durante los días de fruto (cuando la luna pasa por constelaciones de fuego) y evitar los días de perigeo o nodos lunares.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece el crecimiento vegetativo y la floración. El trasplante en luna menguante ayuda al enraizamiento y la adaptación de la planta al nuevo suelo. Evitar la siembra o trasplante en luna nueva o llena para evitar estrés.",
+"especiespreparacionconvencional": 20,
+"especiespreparacionminima": 12,
+"especiespreparacionnolaboreo": 7,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 25,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele moscas blancas y pulgones, y se cree que mejora el sabor del tomate."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Atrae insectos beneficiosos y repele nematodos en el suelo."
+},
+{
+"nombre": "Borraja",
+"motivo": "Atrae polinizadores y se cree que mejora la resistencia a plagas."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Ayuda a romper el suelo y no compite por los mismos nutrientes."
+},
+{
+"nombre": "Cebolla",
+"motivo": "Su fuerte olor puede confundir y repeler algunas plagas."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Ambas son solanáceas y comparten plagas y enfermedades, como el tizón tardío."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate debido a efectos alelopáticos."
+},
+{
+"nombre": "Brócoli",
+"motivo": "Las brasicáceas pueden competir por nutrientes y espacio, y atraer plagas diferentes."
+},
+{
+"nombre": "Maíz",
+"motivo": "Compiten por nutrientes y pueden atraer gusanos del maíz que también afectan al tomate."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Se alimenta del envés de las hojas, debilita la planta y transmite virus."
+},
+{
+"nombre": "Tuta absoluta",
+"riesgo": "alta",
+"notas": "Larvas minan hojas, tallos y frutos, causando graves daños."
+},
+{
+"nombre": "Araña roja",
+"riesgo": "media",
+"notas": "Provoca manchas amarillas en las hojas y telarañas finas en el envés."
+},
+{
+"nombre": "Tizón tardío",
+"riesgo": "alta",
+"notas": "Enfermedad fúngica que causa manchas oscuras en hojas, tallos y frutos, especialmente en condiciones húmedas."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "arbusto",
+"especiesrendimientoestimado": "3-5 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "fruto",
+"apto": "apto",
+"notas": "Consumo generalizado en fresco, cocinado o procesado."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica en grandes cantidades."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "raiz",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "bulbo",
+"apto": "no_apto",
+"notas": "No aplica para esta especie."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica en grandes cantidades."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "flor",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "semilla",
+"apto": "apto",
+"notas": "Consumida incidentalmente dentro del fruto maduro."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "Solo frutos maduros y en pequeñas cantidades. Evitar frutos verdes y semillas."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "raiz",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "bulbo",
+"apto": "no_apto",
+"notas": "No aplica para esta especie."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "flor",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "semilla",
+"apto": "no_apto",
+"notas": "Puede ser irritante o tóxica en grandes cantidades."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "Solo frutos maduros y en muy pequeñas cantidades como golosina. Alto en azúcar."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Contiene solanina, muy tóxica para conejos."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "raiz",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "bulbo",
+"apto": "no_apto",
+"notas": "No aplica para esta especie."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, muy tóxica para conejos."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "flor",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "semilla",
+"apto": "no_apto",
+"notas": "No apta para el consumo de conejos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "fruto",
+"apto": "apto",
+"notas": "Frutos maduros son aptos y a menudo usados en alimentación animal. Evitar frutos verdes."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "raiz",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "bulbo",
+"apto": "no_apto",
+"notas": "No aplica para esta especie."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "flor",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "semilla",
+"apto": "apto",
+"notas": "Consumida incidentalmente dentro del fruto maduro."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "Solo frutos maduros y en pequeñas cantidades. Alto en azúcar y acidez. Evitar semillas."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "raiz",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "bulbo",
+"apto": "no_apto",
+"notas": "No aplica para esta especie."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "flor",
+"apto": "no_apto",
+"notas": "No apta para consumo, contiene solanina."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "semilla",
+"apto": "no_apto",
+"notas": "Puede ser irritante o tóxica en grandes cantidades."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"1": 7,
+"15": 10,
+"16": 15,
+"3": 45,
+"11": 10,
+"4": 30,
+"12": 60,
+"5": 90
+},
+"especiesviabilidadsemilla": 5,
+"especiespeso1000semillas": 3.0,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 25.0,
+"especiestemperaturamaxima": 35.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 90,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 0.5,
+"especiesprofundidadtrasplante": 7.0,
+"especieshistoria": "El tomate, Solanum lycopersicum, tiene su origen en la región andina de América del Sur, específicamente en lo que hoy es Perú, Ecuador y el norte de Chile. Fue domesticado por primera vez en México, donde los aztecas lo cultivaban y lo llamaban 'xitomatl'. Los conquistadores españoles lo llevaron a Europa en el siglo XVI, inicialmente como planta ornamental debido a la desconfianza sobre su comestibilidad, al pertenecer a la familia de las solanáceas, que incluye plantas venenosas como la belladona.\n\nCon el tiempo, su consumo se extendió por el sur de Europa, especialmente en Italia y España, donde se integró rápidamente en la gastronomía local. Desde allí, se difundió al resto del mundo, convirtiéndose en una de las hortalizas más cultivadas y consumidas globalmente. Su adaptabilidad y la diversidad de sus variedades han contribuido a su éxito y omnipresencia en cocinas de todo el planeta.",
+"especiesdescripcion": "El tomate es una hortaliza de clima cálido que requiere pleno sol y suelos ricos en materia orgánica, bien drenados y con un pH ligeramente ácido a neutro (6.0-6.8). Se propaga principalmente por semillero o plantón, aunque también es posible la siembra directa en climas cálidos o el enraizamiento de esquejes (chupones). Necesita riego constante y abundante, especialmente durante la floración y fructificación. El tutoraje es obligatorio para la mayoría de las variedades indeterminadas para soportar el peso de los frutos y mejorar la aireación. Se recomienda la poda de chupones para concentrar la energía en la producción de frutos. Sinónimos locales incluyen 'jitomate' en México. Variedades comerciales populares son 'Marmande', 'Raf', 'Corazón de Buey' y 'Cherry', mientras que tradicionales como 'Muchamiel' o 'Rosa de Barbastro' son valoradas por su sabor.",
+"especiescolor": "Rojo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 2,
+"especiesfechasemillerohasta": 4,
+"especiesfechasiembradirectadesde": 4,
+"especiesfechasiembradirectahasta": 6,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 15,
+"especiesautosuficienciaparcial": 5,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Las plantas de fruto se benefician de la siembra en días de fruto y fases ascendentes de la luna, favoreciendo el desarrollo de la parte aérea y la fructificación.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "Se siembra en luna creciente para estimular el crecimiento de la parte aérea. Se trasplanta en luna menguante para favorecer el enraizamiento y evitar el espigado.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 20,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele mosca blanca y mejora el sabor de los tomates."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Repele nematodos y atrae insectos beneficiosos."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Atrae depredadores naturales de plagas."
+},
+{
+"nombre": "Capuchina",
+"motivo": "Actúa como planta trampa para pulgones."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Compiten por nutrientes y comparten enfermedades como el mildiu."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate por alelopatía."
+},
+{
+"nombre": "Brócoli",
+"motivo": "Compiten por nutrientes y espacio, afectando el desarrollo."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, debilita la planta y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Se alimenta de la savia, debilita la planta y produce melaza."
+},
+{
+"nombre": "Araña roja",
+"riesgo": "media",
+"notas": "Causa decoloración y punteado en las hojas, especialmente en ambientes secos."
+},
+{
+"nombre": "Tuta absoluta",
+"riesgo": "alta",
+"notas": "Larvas crean galerías en hojas, tallos y frutos, causando grandes daños."
+},
+{
+"nombre": "Oídio",
+"riesgo": "media",
+"notas": "Hongo que forma una capa blanca polvorienta en las hojas, reduciendo la fotosíntesis."
+},
+{
+"nombre": "Mildiu",
+"riesgo": "alta",
+"notas": "Hongo que causa manchas marrones en hojas y tallos, pudiendo destruir la planta rápidamente."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "trepador",
+"especiesrendimientoestimado": "3-8 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "fruto",
+"apto": "apto",
+"notas": "El fruto maduro es comestible y nutritivo, ampliamente utilizado en la gastronomía."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y otras partes verdes de la planta contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos y otras partes verdes de la planta contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "El fruto maduro puede ofrecerse en pequeñas cantidades. Evitar frutos verdes y partes verdes de la planta."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y otras partes verdes son tóxicas debido a la solanina."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos y otras partes verdes son tóxicas debido a la solanina."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "El fruto maduro solo en cantidades muy pequeñas y ocasionalmente, debido a su alto contenido de azúcar y acidez. Evitar frutos verdes."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y otras partes verdes son tóxicas y pueden causar problemas digestivos graves."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos y otras partes verdes son tóxicas y pueden causar problemas digestivos graves."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "fruto",
+"apto": "apto",
+"notas": "El fruto maduro es apto para el consumo en cantidades razonables. Evitar frutos verdes y partes verdes de la planta."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y otras partes verdes son tóxicas debido a la solanina."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos y otras partes verdes son tóxicas debido a la solanina."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "El fruto maduro puede ofrecerse en pequeñas cantidades. Evitar frutos verdes y partes verdes de la planta."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y otras partes verdes son tóxicas debido a la solanina."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos y otras partes verdes son tóxicas debido a la solanina."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 10,
+"3": 50,
+"11": 10,
+"4": 40,
+"12": 30,
+"5": 90
+},
+"especiesviabilidadsemilla": 4,
+"especiespeso1000semillas": 3.0,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 25.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 80,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 0.5,
+"especiesprofundidadtrasplante": 5.0,
+"especieshistoria": "El tomate, Solanum lycopersicum, tiene sus orígenes en la región andina de América del Sur, donde sus ancestros silvestres aún crecen. Fue domesticado y cultivado por primera vez en Mesoamérica, probablemente en México, donde los pueblos indígenas lo integraron en su dieta y cultura mucho antes de la llegada de los europeos.\nTras la conquista de América, el tomate fue introducido en Europa en el siglo XVI. Inicialmente, fue visto con recelo y se cultivó principalmente como planta ornamental, debido a su pertenencia a la familia de las solanáceas, que incluye muchas plantas venenosas. No fue hasta los siglos XVIII y XIX que su consumo se popularizó en Europa, especialmente en Italia y España, desde donde se extendió al resto del mundo, convirtiéndose en uno de los cultivos más importantes y versátiles a nivel global.",
+"especiesdescripcion": "El tomate es una hortaliza de fruto que requiere pleno sol y suelos ricos en materia orgánica, bien drenados y con un pH ligeramente ácido a neutro. Es sensible a las heladas y necesita temperaturas cálidas para un desarrollo óptimo. El riego debe ser regular y constante, evitando encharcamientos y estrés hídrico que pueden provocar rajado de frutos o enfermedades. Es fundamental el tutorado para la mayoría de las variedades, especialmente las indeterminadas, para soportar el peso de los frutos y mejorar la aireación. Se recomienda la poda de chupones para concentrar la energía en la producción de frutos. Las variedades son muy diversas, desde pequeños cherrys hasta grandes tomates de ensalada, con formas y colores variados.",
+"especiescolor": "Rojo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 2,
+"especiesfechasemillerohasta": 4,
+"especiesfechasiembradirectadesde": 4,
+"especiesfechasiembradirectahasta": 6,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 4,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Para el tomate, como planta de fruto, se recomienda sembrar en fase lunar ascendente y trasplantar en fase descendente, evitando los días de perigeo y nodos lunares para labores importantes.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece la germinación y el crecimiento vegetativo. El trasplante en luna menguante ayuda al enraizamiento y al desarrollo de la parte subterránea. Evitar luna nueva y llena para siembras y trasplantes.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 20,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele moscas blancas y mosquitos, mejora el sabor del tomate."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Atrae polinizadores y repele nematodos en el suelo."
+},
+{
+"nombre": "Borraja",
+"motivo": "Atrae abejas y otros polinizadores, mejora la resistencia a plagas."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Rompe el ciclo de plagas y mejora la estructura del suelo."
+},
+{
+"nombre": "Cebolla",
+"motivo": "Ayuda a repeler pulgones y otras plagas por su olor."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Compiten por nutrientes y comparten enfermedades como el tizón tardío."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate por alelopatía."
+},
+{
+"nombre": "Brócoli",
+"motivo": "Compiten por nutrientes y pueden atraer plagas similares."
+},
+{
+"nombre": "Maíz",
+"motivo": "Compiten por nutrientes y luz, y pueden atraer gusanos del maíz que también afectan al tomate."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Se alimenta de la savia, debilita la planta y excreta melaza que favorece el hongo negrilla."
+},
+{
+"nombre": "Tuta absoluta",
+"riesgo": "alta",
+"notas": "Larvas minan hojas, tallos y frutos, causando graves daños."
+},
+{
+"nombre": "Araña roja",
+"riesgo": "media",
+"notas": "Provoca manchas amarillas en las hojas y telarañas finas, especialmente en ambientes secos."
+},
+{
+"nombre": "Oídio",
+"riesgo": "media",
+"notas": "Hongo que forma un polvo blanco en hojas y tallos, reduciendo la fotosíntesis."
+},
+{
+"nombre": "Mildiu",
+"riesgo": "alta",
+"notas": "Hongo que causa manchas marrones en hojas y tallos, pudrición de frutos, especialmente en condiciones de humedad."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "arbusto",
+"especiesrendimientoestimado": "3-5 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "fruto",
+"apto": "apto",
+"notas": "El fruto maduro es comestible y muy nutritivo."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse con moderación. Evitar grandes cantidades por su acidez."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos debido a la solanina."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos son tóxicos debido a la solanina."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "Pequeñas cantidades de fruto maduro pueden ser toleradas, pero no es un alimento principal."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos y pueden causar problemas digestivos graves."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos son tóxicos y pueden causar problemas digestivos graves."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "fruto",
+"apto": "apto",
+"notas": "Los frutos maduros son aptos y pueden ser un buen complemento en su dieta."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina y no deben ser consumidos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos contienen solanina y no deben ser consumidos."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "fruto",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades como golosina."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "hoja",
+"apto": "no_apto",
+"notas": "Las hojas y tallos son tóxicos y deben evitarse."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "tallo",
+"apto": "no_apto",
+"notas": "Los tallos son tóxicos y deben evitarse."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 7,
+"3": 35,
+"11": 10,
+"4": 40,
+"12": 20,
+"5": 75
+},
+"especiesviabilidadsemilla": 4,
+"especiespeso1000semillas": 3.0,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 25.0,
+"especiestemperaturamaxima": 35.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 80,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 1.0,
+"especiesprofundidadtrasplante": 8.0,
+"especieshistoria": "El tomate, Solanum lycopersicum, tiene sus orígenes en la región andina de América del Sur, donde sus ancestros silvestres crecían. Fue domesticado por primera vez en Mesoamérica, probablemente en México, donde las culturas precolombinas lo cultivaban y consumían. Su nombre proviene del náhuatl 'xitomatl'.\n\nTras la llegada de los españoles a América, el tomate fue introducido en Europa en el siglo XVI. Inicialmente, fue cultivado como planta ornamental debido a la desconfianza sobre su comestibilidad, ya que pertenece a la familia de las solanáceas, que incluye muchas plantas venenosas. No fue hasta el siglo XVIII que su consumo se popularizó en Europa, especialmente en Italia y España, y desde allí se extendió al resto del mundo, convirtiéndose en uno de los cultivos más importantes globalmente.",
+"especiesdescripcion": "El tomate es una hortaliza de fruto que requiere pleno sol y suelos ricos en materia orgánica, bien drenados. Es sensible a las heladas y necesita temperaturas cálidas para su desarrollo óptimo. El riego debe ser regular y constante para evitar el agrietamiento de los frutos. La mayoría de las variedades requieren tutoraje para soportar el peso de los frutos y facilitar la ventilación. Es fundamental una buena rotación de cultivos para prevenir enfermedades.",
+"especiescolor": "Rojo",
+"especiestamano": "grande",
+"especiesfechasemillerodesde": 2,
+"especiesfechasemillerohasta": 4,
+"especiesfechasiembradirectadesde": 4,
+"especiesfechasiembradirectahasta": 5,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 5,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 5,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Para el tomate, como planta de fruto, se recomienda sembrar en fase ascendente para favorecer el crecimiento aéreo y la floración. El trasplante se realiza en fase descendente para estimular el enraizamiento.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece la germinación y el desarrollo vegetativo. El trasplante en luna menguante ayuda al enraizamiento y a la adaptación de la planta. Evitar siembras y trasplantes en luna nueva o llena para evitar estrés.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 20,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele moscas blancas y pulgones, y se cree que mejora el sabor del tomate."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Atrae insectos beneficiosos y repele nematodos en el suelo."
+},
+{
+"nombre": "Borraja",
+"motivo": "Atrae polinizadores y se cree que mejora la resistencia a plagas."
+},
+{
+"nombre": "Capuchina",
+"motivo": "Actúa como planta trampa para pulgones, desviándolos del tomate."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Rompe el ciclo de plagas y mejora la estructura del suelo."
+},
+{
+"nombre": "Cebolla",
+"motivo": "Su fuerte olor puede confundir y repeler algunas plagas."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Ambas son solanáceas y comparten plagas y enfermedades, como el tizón tardío."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate debido a efectos alelopáticos."
+},
+{
+"nombre": "Brócoli",
+"motivo": "Compiten por nutrientes y pueden atraer plagas similares."
+},
+{
+"nombre": "Maíz",
+"motivo": "Compiten por nutrientes y luz, y pueden atraer gusanos del maíz que también afectan al tomate."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Se alimenta del envés de las hojas, debilita la planta y produce melaza."
+},
+{
+"nombre": "Tuta absoluta (Minador del tomate)",
+"riesgo": "alta",
+"notas": "Las larvas crean galerías en hojas, tallos y frutos, causando grandes daños."
+},
+{
+"nombre": "Araña roja",
+"riesgo": "media",
+"notas": "Provoca manchas amarillas en las hojas y telarañas finas, especialmente en ambientes secos."
+},
+{
+"nombre": "Gusano del tomate (Manduca quinquemaculata)",
+"riesgo": "media",
+"notas": "Grandes orugas que defolian rápidamente la planta."
+},
+{
+"nombre": "Tizón tardío (Phytophthora infestans)",
+"riesgo": "alta",
+"notas": "Hongo que causa manchas oscuras en hojas y tallos, y pudrición en frutos."
+},
+{
+"nombre": "Oídio",
+"riesgo": "media",
+"notas": "Hongo que forma una capa blanca polvorienta en las hojas, reduciendo la fotosíntesis."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "arbusto",
+"especiesrendimientoestimado": "3-5 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": null
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Frutos",
+"apto": "apto",
+"notas": "Los frutos maduros son comestibles y nutritivos."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Las hojas, tallos y partes verdes contienen solanina, tóxica."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Las hojas, tallos y partes verdes contienen solanina, tóxica."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Flores",
+"apto": "no_apto",
+"notas": "Las flores contienen solanina y no son aptas para el consumo."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Semillas",
+"apto": "apto",
+"notas": "Las semillas se consumen junto con el fruto y no presentan toxicidad en cantidades normales."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Evitar frutos verdes y partes de la planta."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Semillas",
+"apto": "con_moderacion",
+"notas": "Las semillas en pequeñas cantidades con el fruto maduro son tolerables."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "Toda la planta",
+"apto": "no_apto",
+"notas": "Toda la planta, incluyendo los frutos, es tóxica para los conejos debido a la solanina."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ser consumidos con moderación. Evitar grandes cantidades y partes verdes."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, tóxica para los cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, tóxica para los cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Semillas",
+"apto": "con_moderacion",
+"notas": "Las semillas en pequeñas cantidades con el fruto maduro son tolerables."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Evitar frutos verdes y partes de la planta."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, tóxica para las aves acuáticas."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Las hojas y tallos contienen solanina, tóxica para las aves acuáticas."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Semillas",
+"apto": "con_moderacion",
+"notas": "Las semillas en pequeñas cantidades con el fruto maduro son tolerables."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 7,
+"3": 50,
+"11": 10,
+"4": 30,
+"12": 20,
+"5": 120
+},
+"especiesviabilidadsemilla": 5,
+"especiespeso1000semillas": 3.0,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 24.0,
+"especiestemperaturamaxima": 32.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 90,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 0.8,
+"especiesprofundidadtrasplante": 7.0,
+"especieshistoria": "El tomate, Solanum lycopersicum, tiene su origen en la región andina de América del Sur, específicamente en lo que hoy es Perú, Ecuador y el norte de Chile. Fue domesticado por primera vez en México, donde las civilizaciones mesoamericanas, como los aztecas, lo cultivaban y lo llamaban 'xitomatl'. Los aztecas lo utilizaban en su gastronomía y lo consideraban un alimento básico.\n\nTras la llegada de los españoles a América, el tomate fue introducido en Europa en el siglo XVI. Inicialmente, fue cultivado como planta ornamental debido a su pertenencia a la familia de las solanáceas, que incluía plantas venenosas como la belladona, lo que generó desconfianza sobre su comestibilidad. Sin embargo, con el tiempo, especialmente en Italia y España, comenzó a ser incorporado en la dieta, extendiéndose su consumo por todo el mundo hasta convertirse en una de las hortalizas más populares y versátiles de la cocina global.",
+"especiesdescripcion": null,
+"especiescolor": "Rojo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 3,
+"especiesfechasemillerohasta": 5,
+"especiesfechasiembradirectadesde": 5,
+"especiesfechasiembradirectahasta": 6,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 4,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Para plantas de fruto, se recomienda sembrar en días de fruto y trasplantar en fase descendente para favorecer el enraizamiento y la producción.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece el crecimiento de la parte aérea. El trasplante en luna menguante ayuda al enraizamiento y reduce el estrés de la planta. Evitar luna nueva y llena para labores importantes.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 25,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele moscas blancas y pulgones, mejora el sabor del tomate."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Atrae polinizadores y repele nematodos."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Mejora la estructura del suelo y atrae insectos beneficiosos."
+},
+{
+"nombre": "Cebolla",
+"motivo": "Ayuda a repeler plagas como el pulgón y la mosca blanca."
+},
+{
+"nombre": "Capuchina",
+"motivo": "Actúa como planta trampa para pulgones, desviándolos del tomate."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Compiten por nutrientes y comparten enfermedades como el tizón tardío."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate por alelopatía."
+},
+{
+"nombre": "Col",
+"motivo": "Compiten por nutrientes y pueden atraer plagas similares."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Se alimenta de la savia, debilita la planta y excreta melaza que favorece la negrilla."
+},
+{
+"nombre": "Tuta absoluta",
+"riesgo": "alta",
+"notas": "Larvas minan hojas, tallos y frutos, causando graves daños."
+},
+{
+"nombre": "Araña roja",
+"riesgo": "media",
+"notas": "Provoca manchas amarillas en las hojas y telarañas finas, especialmente en ambientes secos."
+},
+{
+"nombre": "Oídio",
+"riesgo": "media",
+"notas": "Hongo que forma un polvo blanco en hojas y tallos, reduciendo la fotosíntesis."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "arbusto",
+"especiesrendimientoestimado": "3-5 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Frutos",
+"apto": "apto",
+"notas": "Los frutos maduros son comestibles y muy nutritivos."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros son aptos en pequeñas cantidades. Evitar grandes cantidades por su acidez."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en muy pequeñas cantidades como golosina ocasional. Evitar los verdes."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, muy tóxica para los conejos."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contienen solanina, muy tóxica para los conejos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Frutos",
+"apto": "apto",
+"notas": "Los frutos maduros son aptos y pueden ser un buen complemento en su dieta."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para los cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para los cerdos."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros son aptos en pequeñas cantidades. Evitar grandes cantidades por su acidez."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para las aves acuáticas."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para las aves acuáticas."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 7,
+"3": 45,
+"11": 10,
+"4": 40,
+"12": 25,
+"5": 90
+},
+"especiesviabilidadsemilla": 5,
+"especiespeso1000semillas": 3,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 25.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 90,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 0.8,
+"especiesprofundidadtrasplante": 7.0,
+"especieshistoria": "El tomate, Solanum lycopersicum, tiene su origen en la región andina de América del Sur, donde se han encontrado evidencias de su domesticación. Fue cultivado por civilizaciones precolombinas en Mesoamérica, especialmente por los aztecas, quienes lo llamaban 'xitomatl'.\nSu introducción en Europa se produjo tras la llegada de los españoles a América en el siglo XVI. Inicialmente, fue considerado una planta ornamental y se creía que sus frutos eran venenosos debido a su pertenencia a la familia de las solanáceas, que incluye especies tóxicas como la belladona. No fue hasta el siglo XVIII que su consumo se popularizó en Italia y España, extendiéndose posteriormente al resto del mundo.",
+"especiesdescripcion": "El tomate es una hortaliza de clima cálido que requiere pleno sol y suelos ricos y bien drenados. Es sensible a las heladas y necesita un riego constante y abundante, especialmente durante la floración y el desarrollo del fruto. La mayoría de las variedades requieren tutoraje para soportar el peso de los frutos y facilitar la cosecha. Es fundamental una buena rotación de cultivos para prevenir enfermedades.",
+"especiescolor": "Rojo",
+"especiestamano": "grande",
+"especiesfechasemillerodesde": 2,
+"especiesfechasemillerohasta": 4,
+"especiesfechasiembradirectadesde": 4,
+"especiesfechasiembradirectahasta": 6,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 4,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Se siembra en fase ascendente para favorecer el crecimiento aéreo y se trasplanta en descendente para el enraizamiento. Evitar perigeos y nodos.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece la germinación y el crecimiento inicial. El trasplante en luna menguante ayuda al enraizamiento y desarrollo subterráneo. Evitar luna nueva y llena para labores importantes.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 20,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele mosca blanca y mejora el sabor de los frutos."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Atrae polinizadores y repele nematodos en el suelo."
+},
+{
+"nombre": "Capuchina",
+"motivo": "Actúa como planta trampa para pulgones, desviándolos del tomate."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Mejora la estructura del suelo y no compite por nutrientes."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Comparten plagas y enfermedades (mildiu, escarabajo de la patata) y compiten por nutrientes."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate por alelopatía."
+},
+{
+"nombre": "Col",
+"motivo": "Compiten por nutrientes y pueden atraer plagas similares."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Debilita la planta, succiona savia y transmite virus."
+},
+{
+"nombre": "Tuta absoluta",
+"riesgo": "alta",
+"notas": "Larvas perforan hojas, tallos y frutos, causando graves daños."
+},
+{
+"nombre": "Mildiu",
+"riesgo": "alta",
+"notas": "Hongo que causa manchas necróticas en hojas y pudrición de frutos, especialmente en condiciones de humedad."
+},
+{
+"nombre": "Oídio",
+"riesgo": "media",
+"notas": "Hongo que forma un polvo blanco en las hojas, reduciendo la fotosíntesis."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "arbusto",
+"especiesrendimientoestimado": "3-8 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": null
+}
+
+
+
+=== AI RESPONSE ===
+{
+    "usos_consumo": [
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "parte": "Frutos",
+            "apto": "apto",
+            "notas": "Los frutos maduros son ampliamente consumidos frescos o cocinados."
+        },
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "parte": "Hojas",
+            "apto": "no_apto",
+            "notas": "Las hojas, tallos y frutos verdes contienen solanina, un glicoalcaloide tóxico."
+        },
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "parte": "Tallo",
+            "apto": "no_apto",
+            "notas": "Las hojas, tallos y frutos verdes contienen solanina, un glicoalcaloide tóxico."
+        },
+        {
+            "idconsumidor": 1,
+            "nombre": "Humano",
+            "parte": "Flores",
+            "apto": "no_apto",
+            "notas": "Las flores no son aptas para el consumo humano."
+        },
+        {
+            "idconsumidor": 2,
+            "nombre": "Gallina",
+            "parte": "Frutos",
+            "apto": "con_moderacion",
+            "notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Evitar frutos verdes y hojas."
+        },
+        {
+            "idconsumidor": 2,
+            "nombre": "Gallina",
+            "parte": "Hojas",
+            "apto": "no_apto",
+            "notas": "Las hojas y tallos contienen solanina, tóxica para las gallinas."
+        },
+        {
+            "idconsumidor": 2,
+            "nombre": "Gallina",
+            "parte": "Tallo",
+            "apto": "no_apto",
+            "notas": "Las hojas y tallos contienen solanina, tóxica para las gallinas."
+        },
+        {
+            "idconsumidor": 3,
+            "nombre": "Conejo",
+            "parte": "Toda la planta",
+            "apto": "no_apto",
+            "notas": "Toda la planta, incluyendo los frutos, es considerada tóxica para los conejos debido a la solanina y el alto contenido de azúcar en los frutos maduros."
+        },
+        {
+            "idconsumidor": 4,
+            "nombre": "Cerdo",
+            "parte": "Frutos",
+            "apto": "apto",
+            "notas": "Los frutos maduros son aptos para el consumo porcino en cantidades moderadas. Evitar hojas y frutos verdes."
+        },
+        {
+            "idconsumidor": 4,
+            "nombre": "Cerdo",
+            "parte": "Hojas",
+            "apto": "no_apto",
+            "notas": "Las hojas y tallos contienen solanina, tóxica para los cerdos."
+        },
+        {
+            "idconsumidor": 4,
+            "nombre": "Cerdo",
+            "parte": "Tallo",
+            "apto": "no_apto",
+            "notas": "Las hojas y tallos contienen solanina, tóxica para los cerdos."
+        },
+        {
+            "idconsumidor": 5,
+            "nombre": "Pato",
+            "parte": "Frutos",
+            "apto": "con_moderacion",
+            "notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Evitar frutos verdes y hojas."
+        },
+        {
+            "idconsumidor": 5,
+            "nombre": "Pato",
+            "parte": "Hojas",
+            "apto": "no_apto",
+            "notas": "Las hojas y tallos contienen solanina, tóxica para los patos."
+        },
+        {
+            "idconsumidor": 5,
+            "nombre": "Pato",
+            "parte": "Tallo",
+            "apto": "no_apto",
+            "notas": "Las hojas y tallos contienen solanina, tóxica para los patos."
+        }
+    ],
+    "especiesnombrecientifico": "Solanum lycopersicum",
+    "xespeciesidfamilias": 1,
+    "especiestipo": [
+        "hortaliza",
+        "fruta"
+    ],
+    "especiesciclo": [
+        "anual"
+    ],
+    "fases_duracion": {
+        "1": 7,
+        "15": 10,
+        "16": 0,
+        "3": 50,
+        "11": 12,
+        "4": 40,
+        "12": 25,
+        "5": 75
+    },
+    "especiesviabilidadsemilla": 4,
+    "especiespeso1000semillas": 3.0,
+    "especiestemperaturaminima": 10.0,
+    "especiestemperaturaoptima": 25.0,
+    "especiestemperaturamaxima": 35.0,
+    "especiesmarcoplantas": 40,
+    "especiesmarcofilas": 80,
+    "especiesmarcomargen": 20,
+    "especiesprofundidadsiembra": 1.0,
+    "especiesprofundidadtrasplante": 5.0,
+    "especieshistoria": "El tomate, Solanum lycopersicum, tiene sus orígenes en la región andina de América del Sur, específicamente en Perú, Ecuador y el norte de Chile, donde crecía de forma silvestre. Fue domesticado por primera vez en México, donde los aztecas lo cultivaban y lo llamaban 'xitomatl'. Los primeros tomates eran pequeños y amarillos, y su consumo se extendió por Mesoamérica mucho antes de la llegada de los europeos.\n\nLos conquistadores españoles llevaron el tomate a Europa en el siglo XVI, inicialmente como planta ornamental debido a su pertenencia a la familia de las solanáceas, que incluía plantas venenosas como la belladona. Durante siglos, fue considerado sospechoso y tóxico en muchas partes de Europa. No fue hasta el siglo XVIII y XIX que su consumo se popularizó, especialmente en Italia y España, donde se integró profundamente en la gastronomía, dando lugar a innumerables platos y variedades que hoy conocemos.",
+    "especiesdescripcion": "El tomate es una hortaliza de fruto que requiere pleno sol y suelos ricos en materia orgánica, bien drenados y con un pH ligeramente ácido a neutro. Es sensible a las heladas y necesita temperaturas cálidas para su desarrollo óptimo. La mayoría de las variedades requieren tutoraje para soportar el peso de los frutos y facilitar la ventilación. Es fundamental un riego constante y adecuado, evitando el encharcamiento y el estrés hídrico para prevenir enfermedades y problemas en el fruto. La poda de chupones es común para mejorar la producción y el tamaño de los frutos.",
+    "especiescolor": "Rojo",
+    "especiestamano": "mediano",
+    "especiesfechasemillerodesde": 2,
+    "especiesfechasemillerohasta": 4,
+    "especiesfechasiembradirectadesde": 4,
+    "especiesfechasiembradirectahasta": 5,
+    "especiestrasplantedesde": 4,
+    "especiestrasplantehasta": 5,
+    "especiesfecharecolecciondesde": 7,
+    "especiesfecharecoleccionhasta": 10,
+    "especiesfuentesinformacion": [
+        "https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+        "https://es.wikipedia.org/wiki/Agricultura_biodin%C3%Aica"
+    ],
+    "especiesautosuficiencia": 18,
+    "especiesautosuficienciaparcial": 6,
+    "especiesautosuficienciaconserva": 30,
+    "especiesbiodinamicacategoria": "fruto",
+    "especiesbiodinamicafasesiembra": "Ascendente",
+    "especiesbiodinamicafasetrasplante": "Descendente",
+    "especiesbiodinamicanotas": "Las plantas de fruto se benefician de la siembra en días de fruto y de la influencia de la luna ascendente para el crecimiento aéreo. Se recomienda evitar los días de perigeo y nodos lunares.",
+    "especieslunarfasesiembra": "Creciente",
+    "especieslunarfasetrasplante": "Menguante",
+    "especieslunarobservaciones": "Sembrar en luna creciente favorece el desarrollo de la parte aérea y los frutos. Trasplantar en luna menguante ayuda al enraizamiento y establecimiento de la planta. Evitar luna nueva y llena para siembra/trasplante.",
+    "especiespreparacionconvencional": 15,
+    "especiespreparacionminima": 10,
+    "especiespreparacionnolaboreo": 5,
+    "especiesicono": "🍅",
+    "especiesphminimosuelo": 6.0,
+    "especiesphmaximosuelo": 6.8,
+    "especiesnecesidadriego": "alta",
+    "especiestiposiembra": [
+        "directa",
+        "semillero",
+        "planton",
+        "esqueje"
+    ],
+    "especiestiposiembrapreferente": [
+        "semillero",
+        "planton"
+    ],
+    "especiesvolumenmaceta": 20,
+    "especiesemillerovolumendesde": 20,
+    "especiesemillerovolumenhasta": 50,
+    "especiesluzsolar": "pleno_sol",
+    "especiescaracteristicassuelo": "franco-arcilloso, rico en materia orgánica, bien drenado",
+    "especiesdificultad": "media",
+    "asociaciones_beneficiosas": [
+        {
+            "nombre": "Albahaca",
+            "motivo": "Repele mosca blanca y mejora el sabor de los frutos."
+        },
+        {
+            "nombre": "Caléndula",
+            "motivo": "Atrae polinizadores y repele nematodos en el suelo."
+        },
+        {
+            "nombre": "Zanahoria",
+            "motivo": "Mejora la estructura del suelo y atrae insectos beneficiosos."
+        },
+        {
+            "nombre": "Cebolla",
+            "motivo": "Su olor ayuda a repeler pulgones y araña roja."
+        },
+        {
+            "nombre": "Capuchina",
+            "motivo": "Actúa como planta trampa para pulgones, desviándolos del tomate."
+        }
+    ],
+    "asociaciones_perjudiciales": [
+        {
+            "nombre": "Patata",
+            "motivo": "Comparten plagas (mildiu, escarabajo de la patata) y enfermedades, aumentando el riesgo de contagio."
+        },
+        {
+            "nombre": "Hinojo",
+            "motivo": "Puede inhibir el crecimiento del tomate por efectos alelopáticos."
+        },
+        {
+            "nombre": "Col",
+            "motivo": "Compiten por nutrientes y pueden atraer plagas similares."
+        }
+    ],
+    "plagas_asociadas": [
+        {
+            "nombre": "Pulgón",
+            "riesgo": "alta",
+            "notas": "Coloniza brotes tiernos, hojas y flores, debilitando la planta y transmitiendo virus."
+        },
+        {
+            "nombre": "Mosca blanca",
+            "riesgo": "alta",
+            "notas": "Se alimenta de la savia, debilita la planta y excreta melaza que favorece la negrilla."
+        },
+        {
+            "nombre": "Araña roja",
+            "riesgo": "media",
+            "notas": "Causa manchas amarillas en las hojas y telarañas finas en el envés, especialmente en ambientes secos."
+        },
+        {
+            "nombre": "Tuta absoluta",
+            "riesgo": "alta",
+            "notas": "Las larvas minan hojas, tallos y frutos, causando galerías y pudriciones."
+        },
+        {
+            "nombre": "Mildiu",
+            "riesgo": "alta",
+            "notas": "Hongo que provoca manchas marrones en hojas y tallos, y pudrición en los frutos, especialmente en condiciones de alta humedad."
+        },
+        {
+            "nombre": "Oídio",
+            "riesgo": "media",
+            "notas": "Hongo que se manifiesta como un polvo blanco en las hojas, reduciendo la fotosíntesis."
+        }
+    ],
+    "especiesresistenciahelada": "nula",
+    "especiesnecesidadtutoraje": "obligatorio",
+    "especiesporteplanta": "arbusto",
+    "especiesrendimientoestimado": "3-5 kg/planta",
+    "especiespartecosechable": [
+        "fruto"
+    ],
+    "especiesgerminaroscuridad": false
+}
+
+
+
+=== AI RESPONSE ===
+{
+"usos_consumo": [
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Frutos",
+"apto": "apto",
+"notas": "Los frutos maduros son ampliamente consumidos y nutritivos."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, un glicoalcaloide tóxico."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Flores",
+"apto": "con_moderacion",
+"notas": "Comestibles en pequeñas cantidades, usadas ocasionalmente en gastronomía."
+},
+{
+"idconsumidor": 1,
+"nombre": "Humano",
+"parte": "Semillas",
+"apto": "apto",
+"notas": "Se consumen junto con el fruto maduro sin problemas."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Los frutos verdes son tóxicos."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 2,
+"nombre": "Gallina",
+"parte": "Semillas",
+"apto": "con_moderacion",
+"notas": "Se consumen junto con el fruto maduro en pequeñas cantidades."
+},
+{
+"idconsumidor": 3,
+"nombre": "Conejo",
+"parte": "Toda la planta",
+"apto": "no_apto",
+"notas": "Todas las partes de la planta, excepto los frutos maduros, son tóxicas debido a la solanina. Se recomienda evitar su consumo."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Los frutos verdes son tóxicos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para los cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para los cerdos."
+},
+{
+"idconsumidor": 4,
+"nombre": "Cerdo",
+"parte": "Semillas",
+"apto": "con_moderacion",
+"notas": "Se consumen junto con el fruto maduro en pequeñas cantidades."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Frutos",
+"apto": "con_moderacion",
+"notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades. Los frutos verdes son tóxicos."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Hojas",
+"apto": "no_apto",
+"notas": "Contienen solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Tallo",
+"apto": "no_apto",
+"notas": "Contiene solanina, tóxica para las aves."
+},
+{
+"idconsumidor": 5,
+"nombre": "Pato",
+"parte": "Semillas",
+"apto": "con_moderacion",
+"notas": "Se consumen junto con el fruto maduro en pequeñas cantidades."
+}
+],
+"especiesnombrecientifico": "Solanum lycopersicum",
+"xespeciesidfamilias": 1,
+"especiestipo": [
+"hortaliza",
+"fruta"
+],
+"especiesciclo": [
+"anual"
+],
+"fases_duracion": {
+"15": 10,
+"3": 50,
+"11": 10,
+"4": 35,
+"12": 25,
+"5": 75
+},
+"especiesviabilidadsemilla": 5,
+"especiespeso1000semillas": 3,
+"especiestemperaturaminima": 10.0,
+"especiestemperaturaoptima": 25.0,
+"especiestemperaturamaxima": 30.0,
+"especiesmarcoplantas": 50,
+"especiesmarcofilas": 90,
+"especiesmarcomargen": 25,
+"especiesprofundidadsiembra": 0.8,
+"especiesprofundidadtrasplante": 7.0,
+"especieshistoria": "El tomate, Solanum lycopersicum, tiene sus orígenes en la región andina de América del Sur, donde sus ancestros silvestres crecían de forma natural. Fue domesticado por primera vez en Mesoamérica, probablemente en México, donde las civilizaciones precolombinas como los aztecas ya lo cultivaban y consumían, refiriéndose a él como 'xitomatl'.\nFue introducido en Europa por los conquistadores españoles en el siglo XVI, inicialmente como una planta ornamental debido a su pertenencia a la familia de las solanáceas, que incluía muchas plantas venenosas. No fue hasta el siglo XVIII y XIX que su consumo se popularizó en Europa, especialmente en Italia y España, y posteriormente en el resto del mundo, convirtiéndose en uno de los cultivos más importantes a nivel global.",
+"especiesdescripcion": null,
+"especiescolor": "Rojo",
+"especiestamano": "mediano",
+"especiesfechasemillerodesde": 2,
+"especiesfechasemillerohasta": 4,
+"especiesfechasiembradirectadesde": 4,
+"especiesfechasiembradirectahasta": 6,
+"especiestrasplantedesde": 4,
+"especiestrasplantehasta": 6,
+"especiesfecharecolecciondesde": 7,
+"especiesfecharecoleccionhasta": 10,
+"especiesfuentesinformacion": [
+"https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+"https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+],
+"especiesautosuficiencia": 12,
+"especiesautosuficienciaparcial": 4,
+"especiesautosuficienciaconserva": 25,
+"especiesbiodinamicacategoria": "fruto",
+"especiesbiodinamicafasesiembra": "Ascendente",
+"especiesbiodinamicafasetrasplante": "Descendente",
+"especiesbiodinamicanotas": "Las plantas de fruto se benefician de la siembra en días de fruto y la influencia de la luna ascendente para el crecimiento aéreo.",
+"especieslunarfasesiembra": "Creciente",
+"especieslunarfasetrasplante": "Menguante",
+"especieslunarobservaciones": "La siembra en luna creciente favorece el desarrollo foliar y floral. Evitar luna nueva y llena para trasplantes.",
+"especiespreparacionconvencional": 15,
+"especiespreparacionminima": 10,
+"especiespreparacionnolaboreo": 5,
+"especiesicono": "🍅",
+"especiesphminimosuelo": 6.0,
+"especiesphmaximosuelo": 6.8,
+"especiesnecesidadriego": "alta",
+"especiestiposiembra": [
+"directa",
+"semillero",
+"planton",
+"esqueje"
+],
+"especiestiposiembrapreferente": [
+"semillero",
+"planton"
+],
+"especiesvolumenmaceta": 20,
+"especiesemillerovolumendesde": 20,
+"especiesemillerovolumenhasta": 50,
+"especiesluzsolar": "pleno_sol",
+"especiescaracteristicassuelo": "franco-arenoso, rico en materia orgánica, bien drenado",
+"especiesdificultad": "media",
+"asociaciones_beneficiosas": [
+{
+"nombre": "Albahaca",
+"motivo": "Repele mosca blanca y mejora el sabor de los frutos."
+},
+{
+"nombre": "Caléndula",
+"motivo": "Repele nematodos y atrae insectos beneficiosos."
+},
+{
+"nombre": "Capuchina",
+"motivo": "Actúa como planta trampa para pulgones, desviándolos del tomate."
+},
+{
+"nombre": "Zanahoria",
+"motivo": "Ayuda a mejorar la estructura del suelo y la aireación."
+}
+],
+"asociaciones_perjudiciales": [
+{
+"nombre": "Patata",
+"motivo": "Comparten plagas y enfermedades como el mildiu y el escarabajo de la patata."
+},
+{
+"nombre": "Hinojo",
+"motivo": "Puede inhibir el crecimiento del tomate por efectos alelopáticos."
+},
+{
+"nombre": "Col",
+"motivo": "Compiten por nutrientes y espacio, afectando el desarrollo."
+}
+],
+"plagas_asociadas": [
+{
+"nombre": "Pulgón",
+"riesgo": "alta",
+"notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+},
+{
+"nombre": "Mosca blanca",
+"riesgo": "alta",
+"notas": "Se alimenta de la savia, debilita la planta y transmite virus."
+},
+{
+"nombre": "Mildiu",
+"riesgo": "alta",
+"notas": "Hongo que causa manchas marrones en hojas y tallos, pudrición de frutos."
+},
+{
+"nombre": "Tuta absoluta",
+"riesgo": "alta",
+"notas": "Larvas que crean galerías en hojas, tallos y frutos, causando grandes daños."
+},
+{
+"nombre": "Nematodos",
+"riesgo": "media",
+"notas": "Parásitos del suelo que atacan las raíces, formando agallas y debilitando la planta."
+}
+],
+"especiesresistenciahelada": "nula",
+"especiesnecesidadtutoraje": "obligatorio",
+"especiesporteplanta": "arbusto",
+"especiesrendimientoestimado": "3-5 kg/planta",
+"especiespartecosechable": [
+"fruto"
+],
+"especiesgerminaroscuridad": null
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": ["hortaliza", "fruta"],
+  "especiesciclo": ["anual"],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": "trepador"
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": ["hortaliza"],
+  "especiesciclo": ["anual"],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": "mata"
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": ["hortaliza", "fruta"],
+  "especiesciclo": ["anual"],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": ["arbusto", "trepador"]
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": ["hortaliza"],
+  "especiesciclo": ["anual"],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": "mata"
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": ["hortaliza", "fruta"],
+  "especiesciclo": ["anual"],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": "mata"
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "especiestemperaturaminima": 10.0,
+  "especiestemperaturaoptima": 25.0,
+  "especiestemperaturamaxima": 35.0,
+  "especiesmarcoplantas": 50,
+  "especiesmarcofilas": 80,
+  "especiesmarcomargen": 25,
+  "especiesprofundidadsiembra": 1.0,
+  "especiesprofundidadtrasplante": 5.0,
+  "especiesphminimosuelo": 6.0,
+  "especiesphmaximosuelo": 6.8,
+  "especiesnecesidadriego": "alta",
+  "especiestiposiembra": ["directa", "semillero", "planton", "esqueje"],
+  "especiestiposiembrapreferente": ["semillero", "planton"],
+  "especiesvolumenmaceta": 20,
+  "especiesemillerovolumendesde": 10,
+  "especiesemillerovolumenhasta": 50,
+  "especiesluzsolar": "pleno_sol",
+  "especiescaracteristicassuelo": "franco-arcilloso, bien drenado, rico en materia orgánica",
+  "especiesdificultad": "media",
+  "especiesresistenciahelada": "nula",
+  "especiesnecesidadtutoraje": "obligatorio",
+  "especiesgerminaroscuridad": null
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "usos_consumo": [
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Frutos",
+      "apto": "apto",
+      "notas": "Los frutos maduros son comestibles y muy nutritivos."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, un glicoalcaloide tóxico."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, un glicoalcaloide tóxico."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Frutos",
+      "apto": "con_moderacion",
+      "notas": "Los frutos maduros son aptos en pequeñas cantidades. Evitar el consumo excesivo."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para las aves."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para las aves."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Frutos",
+      "apto": "no_apto",
+      "notas": "Los frutos verdes contienen solanina y son tóxicos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Frutos",
+      "apto": "con_moderacion",
+      "notas": "Los frutos maduros pueden ofrecerse en muy pequeñas cantidades como golosina. Evitar el exceso."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para los conejos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para los conejos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Frutos",
+      "apto": "no_apto",
+      "notas": "Los frutos verdes contienen solanina y son tóxicos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Frutos",
+      "apto": "apto",
+      "notas": "Los frutos maduros son aptos y pueden ser un buen complemento en su dieta."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para los cerdos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para los cerdos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Frutos",
+      "apto": "no_apto",
+      "notas": "Los frutos verdes contienen solanina y son tóxicos."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Frutos",
+      "apto": "con_moderacion",
+      "notas": "Los frutos maduros son aptos en pequeñas cantidades. Evitar el consumo excesivo."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para las aves."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contienen solanina, tóxica para las aves."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Frutos",
+      "apto": "no_apto",
+      "notas": "Los frutos verdes contienen solanina y son tóxicos."
+    }
+  ],
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": [
+    "hortaliza",
+    "fruta"
+  ],
+  "especiesciclo": [
+    "anual"
+  ],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": "trepador",
+  "fases_duracion": {
+    "1": 10,
+    "2": 40,
+    "3": 25,
+    "4": 50
+  },
+  "especiesfechasemillerodesde": 2,
+  "especiesfechasemillerohasta": 3,
+  "especiesfechasiembradirectadesde": 4,
+  "especiesfechasiembradirectahasta": 5,
+  "especiestrasplantedesde": 4,
+  "especiestrasplantehasta": 5,
+  "especiesfecharecolecciondesde": 7,
+  "especiesfecharecoleccionhasta": 10,
+  "especiestemperaturaminima": 10.0,
+  "especiestemperaturaoptima": 25.0,
+  "especiestemperaturamaxima": 35.0,
+  "especiesmarcoplantas": 40,
+  "especiesmarcofilas": 80,
+  "especiesmarcomargen": 20,
+  "especiesprofundidadsiembra": 0.5,
+  "especiesprofundidadtrasplante": 5.0,
+  "especiesphminimosuelo": 6.0,
+  "especiesphmaximosuelo": 6.8,
+  "especiesnecesidadriego": "alta",
+  "especiestiposiembra": [
+    "directa",
+    "semillero",
+    "planton",
+    "esqueje"
+  ],
+  "especiestiposiembrapreferente": [
+    "semillero",
+    "planton"
+  ],
+  "especiesvolumenmaceta": 20,
+  "especiesemillerovolumendesde": 20,
+  "especiesemillerovolumenhasta": 50,
+  "especiesluzsolar": "pleno_sol",
+  "especiescaracteristicassuelo": "franco-arcilloso, rico en materia orgánica, bien drenado",
+  "especiesdificultad": "media",
+  "especiesresistenciahelada": "nula",
+  "especiesnecesidadtutoraje": "obligatorio",
+  "especiesgerminaroscuridad": true,
+  "especiesviabilidadsemilla": 4,
+  "especiespeso1000semillas": 3.0,
+  "especieshistoria": "El tomate, Solanum lycopersicum, tiene su origen en los Andes, específicamente en la región que hoy abarca Perú, Ecuador y el norte de Chile. Fue domesticado por primera vez en México, donde los aztecas lo cultivaban y lo llamaban 'xitomatl'. Los conquistadores españoles lo llevaron a Europa en el siglo XVI, donde inicialmente fue considerado una planta ornamental y se creía que era venenoso debido a su pertenencia a la familia de las solanáceas, que incluye plantas tóxicas como la belladona.\n\nNo fue hasta el siglo XVIII y principios del XIX que el tomate comenzó a ser ampliamente aceptado como alimento en Europa, especialmente en Italia y España, donde se integró profundamente en la gastronomía local. Desde entonces, su cultivo se ha extendido por todo el mundo, convirtiéndose en una de las hortalizas más consumidas y versátiles, con miles de variedades adaptadas a diferentes climas y usos culinarios.",
+  "especiesdescripcion": "El tomate requiere pleno sol, suelo fértil y bien drenado, y riego constante. Es sensible a las heladas. Se recomienda el tutoraje para la mayoría de las variedades para soportar el peso de los frutos y mejorar la aireación. La poda de chupones es común para variedades indeterminadas para concentrar la energía en la producción de frutos.",
+  "especiesfuentesinformacion": "https://es.wikipedia.org/wiki/Solanum_lycopersicum,https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica",
+  "especiesautosuficiencia": 12,
+  "especiesautosuficienciaparcial": 5,
+  "especiesautosuficienciaconserva": 25,
+  "especiesrendimientoestimado": "3-5 kg/planta",
+  "especiespartecosechable": [
+    "fruto"
+  ],
+  "especiesbiodinamicacategoria": "fruto",
+  "especiesbiodinamicafasesiembra": "Ascendente",
+  "especiesbiodinamicafasetrasplante": "Descendente",
+  "especiesbiodinamicanotas": "Las plantas de fruto se benefician de la siembra en días de fruto y la luna ascendente, evitando perigeos y nodos.",
+  "especieslunarfasesiembra": "Creciente",
+  "especieslunarfasetrasplante": "Menguante",
+  "especieslunarobservaciones": "Siembra en luna creciente para estimular el crecimiento aéreo. Trasplante en luna menguante para favorecer el enraizamiento. Evitar luna nueva y llena para labores importantes.",
+  "asociaciones_beneficiosas": [
+    {
+      "nombre": "Albahaca",
+      "motivo": "Repele mosca blanca y mejora el sabor de los tomates."
+    },
+    {
+      "nombre": "Caléndula",
+      "motivo": "Atrae polinizadores y repele nematodos en el suelo."
+    },
+    {
+      "nombre": "Zanahoria",
+      "motivo": "Ayuda a mejorar la estructura del suelo y no compite por nutrientes."
+    },
+    {
+      "nombre": "Cebolla",
+      "motivo": "Su olor ayuda a ahuyentar diversas plagas."
+    }
+  ],
+  "asociaciones_perjudiciales": [
+    {
+      "nombre": "Patata",
+      "motivo": "Compiten por nutrientes y comparten enfermedades como el mildiu."
+    },
+    {
+      "nombre": "Hinojo",
+      "motivo": "Puede inhibir el crecimiento del tomate por alelopatía."
+    },
+    {
+      "nombre": "Col",
+      "motivo": "Compiten por nutrientes y espacio, afectando el desarrollo."
+    }
+  ],
+  "plagas_asociadas": [
+    {
+      "nombre": "Pulgón",
+      "riesgo": "alta",
+      "notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+    },
+    {
+      "nombre": "Mosca blanca",
+      "riesgo": "alta",
+      "notas": "Debilita la planta al alimentarse de la savia y transmite virus."
+    },
+    {
+      "nombre": "Tuta absoluta",
+      "riesgo": "alta",
+      "notas": "Larvas perforan hojas, tallos y frutos, causando galerías y pudrición."
+    },
+    {
+      "nombre": "Mildiu",
+      "riesgo": "alta",
+      "notas": "Hongo que causa manchas marrones en hojas y pudrición en frutos, especialmente en condiciones húmedas."
+    },
+    {
+      "nombre": "Oídio",
+      "riesgo": "media",
+      "notas": "Hongo que forma una capa blanca polvorienta en las hojas, reduciendo la fotosíntesis."
+    }
+  ],
+  "especiespreparacionconvencional": 15,
+  "especiespreparacionminima": 10,
+  "especiespreparacionnolaboreo": 5
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "usos_consumo": [
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Frutos",
+      "apto": "apto",
+      "notas": "Los frutos maduros son comestibles y muy nutritivos."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas en grandes cantidades."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Flores",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Raíz",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas."
+    },
+    {
+      "idconsumidor": 1,
+      "nombre": "Humano",
+      "parte": "Semillas",
+      "apto": "no_apto",
+      "notas": "Aunque presentes en el fruto, no se consumen aisladas y contienen trazas de alcaloides."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Frutos",
+      "apto": "con_moderacion",
+      "notas": "Los frutos maduros pueden ofrecerse como golosina ocasional, pero no como dieta principal."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para las aves."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para las aves."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Flores",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para las aves."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Raíz",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para las aves."
+    },
+    {
+      "idconsumidor": 2,
+      "nombre": "Gallina",
+      "parte": "Semillas",
+      "apto": "no_apto",
+      "notas": "Contienen trazas de alcaloides y no son adecuadas para el consumo aislado."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Frutos",
+      "apto": "con_moderacion",
+      "notas": "Los frutos maduros pueden causar diarrea o problemas digestivos por su acidez y contenido de azúcar. Ofrecer en muy pequeñas cantidades y ocasionalmente."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para los conejos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para los conejos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Flores",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para los conejos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Raíz",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para los conejos."
+    },
+    {
+      "idconsumidor": 3,
+      "nombre": "Conejo",
+      "parte": "Semillas",
+      "apto": "no_apto",
+      "notas": "Contienen trazas de alcaloides y no son adecuadas para el consumo aislado."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Frutos",
+      "apto": "apto",
+      "notas": "Los frutos maduros son aptos y pueden ser un buen complemento en su dieta."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para los cerdos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para los cerdos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Flores",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para los cerdos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Raíz",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para los cerdos."
+    },
+    {
+      "idconsumidor": 4,
+      "nombre": "Cerdo",
+      "parte": "Semillas",
+      "apto": "no_apto",
+      "notas": "Contienen trazas de alcaloides y no son adecuadas para el consumo aislado."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Frutos",
+      "apto": "con_moderacion",
+      "notas": "Los frutos maduros pueden ofrecerse en pequeñas cantidades como parte de una dieta variada."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Hojas",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para las aves acuáticas."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Tallo",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para las aves acuáticas."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Flores",
+      "apto": "no_apto",
+      "notas": "Contienen solanina y tomatina, tóxicas para las aves acuáticas."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Raíz",
+      "apto": "no_apto",
+      "notas": "Contiene solanina y tomatina, tóxicas para las aves acuáticas."
+    },
+    {
+      "idconsumidor": 5,
+      "nombre": "Pato",
+      "parte": "Semillas",
+      "apto": "no_apto",
+      "notas": "Contienen trazas de alcaloides y no son adecuadas para el consumo aislado."
+    }
+  ],
+  "especiesnombrecientifico": "Solanum lycopersicum",
+  "xespeciesidfamilias": null,
+  "especiestipo": [
+    "hortaliza",
+    "fruta"
+  ],
+  "especiesciclo": [
+    "anual"
+  ],
+  "especiescolor": "Rojo",
+  "especiestamano": "mediano",
+  "especiesicono": "🍅",
+  "especiesporteplanta": "trepador",
+  "fases_duracion": {
+    "1": 7,
+    "2": 40,
+    "3": 18,
+    "4": 50,
+    "5": 75
+  },
+  "especiesfechasemillerodesde": 3,
+  "especiesfechasemillerohasta": 5,
+  "especiesfechasiembradirectadesde": 5,
+  "especiesfechasiembradirectahasta": 6,
+  "especiestrasplantedesde": 4,
+  "especiestrasplantehasta": 6,
+  "especiesfecharecolecciondesde": 7,
+  "especiesfecharecoleccionhasta": 10,
+  "especiestemperaturaminima": 10.0,
+  "especiestemperaturaoptima": 25.0,
+  "especiestemperaturamaxima": 35.0,
+  "especiesmarcoplantas": 40,
+  "especiesmarcofilas": 80,
+  "especiesmarcomargen": 20,
+  "especiesprofundidadsiembra": 0.5,
+  "especiesprofundidadtrasplante": 5.0,
+  "especiesphminimosuelo": 6.0,
+  "especiesphmaximosuelo": 6.8,
+  "especiesnecesidadriego": "alta",
+  "especiestiposiembra": [
+    "directa",
+    "semillero",
+    "planton",
+    "esqueje"
+  ],
+  "especiestiposiembrapreferente": [
+    "semillero",
+    "planton"
+  ],
+  "especiesvolumenmaceta": 20,
+  "especiesemillerovolumendesde": 20,
+  "especiesemillerovolumenhasta": 50,
+  "especiesluzsolar": "pleno_sol",
+  "especiescaracteristicassuelo": "franco-arcilloso, rico en materia orgánica, bien drenado",
+  "especiesdificultad": "media",
+  "especiesresistenciahelada": "nula",
+  "especiesnecesidadtutoraje": "obligatorio",
+  "especiesgerminaroscuridad": null,
+  "especiesviabilidadsemilla": 4,
+  "especiespeso1000semillas": 3.0,
+  "especieshistoria": "Originario de los Andes, el tomate fue domesticado por primera vez en México, donde se cultivaba por los aztecas. Tras la llegada de los españoles a América, fue introducido en Europa en el siglo XVI, inicialmente como planta ornamental debido a la desconfianza sobre su comestibilidad, al pertenecer a la familia de las solanáceas, que incluye plantas venenosas. \nSu consumo se popularizó en el sur de Europa, especialmente en Italia y España, a partir del siglo XVIII, convirtiéndose en un ingrediente fundamental de la gastronomía mediterránea. Hoy en día, es una de las hortalizas más cultivadas y consumidas a nivel mundial, con miles de variedades adaptadas a diferentes climas y usos culinarios.",
+  "especiesdescripcion": "El tomate requiere pleno sol, suelo fértil y bien drenado, y riego constante. Es fundamental el tutoraje para sostener la planta y sus frutos. Se recomienda la poda de chupones para mejorar la producción y el tamaño de los frutos. Sensible a heladas, se cultiva como anual en climas templados. La rotación de cultivos es clave para prevenir enfermedades.",
+  "especiesfuentesinformacion": [
+    "https://es.wikipedia.org/wiki/Solanum_lycopersicum",
+    "https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica"
+  ],
+  "especiesautosuficiencia": 15,
+  "especiesautosuficienciaparcial": 5,
+  "especiesautosuficienciaconserva": 30,
+  "especiesrendimientoestimado": "3-8 kg/planta",
+  "especiespartecosechable": [
+    "fruto"
+  ],
+  "especiesbiodinamicacategoria": "fruto",
+  "especiesbiodinamicafasesiembra": "Ascendente",
+  "especiesbiodinamicafasetrasplante": "Descendente",
+  "especiesbiodinamicanotas": "Para plantas de fruto, se recomienda sembrar y trasplantar en días de fruto, preferiblemente durante la luna ascendente para la siembra y descendente para el trasplante, evitando los nodos lunares y perigeos.",
+  "especieslunarfasesiembra": "Creciente",
+  "especieslunarfasetrasplante": "Menguante",
+  "especieslunarobservaciones": "La siembra en luna creciente favorece el desarrollo de la parte aérea. El trasplante en luna menguante ayuda al enraizamiento y reduce el estrés de la planta. Evitar la luna nueva y llena para labores importantes.",
+  "asociaciones_beneficiosas": [
+    {
+      "nombre": "Albahaca",
+      "motivo": "Repele mosca blanca y mejora el sabor."
+    },
+    {
+      "nombre": "Caléndula",
+      "motivo": "Atrae polinizadores y repele nematodos."
+    },
+    {
+      "nombre": "Capuchina",
+      "motivo": "Actúa como planta trampa para pulgones."
+    },
+    {
+      "nombre": "Cebolla",
+      "motivo": "Ahuyenta plagas por su olor."
+    },
+    {
+      "nombre": "Zanahoria",
+      "motivo": "Mejora la estructura del suelo."
+    }
+  ],
+  "asociaciones_perjudiciales": [
+    {
+      "nombre": "Patata",
+      "motivo": "Compiten por nutrientes y comparten enfermedades como el mildiu."
+    },
+    {
+      "nombre": "Hinojo",
+      "motivo": "Puede inhibir el crecimiento del tomate por alelopatía."
+    },
+    {
+      "nombre": "Col",
+      "motivo": "Compiten por nutrientes y espacio."
+    }
+  ],
+  "plagas_asociadas": [
+    {
+      "nombre": "Pulgón",
+      "riesgo": "alta",
+      "notas": "Coloniza brotes tiernos, succiona savia y transmite virus."
+    },
+    {
+      "nombre": "Mosca blanca",
+      "riesgo": "alta",
+      "notas": "Debilita la planta, produce melaza y transmite virus."
+    },
+    {
+      "nombre": "Araña roja",
+      "riesgo": "media",
+      "notas": "Provoca manchas amarillas y telarañas finas en el envés de las hojas."
+    },
+    {
+      "nombre": "Tuta absoluta",
+      "riesgo": "alta",
+      "notas": "Larvas que excavan galerías en hojas, tallos y frutos, causando grandes daños."
+    },
+    {
+      "nombre": "Mildiu",
+      "riesgo": "alta",
+      "notas": "Hongo que causa manchas marrones en hojas y tallos, y pudrición de frutos."
+    },
+    {
+      "nombre": "Oídio",
+      "riesgo": "media",
+      "notas": "Hongo que forma una capa blanca polvorienta en las hojas, reduciendo la fotosíntesis."
+    }
+  ],
+  "especiespreparacionconvencional": 15,
+  "especiespreparacionminima": 10,
+  "especiespreparacionnolaboreo": 5
+}
+

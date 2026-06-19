@@ -10,7 +10,7 @@ import { SeedWizardModal } from '@/components/SeedWizardModal';
 import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 import '@/components/admin/EspecieForm.css';
 
-const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'otra'];
+const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'adventicia', 'otra'];
 const CICLOS = ['anual', 'bianual', 'perenne'];
 
 export default function MiPlantaDetail() {
@@ -635,6 +635,7 @@ export default function MiPlantaDetail() {
                             height: activePhoto.origen === 'usuario' ? '105%' : '100%', 
                             objectFit: 'cover',
                             objectPosition: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
+                            transformOrigin: `${meta.profile_object_x ?? 50}% ${meta.profile_object_y ?? 50}%`,
                             transform: `scale(${(meta.profile_object_zoom ?? 100) / 100})`,
                             ...(activePhoto.origen === 'usuario' ? { marginBottom: '-5%', marginRight: '-5%' } : {})
                           }}
@@ -645,7 +646,7 @@ export default function MiPlantaDetail() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', justifyContent: 'center' }}>
                         {(() => {
                           const hasUserPhotos = photos.some(p => p.origen === 'usuario');
-                          const carouselPhotos = hasUserPhotos 
+                           const carouselPhotos = hasUserPhotos 
                             ? sortedPhotos.filter(p => p.origen === 'usuario' && p.id !== activePhoto.id)
                             : sortedPhotos.filter(p => p.id !== activePhoto.id);
                             
@@ -682,6 +683,7 @@ export default function MiPlantaDetail() {
                                   style={{ 
                                     width: '100%', height: '100%', objectFit: 'cover',
                                     objectPosition: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
+                                    transformOrigin: `${tMeta.profile_object_x ?? 50}% ${tMeta.profile_object_y ?? 50}%`,
                                     transform: `scale(${(tMeta.profile_object_zoom ?? 100) / 100})` 
                                   }} 
                                   crossOrigin="anonymous" 

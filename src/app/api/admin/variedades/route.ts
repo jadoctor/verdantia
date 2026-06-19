@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     const query = `
       INSERT INTO variedades (
         variedadesnombre, xvariedadesidespecies, variedadesesgenerica, variedadesdescripcion, variedadescolor,
-        variedadestamano, variedadesdiasgerminacion, variedadesviabilidadsemilla, variedadespeso1000semillas, variedadesdiashastafructificacion, variedadesdiascrecimientofirme,
+        variedadestamano, variedadesviabilidadsemilla, variedadespeso1000semillas, variedadesdiashastafructificacion, variedadesdiascrecimientofirme,
         variedadesduraciontotal,
         variedadestemperaturaminima, variedadestemperaturaoptima, variedadesmarcoplantas, variedadesmarcofilas,
         variedadesprofundidadsiembra, variedadeshistoria, variedadessemillerodesde, variedadessemillerohasta,
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
         variedadesvolumenmaceta, variedadesluzsolar, variedadescaracteristicassuelo, variedadesdificultad, variedadestemperaturamaxima,
         variedadeslunarfasesiembra, variedadeslunarfasetrasplante, variedadeslunarobservaciones,
         variedadesbiodinamicafasesiembra, variedadesbiodinamicafasetrasplante, variedadesmarcomargen
-      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -145,7 +145,6 @@ export async function POST(request: Request) {
       variedadesdescripcion || null,
       variedadescolor || null,
       variedadestamano || 'mediano',
-      variedadesdiasgerminacion || null,
       variedadesviabilidadsemilla || null,
       variedadespeso1000semillas || null,
       variedadesdiashastafructificacion || null,

@@ -7,7 +7,7 @@ import VariedadMediaManager from './VariedadMediaManager';
 import { getMediaUrl } from '@/lib/media-url';
 import './EspecieForm.css';
 
-const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'otra'];
+const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'adventicia', 'otra'];
 const CICLOS = ['anual', 'bianual', 'perenne'];
 const MESES = [
   { val: 1, label: 'Ene' }, { val: 2, label: 'Feb' }, { val: 3, label: 'Mar' },

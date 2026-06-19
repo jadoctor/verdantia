@@ -1,5 +1,5 @@
 'use client';
-// Responsividad controlada en EspecieForm (isMobile, @media, innerWidth) - Hot-reload trigger: 2026-06-14T17:26:00
+// Responsividad controlada en EspecieForm (isMobile, @media, innerWidth) - Hot-reload trigger: 2026-06-18T12:58:30
 
 import React, { useState, useEffect } from 'react';
 import EspecieForm from '@/components/admin/EspecieForm';

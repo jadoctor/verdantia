@@ -1,14 +1,15 @@
-import { getUserByEmail } from './src/lib/auth';
+import mysql from 'mysql2/promise';
 
-async function main() {
-  try {
-    const user = await getUserByEmail('jaillueca@gmail.com');
-    console.log(user);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    process.exit(0);
-  }
+async function run() {
+  const conn = await mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'verdantia_db'
+  });
+  const [rows] = await conn.query('SELECT * FROM consumidores');
+  console.log(rows);
+  conn.end();
 }
 
-main();
+run().catch(console.error);

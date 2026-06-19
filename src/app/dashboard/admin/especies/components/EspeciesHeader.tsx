@@ -96,6 +96,7 @@ export default function EspeciesHeader({
               { value: 'aromatica', label: '🌿 Aromáticas' },
               { value: 'leguminosa', label: '🫘 Leguminosas' },
               { value: 'cereal', label: '🌾 Cereales' },
+              { value: 'adventicia', label: '🌿 Adventicias' },
               { value: 'otra', label: '🌼 Otras' }
             ].map((tag) => {
               const isSelected = filterTipo === tag.value;

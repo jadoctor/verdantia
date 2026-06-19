@@ -50,6 +50,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const idespecies = resolvedParams.id;
     const body = await request.json();
 
+    // Eliminar campos que no son columnas directas de la tabla especies
+    delete body.fases_duracion;
+    delete body._sinonimos;
+    delete body._variedades;
+    delete body._consumos;
+    delete body.relaciones;
+    delete body.plagas;
+    delete body.pautas;
+
     if (Object.keys(body).length === 0) {
       return NextResponse.json({ success: true });
     }

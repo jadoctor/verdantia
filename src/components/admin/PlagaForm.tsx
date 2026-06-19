@@ -115,6 +115,12 @@ export default function PlagaForm({ plagaId, userEmail, onClose }: PlagaFormProp
     }
     if (files.length === 0) return;
 
+    const remainingSlots = 4 - photos.length;
+    if (files.length > remainingSlots) {
+      alert(`Solo puedes subir ${remainingSlots} fotos más (Límite estricto de 4).`);
+      return;
+    }
+
     setUploadingPhotos(true);
     try {
       const { ref, uploadBytes } = await import('firebase/storage');
@@ -362,55 +368,107 @@ export default function PlagaForm({ plagaId, userEmail, onClose }: PlagaFormProp
 
             {activeTab === 'fotos' && (
               <div style={{ padding: '4px' }}>
-                {/* Hero Carousel */}
-                {photos.length > 0 && (
-                  <div style={{ 
-                    position: 'relative', height: '280px', borderRadius: '16px', overflow: 'hidden', 
-                    marginBottom: '20px', background: '#000', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)' 
-                  }}>
-                    <img 
-                      src={getMediaUrl(photos[heroIndex].ruta)} 
-                      alt="Hero"
-                      style={{ 
-                        width: '100%', height: '100%', objectFit: 'cover',
-                        filter: `${STYLE_FILTERS[JSON.parse(photos[heroIndex].resumen || '{}').profile_style || 'none']} brightness(${JSON.parse(photos[heroIndex].resumen || '{}').profile_brightness || 100}%) contrast(${JSON.parse(photos[heroIndex].resumen || '{}').profile_contrast || 100}%)`
-                      }}
-                      crossOrigin="anonymous"
-                    />
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '15px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', display: 'flex', justifyContent: 'center', gap: '6px' }}>
-                      {photos.map((_, idx) => (
-                        <div key={idx} onClick={() => setHeroIndex(idx)} style={{ width: '8px', height: '8px', borderRadius: '50%', background: idx === heroIndex ? 'white' : 'rgba(255,255,255,0.4)', cursor: 'pointer' }} />
-                      ))}
-                    </div>
+                {!plagaId && (
+                  <div style={{ padding: '20px', background: '#fef3c7', borderRadius: '12px', color: '#92400e', fontSize: '0.85rem', fontWeight: 600, width: '100%' }}>
+                    💡 Guarda la plaga primero para poder añadir fotos.
                   </div>
                 )}
 
-                <div 
-                  className={`custom-file-upload drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
-                  onDragOver={e => { e.preventDefault(); setDragOverPhotos(true); }}
-                  onDragLeave={() => setDragOverPhotos(false)}
-                  onDrop={handleFileUpload}
-                >
-                  <input type="file" id="photo-upload" multiple accept="image/*" onChange={handleFileUpload} />
-                  <div className="drop-zone-content">
-                    <span style={{ fontSize: '2rem' }}>📸</span>
-                    {uploadingPhotos ? <span>Subiendo y procesando con IA...</span> : <span>Arrastra fotos aquí o haz clic para subir</span>}
-                    <label htmlFor="photo-upload" className="btn-upload secondary">Seleccionar Archivos</label>
-                  </div>
-                </div>
-
-                <div className="gallery" style={{ marginTop: '20px' }}>
-                  {photos.map((p, idx) => (
-                    <div key={p.id} className={`gallery-item ${p.esPrincipal ? 'is-preferred' : ''}`}>
-                      <img src={getMediaUrl(p.ruta)} alt="Thumb" crossOrigin="anonymous" />
-                      <div className="photo-actions">
-                        <button type="button" className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`} onClick={() => handleSetPrimary(p.id)}>★</button>
-                        <button type="button" className="photo-action-btn btn-photo-edit" onClick={() => openPhotoEditor(p)}>✏️</button>
-                        <button type="button" className="photo-action-btn btn-photo-delete" onClick={() => handleDeletePhoto(p.id)}>×</button>
+                {plagaId && (
+                  <>
+                    {/* Hero Carousel */}
+                    {photos.length > 0 && (
+                      <div style={{ 
+                        position: 'relative', height: '280px', borderRadius: '16px', overflow: 'hidden', 
+                        marginBottom: '20px', background: '#000', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)' 
+                      }}>
+                        <img 
+                          src={getMediaUrl(photos[heroIndex].ruta)} 
+                          alt="Hero"
+                          style={{ 
+                            width: '100%', height: '100%', objectFit: 'cover',
+                            filter: `${STYLE_FILTERS[JSON.parse(photos[heroIndex].resumen || '{}').profile_style || 'none']} brightness(${JSON.parse(photos[heroIndex].resumen || '{}').profile_brightness || 100}%) contrast(${JSON.parse(photos[heroIndex].resumen || '{}').profile_contrast || 100}%)`
+                          }}
+                          crossOrigin="anonymous"
+                        />
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '15px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                          {photos.map((_, idx) => (
+                            <div key={idx} onClick={() => setHeroIndex(idx)} style={{ width: '8px', height: '8px', borderRadius: '50%', background: idx === heroIndex ? 'white' : 'rgba(255,255,255,0.4)', cursor: 'pointer' }} />
+                          ))}
+                        </div>
                       </div>
+                    )}
+
+                    <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>📷 Fotos</span>
+                      <span style={{ fontSize: '0.82rem', color: photos.length >= 4 ? '#ef4444' : '#64748b', fontWeight: 600 }}>{photos.length} / 4 permitidas</span>
                     </div>
-                  ))}
-                </div>
+
+                    {((photos.length > 0) || (photos.length < 4)) && (
+                      <div className="gallery" style={{ marginTop: '20px' }}>
+                        {photos.map((p, idx) => (
+                          <div key={p.id} className={`gallery-item ${p.esPrincipal ? 'is-preferred' : ''}`}>
+                            <img src={getMediaUrl(p.ruta)} alt="Thumb" crossOrigin="anonymous" />
+                            <div className="photo-actions">
+                              <button type="button" className={`photo-action-btn btn-photo-primary ${p.esPrincipal ? 'is-active' : ''}`} onClick={() => handleSetPrimary(p.id)}>★</button>
+                              <button type="button" className="photo-action-btn btn-photo-edit" onClick={() => openPhotoEditor(p)}>✏️</button>
+                              <button type="button" className="photo-action-btn btn-photo-delete" onClick={() => handleDeletePhoto(p.id)}>×</button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Inline Dropzone (only if less than 4 photos) */}
+                        {photos.length < 4 && (
+                          <div
+                            onDragOver={e => { e.preventDefault(); setDragOverPhotos(true); }}
+                            onDragLeave={() => setDragOverPhotos(false)}
+                            onDrop={handleFileUpload}
+                            className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
+                            style={{ cursor: 'default' }}
+                          >
+                            <input type="file" id="photo-upload" multiple accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} disabled={uploadingPhotos} />
+
+                            {uploadingPhotos ? (
+                              <div className="drop-zone-content">
+                                <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                                <span style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Procesando...</span>
+                              </div>
+                            ) : (
+                              <div className="drop-zone-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                                <div className="drop-zone-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center' }}>
+                                  <label
+                                    htmlFor="photo-upload"
+                                    className="btn-upload primary"
+                                    style={{
+                                      background: 'white',
+                                      border: '1px solid #cbd5e1',
+                                      color: '#475569',
+                                      padding: '6px 12px',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      fontSize: '0.75rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                      margin: 0
+                                    }}
+                                  >
+                                    📁 Seleccionar
+                                  </label>
+                                </div>
+                                <span className="drop-hint" style={{ fontSize: '0.65rem', color: '#94a3b8', textAlign: 'center', lineHeight: '1.2' }}>
+                                  Arrastra o pega<br />aquí
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

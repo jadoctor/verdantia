@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Force hot-reload: 2026-06-18T20:11:45
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
@@ -20,8 +20,20 @@ const MESES = [
   { val: 10, label: 'Oct' }, { val: 11, label: 'Nov' }, { val: 12, label: 'Dic' }
 ];
 
-const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'otra'];
+const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'adventicia', 'otra'];
 const CICLOS = ['anual', 'bianual', 'perenne'];
+
+const normalizePlantaParteNombre = (name: string): string => {
+  const normalized = name.trim().toLowerCase();
+  if (normalized.includes('hoja') || normalized.includes('follaje') || normalized.includes('brote') || normalized.includes('rama')) return 'Hojas';
+  if (normalized.includes('fruto') || normalized.includes('fruta') || normalized.includes('vaina') || normalized.includes('baya')) return 'Frutos';
+  if (normalized.includes('tallo') || normalized.includes('penca') || normalized.includes('caña') || normalized.includes('tronco')) return 'Tallo';
+  if (normalized.includes('raiz') || normalized.includes('raíz') || normalized.includes('bulbo') || normalized.includes('tubérculo') || normalized.includes('tuberculo')) return 'Raíz';
+  if (normalized.includes('flor') || normalized.includes('flores') || normalized.includes('inflorescencia')) return 'Flores';
+  if (normalized.includes('semilla') || normalized.includes('grano') || normalized.includes('pepita')) return 'Semillas';
+  if (normalized.includes('toda la planta') || normalized.includes('planta completa') || normalized.includes('entera') || normalized.includes('toda')) return 'Toda la planta';
+  return name;
+};
 
 export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) {
   const router = useRouter();
@@ -105,15 +117,19 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     asociaciones: true,
     textos: true,
     sinonimos: true,
-    variedades: true
+    variedades: true,
+    consumos: true,
+    pautas: true
   });
   const [selectedAiSinonimos, setSelectedAiSinonimos] = useState<any[]>([]);
   const [selectedAiVariedades, setSelectedAiVariedades] = useState<any[]>([]);
+  const [selectedAiConsumos, setSelectedAiConsumos] = useState<any[]>([]);
   const [isAssimilatingSinonimos, setIsAssimilatingSinonimos] = useState(false);
   const [isAssimilatingVariedades, setIsAssimilatingVariedades] = useState(false);
   const [assimilatedVarietyNames, setAssimilatedVarietyNames] = useState<string[]>([]);
 
   const [aiSeconds, setAiSeconds] = useState(0);
+  const [aiStats, setAiStats] = useState<{ used: number, max: number, remaining: number } | null>(null);
   const aiTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isAssimilating, setIsAssimilating] = useState(false);
@@ -210,6 +226,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     cooficiales: 'Busca sinónimos en las lenguas cooficiales de España: Valenciano, Gallego y Euskera. Prioriza nombres tradicionales peninsulares.',
     europa: 'Busca sinónimos en idiomas europeos: Francés, Italiano, Portugués, Alemán e Inglés. Asocia cada nombre a su país correspondiente.'
   };
+  // -- Consumidores State --
+  const [masterConsumidores, setMasterConsumidores] = useState<any[]>([]);
+  const [masterPlantasPartes, setMasterPlantasPartes] = useState<any[]>([]);
+  const [consumos, setConsumos] = useState<any[]>([]);
+  const [initialConsumos, setInitialConsumos] = useState<any[]>([]);
+  const [consumosDirty, setConsumosDirty] = useState(false);
 
   // -- Photo Editor State --
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
@@ -251,6 +273,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [pautasFiltroFase, setPautasFiltroFase] = useState('');
   const [pautasFiltroLabor, setPautasFiltroLabor] = useState('');
   const [pautasFiltroLaboreo, setPautasFiltroLaboreo] = useState('');
+  const [consumosFiltroConsumidor, setConsumosFiltroConsumidor] = useState('');
+  const [consumosFiltroAptitud, setConsumosFiltroAptitud] = useState('');
   const [masterLabores, setMasterLabores] = useState<any[]>([]);
   const [editingPauta, setEditingPauta] = useState<any>(null);
   const [pautaForm, setPautaForm] = useState({
@@ -323,6 +347,12 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       fetch('/api/admin/ajustes/paises')
         .then(res => res.json())
         .then(data => setMasterPaises(Array.isArray(data) ? data : []));
+      fetch('/api/admin/consumidores', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterConsumidores(data.data || []));
+      fetch('/api/admin/plantasparte', { headers: { 'x-user-email': userEmail } })
+        .then(res => res.json())
+        .then(data => setMasterPlantasPartes(data.plantaspartes || []));
     }
 
     if (especieId) {
@@ -330,10 +360,95 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       loadAttachments(especieId);
       loadRelaciones(especieId);
       loadSinonimos(especieId);
+      loadConsumos(especieId);
       loadPautas(especieId);
       loadExistingVarieties(especieId);
     }
   }, [especieId, userEmail]);
+
+  // Vincular consumos importados por nombre a sus IDs una vez que masterPlantasPartes esté disponible
+  useEffect(() => {
+    if (masterPlantasPartes.length > 0 && consumos.length > 0) {
+      let changed = false;
+      const updated = consumos.map(c => {
+        if (!c.xespeciesconsumidoresidplantasparte && c.especiesconsumidorespartes) {
+          const baseName = normalizePlantaParteNombre(c.especiesconsumidorespartes);
+          const found = masterPlantasPartes.find(p => p.plantaspartenombre.toLowerCase() === baseName.toLowerCase());
+          if (found) {
+            changed = true;
+            let updatedNotas = c.especiesconsumidoresnotas || '';
+            if (c.especiesconsumidorespartes.toLowerCase() !== baseName.toLowerCase()) {
+              const prefix = `${c.especiesconsumidorespartes}: `;
+              if (!updatedNotas.startsWith(prefix)) {
+                updatedNotas = prefix + updatedNotas;
+              }
+            }
+            return {
+              ...c,
+              xespeciesconsumidoresidplantasparte: found.idplantasparte,
+              especiesconsumidorespartes: found.plantaspartenombre,
+              especiesconsumidoresnotas: updatedNotas
+            };
+          }
+        }
+        return c;
+      });
+      if (changed) {
+        setConsumos(updated);
+      }
+    }
+  }, [masterPlantasPartes, consumos]);
+
+  // AI Trigger para especies nuevas importadas desde el identificador IA
+  useEffect(() => {
+    const fromParam = searchParams.get('from');
+    const nameParam = searchParams.get('name');
+    const advParam = searchParams.get('adv');
+    
+    if (fromParam === 'identificar-especie' && nameParam && !showAiConfig) {
+      // 1. Asimilar consumos desde sessionStorage
+      const pendingConsumosStr = sessionStorage.getItem('ai_pending_consumos');
+      if (pendingConsumosStr) {
+        try {
+          const parsed = JSON.parse(pendingConsumosStr);
+          // Convertir al formato de la BBDD
+          const mapped = parsed.map((c: any) => ({
+            idespeciesconsumidores: null,
+            xespeciesconsumidoresidconsumidores: c.idconsumidor ? c.idconsumidor.toString() : '',
+            especiesconsumidoresesapto: c.esapto,
+            especiesconsumidorespartes: c.partes || '',
+            especiesconsumidoresnotas: c.notas || ''
+          }));
+          setConsumos(mapped);
+          setConsumosDirty(true);
+          sessionStorage.removeItem('ai_pending_consumos');
+        } catch (e) {
+          console.error('Error parseando consumos pendientes', e);
+        }
+      }
+
+      // 2. Pre-configurar el prompt dependiendo de si es adventicia o no
+      const isAdventicia = advParam === '1';
+      if (isAdventicia) {
+        setAiConfigPrompt(`Busca información botánica detallada de esta especie (${nameParam}). Al ser considerada adventicia o mala hierba, céntrate exclusivamente en su identificación biológica, familia, toxicidad, forraje y usos tradicionales. Ignora todo lo relacionado con requerimientos agronómicos, marcos de plantación, poda o cultivo activo, ya que no se va a cultivar.`);
+        
+        // Seleccionar solo pestañas relevantes
+        setAiConfigTabs({
+          taxonomia: true, cultivo: false, asociaciones: true, fases: false, biodinamica: false,
+          textos: true, pautas: false, sinonimos: true, consumos: true
+        });
+      } else {
+        setAiConfigPrompt(`Busca información botánica y agronómica detallada de esta especie (${nameParam}), incluyendo su taxonomía, requerimientos de cultivo, ecosistema de asociaciones, sinónimos locales y principales variedades comerciales y tradicionales.`);
+      }
+
+      // 3. Abrir el modal del Asistente
+      setTimeout(() => {
+        setAiConfigTabs({ taxonomia: true, cultivo: true, fases: true, biodinamica: true, asociaciones: true, textos: true, sinonimos: true, variedades: true, consumos: true, pautas: true });
+        setAiConfigPrompt('');
+        setShowAiConfig(true);
+      }, 500);
+    }
+  }, [searchParams]);
 
   const loadExistingVarieties = async (id: string) => {
     if (!userEmail) return;
@@ -360,6 +475,91 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       setSinonimosDirty(false);
     } catch (e) {
       console.error('Error loading sinonimos:', e);
+    }
+  };
+
+  const resolvePlantasParteId = async (name: string): Promise<number | null> => {
+    const baseName = normalizePlantaParteNombre(name);
+    const normalized = baseName.trim().toLowerCase();
+    if (!normalized) return null;
+
+    // Check if we have it in state
+    const existing = masterPlantasPartes.find(p => p.plantaspartenombre.toLowerCase() === normalized);
+    if (existing) return existing.idplantasparte;
+
+    // If not, create dynamically
+    try {
+      const res = await fetch('/api/admin/plantasparte', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail || ''
+        },
+        body: JSON.stringify({
+          plantaspartenombre: baseName.trim(),
+          plantasparteemoji: '🌱',
+          plantaspartedescripcion: 'Creado automáticamente por el Asistente IA',
+          plantasparteactivo: 1
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.id) {
+          const newPart = {
+            idplantasparte: data.id,
+            plantaspartenombre: baseName.trim(),
+            plantasparteemoji: '🌱',
+            plantaspartedescripcion: 'Creado automáticamente por el Asistente IA',
+            plantasparteactivo: 1
+          };
+          setMasterPlantasPartes(prev => [...prev, newPart]);
+          return data.id;
+        }
+      }
+    } catch (err) {
+      console.error('Error creating plantasparte dynamically:', err);
+    }
+    return null;
+  };
+
+  const loadConsumos = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/especies/${id}/consumidores`);
+      const data = await res.json();
+      setConsumos(Array.isArray(data) ? data : []);
+      setInitialConsumos(Array.isArray(data) ? data : []);
+      setConsumosDirty(false);
+    } catch (e) {
+      console.error('Error loading consumos:', e);
+    }
+  };
+
+  const saveConsumosNow = async () => {
+    if (!especieId) {
+      alert("Guarda primero la especie antes de guardar los consumos.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/especies/${especieId}/consumidores`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail || ''
+        },
+        body: JSON.stringify({ consumos })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConsumosDirty(false);
+        setInitialConsumos([...consumos]);
+        setToastMessage("Consumos guardados correctamente");
+        setTimeout(() => setToastMessage(null), 3000);
+      } else {
+        alert(data.error || "Error al guardar consumos");
+      }
+    } catch (e) {
+      console.error('Error saving consumos:', e);
+      alert("Error de red");
     }
   };
 
@@ -675,6 +875,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const hasPdfs = pdfs.length > 0;
       const hasEcosystem = relaciones.beneficiosas.length > 0 || relaciones.perjudiciales.length > 0 || relaciones.plagas.length > 0;
       const hasVarieties = varCount > 0;
+      const hasConsumos = consumos.length > 0;
 
       if (hasSinonimos) score += 10;
       if (hasLabores) score += 10;
@@ -682,6 +883,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       if (hasPdfs) score += 10;
       if (hasEcosystem) score += 10;
       if (hasVarieties) score += 10;
+      if (hasConsumos) score += 10;
 
       setCheckResults({
         score,
@@ -692,12 +894,14 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         hasPdfs,
         hasEcosystem,
         hasVarieties,
+        hasConsumos,
         sinonimosCount: sinonimos.length,
         laboresCount: pautas.length,
         photosCount: photos.length,
         pdfsCount: pdfs.length,
         ecosystemCount: relaciones.beneficiosas.length + relaciones.perjudiciales.length + relaciones.plagas.length,
-        varietiesCount: varCount
+        varietiesCount: varCount,
+        consumosCount: consumos.length
       });
       setShowCheckModal(true);
     } catch (err) {
@@ -708,12 +912,24 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
   };
 
-  const callAI = () => {
+  const callAI = async () => {
     if (!formData.especiesnombre) {
       alert('Introduce primero el nombre común de la especie.');
       return;
     }
+    setAiConfigTabs({ taxonomia: true, cultivo: true, fases: true, biodinamica: true, asociaciones: true, textos: true, sinonimos: true, variedades: true, consumos: true, pautas: true });
+    setAiConfigPrompt('');
     setShowAiConfig(true);
+
+    try {
+      const resAi = await fetch('/api/user/ai-stats', { headers: { 'x-user-email': userEmail || '' } });
+      if (resAi.ok) {
+        const aiData = await resAi.json();
+        setAiStats(aiData);
+      }
+    } catch (e) {
+      console.error('Error fetching ai stats:', e);
+    }
   };
 
   const aiGroups = [
@@ -857,6 +1073,18 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       title: '🌾 Variedades',
       keys: [],
       labels: {}
+    },
+    {
+      id: 'consumos',
+      title: '🍽️ Usos y Consumo',
+      keys: [],
+      labels: {}
+    },
+    {
+      id: 'pautas',
+      title: '📋 Labores',
+      keys: [],
+      labels: {}
     }
   ];
 
@@ -895,7 +1123,6 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     }
 
     setAiLoading(true);
-    setShowAiConfig(false);
     setAiSeconds(0);
     if (aiTimerRef.current) clearInterval(aiTimerRef.current);
     aiTimerRef.current = setInterval(() => {
@@ -906,7 +1133,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const promises: Promise<any>[] = [];
       const keys: string[] = [];
 
-      const needsCore = aiConfigTabs.taxonomia || aiConfigTabs.cultivo || aiConfigTabs.fases || aiConfigTabs.biodinamica || aiConfigTabs.asociaciones || aiConfigTabs.textos;
+      const needsCore = aiConfigTabs.taxonomia || aiConfigTabs.cultivo || aiConfigTabs.fases || aiConfigTabs.biodinamica || aiConfigTabs.asociaciones || aiConfigTabs.textos || aiConfigTabs.consumos;
       if (needsCore) {
         keys.push('core');
         promises.push(
@@ -918,7 +1145,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             },
             body: JSON.stringify({
               nombre: formData.especiesnombre,
-              customPrompt: aiConfigPrompt
+              customPrompt: aiConfigPrompt,
+              selectedTabs: Object.keys(aiConfigTabs).filter(k => (aiConfigTabs as any)[k])
             })
           }).then(res => res.json())
         );
@@ -937,7 +1165,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 nombre: s.especiessinonimosnombre,
                 idPais: s.xespeciessinonimosidpaises
               })),
-              extraInstructions: aiConfigPrompt
+              extraInstructions: sinExtraInstructions || aiConfigPrompt
             })
           }).then(res => res.json())
         );
@@ -961,10 +1189,27 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         );
       }
 
+      if (aiConfigTabs.pautas) {
+        keys.push('pautas');
+        promises.push(
+          fetch('/api/ai/pautas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              idespecies: especieId,
+              especie: formData.especiesnombre,
+              labores: masterLabores.map((l: any) => ({ id: l.idlabores, nombre: l.laboresnombre })),
+              instruccionesAdicionales: aiConfigPrompt
+            })
+          }).then(res => res.json())
+        );
+      }
+
       const results = await Promise.all(promises);
       let coreData: any = null;
       let sinonimosData: any[] = [];
       let variedadesData: any[] = [];
+      let pautasData: any[] = [];
 
       keys.forEach((key, index) => {
         const resObj = results[index];
@@ -972,6 +1217,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
           if (key === 'core') coreData = resObj.data;
           if (key === 'sinonimos') sinonimosData = resObj.sinonimos;
           if (key === 'variedades') variedadesData = resObj.variedades || resObj.data;
+          if (key === 'pautas') pautasData = resObj.pautas || [];
         } else {
           console.warn(`Error en petición IA ${key}:`, resObj.error);
         }
@@ -1029,14 +1275,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const proposal: any = {
         ...(coreData || {}),
         _sinonimos: (sinonimosData || []).map((s: any) => ({ ...s, _selected: true })),
-        _variedades: (variedadesData || []).map((v: any) => ({ ...v, _selected: true }))
+        _variedades: (variedadesData || []).map((v: any) => ({ ...v, _selected: true })),
+        _consumos: coreData?.usos_consumo || [],
+        _pautas: (pautasData || []).map((p: any) => ({ ...p, selected: true }))
       };
 
       setAiProposal(proposal);
 
       const initialSelected: Record<string, boolean> = {};
       aiGroups.forEach(group => {
-        if (group.id === 'sinonimos' || group.id === 'variedades') return;
+        if (group.id === 'sinonimos' || group.id === 'variedades' || group.id === 'pautas') return;
         group.keys.forEach(k => {
           if (k === 'fases_duracion') {
             const phasesList = masterFases.filter((f: any) => f.fasescultivotipo === 'Fase' && f.fasescultivoclave !== 'planificacion');
@@ -1072,11 +1320,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
       setSelectedAiSinonimos((sinonimosData || []).map((_, i) => i));
       setSelectedAiVariedades((variedadesData || []).map((_, i) => i));
+      setSelectedAiConsumos((coreData?.usos_consumo || []).map((_: any, i: number) => i));
       setAssimilatedVarietyNames([]);
       setShowOnlyDiffs(false);
 
       const firstActiveTab = Object.keys(aiConfigTabs).find(tabKey => aiConfigTabs[tabKey]) || 'taxonomia';
       setAiModalActiveTab(firstActiveTab);
+      setShowAiConfig(false);
       setShowAiModal(true);
 
     } catch (err: any) {
@@ -1322,6 +1572,63 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
     });
   };
 
+  const assimilateConsumosAI = async () => {
+    if (!aiProposal || !aiProposal._consumos || !especieId) return;
+    const selectedList = aiProposal._consumos.filter((_: any, idx: number) => selectedAiConsumos.includes(idx));
+    if (selectedList.length === 0) return;
+
+    await runWithAssimilationLoading(async () => {
+      const nextConsumos = [...consumos];
+      for (const item of selectedList) {
+        const idConsumidor = String(item.idconsumidor);
+        const targetParte = (item.parte || item.partes || '').trim();
+        const targetAptoNum = item.apto === 'apto' ? 1 : (item.apto === 'con_moderacion' ? 2 : 0);
+        
+        const targetParteId = await resolvePlantasParteId(targetParte);
+        const existingIdx = nextConsumos.findIndex(c => 
+          String(c.xespeciesconsumidoresidconsumidores) === idConsumidor &&
+          c.xespeciesconsumidoresidplantasparte === targetParteId
+        );
+        const baseName = normalizePlantaParteNombre(targetParte);
+        let updatedNotas = item.notas || '';
+        if (targetParte.toLowerCase() !== baseName.toLowerCase()) {
+          const prefix = `${targetParte}: `;
+          if (!updatedNotas.startsWith(prefix)) {
+            updatedNotas = prefix + updatedNotas;
+          }
+        }
+        const payload = {
+          xespeciesconsumidoresidespecies: especieId,
+          xespeciesconsumidoresidconsumidores: idConsumidor,
+          especiesconsumidoresesapto: targetAptoNum,
+          xespeciesconsumidoresidplantasparte: targetParteId,
+          especiesconsumidorespartes: baseName,
+          especiesconsumidoresnotas: updatedNotas
+        };
+        if (existingIdx !== -1) {
+          nextConsumos[existingIdx] = { ...nextConsumos[existingIdx], ...payload };
+        } else {
+          nextConsumos.push(payload as any);
+        }
+      }
+
+      try {
+        await fetch(`/api/admin/especies/${especieId}/consumidores`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': userEmail || ''
+          },
+          body: JSON.stringify({ consumos: nextConsumos })
+        });
+      } catch (err) {
+        console.error('Error guardando consumos:', err);
+      }
+      await loadConsumos(especieId);
+      setSelectedAiConsumos([]);
+    });
+  };
+
   const assimilateTab = async (tabId: string) => {
     await runWithAssimilationLoading(async () => {
       if (tabId === 'asociaciones') {
@@ -1334,6 +1641,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
       if (tabId === 'variedades') {
         await assimilateVariedadesAI();
+        return;
+      }
+      if (tabId === 'consumos') {
+        await assimilateConsumosAI();
         return;
       }
 
@@ -1398,7 +1709,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               setSelectedAiFields(prev => ({ ...prev, [vKey]: false }));
             }
           });
-        } else {
+        } else if (k !== 'consumos') {
           if (selectedAiFields[k] && aiProposal[k] !== undefined && aiProposal[k] !== null) {
             updates[k] = aiProposal[k];
             setSelectedAiFields(prev => ({ ...prev, [k]: false }));
@@ -1429,6 +1740,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       // 4. Varieties
       if (aiProposal._variedades && selectedAiVariedades.length > 0) {
         await assimilateVariedadesAI();
+      }
+
+      // 5. Consumos
+      if (aiProposal._consumos && selectedAiConsumos.length > 0) {
+        await assimilateConsumosAI();
       }
 
       setShowAiModal(false);
@@ -2397,29 +2713,61 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         </button>
         <button onClick={() => {
           if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
-          if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/especies'); }
+          const from = searchParams.get('from');
+          if (from === 'identificar-especie') {
+            router.push('/dashboard/admin/tareas/identificar-especie');
+          } else if (from === 'labores') {
+            router.push('/dashboard/admin/labores');
+          } else if (from === 'consumidores') {
+            router.push('/dashboard/admin/consumidores');
+          } else if (window.history.length > 2) { 
+            router.back(); 
+          } else { 
+            router.push('/dashboard/admin/especies'); 
+          }
         }} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          {typeof window !== 'undefined' && document.referrer.includes('/labores') ? '🔙 Volver a Labores' : '🔙 Volver a Especies'}
+          {searchParams.get('from') === 'labores' ? '🔙 Volver a Labores' : searchParams.get('from') === 'identificar-especie' ? '🔙 Volver al Identificador de Especies' : searchParams.get('from') === 'consumidores' ? '🔙 Volver a Especies de Granja' : '🔙 Volver a Especies'}
         </button>
+        {searchParams.get('from') === 'consumidores' && searchParams.get('fromId') && (
+          <button onClick={() => {
+            const fromId = searchParams.get('fromId');
+            router.push(`/dashboard/admin/consumidores/${fromId}`);
+          }} style={{ background: '#fef3c7', border: '1px solid #fcd34d', color: '#92400e', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            🔙 Volver a {decodeURIComponent(searchParams.get('fromName') || 'Consumidor')}
+          </button>
+        )}
       </div>
 
       {/* ── Subheader Integrado ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', color: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {formData.especiesnombre || 'Nueva Especie'}
-              {isDirty && <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Cambios sin guardar</span>}
-            </h1>
-            {formData.especiesnombrecientifico ? (
-              <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '1rem', fontStyle: 'italic' }}>
-                {formData.especiesnombrecientifico}
-              </p>
-            ) : (
-              <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
-                Editor de Especie
-              </p>
-            )}
+      <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', borderRadius: '14px', padding: '12px 20px', marginBottom: '24px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+            🌿 {formData.especiesnombre || 'Nueva Especie'}
+          </h1>
+          {formData.especiesnombrecientifico ? (
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem', fontStyle: 'italic' }}>
+              ✏️ Editar Especie · ID del Registro: {especieId || 'Nuevo'}
+            </p>
+          ) : (
+            <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.85rem' }}>
+              ✏️ Editar Especie · ID del Registro: {especieId || 'Nuevo'}
+            </p>
+          )}
+        </div>
+        
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
+          {/* Si hubo cambios (como al asimilar datos de la IA) y no está guardando automáticamente, mostramos un botón para forzar el guardado */}
+          {isDirty && saveStatus === 'idle' && (
+            <button 
+              onClick={(e) => handleSubmit(e as unknown as React.FormEvent)} 
+              style={{ background: '#fef08a', color: '#854d0e', border: 'none', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              💾 Guardar Cambios
+            </button>
+          )}
+          
+          <div style={{ background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+            {saveStatus === 'saving' ? '⏳ Guardando...' : '✅ Guardado'}
           </div>
         </div>
       </div>
@@ -2593,8 +2941,22 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             <div className="collapsible-content">
 
               <div style={{ padding: '15px 24px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px' }}>
-                <button type="button" onClick={callAI} className="btn-ai" disabled={aiLoading} style={{ margin: 0 }}>
-                  {aiLoading ? 'Pensando...' : '✨ Asistente IA'}
+                <button type="button" onClick={callAI} className="btn-ai" disabled={aiLoading} style={{ 
+                  margin: 0,
+                  background: aiLoading ? 'linear-gradient(135deg, #475569, #1e293b)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  boxShadow: aiLoading ? 'none' : '0 4px 12px rgba(139, 92, 246, 0.3)',
+                  cursor: aiLoading ? 'not-allowed' : 'pointer',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}>
+                  {aiLoading ? `⏳ Analizando... ${aiSeconds}s` : '✨ Asistente IA'}
                 </button>
                 {especieId && (
                   <button type="button" onClick={handleCheckSpecies} className="btn-ai" disabled={checking} style={{ margin: 0, background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(2,132,199,0.2)' }}>
@@ -2610,6 +2972,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                 <button type="button" className={activeTab === 'biodinamica' ? 'active' : ''} onClick={() => setActiveTab('biodinamica')}>🌙 Luna y Biodinámica</button>
                 <button type="button" className={activeTab === 'asociaciones' ? 'active' : ''} onClick={() => setActiveTab('asociaciones')}>🤝 Ecosistema</button>
                 <button type="button" className={activeTab === 'textos' ? 'active' : ''} onClick={() => setActiveTab('textos')}>📝 Textos y Autosuficiencia</button>
+                <button type="button" className={activeTab === 'consumos' ? 'active' : ''} onClick={() => setActiveTab('consumos')}>🐄 Alimentación Animal</button>
                 <button type="button" className={activeTab === 'variedades' ? 'active' : ''} onClick={() => setActiveTab('variedades')}>🌱 Variedades</button>
                 <button type="button" className={activeTab === 'pautas' ? 'active' : ''} onClick={() => setActiveTab('pautas')}>📋 Labores</button>
                 <button type="button" className={activeTab === 'photos' ? 'active' : ''} onClick={() => setActiveTab('photos')}>📷 Fotos</button>
@@ -2675,19 +3038,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                       <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>🗣️ Sinónimos y Nombres Locales</h3>
                       <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                          type="button"
-                          onClick={openSinonimosConfig}
-                          disabled={sinonimosAiLoading}
-                          style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer' }}
-                        >
-                          {sinonimosAiLoading ? (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.1rem' }}>⏳</span>
-                              Buscando... {sinonimosAiSeconds}s
-                            </span>
-                          ) : '✨ Proponer Sinónimos (IA)'}
-                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -2713,7 +3064,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     {sinonimos.length === 0 && !sinonimosAiLoading ? (
                       <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
                         <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay sinónimos registrados.</p>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "Proponer Sinónimos" para que la Inteligencia Artificial busque por ti.</p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Usa el botón "✨ Asistente IA" de la barra superior para que la Inteligencia Artificial busque sinónimos por ti.</p>
                       </div>
                     ) : (
                       <div style={{ overflowX: 'auto', width: '100%' }}>
@@ -3825,6 +4176,185 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                   })()}
                 </div>
 
+                <div style={{ display: activeTab === 'consumos' ? 'block' : 'none' }}>
+                  {/* Barra de filtros + Añadir */}
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', background: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {consumos.length > 0 && (
+                      <>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>🔍 Filtrar:</span>
+                        <select
+                          value={consumosFiltroConsumidor || ''}
+                          onChange={(e) => setConsumosFiltroConsumidor(e.target.value)}
+                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                        >
+                          <option value="">Consumidor...</option>
+                          {masterConsumidores.map((mc: any) => <option key={mc.idconsumidores} value={mc.idconsumidores}>{mc.consumidoresnombre}</option>)}
+                        </select>
+                        <select
+                          value={consumosFiltroAptitud || ''}
+                          onChange={(e) => setConsumosFiltroAptitud(e.target.value)}
+                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                        >
+                          <option value="">Aptitud...</option>
+                          <option value="1">✅ Apto</option>
+                          <option value="2">⚠️ Moderado</option>
+                          <option value="0">❌ Tóxico</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => { setConsumosFiltroConsumidor(''); setConsumosFiltroAptitud(''); }}
+                          style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.85rem', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          Limpiar
+                        </button>
+                      </>
+                    )}
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConsumos([...consumos, { idespeciesconsumidores: null, xespeciesconsumidoresidconsumidores: '', especiesconsumidoresesapto: 1, especiesconsumidorespartes: '', especiesconsumidoresnotas: '' }]);
+                          setConsumosDirty(true);
+                        }}
+                        style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 6px rgba(16,185,129,0.2)' }}
+                      >
+                        ➕ Añadir Registro
+                      </button>
+                      {consumosDirty && (
+                        <button
+                          type="button"
+                          onClick={saveConsumosNow}
+                          style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(245,158,11,0.4)' }}
+                        >
+                          💾 Guardar Cambios
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {consumos.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1' }}>
+                      <p style={{ color: '#64748b', fontSize: '1.1rem', margin: '0 0 10px 0' }}>No hay información de consumidores.</p>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Haz clic en "+ Añadir Consumidor" para definir si es apto o tóxico para distintos animales y humanos.</p>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto', width: '100%' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', minWidth: '600px' }}>
+                        <thead>
+                          <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
+                            <th style={{ padding: '12px', textAlign: 'center', width: '10%' }}>Acciones</th>
+                            <th style={{ padding: '12px', textAlign: 'left', width: '20%' }}>Consumidor</th>
+                            <th style={{ padding: '12px', textAlign: 'left', width: '15%' }}>Aptitud</th>
+                            <th style={{ padding: '12px', textAlign: 'left', width: '25%' }}>Partes Consumibles</th>
+                            <th style={{ padding: '12px', textAlign: 'left', width: '35%' }}>Notas Adicionales</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {consumos.map((c, index) => {
+                            if (consumosFiltroConsumidor && String(c.xespeciesconsumidoresidconsumidores) !== consumosFiltroConsumidor) return null;
+                            if (consumosFiltroAptitud && String(c.especiesconsumidoresesapto) !== consumosFiltroAptitud) return null;
+                            return (
+                            <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: c.idespeciesconsumidores === null ? '#fefce8' : 'transparent' }}>
+                              <td style={{ padding: '8px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const conToDelete = consumos[index];
+                                    const newCon = [...consumos];
+                                    newCon.splice(index, 1);
+                                    setConsumos(newCon);
+                                    setConsumosDirty(true);
+                                    if (conToDelete.idespeciesconsumidores && especieId) {
+                                      try {
+                                        await fetch(`/api/admin/especies/${especieId}/consumidores?id=${conToDelete.idespeciesconsumidores}`, { method: 'DELETE' });
+                                      } catch (err) {
+                                        console.error('Error borrando consumidor:', err);
+                                      }
+                                    }
+                                  }}
+                                  style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                                >
+                                  🗑️
+                                </button>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <select
+                                  value={c.xespeciesconsumidoresidconsumidores || ''}
+                                  onChange={e => {
+                                    const newCon = [...consumos];
+                                    newCon[index].xespeciesconsumidoresidconsumidores = e.target.value;
+                                    setConsumos(newCon);
+                                    setConsumosDirty(true);
+                                  }}
+                                  style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                >
+                                  <option value="">-- Seleccionar --</option>
+                                  {masterConsumidores.map(mc => (
+                                    <option key={mc.idconsumidores} value={mc.idconsumidores}>{mc.consumidoresnombre}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <select
+                                  value={c.especiesconsumidoresesapto != null ? c.especiesconsumidoresesapto : 1}
+                                  onChange={e => {
+                                    const newCon = [...consumos];
+                                    newCon[index].especiesconsumidoresesapto = Number(e.target.value);
+                                    setConsumos(newCon);
+                                    setConsumosDirty(true);
+                                  }}
+                                  style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white' }}
+                                >
+                                  <option value={1}>🟢 Apto</option>
+                                  <option value={2}>🟡 Con moderación</option>
+                                  <option value={0}>🔴 No apto / Tóxico</option>
+                                </select>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <select
+                                  value={c.xespeciesconsumidoresidplantasparte || ''}
+                                  onChange={e => {
+                                    const newCon = [...consumos];
+                                    const val = e.target.value ? Number(e.target.value) : '';
+                                    newCon[index].xespeciesconsumidoresidplantasparte = val;
+                                    const matchPart = masterPlantasPartes.find(p => p.idplantasparte === val);
+                                    newCon[index].especiesconsumidorespartes = matchPart ? matchPart.plantaspartenombre : '';
+                                    setConsumos(newCon);
+                                    setConsumosDirty(true);
+                                  }}
+                                  style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', background: 'white' }}
+                                >
+                                  <option value="">-- Seleccionar --</option>
+                                  {masterPlantasPartes.map(pp => (
+                                    <option key={pp.idplantasparte} value={pp.idplantasparte}>
+                                      {pp.plantasparteemoji} {pp.plantaspartenombre}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <textarea
+                                  value={c.especiesconsumidoresnotas || ''}
+                                  onChange={e => {
+                                    const newCon = [...consumos];
+                                    newCon[index].especiesconsumidoresnotas = e.target.value;
+                                    setConsumos(newCon);
+                                    setConsumosDirty(true);
+                                  }}
+                                  style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '6px', resize: 'vertical', fontFamily: 'inherit' }}
+                                  rows={2}
+                                  placeholder="Tóxico en crudo, apto cocinado..."
+                                />
+                              </td>
+                            </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
                 {/* VARIEDADES */}
                 <div style={{ display: activeTab === 'variedades' ? 'block' : 'none' }}>
                   {especieId && (
@@ -3834,111 +4364,78 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
                 {/* PAUTAS DE LABORES */}
                 <div style={{ display: activeTab === 'pautas' ? 'block' : 'none', background: '#f8fafc', padding: '24px', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPautasConfig(true);
-                        setPautasConfigPromptOpen(false);
-                      }}
-                      disabled={pautasAiLoading}
-                      style={{ 
-                        height: '38px',
-                        padding: '0 16px', 
-                        background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '8px', 
-                        fontWeight: 'bold', 
-                        cursor: pautasAiLoading ? 'not-allowed' : 'pointer', 
-                        fontSize: '0.9rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        gap: '8px',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
-                        flexShrink: 0
-                      }}
-                    >
-                      {pautasAiLoading ? (
-                        <>
-                          <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⏳</span>
-                          Analizando... {pautasAiSeconds}s
-                        </>
-                      ) : (
-                        <>✨ Asistente IA</>
-                      )}
-                    </button>
 
-                    {especieId && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAddPautaForm(!showAddPautaForm)}
-                        style={{ 
-                          height: '38px',
-                          padding: '0 16px', 
-                          background: showAddPautaForm ? 'linear-gradient(135deg, #475569, #1e293b)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '8px', 
-                          fontWeight: 'bold', 
-                          cursor: 'pointer', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          gap: '8px', 
-                          fontSize: '0.9rem', 
-                          transition: 'all 0.3s ease',
-                          boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)',
-                          flexShrink: 0
-                        }}
-                      >
-                        {showAddPautaForm ? '✕ Cancelar' : '+ Añadir Labor'}
-                      </button>
-                    )}
-                  </div>
-
-                  {especieId && pautas.length > 0 && (
+                  {especieId && (
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', background: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>🔍 Filtrar por:</span>
+                      {pautas.length > 0 && (
+                        <>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>🔍 Filtrar por:</span>
                       
-                      <select 
-                        value={pautasFiltroFase} 
-                        onChange={(e) => setPautasFiltroFase(e.target.value)}
-                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
-                      >
-                        <option value="">Fase...</option>
-                        {masterFases.map(f => <option key={f.idfasescultivo} value={f.fasescultivoclave}>{f.fasescultivonombre}</option>)}
-                      </select>
+                          <select 
+                            value={pautasFiltroFase} 
+                            onChange={(e) => setPautasFiltroFase(e.target.value)}
+                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                          >
+                            <option value="">Fase...</option>
+                            {masterFases.map(f => <option key={f.idfasescultivo} value={f.fasescultivoclave}>{f.fasescultivonombre}</option>)}
+                          </select>
 
-                      <select 
-                        value={pautasFiltroLabor} 
-                        onChange={(e) => setPautasFiltroLabor(e.target.value)}
-                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
-                      >
-                        <option value="">Labor...</option>
-                        {masterLabores.map(l => <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>)}
-                      </select>
+                          <select 
+                            value={pautasFiltroLabor} 
+                            onChange={(e) => setPautasFiltroLabor(e.target.value)}
+                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                          >
+                            <option value="">Labor...</option>
+                            {masterLabores.map(l => <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>)}
+                          </select>
 
-                      <select 
-                        value={pautasFiltroLaboreo} 
-                        onChange={(e) => setPautasFiltroLaboreo(e.target.value)}
-                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
-                      >
-                        <option value="">Método de Tierra...</option>
-                        <option value="convencional">🚜 Convencional</option>
-                        <option value="minimo">⛏️ Mínimo</option>
-                        <option value="nolaboreo">🚫 No laboreo</option>
-                      </select>
+                          <select 
+                            value={pautasFiltroLaboreo} 
+                            onChange={(e) => setPautasFiltroLaboreo(e.target.value)}
+                            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', color: '#475569', background: '#fff', cursor: 'pointer' }}
+                          >
+                            <option value="">Método de Tierra...</option>
+                            <option value="convencional">🚜 Convencional</option>
+                            <option value="minimo">⛏️ Mínimo</option>
+                            <option value="nolaboreo">🚫 No laboreo</option>
+                          </select>
 
-                      <button 
-                        type="button" 
-                        onClick={() => { setPautasFiltroFase(''); setPautasFiltroLabor(''); setPautasFiltroLaboreo(''); }} 
-                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.85rem', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' }}
-                      >
-                        Limpiar Filtros
-                      </button>
+                          <button 
+                            type="button" 
+                            onClick={() => { setPautasFiltroFase(''); setPautasFiltroLabor(''); setPautasFiltroLaboreo(''); }} 
+                            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '0.85rem', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' }}
+                          >
+                            Limpiar Filtros
+                          </button>
+                        </>
+                      )}
+
+                      <div style={{ marginLeft: 'auto' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddPautaForm(!showAddPautaForm)}
+                          style={{ 
+                            height: '38px',
+                            padding: '0 16px', 
+                            background: showAddPautaForm ? 'linear-gradient(135deg, #475569, #1e293b)' : '#10b981', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '8px', 
+                            fontWeight: 'bold', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '8px', 
+                            fontSize: '0.9rem', 
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                            flexShrink: 0
+                          }}
+                        >
+                          {showAddPautaForm ? '✕ Cancelar' : '➕ Añadir Labor'}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -4083,108 +4580,170 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
                 {/* FOTOS */}
                 <div style={{ display: activeTab === 'photos' ? 'block' : 'none' }}>
-                  {photos.length < 4 && (
-                    <div
-                      className={`custom-file-upload drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
-                      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
-                      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setDragOverPhotos(false);
-                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                          handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
-                        }
-                      }}
-                    >
-                      <input type="file" id="upload-photos" multiple accept="image/*" onChange={(e) => handleFileUpload(e, 'photos')} disabled={uploadingPhotos} />
-
-                      {uploadingPhotos ? (
-                        <div className="drop-zone-content">
-                          <span style={{ fontSize: '2rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                          <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Procesando imágenes...</span>
-                        </div>
-                      ) : (
-                        <div className="drop-zone-content">
-                          <span className="icon" style={{ fontSize: '2.5rem' }}>📷</span>
-                          <span style={{ fontWeight: 'bold', color: '#475569' }}>Arrastra tus imágenes aquí o pega desde el portapapeles</span>
-                          <div className="drop-zone-buttons">
-                            <label htmlFor="upload-photos" className="btn-upload primary">Seleccionar Archivos</label>
-                            <button type="button" onClick={() => setShowAiImageModal(true)} className="btn-upload secondary" style={{ fontWeight: 'bold' }}>✨ Generar Imagen con IA</button>
-                          </div>
-                          <span className="drop-hint">Soporta JPG, PNG, WEBP, HEIC/HEIF</span>
-                        </div>
-                      )}
+                  {!especieId && (
+                    <div style={{ padding: '20px', background: '#fef3c7', borderRadius: '12px', color: '#92400e', fontSize: '0.85rem', fontWeight: 600, width: '100%' }}>
+                      💡 Guarda la especie primero para poder añadir fotos.
                     </div>
                   )}
 
-                  {photos.length > 0 && (
-                    <div className="gallery">
-                      {photos.length >= 4 && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fef3c7', border: '2px dashed #f59e0b', borderRadius: '12px', padding: '12px 16px', minHeight: '100px', textAlign: 'center', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontSize: '1.5rem' }}>📸</span>
-                          <span style={{ fontWeight: 700, color: '#92400e', fontSize: '0.85rem' }}>{photos.length}/4</span>
-                          <span style={{ color: '#92400e', fontSize: '0.7rem' }}>Límite alcanzado</span>
+                  {especieId && (
+                    <>
+                      <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>📷 Fotos</span>
+                        <span style={{ fontSize: '0.82rem', color: photos.length >= 4 ? '#ef4444' : '#64748b', fontWeight: 600 }}>{photos.length} / 4 permitidas</span>
+                      </div>
+
+                      {((photos.length > 0) || (photos.length < 4)) && (
+                        <div className="gallery">
+                          {photos.map((photo, index) => {
+                            let parsedResumen: any = {};
+                            try {
+                              parsedResumen = typeof photo.resumen === 'string'
+                                ? JSON.parse(photo.resumen)
+                                : (photo.resumen || {});
+                            } catch (e) {
+                              console.error('Error parseando resumen foto:', e);
+                            }
+
+                            const filterVal = STYLE_FILTERS[parsedResumen.profile_style || ''] || 'none';
+
+                            return (
+                              <div
+                                key={photo.id}
+                                className={`gallery-item ${photo.esPrincipal ? 'is-preferred' : ''}`}
+                                draggable
+                                onDragStart={() => setDraggedPhotoIndex(index)}
+                                onDragOver={(e) => { e.preventDefault(); setDraggedOverPhotoIndex(index); }}
+                                onDrop={handlePhotoReorder}
+                              >
+                                <img
+                                  src={getMediaUrl(photo.ruta)}
+                                  alt={parsedResumen.seo_alt || formData.especiesnombre || 'Foto de Especie'}
+                                  crossOrigin="anonymous"
+                                  style={{ filter: filterVal }}
+                                />
+                                <div className="photo-actions">
+                                  <button
+                                    type="button"
+                                    className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
+                                    onClick={() => handleSetPrimaryPhoto(photo.id)}
+                                    title={photo.esPrincipal ? 'Foto de portada' : 'Hacer portada'}
+                                  >
+                                    {photo.esPrincipal ? '⭐' : '☆'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="photo-action-btn btn-photo-delete"
+                                    onClick={() => setDeleteConfirm({ id: photo.id, type: 'photos' })}
+                                    title="Eliminar foto"
+                                  >
+                                    ✕
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="photo-action-btn btn-photo-edit"
+                                    onClick={() => openPhotoEditor(photo)}
+                                    title="Editar imagen y SEO"
+                                  >
+                                    ✏️
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Inline Dropzone (only if less than 4 photos) */}
+                          {photos.length < 4 && (
+                            <div
+                              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(true); }}
+                              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPhotos(false); }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverPhotos(false);
+                                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                  handleFileUpload({ target: { files: e.dataTransfer.files } }, 'photos');
+                                }
+                              }}
+                              className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPhotos ? 'drag-over' : ''}`}
+                              style={{ cursor: 'default' }}
+                            >
+                              <input
+                                type="file"
+                                id="upload-photos"
+                                multiple
+                                accept="image/*"
+                                onChange={(e) => handleFileUpload(e, 'photos')}
+                                style={{ display: 'none' }}
+                                disabled={uploadingPhotos}
+                              />
+
+                              {uploadingPhotos ? (
+                                <div className="drop-zone-content">
+                                  <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                                  <span style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Procesando...</span>
+                                </div>
+                              ) : (
+                                <div className="drop-zone-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                                  <div className="drop-zone-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', alignItems: 'center' }}>
+                                    <label
+                                      htmlFor="upload-photos"
+                                      className="btn-upload primary"
+                                      style={{
+                                        background: 'white',
+                                        border: '1px solid #cbd5e1',
+                                        color: '#475569',
+                                        padding: '6px 12px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        margin: 0
+                                      }}
+                                    >
+                                      📁 Seleccionar
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowAiImageModal(true);
+                                      }}
+                                      className="btn-upload"
+                                      style={{
+                                        background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '6px 12px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        margin: 0
+                                      }}
+                                    >
+                                      ✨ Generar IA
+                                    </button>
+                                  </div>
+                                  <span className="drop-hint" style={{ fontSize: '0.65rem', color: '#94a3b8', textAlign: 'center', lineHeight: '1.2' }}>
+                                    Arrastra o pega<br />aquí
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
-                      {photos.map((photo, index) => {
-                        let parsedResumen: any = {};
-                        try {
-                          parsedResumen = typeof photo.resumen === 'string'
-                            ? JSON.parse(photo.resumen)
-                            : (photo.resumen || {});
-                        } catch (e) {
-                          console.error('Error parseando resumen foto:', e);
-                        }
-
-                        const filterVal = STYLE_FILTERS[parsedResumen.profile_style || ''] || 'none';
-
-                        return (
-                          <div
-                            key={photo.id}
-                            className={`gallery-item ${photo.esPrincipal ? 'is-preferred' : ''}`}
-                            draggable
-                            onDragStart={() => setDraggedPhotoIndex(index)}
-                            onDragOver={(e) => { e.preventDefault(); setDraggedOverPhotoIndex(index); }}
-                            onDrop={handlePhotoReorder}
-                          >
-                            <img
-                              src={getMediaUrl(photo.ruta)}
-                              alt={parsedResumen.seo_alt || formData.especiesnombre || 'Foto de Especie'}
-                              crossOrigin="anonymous"
-                              style={{ filter: filterVal }}
-                            />
-                            <div className="photo-actions">
-                              <button
-                                type="button"
-                                className={`photo-action-btn btn-photo-primary ${photo.esPrincipal ? 'is-active' : ''}`}
-                                onClick={() => handleSetPrimaryPhoto(photo.id)}
-                                title={photo.esPrincipal ? 'Foto de portada' : 'Hacer portada'}
-                              >
-                                {photo.esPrincipal ? '⭐' : '☆'}
-                              </button>
-                              <button
-                                type="button"
-                                className="photo-action-btn btn-photo-delete"
-                                onClick={() => setDeleteConfirm({ id: photo.id, type: 'photos' })}
-                                title="Eliminar foto"
-                              >
-                                ✕
-                              </button>
-                              <button
-                                type="button"
-                                className="photo-action-btn btn-photo-edit"
-                                onClick={() => openPhotoEditor(photo)}
-                                title="Editar imagen y SEO"
-                              >
-                                ✏️
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    </>
                   )}
                 </div>
 
@@ -4403,91 +4962,184 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       {showAiConfig && (
         <div className="ai-modal-overlay" style={{ zIndex: 10000 }}>
           <div className="ai-modal-content" style={{ maxWidth: '600px' }}>
-            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
-              <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem' }}>✨ Configurar Búsqueda de IA</h2>
-              <button className="btn-close-modal" onClick={() => setShowAiConfig(false)} style={{ color: 'white' }}>✖</button>
-            </div>
-            <div className="ai-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
-                  Instrucciones personalizadas para la IA
-                </label>
-                <textarea
-                  value={aiConfigPrompt}
-                  onChange={(e) => setAiConfigPrompt(e.target.value)}
-                  placeholder="Ej: Busca información específica de variedades resistentes a heladas..."
-                  rows={4}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
-                  Pestañas y Secciones a Incluir:
-                </label>
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '10px' }}>
-                  <button type="button" onClick={() => setAiConfigTabs({
-                    taxonomia: true, cultivo: true, fases: true, biodinamica: true, asociaciones: true, textos: true, sinonimos: true, variedades: true
-                  })} style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', padding: 0 }}>
-                    ➕ Seleccionar todas
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderRadius: '12px 12px 0 0' }}>
+              {aiLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                  <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem' }}>Analizando... {aiSeconds}s</h2>
+                </div>
+              ) : (
+                <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>✨ Asistente IA</h2>
+              )}
+              {!aiLoading && (
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button type="button" onClick={() => setShowAiConfig(false)} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.4)', background: 'transparent', cursor: 'pointer', fontSize: '0.9rem', color: 'white', fontWeight: 'bold', transition: 'all 0.2s' }}>
+                    Cancelar
                   </button>
-                  <button type="button" onClick={() => setAiConfigTabs({
-                    taxonomia: false, cultivo: false, fases: false, biodinamica: false, asociaciones: false, textos: false, sinonimos: false, variedades: false
-                  })} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', padding: 0 }}>
-                    ➖ Desmarcar todas
+                  <button type="button" onClick={runUnifiedAiSearch} disabled={aiLoading} style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', background: 'white', color: '#6d28d9', fontWeight: 'bold', cursor: aiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', transition: 'all 0.2s' }}>
+                    🚀 Analizar
                   </button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              )}
+            </div>
+            <div className="ai-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '75vh', overflowY: 'auto', position: 'relative' }}>
+              
+              {/* Overlay de carga superpuesto sobre el contenido existente */}
+              {aiLoading && (
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0 0 12px 12px' }}>
+                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', padding: '20px' }}>
+                    <p style={{ margin: 0, color: '#475569', fontSize: '0.9rem', fontWeight: 600 }}>
+                      Buscando información para {formData.especiesnombre}...
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', maxWidth: '380px' }}>
+                      {Object.keys(aiConfigTabs).filter(k => (aiConfigTabs as any)[k]).map(k => {
+                        const labelMap: Record<string, string> = {
+                          taxonomia: '🧬 Identificación', cultivo: '🌱 Requisitos', fases: '📅 Cronología',
+                          biodinamica: '🌙 Biodinámica', asociaciones: '🤝 Ecosistema', textos: '📝 Textos',
+                          sinonimos: '🗣️ Sinónimos', variedades: '🌾 Variedades', consumos: '🐄 Alimentación', pautas: '📋 Labores'
+                        };
+                        return (
+                          <span key={k} style={{ background: '#ede9fe', color: '#6d28d9', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+                            {labelMap[k]}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Contenido real (siempre renderizado, atenuado si carga) */}
+              <div style={{ opacity: aiLoading ? 0.3 : 1, pointerEvents: aiLoading ? 'none' : 'auto', transition: 'opacity 0.3s ease' }}>
+                {aiStats && (
+                  <div style={{ textAlign: 'center', marginBottom: '4px' }}>
+                    <p style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+                      Interacciones IA este mes: <span style={{ color: aiStats.remaining > 0 ? '#0d9488' : '#ef4444' }}>{aiStats.used} / {aiStats.max}</span>
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                      Incluido gratis en tu suscripción actual.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Apartado 1: Entidad Objetivo */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '0.9rem', marginBottom: '4px' }}>1. Entidad Objetivo</div>
+                <div style={{ color: '#475569', fontSize: '0.95rem' }}>
+                  🌱 Especie seleccionada: <strong>{formData.especiesnombre || 'Desconocida'}</strong> {formData.especiesnombrecientifico ? `(${formData.especiesnombrecientifico})` : ''}
+                </div>
+              </div>
+
+              {/* Apartado 2: System Prompt Base */}
+              <details style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                <summary style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '0.9rem', cursor: 'pointer', outline: 'none', listStyle: 'none', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>2. System Prompt Base (Instrucciones)</span>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>▼ Expandir</span>
+                </summary>
+                <div style={{ marginTop: '12px', color: '#475569', fontSize: '0.85rem', fontFamily: 'monospace', background: '#f1f5f9', padding: '10px', borderRadius: '6px' }}>
+                  Actúa como un experto agrónomo botánico. Debes buscar información detallada, técnica y veraz relativa a la especie seleccionada. Tu objetivo es estructurar los datos para autocompletar una ficha técnica agrícola, ajustándote a los parámetros de las categorías requeridas y proporcionando valores precisos.
+                </div>
+              </details>
+
+              {/* Apartado 3: Prompt Dinámico (Texto Libre) */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '0.9rem', marginBottom: '8px' }}>3. Prompt Dinámico (Texto Libre)</div>
+                <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', background: 'white', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'pre-line' }}>
+                    {`Busca información para las siguientes categorías de la especie:\n${Object.keys(aiConfigTabs).filter(k => (aiConfigTabs as any)[k]).map(k => {
+                      const labelMap: Record<string, string> = {
+                        taxonomia: '🧬 Identificación', cultivo: '🌱 Requisitos y Suelo', fases: '📅 Cronología',
+                        biodinamica: '🌙 Lunar / Biodinámica', asociaciones: '🤝 Ecosistema', textos: '📝 Textos y Autosuf.',
+                        sinonimos: '🗣️ Sinónimos', variedades: '🌾 Variedades', consumos: '🐄 Alimentación Animal', pautas: '📋 Labores'
+                      };
+                      return `- ${labelMap[k]}`;
+                    }).join('\n')}`}
+                  </div>
+                  <hr style={{ border: 'none', borderTop: '1px dashed #e2e8f0', margin: 0 }} />
+                  <textarea
+                    value={aiConfigPrompt}
+                    onChange={(e) => setAiConfigPrompt(e.target.value)}
+                    placeholder="Añade directrices, matices o condiciones adicionales aquí..."
+                    rows={3}
+                    style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'vertical', fontSize: '0.9rem', color: '#1e293b' }}
+                  />
+                </div>
+              </div>
+
+              {/* Apartado 4: Ayudante de Categorías */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '0.9rem' }}>4. Ayudante de Categorías</div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button type="button" onClick={() => setAiConfigTabs({
+                      taxonomia: true, cultivo: true, fases: true, biodinamica: true, asociaciones: true, textos: true, sinonimos: true, variedades: true, consumos: true, pautas: true
+                    })} style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', padding: 0 }}>
+                      ➕ Todas
+                    </button>
+                    <button type="button" onClick={() => setAiConfigTabs({
+                      taxonomia: false, cultivo: false, fases: false, biodinamica: false, asociaciones: false, textos: false, sinonimos: false, variedades: false, consumos: false, pautas: false
+                    })} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', padding: 0 }}>
+                      ➖ Ninguna
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
                   {Object.keys(aiConfigTabs).map((tabKey) => {
                     const labelMap: Record<string, string> = {
-                      taxonomia: '🧬 Identificación',
-                      cultivo: '🌱 Requisitos y Suelo',
-                      fases: '📅 Cronología',
-                      biodinamica: '🌙 Lunar / Biodinámica',
-                      asociaciones: '🤝 Ecosistema',
-                      textos: '📝 Textos y Autosuf.',
-                      sinonimos: '🗣️ Sinónimos',
-                      variedades: '🌾 Variedades'
+                      taxonomia: '🧬 Identificación', cultivo: '🌱 Requisitos y Suelo', fases: '📅 Cronología',
+                      biodinamica: '🌙 Lunar / Biodinámica', asociaciones: '🤝 Ecosistema', textos: '📝 Textos y Autosuf.',
+                      sinonimos: '🗣️ Sinónimos', variedades: '🌾 Variedades', consumos: '🐄 Alimentación Animal', pautas: '📋 Labores'
                     };
                     return (
-                      <label key={tabKey} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                      <label key={tabKey} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', background: 'white', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
                         <input
                           type="checkbox"
-                          checked={aiConfigTabs[tabKey]}
+                          checked={(aiConfigTabs as any)[tabKey]}
                           onChange={(e) => setAiConfigTabs(prev => ({ ...prev, [tabKey]: e.target.checked }))}
-                          style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
+                          style={{ accentColor: '#7c3aed', width: '14px', height: '14px', margin: 0 }}
                         />
-                        <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#334155' }}>
                           {labelMap[tabKey]}
                         </span>
                       </label>
                     );
                   })}
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <button type="button" onClick={() => setShowAiConfig(false)} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '0.9rem', color: '#475569' }}>
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={runUnifiedAiSearch}
-                  disabled={aiLoading}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    cursor: aiLoading ? 'wait' : 'pointer',
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 6px rgba(124,58,237,0.2)'
-                  }}
-                >
-                  {aiLoading ? `⏳ Buscando... (${aiSeconds}s)` : '🚀 Lanzar Búsqueda IA'}
-                </button>
+                {/* Sub-bloque: Ámbito de Sinónimos (visible solo si sinónimos está marcado) */}
+                {(aiConfigTabs as any).sinonimos && (
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#f5f3ff', borderRadius: '8px', border: '1px solid #ddd6fe' }}>
+                    <div style={{ fontWeight: 'bold', color: '#6d28d9', fontSize: '0.8rem', marginBottom: '8px' }}>🌍 Ámbito de búsqueda de sinónimos</div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'general', emoji: '🌎', label: 'General' },
+                        { key: 'cooficiales', emoji: '🇪🇸', label: 'Lenguas Cooficiales' },
+                        { key: 'europa', emoji: '🇪🇺', label: 'Europea' },
+                      ].map(scope => (
+                        <label key={scope.key} style={{
+                          display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
+                          border: sinSelectedScope === scope.key ? '2px solid #7c3aed' : '1px solid #e2e8f0',
+                          borderRadius: '6px', cursor: 'pointer',
+                          background: sinSelectedScope === scope.key ? '#ede9fe' : '#fff',
+                          transition: 'all 0.2s', fontSize: '0.8rem'
+                        }}>
+                          <input
+                            type="radio"
+                            name="sinScopeUnified"
+                            checked={sinSelectedScope === scope.key}
+                            onChange={() => {
+                              setSinSelectedScope(scope.key);
+                              setSinExtraInstructions(sinScopePresets[scope.key]);
+                            }}
+                            style={{ width: '14px', height: '14px', accentColor: '#7c3aed', flexShrink: 0 }}
+                          />
+                          <span style={{ fontWeight: sinSelectedScope === scope.key ? 'bold' : 'normal', color: '#1e293b' }}>{scope.emoji} {scope.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               </div>
             </div>
           </div>
@@ -4498,33 +5150,39 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       {showAiModal && aiProposal && (
         <div className="ai-modal-overlay" style={{ zIndex: 10000 }}>
           <div className="ai-modal-content" style={{ maxWidth: '90%', width: '900px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h2 style={{ color: 'white', margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>✨ Revisión de Inteligencia Artificial</span>
-              </h2>
-              <button type="button" className="btn-close-modal" onClick={closeAiModal} style={{ color: 'white', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}>✖</button>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap', gap: '10px' }}>
+              {isAssimilating ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
+                  <h2 style={{ color: 'white', margin: 0, fontSize: '1.15rem' }}>Asimilando cambios... {assimilationSeconds}s</h2>
+                </div>
+              ) : (
+                <>
+                  <h2 style={{ color: 'white', margin: 0, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>✨ Revisión IA — {formData.especiesnombre}</span>
+                  </h2>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '5px 12px', background: 'rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, color: 'white', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={showOnlyDiffs}
+                        onChange={(e) => setShowOnlyDiffs(e.target.checked)}
+                        style={{ accentColor: '#fbbf24', width: '14px', height: '14px' }}
+                      />
+                      ⚠️ Ver solo cambios
+                    </label>
+                    <button type="button" onClick={closeAiModal} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', cursor: 'pointer', fontSize: '0.85rem', color: 'white', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 2px 6px rgba(239,68,68,0.3)' }}>
+                      🗑️ Descartar
+                    </button>
+                    <button type="button" onClick={assimilateAll} style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 2px 6px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}>
+                      ✅ Asimilar Todos
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="ai-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
-              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', fontWeight: 500 }}>
-                    La IA ha analizado <strong>{formData.especiesnombre}</strong>. Revisa los cambios propuestos y asimílalos en tu ficha.
-                  </p>
-                  <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
-                    Puedes asimilar campos individuales, por pestañas o aplicar todo el bloque.
-                  </small>
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', fontSize: '0.85rem', fontWeight: 600, color: '#475569', userSelect: 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={showOnlyDiffs}
-                    onChange={(e) => setShowOnlyDiffs(e.target.checked)}
-                    style={{ accentColor: '#7c3aed', width: '16px', height: '16px' }}
-                  />
-                  <span>⚠️ Solo parámetros con cambios</span>
-                </label>
-              </div>
 
               {!showOnlyDiffs ? (
                 <>
@@ -4918,6 +5576,277 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       );
                     }
 
+                    if (group.id === 'consumos') {
+                      const cProps = aiProposal._consumos || [];
+                      return (
+                        <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div>
+                              <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>Usos y Consumo Propuestos</h4>
+                              <small style={{ color: '#64748b' }}>Los cambios asimilados se guardan de inmediato en la base de datos.</small>
+                            </div>
+                            <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => assimilateTab('consumos')}>
+                              ✨ Asimilar Consumos
+                            </button>
+                          </div>
+
+                          {cProps.length === 0 ? (
+                            <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay consumos propuestos.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedAiConsumos.length === cProps.length && cProps.length > 0}
+                                      onChange={(e) => {
+                                        if (e.target.checked) setSelectedAiConsumos(cProps.map((_: any, idx: number) => idx));
+                                        else setSelectedAiConsumos([]);
+                                      }}
+                                      style={{ accentColor: '#7c3aed' }}
+                                    />
+                                  </th>
+                                  <th style={{ padding: '10px 12px' }}>Consumidor</th>
+                                  <th style={{ padding: '10px 12px' }}>¿Apto?</th>
+                                  <th style={{ padding: '10px 12px' }}>Partes</th>
+                                  <th style={{ padding: '10px 12px' }}>Notas</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cProps.map((item: any, idx: number) => {
+                                  const isChecked = selectedAiConsumos.includes(idx);
+                                  const consumidorName = masterConsumidores.find(c => c.idconsumidores.toString() === String(item.idconsumidor))?.consumidoresnombre || 'Desconocido';
+                                  
+                                  const targetParte = (item.parte || item.partes || '').trim();
+                                  const targetAptoNum = item.apto === 'apto' ? 1 : (item.apto === 'con_moderacion' ? 2 : 0);
+                                  const matched = consumos.find(o => 
+                                    String(o.xespeciesconsumidoresidconsumidores) === String(item.idconsumidor) &&
+                                    (o.especiesconsumidorespartes || '').trim().toLowerCase() === targetParte.toLowerCase()
+                                  );
+                                  const isDifferent = !matched || 
+                                    matched.especiesconsumidoresesapto !== targetAptoNum || 
+                                    (matched.especiesconsumidoresnotas || '') !== (item.notas || '');
+
+                                  return (
+                                    <tr key={idx} className="ai-comparison-grid-with-actions" style={{ borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent', opacity: !isDifferent ? 0.7 : 1 }}>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        {isDifferent && (
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedAiConsumos(prev => [...prev, idx]);
+                                              else setSelectedAiConsumos(prev => prev.filter(v => v !== idx));
+                                            }}
+                                            style={{ accentColor: '#7c3aed' }}
+                                          />
+                                        )}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{consumidorName}</td>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        {targetAptoNum === 1 ? (
+                                          <span style={{ color: '#10b981', fontWeight: 'bold' }}>🟢 Apto</span>
+                                        ) : targetAptoNum === 2 ? (
+                                          <span style={{ color: '#d97706', fontWeight: 'bold' }}>🟡 Con moderación</span>
+                                        ) : (
+                                          <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🔴 No apto</span>
+                                        )}
+                                      </td>
+                                      <td style={{ padding: '10px 12px' }}>{targetParte || '—'}</td>
+                                      <td style={{ padding: '10px 12px', color: '#64748b' }}>{item.notas || '-'}</td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                        {isDifferent ? (
+                                          <button type="button" className="btn-assimilate-row" style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }} onClick={async () => {
+                                            await runWithAssimilationLoading(async () => {
+                                              try {
+                                                const nextConsumos = [...consumos];
+                                                const idConsumidor = String(item.idconsumidor);
+                                                const targetParteId = await resolvePlantasParteId(targetParte);
+                                                const baseName = normalizePlantaParteNombre(targetParte);
+                                                let updatedNotas = item.notas || '';
+                                                if (targetParte.toLowerCase() !== baseName.toLowerCase()) {
+                                                  const prefix = `${targetParte}: `;
+                                                  if (!updatedNotas.startsWith(prefix)) {
+                                                    updatedNotas = prefix + updatedNotas;
+                                                  }
+                                                }
+                                                const existingIdx = nextConsumos.findIndex(c => String(c.xespeciesconsumidoresidconsumidores) === idConsumidor && normalizePlantaParteNombre(c.especiesconsumidorespartes || '') === baseName);
+                                                const payload = {
+                                                   xespeciesconsumidoresidespecies: especieId,
+                                                   xespeciesconsumidoresidconsumidores: idConsumidor,
+                                                   especiesconsumidoresesapto: targetAptoNum,
+                                                   xespeciesconsumidoresidplantasparte: targetParteId,
+                                                   especiesconsumidorespartes: baseName,
+                                                   especiesconsumidoresnotas: updatedNotas
+                                                 };
+                                                if (existingIdx !== -1) {
+                                                  nextConsumos[existingIdx] = { ...nextConsumos[existingIdx], ...payload };
+                                                } else {
+                                                  nextConsumos.push(payload as any);
+                                                }
+
+                                                await fetch(`/api/admin/especies/${especieId}/consumidores`, {
+                                                  method: 'PUT',
+                                                  headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'x-user-email': userEmail || ''
+                                                  },
+                                                  body: JSON.stringify({ consumos: nextConsumos })
+                                                });
+                                                if (especieId) await loadConsumos(especieId);
+                                              } catch (err) {
+                                                console.error(err);
+                                              }
+                                            });
+                                          }}>
+                                            Aplicar
+                                          </button>
+                                        ) : (
+                                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Actualizado</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (group.id === 'pautas') {
+                      const pProps = aiProposal._pautas || [];
+                      const faseLabels: Record<string, string> = {
+                        planificado: '1. Pre-siembra', siembra: '2. Siembra', postsiembra: '3. Post-siembra',
+                        germinacion: '4. Germinación', semillero: '5. Semillero', trasplante: '6. Trasplante',
+                        enraizamiento: '7. Posplantación', crecimiento: '8. Crecimiento', floracion: '9. Floración',
+                        cosecha: '10. Cosecha', finalizado: '11. Finalizado', general: '🌍 General',
+                        pregerminacion: '3. Pre-germinación', postgerminacion: '5. Post-germinación',
+                        creacion: '0. Creación', planificacion: '1. Planificación', adquisicion: '2. Adquisición',
+                        hitoplanton: '6. Plantón'
+                      };
+                      return (
+                        <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div>
+                              <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>Pautas de Labores Propuestas</h4>
+                              <small style={{ color: '#64748b' }}>Las pautas asimiladas se guardan de inmediato en la base de datos.</small>
+                            </div>
+                            <button type="button" className="btn-assimilate-row" style={{ padding: '8px 16px', background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }} onClick={async () => {
+                              await runWithAssimilationLoading(async () => {
+                                for (const pauta of pProps) {
+                                  if (!pauta.selected) continue;
+                                  const isExisting = pautas.some((p: any) => p.xlaborespautaidlabores == pauta.id_labor && p.laborespautafase === pauta.fase);
+                                  if (isExisting) continue;
+                                  try {
+                                    await fetch(`/api/admin/especies/${especieId}/pautas`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+                                      body: JSON.stringify({
+                                        xlaborespautaidlabores: pauta.id_labor,
+                                        laborespautafase: pauta.fase,
+                                        laborespautafrecuenciadias: pauta.frecuencia || '',
+                                        laborespautaoffset: pauta.offset || 0,
+                                        laborespautanotasia: pauta.notas_ia || '',
+                                        laborespautaactivosino: 1
+                                      })
+                                    });
+                                  } catch (err) { console.error(err); }
+                                }
+                                if (especieId) await loadPautas(especieId);
+                              });
+                            }}>
+                              ✨ Asimilar Labores
+                            </button>
+                          </div>
+
+                          {pProps.length === 0 ? (
+                            <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay pautas propuestas.</p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                                  <th style={{ padding: '10px 12px', textAlign: 'center', width: '50px' }}>✓</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Labor</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Fase</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'center' }}>Frecuencia</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'left' }}>Notas IA</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pProps.map((item: any, idx: number) => {
+                                  const isExisting = pautas.some((p: any) => p.xlaborespautaidlabores == item.id_labor && p.laborespautafase === item.fase);
+                                  const laborDef = masterLabores.find((l: any) => l.idlabores == item.id_labor);
+                                  return (
+                                    <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: item.selected ? '#f5f3ff' : 'transparent', opacity: isExisting ? 0.7 : 1 }}>
+                                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                        {!isExisting ? (
+                                          <input
+                                            type="checkbox"
+                                            checked={item.selected}
+                                            onChange={(e) => {
+                                              const updated = { ...aiProposal };
+                                              updated._pautas = [...updated._pautas];
+                                              updated._pautas[idx] = { ...updated._pautas[idx], selected: e.target.checked };
+                                              setAiProposal(updated);
+                                            }}
+                                            style={{ accentColor: '#7c3aed' }}
+                                          />
+                                        ) : <span>✅</span>}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{laborDef ? laborDef.laboresnombre : `Labor #${item.id_labor}`}</td>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, fontSize: '0.78rem' }}>
+                                          {faseLabels[item.fase] || item.fase}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                        <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, fontSize: '0.78rem' }}>
+                                          {item.frecuencia ? `Cada ${item.frecuencia}d` : 'Puntual'}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontStyle: 'italic', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.notas_ia || '—'}</td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                        {!isExisting ? (
+                                          <button type="button" className="btn-assimilate-row" style={{ padding: '4px 10px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }} onClick={async () => {
+                                            await runWithAssimilationLoading(async () => {
+                                              try {
+                                                await fetch(`/api/admin/especies/${especieId}/pautas`, {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+                                                  body: JSON.stringify({
+                                                    xlaborespautaidlabores: item.id_labor,
+                                                    laborespautafase: item.fase,
+                                                    laborespautafrecuenciadias: item.frecuencia || '',
+                                                    laborespautaoffset: item.offset || 0,
+                                                    laborespautanotasia: item.notas_ia || '',
+                                                    laborespautaactivosino: 1
+                                                  })
+                                                });
+                                                if (especieId) await loadPautas(especieId);
+                                              } catch (err) { console.error(err); }
+                                            });
+                                          }}>
+                                            Agregar
+                                          </button>
+                                        ) : (
+                                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Incluida</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
@@ -5045,7 +5974,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     // 1. Core Fields Groups
                     aiGroups.forEach(group => {
                       if (!aiConfigTabs[group.id]) return;
-                      if (group.id === 'asociaciones' || group.id === 'sinonimos' || group.id === 'variedades') return;
+                      if (group.id === 'asociaciones' || group.id === 'sinonimos' || group.id === 'variedades' || group.id === 'consumos') return;
 
                       const fieldElements: React.ReactNode[] = [];
 
@@ -5289,6 +6218,90 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         );
                       }
                     }
+
+                    // Usos y Consumos
+                    if (aiConfigTabs.consumos) {
+                      const cProps = aiProposal._consumos || [];
+                      if (cProps.length > 0) {
+                        const isCollapsed = !!collapsedAiGroups.consumos;
+                      groupsWithChanges.push(
+                        <div key="consumos" style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                          <div 
+                            onClick={() => setCollapsedAiGroups(prev => ({ ...prev, consumos: !prev.consumos }))}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f1f5f9', cursor: 'pointer', userSelect: 'none', borderBottom: isCollapsed ? 'none' : '1px solid #cbd5e1' }}
+                          >
+                            <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>🍽️ Usos y Consumo</span>
+                            </span>
+                            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 'bold' }}>
+                              {isCollapsed ? '➕ Mostrar' : '➖ Ocultar'}
+                            </span>
+                          </div>
+                          <div style={{ display: isCollapsed ? 'none' : 'block', padding: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '12px' }}>
+                              <div>
+                                <h4 style={{ margin: 0, color: '#334155', fontSize: '0.95rem' }}>🍽️ Consumidores Aptos Propuestos</h4>
+                                <small style={{ color: '#64748b' }}>Se cargarán en la pestaña de Usos y Consumo al asimilar.</small>
+                              </div>
+                            </div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                              <thead>
+                                <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', textAlign: 'left' }}>
+                                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedAiConsumos.length === cProps.length}
+                                      onChange={(e) => {
+                                        if (e.target.checked) setSelectedAiConsumos(cProps.map((_: any, idx: number) => idx));
+                                        else setSelectedAiConsumos([]);
+                                      }}
+                                      style={{ accentColor: '#7c3aed' }}
+                                    />
+                                  </th>
+                                  <th style={{ padding: '10px 12px' }}>Consumidor</th>
+                                  <th style={{ padding: '10px 12px' }}>Apto</th>
+                                  <th style={{ padding: '10px 12px' }}>Partes</th>
+                                  <th style={{ padding: '10px 12px' }}>Notas</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cProps.map((item: any, idx: number) => {
+                                  const isChecked = selectedAiConsumos.includes(idx);
+                                  return (
+                                    <tr key={`con_diff_${idx}`} className="ai-comparison-grid-with-actions" style={{ borderBottom: '1px solid #e2e8f0', background: isChecked ? '#f5f3ff' : 'transparent' }}>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={isChecked}
+                                          onChange={(e) => {
+                                            if (e.target.checked) setSelectedAiConsumos(prev => [...prev, idx]);
+                                            else setSelectedAiConsumos(prev => prev.filter(v => v !== idx));
+                                          }}
+                                          style={{ accentColor: '#7c3aed' }}
+                                        />
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{item.nombre}</td>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        {item.apto === 'apto' || item.esapto === 1 ? (
+                                          <span style={{ color: '#10b981', fontWeight: 'bold' }}>🟢 Apto</span>
+                                        ) : item.apto === 'con_moderacion' || item.esapto === 2 ? (
+                                          <span style={{ color: '#d97706', fontWeight: 'bold' }}>🟡 Con moderación</span>
+                                        ) : (
+                                          <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🔴 No apto</span>
+                                        )}
+                                      </td>
+                                      <td style={{ padding: '10px 12px' }}>{item.parte || item.partes || '—'}</td>
+                                      <td style={{ padding: '10px 12px', fontStyle: 'italic', color: '#64748b' }}>{item.notas || '—'}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    }
+                  }
 
                     // 3. Synonyms Group
                     if (aiConfigTabs.sinonimos) {
@@ -5549,14 +6562,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
               )}
             </div>
 
-            <div className="ai-modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-              <button type="button" className="btn-secondary" onClick={closeAiModal}>
-                Descartar Cambios
-              </button>
-              <button className="btn-assimilate-all" style={{ margin: 0, padding: '10px 24px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: 'white', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(16,185,129,0.2)' }} onClick={assimilateAll}>
-                ✨ Asimilar TODOS los cambios de la IA
-              </button>
-            </div>
+
           </div>
         </div>
       )}
@@ -5618,6 +6624,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     { label: '📄 PDFs', active: checkResults.hasPdfs, count: checkResults.pdfsCount, desc: 'Fichas técnicas y guías en PDF', tab: 'pdfs' },
                     { label: '🤝 Ecosistema (Asociaciones)', active: checkResults.hasEcosystem, count: checkResults.ecosystemCount, desc: 'Relaciones beneficiosas y plagas', tab: 'asociaciones' },
                     { label: '🌱 Variedades', active: checkResults.hasVarieties, count: checkResults.varietiesCount, desc: 'Variedades registradas de la especie', tab: 'variedades' },
+                    { label: '🍽️ Usos y Consumo', active: checkResults.hasConsumos, count: checkResults.consumosCount, desc: 'Consumidores aptos en granja', tab: 'consumos' },
                   ].map((sec, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -5691,45 +6698,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         </div>
       )}
 
-      {/* OVERLAY DE CARGA PARA LA BÚSQUEDA DE IA (HOURGLASS LOADING) */}
-      {aiLoading && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', zIndex: 11000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', color: 'white' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: '#1e293b', border: '1px solid #334155', padding: '40px 60px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center', maxWidth: '450px', width: '90%' }}>
-            <div style={{ fontSize: '4.5rem', display: 'inline-block', animation: 'flipHourglass 2.5s cubic-bezier(0.77, 0, 0.175, 1) infinite' }}>
-              ⏳
-            </div>
-            <h3 style={{ margin: '10px 0 4px 0', color: '#38bdf8', fontSize: '1.4rem', fontWeight: 'bold' }}>Consultando a la IA...</h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              Buscando y organizando datos botánicos, ecológicos, sinónimos y variedades para {formData.especiesnombre}.
-            </p>
-            <div style={{ marginTop: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '8px 20px', display: 'inline-block' }}>
-              <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', fontFamily: 'monospace' }}>
-                Tiempo transcurrido: {aiSeconds}s
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* OVERLAY DE CARGA PARA LA ASIMILACIÓN (HOURGLASS LOADING) */}
-      {isAssimilating && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', zIndex: 11000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', color: 'white' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: '#1e293b', border: '1px solid #334155', padding: '40px 60px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center', maxWidth: '450px', width: '90%' }}>
-            <div style={{ fontSize: '4.5rem', display: 'inline-block', animation: 'flipHourglass 2.5s cubic-bezier(0.77, 0, 0.175, 1) infinite' }}>
-              ⏳
-            </div>
-            <h3 style={{ margin: '10px 0 4px 0', color: '#38bdf8', fontSize: '1.4rem', fontWeight: 'bold' }}>Asimilando Cambios...</h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              Procesando y guardando los datos seleccionados en tu ficha de cultivo en Verdantia.
-            </p>
-            <div style={{ marginTop: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '8px 20px', display: 'inline-block' }}>
-              <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', fontFamily: 'monospace' }}>
-                Tiempo transcurrido: {assimilationSeconds}s
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
       {/* EDITOR DE FOTOS MODAL */}
       {editingPhoto && (
         <div className="photo-editor-overlay">
@@ -6330,488 +7299,6 @@ JSON de salida obligatorio:
         </div>
       )}
 
-      {/* SINÓNIMOS AI CONFIG PANEL */}
-      {showSinonimosConfig && (
-        <div className="ai-modal-overlay">
-          <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
-            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
-              <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>🔍 Buscador de Sinónimos</h2>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                <button
-                  type="button"
-                  disabled={sinonimosAiLoading || !sinExtraInstructions.trim()}
-                  onClick={proponerSinonimosAI}
-                  style={{
-                    padding: '8px 16px', background: sinonimosAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)',
-                    color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold',
-                    cursor: sinonimosAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
-                    opacity: !sinExtraInstructions.trim() ? 0.4 : 1,
-                    transition: 'all 0.2s', whiteSpace: 'nowrap'
-                  }}
-                >
-                  {sinonimosAiLoading ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
-                      {sinonimosAiSeconds}s
-                    </span>
-                  ) : '🚀 Buscar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSinonimosConfig(false)}
-                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-                >
-                  ✖
-                </button>
-              </div>
-            </div>
-
-            <div className="ai-modal-body">
-              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-                <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
-                  Objetivo: Encontrar nombres alternativos para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
-                </p>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                  {formData.especiesnombrecientifico && <em>({formData.especiesnombrecientifico}) — </em>}
-                  Selecciona un ámbito para cargar las instrucciones, o escribe las tuyas propias.
-                </p>
-              </div>
-
-              {/* Prompt colapsable */}
-              <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                <button
-                  type="button"
-                  onClick={() => setSinConfigPromptOpen(!sinConfigPromptOpen)}
-                  style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
-                >
-                  <span>📋 Instrucciones del Prompt (técnico)</span>
-                  <span style={{ transform: sinConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-                </button>
-                {sinConfigPromptOpen && (
-                  <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
-                    La IA recibirá la lista de idiomas y países del sistema, los sinónimos existentes, y el texto de instrucciones que escribas abajo. Filtrará automáticamente duplicados y el nombre principal.
-                  </div>
-                )}
-              </div>
-
-              {/* Ámbitos de búsqueda — Radio buttons */}
-              <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ margin: '0 0 12px', color: '#1e293b', fontSize: '1rem' }}>🌍 Ámbito de Búsqueda</h4>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[
-                    { key: 'general', emoji: '🌎', label: 'General' },
-                    { key: 'cooficiales', emoji: '🇪🇸', label: 'Lenguas Cooficiales' },
-                    { key: 'europa', emoji: '🇪🇺', label: 'Europea' },
-                  ].map(scope => (
-                    <label key={scope.key} style={{
-                      display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-                      border: sinSelectedScope === scope.key ? '2px solid #7c3aed' : '1px solid #e2e8f0',
-                      borderRadius: '8px', cursor: 'pointer',
-                      background: sinSelectedScope === scope.key ? '#f5f3ff' : '#fff',
-                      transition: 'all 0.2s', flex: '1', minWidth: '150px'
-                    }}>
-                      <input
-                        type="radio"
-                        name="sinScope"
-                        checked={sinSelectedScope === scope.key}
-                        onChange={() => {
-                          setSinSelectedScope(scope.key);
-                          setSinExtraInstructions(sinScopePresets[scope.key]);
-                        }}
-                        style={{ width: '18px', height: '18px', accentColor: '#7c3aed', flexShrink: 0 }}
-                      />
-                      <span style={{ fontWeight: sinSelectedScope === scope.key ? 'bold' : 'normal', color: '#1e293b', fontSize: '0.95rem' }}>{scope.emoji} {scope.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Textarea — Instrucciones que la IA leerá */}
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
-                <textarea
-                  value={sinExtraInstructions}
-                  onChange={e => setSinExtraInstructions(e.target.value)}
-                  placeholder="Escribe las instrucciones de búsqueda para la IA..."
-                  rows={4}
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' }}
-                />
-                <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '0.8rem' }}>
-                  Puedes modificar el texto libremente. La IA leerá exactamente lo que esté escrito aquí.
-                </p>
-              </div>
-
-              {/* Sinónimos actuales */}
-              {sinonimos.length > 0 && (
-                <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.9rem' }}>📊 Ya tienes {sinonimos.length} sinónimo{sinonimos.length !== 1 ? 's' : ''} registrado{sinonimos.length !== 1 ? 's' : ''}</span>
-                  <span style={{ color: '#15803d', fontSize: '0.85rem', marginLeft: '8px' }}>— La IA evitará duplicados</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showSinonimosAiModal && (() => {
-        const isExisting = (prop: any) => sinonimos.some(s =>
-          s.especiessinonimosnombre?.toLowerCase().trim() === prop.especiessinonimosnombre?.toLowerCase().trim() &&
-          String(s.xespeciessinonimosidpaises || '') === String(prop.xespeciessinonimosidpaises || '')
-        );
-        const existingOnes = aiSinonimosProposal.filter(isExisting);
-        const newOnes = aiSinonimosProposal.filter(p => !isExisting(p));
-        const hasBothColumns = existingOnes.length > 0 && newOnes.length > 0;
-
-        const renderCard = (prop: any, idx: number, isAlreadyIncluded: boolean) => {
-          const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
-          const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
-          return (
-            <label key={idx} style={{
-              display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
-              border: isAlreadyIncluded ? '1px solid #cbd5e1' : prop._selected ? '2px solid #10b981' : '1px solid #e2e8f0',
-              borderRadius: '8px', cursor: isAlreadyIncluded ? 'default' : 'pointer',
-              background: isAlreadyIncluded ? '#f8fafc' : prop._selected ? '#f0fdf4' : '#fff',
-              transition: 'all 0.2s'
-            }}>
-              {!isAlreadyIncluded && (
-                <input
-                  type="checkbox"
-                  checked={prop._selected}
-                  onChange={(e) => {
-                    const newProps = [...aiSinonimosProposal];
-                    const realIdx = aiSinonimosProposal.indexOf(prop);
-                    newProps[realIdx]._selected = e.target.checked;
-                    setAiSinonimosProposal(newProps);
-                  }}
-                  style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
-                />
-              )}
-              {isAlreadyIncluded && (
-                <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isAlreadyIncluded ? '#64748b' : '#1e293b' }}>
-                  {prop.especiessinonimosnombre}
-                </div>
-                <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.82rem', color: '#64748b', flexWrap: 'wrap' }}>
-                  {idioma && <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🗣️ {idioma.idiomasnombre}</span>}
-                  {pais && <span style={{ background: '#ecfdf5', color: '#065f46', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>🌍 {pais.paisesnombre}</span>}
-                </div>
-                {prop.especiessinonimosnotas && (
-                  <div style={{ marginTop: '5px', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
-                    {prop.especiessinonimosnotas}
-                  </div>
-                )}
-              </div>
-            </label>
-          );
-        };
-
-        return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-            onClick={() => setShowSinonimosAiModal(false)}>
-            <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: hasBothColumns ? '950px' : '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
-              onClick={e => e.stopPropagation()}>
-              <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                <span>✨ Sinónimos Propuestos por la IA</span>
-                <button type="button" onClick={() => setShowSinonimosAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
-              </h2>
-
-              {hasBothColumns ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-                  {/* Columna Izquierda: Ya incorporados */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px', borderLeft: '4px solid #94a3b8' }}>
-                      <span style={{ fontSize: '1.1rem' }}>✅</span>
-                      <span style={{ fontWeight: 'bold', color: '#475469', fontSize: '0.95rem' }}>Ya incorporados ({existingOnes.length})</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {existingOnes.map((prop, idx) => renderCard(prop, idx, true))}
-                    </div>
-                  </div>
-
-                  {/* Columna Derecha: Disponibles para incorporar */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
-                      <span style={{ fontSize: '1.1rem' }}>🆕</span>
-                      <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.95rem' }}>Disponibles para incorporar ({newOnes.length})</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {newOnes.map((prop, idx) => renderCard(prop, idx, false))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ marginBottom: '24px' }}>
-                  {existingOnes.length > 0 && newOnes.length === 0 && (
-                    <div style={{ padding: '24px', textAlign: 'center', background: '#f0fdf4', borderRadius: '12px', border: '2px solid #bbf7d0', marginBottom: '16px' }}>
-                      <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>🎉</span>
-                      <p style={{ color: '#065f46', fontWeight: 'bold', fontSize: '1.1rem', margin: '0 0 4px' }}>¡Todos los sinónimos ya están incluidos!</p>
-                      <p style={{ color: '#15803d', margin: 0, fontSize: '0.95rem' }}>La base de datos de Verdantia ya contiene todos los sinónimos que la IA ha encontrado.</p>
-                    </div>
-                  )}
-                  {newOnes.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
-                        <span style={{ fontSize: '1.1rem' }}>🆕</span>
-                        <span style={{ fontWeight: 'bold', color: '#065f46', fontSize: '0.95rem' }}>Nuevos sinónimos encontrados ({newOnes.length})</span>
-                      </div>
-                      {newOnes.map((prop, idx) => renderCard(prop, idx, false))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowSinonimosAiModal(false)}>
-                  Cancelar
-                </button>
-                {newOnes.filter(p => p._selected).length > 0 && (
-                  <button
-                    type="button"
-                    style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}
-                    onClick={async () => {
-                      const selected = newOnes.filter(p => p._selected);
-                      const cleanedSelected = selected.map(s => {
-                        const copy = { ...s };
-                        delete copy._selected;
-                        return copy;
-                      });
-                      if (cleanedSelected.length > 0) {
-                        const merged = [...sinonimos, ...cleanedSelected];
-                        setSinonimos(merged);
-                        setSinonimosDirty(true);
-                        setShowSinonimosAiModal(false);
-                        if (especieId) {
-                          try {
-                            for (const s of cleanedSelected) {
-                              await fetch(`/api/admin/especies/${especieId}/sinonimos`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(s)
-                              });
-                            }
-                            await loadSinonimos(especieId);
-                          } catch (err) {
-                            console.error('Error auto-guardando sinónimos:', err);
-                          }
-                        }
-                      } else {
-                        setShowSinonimosAiModal(false);
-                      }
-                    }}
-                  >
-                    Incorporar Seleccionados ({newOnes.filter(p => p._selected).length})
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ── Pautas AI Config Modal ── */}
-      {showPautasConfig && (
-        <div className="ai-modal-overlay">
-          <div className="ai-modal-content" style={{ maxWidth: '700px' }}>
-            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-              <h2 style={{ color: 'white', margin: 0, fontSize: '1.1rem' }}>🌱 Asistente IA de Pautas</h2>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  disabled={pautasAiLoading || !pautasExtraInstructions.trim()}
-                  onClick={startPautasAiSearch}
-                  style={{
-                    padding: '8px 16px', background: pautasAiLoading ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)',
-                    color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: '8px', fontWeight: 'bold',
-                    cursor: pautasAiLoading ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {pautasAiLoading ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
-                      {pautasAiSeconds}s
-                    </span>
-                  ) : '🚀 Analizar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPautasConfig(false)}
-                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-
-            <div className="ai-modal-body">
-              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-                <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
-                  Generar pautas para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
-                </p>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                  La IA analizará el ciclo de vida y propondrá frecuencias para las labores disponibles en el sistema.
-                </p>
-              </div>
-
-              {/* Prompt colapsable */}
-              <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                <button
-                  type="button"
-                  onClick={() => setPautasConfigPromptOpen(!pautasConfigPromptOpen)}
-                  style={{ width: '100%', padding: '10px 16px', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', color: '#475569', fontSize: '0.9rem' }}
-                >
-                  <span>📋 Instrucciones del Prompt (técnico)</span>
-                  <span style={{ transform: pautasConfigPromptOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-                </button>
-                {pautasConfigPromptOpen && (
-                  <div style={{ padding: '12px 16px', background: '#1e293b', color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', lineHeight: '1.5' }}>
-                    La IA recibirá la lista de labores registradas en el sistema y el nombre de la especie actual. Su tarea será vincular cada labor pertinente con la fase adecuada del ciclo de vida y proponer una frecuencia en días, además de generar instrucciones breves.
-                  </div>
-                )}
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1rem' }}>💬 Instrucciones para la IA</h4>
-                <textarea
-                  value={pautasExtraInstructions}
-                  onChange={e => setPautasExtraInstructions(e.target.value)}
-                  placeholder="Instrucciones adicionales para la generación..."
-                  rows={4}
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5', marginBottom: '12px' }}
-                />
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>🎯 Enfocar análisis en una labor específica:</label>
-                  <select
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (!val) {
-                        setPautasExtraInstructions('Analiza el ciclo de vida de esta especie y genera pautas de labores (riego, abonado, poda, etc.) específicas para cada fase, indicando la frecuencia recomendada.');
-                      } else {
-                        const laborName = masterLabores.find(l => String(l.idlabores) === String(val))?.laboresnombre || 'esta labor';
-                        setPautasExtraInstructions(`Concéntrate exclusivamente en analizar y generar las pautas, fases y frecuencias para la labor de "${laborName}". No propongas ninguna otra labor.`);
-                      }
-                    }}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
-                  >
-                    <option value="">-- Búsqueda General (Todas las labores) --</option>
-                    {masterLabores.map(l => (
-                      <option key={l.idlabores} value={l.idlabores}>{l.laboresnombre}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Pautas AI Results Modal ── */}
-      {showPautasAiModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowPautasAiModal(false)}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-              <span>✨ Pautas Propuestas por la IA</span>
-              <button type="button" onClick={() => setShowPautasAiModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
-            </h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-              {(() => {
-                const faseLabels: Record<string, string> = {
-                  planificado: '1. Pre-siembra',
-                  siembra: '2. Siembra',
-                  postsiembra: '3. Post-siembra',
-                  germinacion: '4. Germinación',
-                  semillero: '5. Semillero',
-                  trasplante: '6. Trasplante',
-                  enraizamiento: '7. Posplantación',
-                  crecimiento: '8. Crecimiento Veg.',
-                  floracion: '9. Floración',
-                  cosecha: '10. Cosecha',
-                  finalizado: '11. Finalizado',
-                  general: '🌍 General'
-                };
-                
-                if (aiPautasProposal.length === 0) {
-                  return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>No se encontraron pautas.</div>;
-                }
-                
-                const faseOrderModal: Record<string, number> = { creacion: 1, planificacion: 2, siembra: 3, adquisicion: 4, pregerminacion: 5, germinacion: 6, postgerminacion: 7, hitoplanton: 8, semillero: 9, trasplante: 10, enraizamiento: 11, crecimiento: 12, floracion: 13, cosecha: 14, finalizado: 15, perdido: 99 };
-                const sortedAiPautas = aiPautasProposal
-                  .map((prop, originalIdx) => ({ prop, idx: originalIdx }))
-                  .sort((a, b) => (faseOrderModal[a.prop.fase] || 99) - (faseOrderModal[b.prop.fase] || 99));
-
-                return sortedAiPautas.map(({ prop, idx }) => {
-                  const isExisting = pautas.some(p => p.xlaborespautaidlabores == prop.id_labor && p.laborespautafase === prop.fase);
-                  const laborDef = masterLabores.find(l => l.idlabores == prop.id_labor);
-
-                  return (
-                    <label key={idx} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
-                      border: isExisting ? '1px solid #cbd5e1' : prop.selected ? '2px solid #10b981' : '1px solid #e2e8f0',
-                      borderRadius: '8px', cursor: isExisting ? 'default' : 'pointer',
-                      background: isExisting ? '#f8fafc' : prop.selected ? '#f0fdf4' : '#fff',
-                      transition: 'all 0.2s'
-                    }}>
-                      {!isExisting && (
-                        <input
-                          type="checkbox"
-                          checked={prop.selected}
-                          onChange={(e) => {
-                            const newProps = [...aiPautasProposal];
-                            newProps[idx].selected = e.target.checked;
-                            setAiPautasProposal(newProps);
-                          }}
-                          style={{ marginTop: '2px', width: '20px', height: '20px', accentColor: '#10b981', flexShrink: 0 }}
-                        />
-                      )}
-                      {isExisting && <span style={{ fontSize: '1.2rem', flexShrink: 0, marginTop: '1px' }}>✅</span>}
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: isExisting ? '#64748b' : '#1e293b' }}>
-                          {laborDef ? laborDef.laboresnombre : 'Labor desconocida'}
-                          <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>— Fase: {faseLabels[prop.fase] || prop.fase}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '5px', fontSize: '0.85rem', color: '#64748b' }}>
-                          <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
-                            ⏱️ {prop.frecuencia ? `Cada ${prop.frecuencia} días` : 'Puntual'}
-                          </span>
-                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
-                            ⏳ Offset: {prop.offset !== 0 ? `${prop.offset} días` : 'Normal (0)'}
-                          </span>
-                          <span style={{ background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: '600', textTransform: 'capitalize' }}>
-                            {prop.metodo === 'semilla' ? '🌱 Semilla' : prop.metodo === 'planton' ? '🪴 Plantón' : '🌍 Ambos'}
-                          </span>
-                        </div>
-                        {prop.notas_ia && (
-                          <div style={{ marginTop: '8px', fontSize: '0.9rem', color: '#475569', fontStyle: 'italic', background: '#f1f5f9', padding: '8px', borderRadius: '6px' }}>
-                            "{prop.notas_ia}"
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                  );
-                });
-              })()}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
-              <button type="button" className="btn-secondary" onClick={() => setShowPautasAiModal(false)} style={{ padding: '10px 24px', background: 'white', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}>Cancelar</button>
-              {aiPautasProposal.filter(p => p.selected).length > 0 && (
-                <button
-                  type="button"
-                  style={{ padding: '10px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.05rem' }}
-                  onClick={applyAiPautas}
-                >
-                  Guardar Seleccionadas ({aiPautasProposal.filter(p => p.selected).length})
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification */}
       {toastMessage && (

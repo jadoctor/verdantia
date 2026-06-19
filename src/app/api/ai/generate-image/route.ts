@@ -87,7 +87,7 @@ MUY IMPORTANTE Y ESTRICTO:
       const defaultConcept = `varios ejemplares de la variedad "${variedadNombre}" (perteneciente a la especie botánica "${especieNombre}") recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
       const descriptionCtx = varietyVisualDescription ? `\nCaracterísticas visuales reales y fenotipo botánico verificado en internet para la variedad "${variedadNombre}":\n${varietyVisualDescription}\n` : '';
       
-      finalPrompt = `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.
+      finalPrompt = `Fotografía profesional de stock de alta resolución (8K), iluminación natural suave de hora dorada.
 Sujeto principal: La variedad "${variedadNombre}" de la especie botánica "${especieNombre}" (hortaliza/planta comestible de huerto).${sciNameContext}${familyContext}${descriptionCtx}
 Escena concreta: ${concept || defaultConcept}.
 Composición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.
@@ -98,10 +98,13 @@ REGLAS ESTRICTAS E INQUEBRANTABLES:
 4. El entorno debe ser obligatoriamente agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica. Nunca fondos abstractos ni estudios fotográficos.
 5. NO incluir personas, manos, texto, logotipos ni marcas de agua.
 6. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible, con gotas de rocío o tierra suelta si es apropiado.`;
+    } else if (tipoEntidad === 'consumidor' || tipoEntidad === 'animal') {
+      const defaultConcept = `un ejemplar de ${especieNombre} en un corral de granja limpio y soleado, con paja en el suelo y vegetación verde difuminada en el fondo`;
+      finalPrompt = `Fotografía profesional de stock de alta resolución (8K), iluminación natural suave.\nSujeto principal: ${especieNombre} (animal de granja / ganado / ave de corral).\nEscena concreta: ${concept || defaultConcept}.\nComposición: primer plano o plano medio del animal, nítido y detallado, fondo suavemente desenfocado (bokeh) mostrando un entorno de granja o campo.\nREGLAS ESTRICTAS:\n1. El sujeto es SIEMPRE un animal, ave o ganado de granja. Ignora otras acepciones.\n2. La fotografía debe parecer real y tomada por un fotógrafo profesional de fauna o agricultura.\n3. El entorno debe ser de granja o campo (pastizal, pradera, corral, gallinero, establo).\n4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n5. Mostrar al animal en un estado saludable y limpio.`;
     } else {
       // Por defecto 'especie'
       const defaultConcept = `varios ejemplares de ${especieNombre} recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
-      finalPrompt = `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.
+      finalPrompt = `Fotografía profesional de stock de alta resolución (8K), iluminación natural suave de hora dorada.
 Sujeto principal: ${especieNombre} (hortaliza/planta comestible de huerto).${sciNameContext}${familyContext}
 Escena concreta: ${concept || defaultConcept}.
 Composición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.
@@ -121,6 +124,42 @@ REGLAS ESTRICTAS:
       }
     }
 
+    // Traducir y optimizar el prompt a inglés para mejorar la fidelidad del modelo Imagen 4.0
+    try {
+      const transPrompt = `You are an expert AI image prompt engineer and translator.
+Translate the following image generation prompt from Spanish to English.
+Ensure that specific terms like "gallina ponedora", "Isa Brown", etc. are translated to their exact English agricultural/biological terms (e.g., "Isa Brown laying hen", "commercial layer chicken").
+The final prompt must be highly detailed and optimized for photorealistic image generation in Google Imagen 4.0.
+
+CRITICAL INSTRUCTION: Do NOT include any camera names, camera models, camera accessories, or brand names (such as DSLR, SLR, mirrorless, Canon, Nikon, Sony, Canon EOS R5, macro lens, prime lens, etc.) in the output. Instead, describe the style as professional photorealistic photography with sharp focus, depth of field, high-fidelity details, and natural lighting.
+
+Output ONLY the final translated English prompt. No conversational text, no explanations, and no markdown wrappers (do not use triple backticks).
+
+Prompt to translate:
+${finalPrompt}`;
+
+      const transUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const transRes = await fetch(transUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: transPrompt }] }],
+          generationConfig: { maxOutputTokens: 8000, temperature: 0.1 }
+        })
+      });
+      if (transRes.ok) {
+        const transData = await transRes.json();
+        const translated = transData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        if (translated) {
+          console.log('[AI Image Prompt English Translation] Before:', finalPrompt);
+          finalPrompt = translated;
+          console.log('[AI Image Prompt English Translation] After:', finalPrompt);
+        }
+      }
+    } catch (transErr) {
+      console.warn('[AI Prompt Translation] Failed to translate prompt to English, using original:', transErr);
+    }
+
     const payload = {
       instances: [
         { prompt: finalPrompt }
@@ -130,15 +169,29 @@ REGLAS ESTRICTAS:
       }
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } catch (fetchErr: any) {
+      if (fetchErr.name === 'AbortError') {
+        return NextResponse.json({ error: 'La generación de la imagen por IA ha superado el tiempo de espera máximo. Por favor, inténtalo de nuevo.' }, { status: 504 });
+      }
+      throw fetchErr;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errText = await response.text();

@@ -19,7 +19,7 @@ const MESES = [
   { val: 10, label: 'Oct' }, { val: 11, label: 'Nov' }, { val: 12, label: 'Dic' }
 ];
 
-const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'otra'];
+const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'adventicia', 'otra'];
 const CICLOS = ['anual', 'bianual', 'perenne'];
 
 export default function SharedMediaUploader({ entityId, entityType, userEmail }: SharedMediaUploaderProps) {

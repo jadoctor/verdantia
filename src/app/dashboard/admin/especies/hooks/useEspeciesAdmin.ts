@@ -144,6 +144,7 @@ export function useEspeciesAdmin() {
     'aromatica': activeFiltered.filter(e => e.especiestipo?.includes('aromatica')).length,
     'leguminosa': activeFiltered.filter(e => e.especiestipo?.includes('leguminosa')).length,
     'cereal': activeFiltered.filter(e => e.especiestipo?.includes('cereal')).length,
+    'adventicia': activeFiltered.filter(e => e.especiestipo?.includes('adventicia')).length,
     'otra': activeFiltered.filter(e => e.especiestipo?.includes('otra')).length,
   };
 
