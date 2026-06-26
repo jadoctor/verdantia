@@ -90,7 +90,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       [id]
     );
 
-    return NextResponse.json({ usuario, logros, fotos, historialSuscripciones });
+    // Historial IA
+    const [historialIa] = await pool.query(
+      `SELECT 
+        idhistorialia as id, 
+        historialiafecha as fecha, 
+        historialiamodulo as modulo, 
+        historialiaprompt as prompt, 
+        historialiarespuesta as respuesta, 
+        historialiaexito as exito 
+       FROM historialia 
+       WHERE xhistorialiaidusuarios = ? 
+       ORDER BY historialiafecha DESC`,
+      [id]
+    );
+
+    return NextResponse.json({ usuario, logros, fotos, historialSuscripciones, historialIa });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

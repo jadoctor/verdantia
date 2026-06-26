@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getUserByEmail } from '@/lib/auth';
 
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/\s+/g, '-') // Replace spaces with -
+    .replace(/[^\w\-]+/g, '') // Remove non-word characters
+    .replace(/\-\-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+/, '') // Trim start
+    .replace(/-+$/, ''); // Trim end
+}
+
 async function authenticateSuperadmin(request: Request) {
   const email = request.headers.get('x-user-email');
   if (!email) return null;
@@ -21,11 +34,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const [rows] = await pool.query(
-      `SELECT iddatosadjuntos, datosadjuntosruta, datosadjuntosnombreoriginal, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes, datosadjuntosportada
+      `SELECT iddatosadjuntos, datosadjuntosruta, datosadjuntosnombreoriginal, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes, datosadjuntosportada, datosadjuntosautores, datosadjuntosidentificacion, datosadjuntosactivo
        FROM datosadjuntos 
        WHERE xdatosadjuntosidespecies = ? 
        AND datosadjuntostipo = 'documento' 
-       AND datosadjuntosactivo = 1 
+       AND datosadjuntosfechaeliminacion IS NULL 
        ORDER BY datosadjuntosorden ASC`,
       [idespecies]
     );
@@ -37,7 +50,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       titulo: r.datosadjuntostitulo || '',
       resumen: r.datosadjuntosresumen || '',
       apuntes: r.datosadjuntosapuntes || '',
-      portada: r.datosadjuntosportada || null
+      portada: r.datosadjuntosportada || null,
+      autores: r.datosadjuntosautores || '',
+      identificacion: r.datosadjuntosidentificacion || '',
+      activo: r.datosadjuntosactivo ?? 1
     }));
 
     return NextResponse.json({ pdfs });
@@ -81,6 +97,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     let generatedTitle = '';
     let generatedSummary = '';
     let generatedApuntes = '';
+    let generatedAutores = '';
+    let generatedIdentificacion = '';
     try {
       const base64Pdf = Buffer.from(bytes).toString('base64');
       const apiKey = process.env.GEMINI_API_KEY;
@@ -88,7 +106,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const payload = {
           contents: [{
             parts: [
-              { text: `Analiza este documento PDF sobre la especie agrícola. Eres un experto agrónomo. Devuelve EXCLUSIVAMENTE un JSON con tres propiedades: "nombre" (nombre súper corto del documento que aparecerá en el visor, ideal 3-4 palabras, máximo 40 caracteres), "resumen" (resumen corto de 1-2 líneas), y "apuntes" (un resumen técnico muy detallado de varios párrafos o viñetas estructuradas con datos concretos, plagas, metodologías y consejos vitales para el agricultor).` },
+              { text: `Analiza este documento PDF sobre la especie agrícola. Eres un experto agrónomo. Devuelve EXCLUSIVAMENTE un JSON con cinco propiedades: "nombre" (nombre súper corto del documento que aparecerá en el visor, ideal 3-4 palabras, máximo 40 caracteres), "resumen" (resumen corto de 1-2 líneas), "apuntes" (Una guía exhaustiva, técnica y extensa en formato Markdown. Extrae absolutamente todos los datos de valor del PDF. Usa títulos (##), listas con viñetas, y negritas para resaltar métricas y cifras), "autores" (Nombres de los autores o de la institución que publica el PDF, ej: Juan Pérez, Universidad Agraria), e "identificacion" (DOI, ISBN, ISSN o cualquier identificador único o académico internacional del documento. Si no tiene, déjalo vacío).` },
               { inlineData: { mimeType: "application/pdf", data: base64Pdf } }
             ]
           }],
@@ -123,6 +141,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           generatedTitle = typeof jsonOut.nombre === 'string' ? jsonOut.nombre : (typeof jsonOut.titulo === 'string' ? jsonOut.titulo : '');
           generatedSummary = Array.isArray(jsonOut.resumen) ? jsonOut.resumen.join(' ') : (jsonOut.resumen || '');
           generatedApuntes = Array.isArray(jsonOut.apuntes) ? '- ' + jsonOut.apuntes.join('\n- ') : (jsonOut.apuntes || '');
+          generatedAutores = Array.isArray(jsonOut.autores) ? jsonOut.autores.join(', ') : (jsonOut.autores || '');
+          generatedIdentificacion = Array.isArray(jsonOut.identificacion) ? jsonOut.identificacion.join(', ') : (jsonOut.identificacion || '');
         }
       }
     } catch (e) {
@@ -142,9 +162,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
         datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespecies,
-        datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
-      ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, ?, ?, ?, ?)`,
-      [file.name, storagePath, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes]
+        datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes, datosadjuntosautores, datosadjuntosidentificacion
+      ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, ?, ?, ?, ?, ?, ?)`,
+      [file.name, storagePath, total + 1, idespecies, fileSize, generatedTitle, generatedSummary, generatedApuntes, generatedAutores, generatedIdentificacion]
     );
 
     return NextResponse.json({
@@ -155,7 +175,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         nombreOriginal: file.name,
         titulo: generatedTitle,
         resumen: generatedSummary,
-        apuntes: generatedApuntes
+        apuntes: generatedApuntes,
+        autores: generatedAutores,
+        identificacion: generatedIdentificacion
       }
     });
 
@@ -175,7 +197,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const idespecies = resolvedParams.id;
 
   try {
-    const { pdfId, titulo, resumen, apuntes, portada, base64Cover } = await request.json();
+    const { pdfId, titulo, resumen, apuntes, portada, base64Cover, autores, identificacion, activo } = await request.json();
 
     if (!pdfId) {
       return NextResponse.json({ error: 'ID de PDF requerido' }, { status: 400 });
@@ -184,9 +206,36 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     let finalPortada = portada;
     if (base64Cover) {
       const buffer = Buffer.from(base64Cover.replace(/^data:image\/\w+;base64,/, ''), 'base64');
-      const storagePath = `uploads/especies_pdfs_covers/cover_${idespecies}_${pdfId}_${Date.now()}.jpg`;
+      
+      const sharp = eval(`require('sharp')`);
+      const watermarkSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60">
+        <rect x="0" y="0" width="300" height="60" fill="black" fill-opacity="0.4" rx="8" />
+        <text x="280" y="40" text-anchor="end"
+          font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold"
+          fill="white" fill-opacity="0.9" letter-spacing="2">
+          VERDANTIA
+        </text>
+      </svg>`);
+
+      const watermarkedBuffer = await sharp(buffer)
+        .composite([{ input: watermarkSvg, gravity: 'southeast' }])
+        .jpeg({ quality: 85 })
+        .toBuffer();
+
+      let docTitle = titulo;
+      if (!docTitle) {
+        const [pdfRows] = await pool.query(
+          "SELECT datosadjuntostitulo FROM datosadjuntos WHERE iddatosadjuntos = ? AND xdatosadjuntosidespecies = ?",
+          [pdfId, idespecies]
+        );
+        if (Array.isArray(pdfRows) && pdfRows.length > 0) {
+          docTitle = (pdfRows[0] as any).datosadjuntostitulo;
+        }
+      }
+      const cleanTitle = (docTitle ? slugify(docTitle) : '') || 'documento';
+      const storagePath = `uploads/especies_pdfs_covers/${cleanTitle}_${pdfId}_${Date.now()}.jpg`;
       const { uploadToStorage } = await import('@/lib/firebase/storage');
-      finalPortada = await uploadToStorage(buffer, storagePath, 'image/jpeg');
+      finalPortada = await uploadToStorage(watermarkedBuffer, storagePath, 'image/jpeg');
     }
 
     let updateQuery = "UPDATE datosadjuntos SET ";
@@ -207,7 +256,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
     if (finalPortada !== undefined) {
       setClauses.push("datosadjuntosportada = ?");
-      updateParams.push(finalPortada);
+      updateParams.push(finalPortada || null);
+    }
+    if (autores !== undefined) {
+      setClauses.push("datosadjuntosautores = ?");
+      updateParams.push(autores || '');
+    }
+    if (identificacion !== undefined) {
+      setClauses.push("datosadjuntosidentificacion = ?");
+      updateParams.push(identificacion || '');
+    }
+    if (activo !== undefined) {
+      setClauses.push("datosadjuntosactivo = ?");
+      updateParams.push(activo ? 1 : 0);
     }
 
     if (setClauses.length === 0) {
@@ -220,7 +281,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     await pool.query(updateQuery, updateParams);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, portada: finalPortada });
   } catch (error: any) {
     console.error('[Especie PDFs PUT API] error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -233,9 +294,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const pdfId = searchParams.get('pdfId');
+  const pdfId = searchParams.get('id');
 
-  if (!pdfId) return NextResponse.json({ error: 'pdfId requerido' }, { status: 400 });
+  if (!pdfId) return NextResponse.json({ error: 'id requerido' }, { status: 400 });
 
   try {
     await pool.query(

@@ -139,6 +139,30 @@ export default function BlogAdminDashboard() {
     }
   };
 
+  // Inactivar Artículo
+  const handleInactivateArticle = async (id: number) => {
+    if (!confirm('¿Quieres cambiar el estado de este artículo a INACTIVO? Dejará de ser visible pero se conservará en el sistema.')) return;
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/admin/blog/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blogestado: 'inactivo' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadArticles();
+      } else {
+        alert('Error al inactivar el artículo: ' + (data.error || 'Desconocido'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Error de red al inactivar el artículo');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   // Cargar listado de entidades según tipo (Especie, Variedad, Labor)
   const fetchEntities = async (type: 'especie' | 'variedad' | 'labor') => {
     setLoadingEntities(true);
@@ -568,6 +592,17 @@ ${fichaRapidaEjemplo}
                               style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#047857', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                             >
                               🚀 Publicar
+                            </button>
+                          )}
+
+                          {/* Inactivar (Naranja) */}
+                          {art.blogestado !== 'inactivo' && (
+                            <button 
+                              onClick={() => handleInactivateArticle(art.idblog)}
+                              title="Inactivar artículo sin borrarlo"
+                              style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#c2410c', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                            >
+                              ⏸️ Inactivar
                             </button>
                           )}
 

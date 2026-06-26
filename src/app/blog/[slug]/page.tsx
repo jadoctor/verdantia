@@ -75,8 +75,11 @@ export default function BlogPublicArticle() {
           {art.blogimagen && <img src={getMediaUrl(art.blogimagen)} alt={art.blogtitulo} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}  crossOrigin="anonymous" />}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9), transparent)' }} />
           <div style={{ position: 'absolute', bottom: '0', left: '0', right: '0', padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
-            <Link href="/blog" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 'bold' }}>← Volver al Blog</Link>
+            <Link href="/blog" className="no-print" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 'bold' }}>← Volver al Blog</Link>
             <h1 style={{ color: 'white', fontSize: '2.5rem', margin: '10px 0', lineHeight: 1.1 }}>{art.blogtitulo}</h1>
+            <button className="no-print" onClick={() => window.print()} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'white', fontWeight: 600, marginTop: '10px' }}>
+              🖨️ Imprimir / Guardar PDF
+            </button>
           </div>
         </div>
         <article style={{ maxWidth: '800px', margin: '0 auto', padding: '60px 20px', background: 'white', borderRadius: '16px', marginTop: '-40px', position: 'relative', zIndex: 10, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)' }}>
@@ -172,7 +175,7 @@ export default function BlogPublicArticle() {
         .vblog-tag { background: #e2e8f0; color: #475569; padding: 3px 10px; border-radius: 16px; font-size: .72rem; font-weight: 600; }
 
         /* Responsive */
-        @media (max-width: 768px) {
+        @media screen and (max-width: 768px) {
           .vblog-header { flex-direction: column; align-items: center; text-align: center; }
           .vblog-header-img { width: 140px; height: 140px; }
           .vblog-badges { justify-content: center; }
@@ -184,12 +187,21 @@ export default function BlogPublicArticle() {
           .vblog-ficha { grid-template-columns: repeat(2, 1fr); }
           .vblog-h1 { font-size: 1.35rem; }
         }
+
+        /* Print Settings */
+        @media print {
+          .no-print, .vblog-bc, .vblog-cta, .vblog-navbar { display: none !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .vblog-section, .vblog-tips, .vblog-ficha { page-break-inside: avoid; }
+          /* Ensure header and elements keep their exact styling */
+          .vblog-header { page-break-inside: avoid; }
+        }
       `}} />
 
       <div className="vblog">
         {/* Public Top Navbar (only if not logged in) */}
         {!isLoggedIn && (
-          <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div className="vblog-navbar no-print" style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
             <Link href="/" style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
               🌱 Verdantia
             </Link>
@@ -234,9 +246,14 @@ export default function BlogPublicArticle() {
               <span>📅 {fecha}</span>
               {art.especiesnombre && <span>🌍 {art.especiesnombre}</span>}
             </div>
-            <div className="vblog-author">
-              <div className="vblog-avatar">👤</div>
-              <span className="vblog-author-name">{art.autor || 'Verdantia'}</span>
+            <div className="vblog-author" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="vblog-avatar">👤</div>
+                <span className="vblog-author-name">{art.autor || 'Verdantia'}</span>
+              </div>
+              <button className="no-print" onClick={() => window.print()} style={{ background: 'white', border: '1px solid #e2e8f0', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#475569', fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                🖨️ Imprimir / Guardar PDF
+              </button>
             </div>
           </div>
         </div>

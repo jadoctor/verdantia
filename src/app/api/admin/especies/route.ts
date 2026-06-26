@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         (SELECT COUNT(*) FROM variedadesusuarios vu JOIN variedades v4 ON vu.xvariedadesusuariosidvariedades = v4.idvariedades WHERE v4.xvariedadesidespecies = e.idespecies) as total_variedadesusuarios,
         (SELECT COUNT(*) FROM asociacionesbeneficiosas ab WHERE ab.xasociacionesbeneficiosasidespecieorigen = e.idespecies OR ab.xasociacionesbeneficiosasidespeciedestino = e.idespecies) as total_asociacionesbeneficiosas,
         (SELECT COUNT(*) FROM asociacionesperjudiciales ap WHERE ap.xasociacionesperjudicialesidespecieorigen = e.idespecies OR ap.xasociacionesperjudicialesidespeciedestino = e.idespecies) as total_asociacionesperjudiciales,
-        (SELECT COUNT(*) FROM especiesplagas ep WHERE ep.xespeciesplagasidespecies = e.idespecies) as total_especiesplagas,
+        (SELECT COUNT(*) FROM especiesafecciones ea WHERE ea.xespeciesafeccionesidespecies = e.idespecies) as total_especiesafecciones,
         (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_ruta,
         (SELECT datosadjuntosresumen FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as primary_photo_resumen
       FROM especies e

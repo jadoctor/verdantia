@@ -56,7 +56,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     delete body._variedades;
     delete body._consumos;
     delete body.relaciones;
-    delete body.plagas;
+    delete body.afecciones;
     delete body.pautas;
 
     if (Object.keys(body).length === 0) {
@@ -136,8 +136,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     );
 
     // Check if the species has any associated pests
-    const [plagas]: any = await pool.query(
-      'SELECT 1 FROM especiesplagas WHERE xespeciesplagasidespecies = ? LIMIT 1',
+    const [afecciones]: any = await pool.query(
+      'SELECT 1 FROM especiesafecciones WHERE xespeciesafeccionesidespecies = ? LIMIT 1',
       [idespecies]
     );
 
@@ -160,7 +160,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       owner.length > 0 || 
       espUsers.length > 0 || 
       varUsers.length > 0 || 
-      plagas.length > 0 || 
+      afecciones.length > 0 || 
       beneficiosas.length > 0 || 
       perjudiciales.length > 0
     ) {
@@ -169,7 +169,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ 
         success: true, 
         inactivated: true, 
-        message: 'La especie cuenta con dependencias activas (variedades, semillas, cultivos, personalizaciones de usuarios, plagas o asociaciones), por lo que ha sido inhabilitada en lugar de eliminada.' 
+        message: 'La especie cuenta con dependencias activas (variedades, semillas, cultivos, personalizaciones de usuarios, afecciones o asociaciones), por lo que ha sido inhabilitada en lugar de eliminada.' 
       });
     }
 

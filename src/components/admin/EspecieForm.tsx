@@ -1,4 +1,4 @@
-'use client'; // Force hot-reload: 2026-06-18T20:11:45
+'use client'; // Force hot-reload: 2026-06-26T19:42:00 - Standard PDFs Rule 21 applied
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
@@ -6,6 +6,7 @@ import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css';
 import EspecieVariedadesTab from './EspecieVariedadesTab';
+import VariedadMediaManager from './VariedadMediaManager';
 
 
 interface EspecieFormProps {
@@ -40,6 +41,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
   const focusParam = searchParams.get('focus');
+  const editPdfParam = searchParams.get('editPdf');
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -84,8 +86,8 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
   const [formData, setFormData] = useState<any>(defaultFormData);
   const [initialData, setInitialData] = useState<any>(defaultFormData);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'no-changes'>('idle');
-  const [relaciones, setRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
-  const [initialRelaciones, setInitialRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; plagas: any[] }>({ beneficiosas: [], perjudiciales: [], plagas: [] });
+  const [relaciones, setRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; afecciones: any[] }>({ beneficiosas: [], perjudiciales: [], afecciones: [] });
+  const [initialRelaciones, setInitialRelaciones] = useState<{ beneficiosas: any[]; perjudiciales: any[]; afecciones: any[] }>({ beneficiosas: [], perjudiciales: [], afecciones: [] });
   const [relacionesDirty, setRelacionesDirty] = useState(false);
   const [relacionesSaveStatus, setRelacionesSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
 
@@ -181,7 +183,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
   // -- Relaciones State --
   const [masterEspecies, setMasterEspecies] = useState<any[]>([]);
-  const [masterPlagas, setMasterPlagas] = useState<any[]>([]);
+  const [masterAfecciones, setMasterAfecciones] = useState<any[]>([]);
   const [masterFases, setMasterFases] = useState<any[]>([]);
   const [masterFamilias, setMasterFamilias] = useState<any[]>([]);
 
@@ -329,9 +331,9 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       fetch('/api/admin/especies', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterEspecies(data.especies || []));
-      fetch('/api/admin/plagas', { headers: { 'x-user-email': userEmail } })
+      fetch('/api/admin/afecciones', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
-        .then(data => setMasterPlagas(data.plagas || []));
+        .then(data => setMasterAfecciones(data.afecciones || []));
       fetch('/api/admin/labores', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterLabores(data.labores || []));
@@ -571,7 +573,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const rels = {
         beneficiosas: data.beneficiosas || [],
         perjudiciales: data.perjudiciales || [],
-        plagas: data.plagas || []
+        afecciones: data.afecciones || []
       };
       setRelaciones(rels);
       setInitialRelaciones(rels);
@@ -873,7 +875,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       const hasLabores = pautas.length > 0;
       const hasPhotos = photos.length > 0;
       const hasPdfs = pdfs.length > 0;
-      const hasEcosystem = relaciones.beneficiosas.length > 0 || relaciones.perjudiciales.length > 0 || relaciones.plagas.length > 0;
+      const hasEcosystem = relaciones.beneficiosas.length > 0 || relaciones.perjudiciales.length > 0 || relaciones.afecciones.length > 0;
       const hasVarieties = varCount > 0;
       const hasConsumos = consumos.length > 0;
 
@@ -899,7 +901,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         laboresCount: pautas.length,
         photosCount: photos.length,
         pdfsCount: pdfs.length,
-        ecosystemCount: relaciones.beneficiosas.length + relaciones.perjudiciales.length + relaciones.plagas.length,
+        ecosystemCount: relaciones.beneficiosas.length + relaciones.perjudiciales.length + relaciones.afecciones.length,
         varietiesCount: varCount,
         consumosCount: consumos.length
       });
@@ -1308,11 +1310,11 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
       setSelectedAiFields(initialSelected);
 
-      if (proposal.asociaciones_beneficiosas || proposal.asociaciones_perjudiciales || proposal.plagas_asociadas) {
+      if (proposal.asociaciones_beneficiosas || proposal.asociaciones_perjudiciales || proposal.afecciones_asociadas) {
         setSelectedRels({
           ben: proposal.asociaciones_beneficiosas || [],
           per: proposal.asociaciones_perjudiciales || [],
-          pla: proposal.plagas_asociadas || []
+          pla: proposal.afecciones_asociadas || []
         });
       } else {
         setSelectedRels({ ben: [], per: [], pla: [] });
@@ -1376,10 +1378,10 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
       const newBen = [...relaciones.beneficiosas];
       const newPer = [...relaciones.perjudiciales];
-      const newPla = [...relaciones.plagas];
+      const newAfe = [...relaciones.afecciones];
 
       let masterE = [...masterEspecies];
-      let masterP = [...masterPlagas];
+      let masterP = [...masterAfecciones];
       let madeChanges = false;
 
       const normalize = (str: string) => (str || "").toLowerCase().trim();
@@ -1445,34 +1447,34 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
         const notas = typeof item === 'string' ? 'Sugerido por IA' : (item?.notas || 'Sugerido por IA');
         const riesgo = typeof item === 'string' ? 'media' : (item?.riesgo || 'media');
         if (!name || typeof name !== 'string') continue;
-        let p = masterP.find(pl => normalize(pl.plagasnombre) === normalize(name));
+        let p = masterP.find(pl => normalize(pl.afeccionesnombre) === normalize(name));
         if (!p) {
-          const res = await fetch('/api/admin/plagas', {
+          const res = await fetch('/api/admin/afecciones', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ plagasnombre: name, plagastipo: 'plaga', plagasestado: 'inactivo' })
+            body: JSON.stringify({ afeccionesnombre: name, afeccionescategoria: 'plaga', plagasestado: 'inactivo' })
           });
           const data = await res.json();
           if (data.success && data.id) {
-            p = { idplagas: data.id, plagasnombre: name, plagastipo: 'plaga' };
+            p = { idafecciones: data.id, afeccionesnombre: name, afeccionescategoria: 'plaga' };
             masterP.push(p);
-            setMasterPlagas([...masterP]);
+            setMasterAfecciones([...masterP]);
           }
         }
-        if (p && !newPla.some(pl => (pl.xrelacionesplagasideplaga || pl.xespeciesplagasidplagas)?.toString() === p.idplagas?.toString())) {
-          newPla.push({
-            xrelacionesplagasideplaga: p.idplagas,
-            xespeciesplagasidplagas: p.idplagas,
-            plagasnombre: p.plagasnombre,
-            especiesplagasnivelriesgo: riesgo,
-            especiesplagasnotasespecificas: notas
+        if (p && !newAfe.some(pl => (pl.xespeciesafeccionesidafecciones || pl.xespeciesplagasidafecciones)?.toString() === p.idafecciones?.toString())) {
+          newAfe.push({
+            xespeciesafeccionesidafecciones: p.idafecciones,
+            xespeciesplagasidafecciones: p.idafecciones,
+            afeccionesnombre: p.afeccionesnombre,
+            especiesafeccionesnivelriesgo: riesgo,
+            especiesafeccionesnotasespecificas: notas
           });
           madeChanges = true;
         }
       }
 
       if (madeChanges) {
-        setRelaciones({ beneficiosas: newBen, perjudiciales: newPer, plagas: newPla });
+        setRelaciones({ beneficiosas: newBen, perjudiciales: newPer, afecciones: newAfe });
         setRelacionesDirty(true);
       }
     } catch (e) {
@@ -1728,7 +1730,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
       }
 
       // 2. Relationships
-      if (aiProposal.asociaciones_beneficiosas || aiProposal.asociaciones_perjudiciales || aiProposal.plagas_asociadas) {
+      if (aiProposal.asociaciones_beneficiosas || aiProposal.asociaciones_perjudiciales || aiProposal.afecciones_asociadas) {
         await assimilateRelacionesAI();
       }
 
@@ -2720,13 +2722,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
             router.push('/dashboard/admin/labores');
           } else if (from === 'consumidores') {
             router.push('/dashboard/admin/consumidores');
+          } else if (from === 'pdfs') {
+            router.push('/dashboard/admin/pdfs');
           } else if (window.history.length > 2) { 
             router.back(); 
           } else { 
             router.push('/dashboard/admin/especies'); 
           }
         }} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          {searchParams.get('from') === 'labores' ? '🔙 Volver a Labores' : searchParams.get('from') === 'identificar-especie' ? '🔙 Volver al Identificador de Especies' : searchParams.get('from') === 'consumidores' ? '🔙 Volver a Especies de Granja' : '🔙 Volver a Especies'}
+          {searchParams.get('from') === 'labores' ? '🔙 Volver a Labores' : searchParams.get('from') === 'identificar-especie' ? '🔙 Volver al Identificador de Especies' : searchParams.get('from') === 'consumidores' ? '🔙 Volver a Especies de Granja' : searchParams.get('from') === 'pdfs' ? '🔙 Volver a Gestor de PDFs' : '🔙 Volver a Especies'}
         </button>
         {searchParams.get('from') === 'consumidores' && searchParams.get('fromId') && (
           <button onClick={() => {
@@ -3964,13 +3968,13 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     </ul>
                   </div>
 
-                  {/* SECCIÓN PLAGAS */}
+                  {/* SECCIÓN AFECCIONES */}
                   <div className="form-group full" style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', marginBottom: '10px' }}>Plagas / Enfermedades Asociadas</h4>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', marginBottom: '10px' }}>Afecciones Asociadas</h4>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
                       <select id="selPla" style={{ flex: 1, minWidth: '200px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                        <option value="">Selecciona plaga o enfermedad...</option>
-                        {masterPlagas.map(p => <option key={p.idplagas} value={p.idplagas}>{p.plagasnombre} ({p.plagastipo})</option>)}
+                        <option value="">Selecciona afección...</option>
+                        {masterAfecciones.map(p => <option key={p.idafecciones} value={p.idafecciones}>{p.afeccionesnombre} ({p.afeccionescategoria})</option>)}
                       </select>
                       <select id="riesgoPla" style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                         <option value="baja">Riesgo Bajo</option>
@@ -3983,16 +3987,16 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         const r = document.getElementById('riesgoPla') as HTMLSelectElement | null;
                         const n = document.getElementById('notasPla') as HTMLInputElement | null;
                         if (!sel || !sel.value) return;
-                        if (relaciones.plagas.some((p) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
-                        const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
+                        if (relaciones.afecciones.some((p) => p.xespeciesplagasidafecciones.toString() === sel.value)) { alert('Ya añadida'); return; }
+                        const pla = masterAfecciones.find(p => p.idafecciones.toString() === sel.value);
                         const updated = {
                           ...relaciones,
-                          plagas: [...relaciones.plagas, {
-                            xespeciesplagasidplagas: parseInt(sel.value),
-                            plagasnombre: pla?.plagasnombre,
-                            plagastipo: pla?.plagastipo,
-                            especiesplagasnivelriesgo: r?.value || 'media',
-                            especiesplagasnotasespecificas: n?.value || ''
+                          afecciones: [...relaciones.afecciones, {
+                            xespeciesplagasidafecciones: parseInt(sel.value),
+                            afeccionesnombre: pla?.afeccionesnombre,
+                            afeccionescategoria: pla?.afeccionescategoria,
+                            especiesafeccionesnivelriesgo: r?.value || 'media',
+                            especiesafeccionesnotasespecificas: n?.value || ''
                           }]
                         };
                         setRelaciones(updated);
@@ -4000,37 +4004,37 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                         if (sel) sel.value = '';
                         if (n) n.value = '';
                         if (r) r.value = 'media';
-                      }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Plaga</button>
+                      }} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Añadir Afección</button>
                     </div>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                      {relaciones.plagas.map((p, idx) => (
+                      {relaciones.afecciones.map((p, idx) => (
                         <li key={idx} style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '8px', display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '12px', alignItems: 'center' }}>
                           <div>
-                            <strong>{p.plagasnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.plagastipo})</span>
+                            <strong>{p.afeccionesnombre}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({p.afeccionescategoria})</span>
                           </div>
-                          <select value={p.especiesplagasnivelriesgo || 'media'} onChange={(e) => {
-                            const updatedPlagas = relaciones.plagas.map((pl, i) => i === idx ? { ...pl, especiesplagasnivelriesgo: e.target.value } : pl);
+                          <select value={p.especiesafeccionesnivelriesgo || 'media'} onChange={(e) => {
+                            const updatedPlagas = relaciones.afecciones.map((pl, i) => i === idx ? { ...pl, especiesafeccionesnivelriesgo: e.target.value } : pl);
                             const updated = { ...relaciones, plagas: updatedPlagas };
                             setRelaciones(updated);
                             saveRelacionesNow(updated);
-                          }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesplagasnivelriesgo === 'alta' ? '#ef4444' : p.especiesplagasnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
+                          }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: p.especiesafeccionesnivelriesgo === 'alta' ? '#ef4444' : p.especiesafeccionesnivelriesgo === 'baja' ? '#10b981' : '#f59e0b', cursor: 'pointer', minWidth: '130px' }}>
                             <option value="baja">🟢 Riesgo Bajo</option>
                             <option value="media">🟡 Riesgo Medio</option>
                             <option value="alta">🔴 Riesgo Alto</option>
                           </select>
-                          <input type="text" value={p.especiesplagasnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
-                            const updatedPlagas = relaciones.plagas.map((pl, i) => i === idx ? { ...pl, especiesplagasnotasespecificas: e.target.value } : pl);
-                            setRelaciones({ ...relaciones, plagas: updatedPlagas });
+                          <input type="text" value={p.especiesafeccionesnotasespecificas || ''} placeholder="Descripción del daño..." onChange={(e) => {
+                            const updatedPlagas = relaciones.afecciones.map((pl, i) => i === idx ? { ...pl, especiesafeccionesnotasespecificas: e.target.value } : pl);
+                            setRelaciones({ ...relaciones, afecciones: updatedPlagas });
                             setRelacionesDirty(true);
                           }} onBlur={() => { saveRelacionesNow(relaciones); }} style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }} />
                           <button type="button" onClick={() => {
-                            const updated = { ...relaciones, plagas: relaciones.plagas.filter((_, i) => i !== idx) };
+                            const updated = { ...relaciones, plagas: relaciones.afecciones.filter((_, i) => i !== idx) };
                             setRelaciones(updated);
                             saveRelacionesNow(updated);
                           }} style={{ color: '#ef4444', border: 'none', background: '#fee2e2', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
                         </li>
                       ))}
-                      {relaciones.plagas.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
+                      {relaciones.afecciones.length === 0 && <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>No hay plagas vinculadas.</p>}
                     </ul>
                   </div>
                 </div>
@@ -4749,91 +4753,31 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
 
                 {/* PDFs */}
                 <div style={{ display: activeTab === 'pdfs' ? 'block' : 'none' }}>
-                  <div
-                    className={`custom-file-upload drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
-                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(true); }}
-                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverPdfs(false); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setDragOverPdfs(false);
-                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        handleFileUpload({ target: { files: e.dataTransfer.files } }, 'pdfs');
-                      }
-                    }}
-                  >
-                    <input type="file" id="upload-pdfs" multiple accept=".pdf" onChange={(e) => handleFileUpload(e, 'pdfs')} disabled={uploadingPdfs} />
-
-                    {uploadingPdfs ? (
-                      <div className="drop-zone-content">
-                        <span style={{ fontSize: '2rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⏳</span>
-                        <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Subiendo documentos...</span>
-                      </div>
-                    ) : (
-                      <div className="drop-zone-content">
-                        <span className="icon" style={{ fontSize: '2.5rem' }}>📄</span>
-                        <span style={{ fontWeight: 'bold', color: '#475569' }}>Arrastra tus documentos PDF aquí</span>
-                        <div className="drop-zone-buttons">
-                          <label htmlFor="upload-pdfs" className="btn-upload primary">Seleccionar PDFs</label>
-                          <button type="button" onClick={() => setShowPdfSearchModal(true)} className="btn-upload secondary" style={{ fontWeight: 'bold' }}>🔎 Buscar Guías con IA</button>
-                        </div>
-                        <span className="drop-hint">Soporta archivos .pdf de manuales y guías</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {pdfs.length > 0 && (
-                    <div className="gallery" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-                      {pdfs.map((pdf) => {
-                        return (
-                          <div key={pdf.id} className="gallery-item pdf">
-                            <span style={{ fontSize: '2rem' }}>📄</span>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#334155', display: 'block', margin: '8px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                              {pdf.titulo || pdf.resumen || 'Guía Técnica'}
-                            </span>
-                            <div className="photo-actions">
-                              <button
-                                type="button"
-                                className="photo-action-btn btn-photo-delete"
-                                onClick={() => setDeleteConfirm({ id: pdf.id, type: 'pdfs' })}
-                                title="Eliminar PDF"
-                              >
-                                ✕
-                              </button>
-                              <button
-                                type="button"
-                                className="photo-action-btn btn-photo-edit"
-                                onClick={() => handleOpenPdfEditor(pdf)}
-                                title="Editar título y resumen"
-                                style={{ background: '#3b82f6' }}
-                              >
-                                ✏️
-                              </button>
-                            </div>
-                            <a
-                              href={getMediaUrl(pdf.ruta)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: 'block',
-                                background: '#1e293b',
-                                color: 'white',
-                                padding: '4px 10px',
-                                borderRadius: '4px',
-                                fontSize: '0.7rem',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                marginTop: 'auto',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Leer PDF
-                            </a>
-                          </div>
-                        );
-                      })}
+                  {!especieId ? (
+                    <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+                      Guarda la especie primero antes de poder gestionar documentos.
                     </div>
+                  ) : (
+                    <VariedadMediaManager 
+                      variedadId={especieId.toString()} 
+                      userEmail={userEmail!} 
+                      variedadNombre={formData.especiesnombre}
+                      especieNombre="Especie"
+                      especieNombreCientifico={formData.especiesnombrecientifico}
+                      apiBasePath={`/api/admin/especies/${especieId}`}
+                      section="pdfs"
+                      onMediaChange={async () => {
+                        try {
+                          const dRes = await fetch(`/api/admin/especies/${especieId}/pdfs`, { headers: { 'x-user-email': userEmail || '' } });
+                          if (dRes.ok) {
+                            const dData = await dRes.json();
+                            setPdfs(dData.pdfs || []);
+                          }
+                        } catch (e) { console.error('Error refetching PDFs in EspecieForm:', e); }
+                      }}
+                      entityType="especies"
+                      initialEditPdfId={editPdfParam ? parseInt(editPdfParam, 10) : null}
+                    />
                   )}
                 </div>
 
@@ -5192,7 +5136,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       if (!aiConfigTabs[group.id]) return null;
 
                       const hasDiff = group.id === 'asociaciones'
-                        ? ((aiProposal.asociaciones_beneficiosas?.length > 0) || (aiProposal.asociaciones_perjudiciales?.length > 0) || (aiProposal.plagas_asociadas?.length > 0))
+                        ? ((aiProposal.asociaciones_beneficiosas?.length > 0) || (aiProposal.asociaciones_perjudiciales?.length > 0) || (aiProposal.afecciones_asociadas?.length > 0))
                         : group.id === 'sinonimos'
                           ? (aiProposal._sinonimos?.length > 0)
                           : group.id === 'variedades'
@@ -5253,7 +5197,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     if (group.id !== aiModalActiveTab || !aiConfigTabs[group.id]) return null;
 
                     if (group.id === 'asociaciones') {
-                      const hasRels = (aiProposal.asociaciones_beneficiosas?.length > 0 || aiProposal.asociaciones_perjudiciales?.length > 0 || aiProposal.plagas_asociadas?.length > 0);
+                      const hasRels = (aiProposal.asociaciones_beneficiosas?.length > 0 || aiProposal.asociaciones_perjudiciales?.length > 0 || aiProposal.afecciones_asociadas?.length > 0);
                       return (
                         <div key={group.id} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -5324,15 +5268,15 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                 </div>
                               )}
 
-                              {aiProposal.plagas_asociadas?.length > 0 && (
+                              {aiProposal.afecciones_asociadas?.length > 0 && (
                                 <div>
                                   <h5 style={{ color: '#f97316', margin: '0 0 8px', fontSize: '0.9rem' }}>🐛 Plagas y Enfermedades</h5>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {aiProposal.plagas_asociadas.map((item: any, idx: number) => {
+                                    {aiProposal.afecciones_asociadas.map((item: any, idx: number) => {
                                       const name = typeof item === 'string' ? item : item?.nombre;
                                       const notas = typeof item === 'string' ? '' : (item?.notas || '');
                                       if (!name) return null;
-                                      const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                      const exists = masterAfecciones.some(p => p.afeccionesnombre.toLowerCase().trim() === name.toLowerCase().trim());
                                       const isChecked = selectedRels.pla.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                                       return (
                                         <label key={`pla_tab_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
@@ -6095,7 +6039,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                     if (aiConfigTabs.asociaciones) {
                       const benNames = aiProposal.asociaciones_beneficiosas || [];
                       const perNames = aiProposal.asociaciones_perjudiciales || [];
-                      const plaNames = aiProposal.plagas_asociadas || [];
+                      const plaNames = aiProposal.afecciones_asociadas || [];
 
                       const filteredBen = benNames.filter((item: any) => {
                         const name = typeof item === 'string' ? item : item?.nombre;
@@ -6107,7 +6051,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                       });
                       const filteredPla = plaNames.filter((item: any) => {
                         const name = typeof item === 'string' ? item : item?.nombre;
-                        return !relaciones.plagas.some(p => p.plagasnombre?.toLowerCase().trim() === name.toLowerCase().trim());
+                        return !relaciones.afecciones.some(p => p.afeccionesnombre?.toLowerCase().trim() === name.toLowerCase().trim());
                       });
 
                       const hasNewRels = filteredBen.length > 0 || filteredPer.length > 0 || filteredPla.length > 0;
@@ -6195,7 +6139,7 @@ export default function EspecieForm({ especieId, userEmail }: EspecieFormProps) 
                                       {filteredPla.map((item: any, idx: number) => {
                                         const name = typeof item === 'string' ? item : item?.nombre;
                                         const notas = typeof item === 'string' ? '' : (item?.notas || '');
-                                        const exists = masterPlagas.some(p => p.plagasnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                                        const exists = masterAfecciones.some(p => p.afeccionesnombre.toLowerCase().trim() === name.toLowerCase().trim());
                                         const isChecked = selectedRels.pla.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                                         return (
                                           <label key={`pla_diff_${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>

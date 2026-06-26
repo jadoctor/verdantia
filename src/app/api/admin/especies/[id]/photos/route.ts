@@ -337,9 +337,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const photoId = searchParams.get('photoId');
+  const photoId = searchParams.get('id');
 
-  if (!photoId) return NextResponse.json({ error: 'photoId requerido' }, { status: 400 });
+  if (!photoId) return NextResponse.json({ error: 'id requerido' }, { status: 400 });
 
   try {
     await pool.query(

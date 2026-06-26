@@ -132,8 +132,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { xlaborespautaidlabores, laborespautafase, laborespautafrecuenciadias, laborespautaoffset, laborespautanotasia, laborespautaactivosino } = body;
 
     if (!xlaborespautaidlabores || !laborespautafase) {
+      console.log('Missing labor or fase:', body);
       return NextResponse.json({ error: 'Labor y fase son obligatorios' }, { status: 400 });
     }
+
+    console.log('Inserting pauta:', body);
 
     const query = `
       INSERT INTO laborespauta (
@@ -216,3 +219,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Error al actualizar la pauta', detail: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const user = await authenticateSuperadmin(request);
+  if (!user) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  }
+
+  try {
+    const idespecies = resolvedParams.id;
+    // Hard delete all pautas for the species
+    await pool.query('DELETE FROM laborespauta WHERE xlaborespautaidespecies = ?', [idespecies]);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting all pautas:', error);
+    return NextResponse.json({ error: 'Error al eliminar las pautas' }, { status: 500 });
+  }
+}
+

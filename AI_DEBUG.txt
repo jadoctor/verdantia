@@ -4382,3 +4382,119 @@
   "especiespreparacionnolaboreo": 5
 }
 
+
+
+=== AI RESPONSE ===
+{
+  "plagas_asociadas": [
+    {
+      "nombre": "Pulgón",
+      "riesgo": "alta",
+      "notas": "Coloniza brotes tiernos, succiona savia y puede transmitir virus, debilitando la planta."
+    },
+    {
+      "nombre": "Mosca Blanca",
+      "riesgo": "alta",
+      "notas": "Se alimenta de la savia, debilita la planta, excreta melaza que favorece la negrilla y transmite virus."
+    },
+    {
+      "nombre": "Araña Roja",
+      "riesgo": "media",
+      "notas": "Causa punteados amarillentos en las hojas y telarañas finas en el envés, reduciendo la fotosíntesis."
+    },
+    {
+      "nombre": "Tuta absoluta",
+      "riesgo": "alta",
+      "notas": "Las larvas crean galerías (minas) en hojas, tallos y frutos, causando graves daños y pérdidas de cosecha."
+    },
+    {
+      "nombre": "Mildiu",
+      "riesgo": "alta",
+      "notas": "Manchas irregulares de color verde pálido a marrón en hojas, tallos y frutos, con moho blanquecino en el envés."
+    },
+    {
+      "nombre": "Oídio",
+      "riesgo": "media",
+      "notas": "Capa polvorienta blanca en la superficie de las hojas, reduciendo la fotosíntesis y el vigor de la planta."
+    },
+    {
+      "nombre": "Botrytis",
+      "riesgo": "alta",
+      "notas": "Moho grisáceo en flores, hojas, tallos y frutos, causando pudrición, especialmente en condiciones de alta humedad."
+    },
+    {
+      "nombre": "Alternaria",
+      "riesgo": "media",
+      "notas": "Manchas oscuras con anillos concéntricos (ojo de rana) en hojas viejas, tallos y frutos, provocando defoliación."
+    },
+    {
+      "nombre": "Fusarium",
+      "riesgo": "alta",
+      "notas": "Marchitez unilateral de las hojas, amarillamiento y oscurecimiento de los vasos internos del tallo, llevando a la muerte de la planta."
+    },
+    {
+      "nombre": "Mancha Bacteriana",
+      "riesgo": "alta",
+      "notas": "Pequeñas manchas acuosas que se vuelven necróticas en hojas, tallos y frutos, causando defoliación y pudrición."
+    },
+    {
+      "nombre": "Nematodos",
+      "riesgo": "media",
+      "notas": "Formación de agallas en las raíces, lo que provoca un crecimiento atrofiado, marchitez de la planta y reducción de la producción."
+    }
+  ]
+}
+
+
+
+=== AI RESPONSE ===
+{
+  "plagas_asociadas": [
+    {
+      "nombre": "Pulgón",
+      "riesgo": "alta",
+      "notas": "Coloniza brotes tiernos, succiona savia y puede transmitir virus."
+    },
+    {
+      "nombre": "Mosca Blanca",
+      "riesgo": "alta",
+      "notas": "Se alimenta de la savia, debilita la planta y transmite virus."
+    },
+    {
+      "nombre": "Tuta absoluta (Minador del tomate)",
+      "riesgo": "alta",
+      "notas": "Las larvas crean galerías en hojas, tallos y frutos, causando graves daños."
+    },
+    {
+      "nombre": "Araña Roja",
+      "riesgo": "media",
+      "notas": "Provoca manchas amarillentas en las hojas y telarañas finas, debilitando la planta."
+    },
+    {
+      "nombre": "Mildiu",
+      "riesgo": "alta",
+      "notas": "Manchas oscuras y húmedas en hojas y tallos, con moho blanco en el envés, pudrición de frutos."
+    },
+    {
+      "nombre": "Oídio",
+      "riesgo": "media",
+      "notas": "Capa polvorienta blanca en la superficie de las hojas, reduciendo la fotosíntesis."
+    },
+    {
+      "nombre": "Alternaria (Tizón temprano)",
+      "riesgo": "media",
+      "notas": "Manchas concéntricas marrones en hojas, tallos y frutos, que pueden necrosarse."
+    },
+    {
+      "nombre": "Botrytis (Moho gris)",
+      "riesgo": "media",
+      "notas": "Pudrición blanda y grisácea en flores, frutos y tallos, especialmente en condiciones de alta humedad."
+    },
+    {
+      "nombre": "Marchitez Bacteriana",
+      "riesgo": "alta",
+      "notas": "Marchitamiento repentino de la planta sin amarillamiento previo, los vasos se oscurecen."
+    }
+  ]
+}
+

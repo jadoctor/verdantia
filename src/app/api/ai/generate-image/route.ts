@@ -166,6 +166,7 @@ ${finalPrompt}`;
       ],
       parameters: {
         sampleCount: 1,
+        aspectRatio: tipoEntidad === 'documento' ? '3:4' : '1:1'
       }
     };
 

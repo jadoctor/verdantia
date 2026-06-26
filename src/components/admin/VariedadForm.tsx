@@ -24,6 +24,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const especieIdQuery = searchParams.get('especieId');
+  const editPdfParam = searchParams.get('editPdf');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,7 +32,10 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
   const [especies, setEspecies] = useState<any[]>([]);
   const [genericData, setGenericData] = useState<any>(null);
   
-  const [activeTab, setActiveTab] = useState('taxonomia');
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab');
+    return tabParam && ['taxonomia', 'fisiologia', 'calendarios', 'autosuficiencia', 'suelo', 'textos', 'fotos', 'pdfs'].includes(tabParam) ? tabParam : 'taxonomia';
+  });
   const [photos, setPhotos] = useState<any[]>([]);
   const [vibrantColor, setVibrantColor] = useState<string | null>(null);
   const [isVariedadOpen, setIsVariedadOpen] = useState(true);
@@ -729,9 +733,15 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
         <button type="button" onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button type="button" onClick={() => router.push(`/dashboard/admin/especies/${formData.xvariedadesidespecies}?tab=variedades&focus=${variedadId}`)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          🌳 Volver a Especie Padre
-        </button>
+        {searchParams.get('from') === 'pdfs' ? (
+          <button type="button" onClick={() => router.push('/dashboard/admin/pdfs')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            🔙 Volver a Gestor de PDFs
+          </button>
+        ) : (
+          <button type="button" onClick={() => router.push(`/dashboard/admin/especies/${formData.xvariedadesidespecies}?tab=variedades&focus=${variedadId}`)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            🌳 Volver a Especie Padre
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
@@ -1626,6 +1636,7 @@ export default function VariedadForm({ variedadId }: VariedadFormProps) {
                           especieFamilia={espFamilia}
                           section="pdfs"
                           onMediaChange={loadPhotos}
+                          initialEditPdfId={editPdfParam ? parseInt(editPdfParam, 10) : null}
                         />
                       </div>
                     </>

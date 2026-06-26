@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
@@ -9,6 +9,7 @@ import VariedadMediaManager from '@/components/admin/VariedadMediaManager';
 
 export default function PlantasParteForm({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const resolvedParams = use(params);
   const isNew = resolvedParams.id === 'nueva' || resolvedParams.id === 'nuevo';
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -148,9 +149,15 @@ export default function PlantasParteForm({ params }: { params: Promise<{ id: str
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={() => router.push('/dashboard/admin/tareas/plantasparte')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
-          🔙 Volver a Partes de la Planta
-        </button>
+        {searchParams.get('from') === 'pdfs' ? (
+          <button onClick={() => router.push('/dashboard/admin/pdfs')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+            🔙 Volver a Gestor de PDFs
+          </button>
+        ) : (
+          <button onClick={() => router.push('/dashboard/admin/tareas/plantasparte')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+            🔙 Volver a Partes de la Planta
+          </button>
+        )}
       </div>
 
       {/* ── Subheader Contextual y Autoguardado ── */}

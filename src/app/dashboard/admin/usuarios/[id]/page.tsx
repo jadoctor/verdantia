@@ -33,17 +33,20 @@ const MOTIVOS_SANCION_GRAVE = [
 export default function UsuarioDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params);
   const router = useRouter();
-  const [data, setData] = useState<{ usuario: any; logros: any[]; fotos: any[]; historialSuscripciones?: any[] } | null>(null);
+  const [data, setData] = useState<{ usuario: any; logros: any[]; fotos: any[]; historialSuscripciones?: any[]; historialIa?: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
   const [fromAsuntos, setFromAsuntos] = useState(false);
+  const [fromUsoIa, setFromUsoIa] = useState(false);
   
   // States with sessionStorage persistence
   const [tab, setTabState] = useState('perfil');
   const [userDataOpen, setUserDataOpenState] = useState(true);
   const [userCultivosOpen, setUserCultivosOpenState] = useState(true);
+  const [userIaOpen, setUserIaOpenState] = useState(false);
+  const [iaFilter, setIaFilter] = useState<string>('todos');
 
   const setTab = (newTab: string) => {
     setTabState(newTab);
@@ -66,6 +69,13 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const setUserIaOpen = (val: boolean) => {
+    setUserIaOpenState(val);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`usuario_detail_userIaOpen_${id}`, String(val));
+    }
+  };
+
   const [activeFotoId, setActiveFotoId] = useState<number | null>(null);
   const [avisosConfig, setAvisosConfig] = useState<any>(null);
   const [avisosLoading, setAvisosLoading] = useState(false);
@@ -80,7 +90,9 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setFromAsuntos(new URLSearchParams(window.location.search).get('from') === 'asuntos');
+      const urlParams = new URLSearchParams(window.location.search);
+      setFromAsuntos(urlParams.get('from') === 'asuntos');
+      setFromUsoIa(urlParams.get('from') === 'usoia');
       
       const savedTab = sessionStorage.getItem(`usuario_detail_tab_${id}`);
       if (savedTab) setTabState(savedTab);
@@ -90,6 +102,9 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
 
       const savedCultivosOpen = sessionStorage.getItem(`usuario_detail_userCultivosOpen_${id}`);
       if (savedCultivosOpen !== null) setUserCultivosOpenState(savedCultivosOpen === 'true');
+
+      const savedIaOpen = sessionStorage.getItem(`usuario_detail_userIaOpen_${id}`);
+      if (savedIaOpen !== null) setUserIaOpenState(savedIaOpen === 'true');
     }
   }, [id]);
 
@@ -365,9 +380,12 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
     </div>
   );
 
-  const { usuario: u, logros, fotos, historialSuscripciones } = data;
+  const { usuario: u, logros, fotos, historialSuscripciones, historialIa = [] } = data;
   const planCfg = getPlanCfg(u.suscripcion);
   const activeFoto = fotos?.find((f: any) => f.id === activeFotoId) || fotos?.find((f: any) => f.esPrincipal) || fotos?.[0];
+
+  const iaModules = Array.from(new Set(historialIa.map((i: any) => i.modulo)));
+  const filteredIa = historialIa.filter((i: any) => iaFilter === 'todos' || i.modulo === iaFilter);
 
   return (
     <div style={{ width: '100%' }}>
@@ -386,6 +404,10 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
         {fromAsuntos ? (
           <button onClick={() => router.push('/dashboard/admin/asuntos-pendientes')} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             🔙 Volver a Asuntos Pendientes
+          </button>
+        ) : fromUsoIa ? (
+          <button onClick={() => router.push('/dashboard/admin/uso-ia')} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0f172a', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            🔙 Volver a Uso de IA Global
           </button>
         ) : (
           <button onClick={() => router.push('/dashboard/admin/usuarios')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -1978,6 +2000,168 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
+          </div>
+        )}
+      </div>
+
+      {/* ── Informe de Uso de IA (Módulo Colapsable) ── */}
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', background: 'white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '20px' }}>
+        <button 
+          type="button"
+          onClick={() => setUserIaOpen(!userIaOpen)}
+          style={{ 
+            width: '100%', 
+            background: '#f8fafc', 
+            border: 'none', 
+            padding: '20px 24px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '1.1rem',
+            color: '#334155',
+            borderBottom: userIaOpen ? '1px solid #e2e8f0' : 'none',
+            transition: 'background 0.2s'
+          }}
+          onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+          onMouseOut={e => e.currentTarget.style.background = '#f8fafc'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
+            <span style={{ fontSize: '1.3rem' }}>✨</span> 
+            <span style={{ fontWeight: 700 }}>Uso de IA y Asistentes</span>
+            {!userIaOpen && (
+              <div style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                flexWrap: 'wrap', 
+                fontSize: '0.8rem', 
+                color: '#64748b', 
+                background: '#f1f5f9', 
+                padding: '4px 12px', 
+                borderRadius: '12px',
+                marginLeft: '12px',
+                fontWeight: 600
+              }}>
+                <span>📊 {historialIa.length} interacciones totales</span>
+                {historialIa.length > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>Última: {new Date(historialIa[0].fecha).toLocaleDateString()}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          <span style={{ display: 'inline-block', transform: userIaOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s', marginLeft: '12px' }}>
+            ▼
+          </span>
+        </button>
+
+        {userIaOpen && (
+          <div style={{ padding: '24px' }}>
+            {historialIa.length === 0 ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: '#94a3b8', border: '1.5px dashed #cbd5e1', borderRadius: '12px', background: '#f8fafc' }}>
+                <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>🤖</span>
+                <p style={{ fontSize: '0.9rem', fontWeight: 600, margin: 0 }}>Este usuario aún no ha utilizado los asistentes de Inteligencia Artificial.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setIaFilter('todos')}
+                    style={{
+                      background: iaFilter === 'todos' ? '#8b5cf6' : '#f1f5f9',
+                      color: iaFilter === 'todos' ? 'white' : '#64748b',
+                      border: 'none',
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Todos ({historialIa.length})
+                  </button>
+                  {iaModules.map((mod: any) => {
+                    const count = historialIa.filter((i: any) => i.modulo === mod).length;
+                    return (
+                      <button
+                        key={mod}
+                        onClick={() => setIaFilter(mod)}
+                        style={{
+                          background: iaFilter === mod ? '#8b5cf6' : '#f1f5f9',
+                          color: iaFilter === mod ? 'white' : '#64748b',
+                          border: 'none',
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {mod} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {filteredIa.map((item: any) => (
+                    <div key={item.id} style={{ 
+                      border: '1px solid #e2e8f0', 
+                      borderRadius: '12px', 
+                      padding: '16px',
+                      background: item.exito === 1 ? 'white' : '#fef2f2',
+                      borderColor: item.exito === 1 ? '#e2e8f0' : '#fecaca'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ 
+                            background: '#f3e8ff', 
+                            color: '#7e22ce', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 700,
+                            border: '1px solid #e9d5ff'
+                          }}>
+                            {item.modulo}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                            {new Date(item.fecha).toLocaleString()}
+                          </span>
+                        </div>
+                        {item.exito !== 1 && (
+                          <span style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 700, background: '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>
+                            ⚠️ Error / Fallido
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div style={{ marginBottom: '12px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '4px' }}>PROMPT / ACCIÓN:</span>
+                        <div style={{ fontSize: '0.85rem', color: '#334155', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                          {item.prompt || '—'}
+                        </div>
+                      </div>
+
+                      {item.respuesta && (
+                        <div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '4px' }}>RESPUESTA IA:</span>
+                          <div style={{ fontSize: '0.85rem', color: '#334155', background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px dashed #cbd5e1', maxHeight: '150px', overflowY: 'auto' }}>
+                            {item.respuesta}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

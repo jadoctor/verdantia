@@ -1,9 +1,11 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
-import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
+import { storage } from '@/lib/firebase/config';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import DownloadApuntesButton from './DownloadApuntesButton';
 import './EspecieForm.css';
 
 interface SharedMediaUploaderProps {
@@ -126,6 +128,8 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfSummary, setPdfSummary] = useState('');
   const [pdfApuntes, setPdfApuntes] = useState('');
+  const [pdfAutores, setPdfAutores] = useState('');
+  const [pdfIdentificacion, setPdfIdentificacion] = useState('');
   const [pdfEditorSaveStatus, setPdfEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
 
   // -- AI PDF Search State --
@@ -137,6 +141,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   
   // -- Blog Generator State --
   const [blogGenPdf, setBlogGenPdf] = useState<any>(null);
+  const [blogGenTitles, setBlogGenTitles] = useState<string[]>([]);
+  const [blogGenSelectedTitle, setBlogGenSelectedTitle] = useState<string>('');
+  const [blogGenTitlesLoading, setBlogGenTitlesLoading] = useState(false);
+  const [blogGenTitlesSeconds, setBlogGenTitlesSeconds] = useState(0);
+  const blogGenTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const blogGenAbortControllerRef = useRef<AbortController | null>(null);
   const [blogGenInstructions, setBlogGenInstructions] = useState('Escribe un post de blog para agricultores principiantes, con un tono motivador, consejos prácticos, emojis y una buena estructura de Markdown.');
   const [blogGenLoading, setBlogGenLoading] = useState(false);
   const [blogGenProgress, setBlogGenProgress] = useState('Iniciando motor de IA...');
@@ -1122,8 +1132,8 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     setDeleteConfirm(null);
     try {
       const url = type === 'photos'
-        ? `/api/admin/especies/${entityId}/photos?photoId=${id}`
-        : `/api/admin/especies/${entityId}/pdfs?pdfId=${id}`;
+        ? `/api/admin/${entityType}/${entityId}/photos?photoId=${id}`
+        : `/api/admin/${entityType}/${entityId}/pdfs?pdfId=${id}`;
       const res = await fetch(url, {
         method: 'DELETE',
         headers: { 'x-user-email': userEmail || '' }
@@ -1348,12 +1358,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     }
   };
 
-  const handleAddPdfLink = async (title: string, url: string, summary: string = '', apuntes: string = '') => {
+  const handleAddPdfLink = async (title: string, url: string, summary: string = '', apuntes: string = '', autores: string = '', identificacion: string = '') => {
     try {
       const res = await fetch(`/api/admin/${entityType}/${entityId}/pdfs/link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-        body: JSON.stringify({ title, url, summary, apuntes })
+        body: JSON.stringify({ title, url, summary, apuntes, autores, identificacion })
       });
       const data = await res.json();
       if (data.success) {
@@ -1371,16 +1381,44 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     }
   };
 
+  const handleCancelBlogGen = () => {
+    if (blogGenAbortControllerRef.current) {
+      blogGenAbortControllerRef.current.abort();
+      blogGenAbortControllerRef.current = null;
+    }
+    if (blogGenTimerRef.current) {
+      clearInterval(blogGenTimerRef.current);
+      blogGenTimerRef.current = null;
+    }
+    setBlogGenLoading(false);
+    setBlogGenTitlesLoading(false);
+    setBlogGenPdf(null);
+    setBlogGenTitles([]);
+    setBlogGenSelectedTitle('');
+    setBlogGenTitlesSeconds(0);
+    setBlogGenProgress('Cancelado por el usuario.');
+  };
+
   const submitBlogGen = async () => {
     if (!blogGenPdf) return;
     setBlogGenLoading(true);
+    setBlogGenTitlesSeconds(0);
+    if (blogGenTimerRef.current) clearInterval(blogGenTimerRef.current);
+    blogGenTimerRef.current = setInterval(() => setBlogGenTitlesSeconds(s => s + 1), 1000);
+
+    const controller = new AbortController();
+    blogGenAbortControllerRef.current = controller;
+
     try {
       const res = await fetch('/api/ai/generate-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
-          instructions: blogGenInstructions,
+          instructions: blogGenSelectedTitle 
+            ? `${blogGenInstructions}\n\nREQUISITO OBLIGATORIO: El título del artículo DEBE SER EXACTAMENTE ESTE: "${blogGenSelectedTitle}"`
+            : blogGenInstructions,
           entityId: entityId,
           variedadId: null,
           autorEmail: userEmail,
@@ -1396,22 +1434,87 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       if (data.success) {
         alert('¡Borrador generado con éxito! Slug: ' + data.slug);
         setBlogGenPdf(null);
+        setBlogGenTitles([]);
+        setBlogGenSelectedTitle('');
         if (entityId) {
           loadAttachments(entityId); // Recargar blogs
         }
       } else {
         alert(data.error || 'Error al generar blog');
       }
-    } catch (e) {
-      console.error(e);
-      alert('Error al generar blog');
+    } catch (e: any) {
+      if (e.name !== 'AbortError') {
+        console.error(e);
+        alert('Error al generar blog');
+      }
     } finally {
       setBlogGenLoading(false);
+      if (blogGenTimerRef.current) {
+        clearInterval(blogGenTimerRef.current);
+        blogGenTimerRef.current = null;
+      }
+      blogGenAbortControllerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (blogGenPdf && blogGenTitles.length === 0 && !blogGenTitlesLoading && !blogGenSelectedTitle) {
+      fetchBlogTitles();
+    }
+  }, [blogGenPdf]);
+
+  const fetchBlogTitles = async () => {
+    if (!blogGenPdf) return;
+    setBlogGenTitlesLoading(true);
+    setBlogGenTitles([]);
+    setBlogGenSelectedTitle('');
+    setBlogGenTitlesSeconds(0);
+    
+    if (blogGenTimerRef.current) clearInterval(blogGenTimerRef.current);
+    blogGenTimerRef.current = setInterval(() => setBlogGenTitlesSeconds(s => s + 1), 1000);
+
+    const controller = new AbortController();
+    blogGenAbortControllerRef.current = controller;
+
+    try {
+      const res = await fetch('/api/ai/generate-blog-titles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
+          instructions: blogGenInstructions,
+          especieNombre: formData.especiesnombre,
+          contexto: {
+            tipo: 'especie',
+            nombre: formData.especiesnombre || 'Especie'
+          },
+          existingTitles: blogs.map((b: any) => b.titulo)
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.titles) {
+        setBlogGenTitles(data.titles);
+      } else {
+        alert(data.error || 'Error al proponer títulos con IA');
+      }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') {
+        console.error(e);
+        alert('Error de conexión al obtener títulos');
+      }
+    } finally {
+      setBlogGenTitlesLoading(false);
+      if (blogGenTimerRef.current) {
+        clearInterval(blogGenTimerRef.current);
+        blogGenTimerRef.current = null;
+      }
+      blogGenAbortControllerRef.current = null;
     }
   };
 
   const handleDeleteBlog = async (blogId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este blog generado de la base de datos?')) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar DEFINITIVAMENTE este blog generado de la base de datos?')) return;
     try {
       const res = await fetch(`/api/admin/blog/${blogId}`, {
         method: 'DELETE',
@@ -1426,6 +1529,26 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     } catch(e) {
       console.error(e);
       alert('Error de conexión al eliminar blog');
+    }
+  };
+
+  const handleInactivateBlog = async (blogId: number, blog: any) => {
+    if (!confirm('¿Quieres cambiar el estado de este blog a INACTIVO? Seguirá existiendo pero no será visible.')) return;
+    try {
+      const res = await fetch(`/api/admin/blog/${blogId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+        body: JSON.stringify({ blogestado: 'inactivo' })
+      });
+      if (res.ok) {
+        if (entityId) loadAttachments(entityId);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al inactivar blog');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al inactivar blog');
     }
   };
 
@@ -3242,7 +3365,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                           {/* Cuadro de portada — solo la foto */}
                           <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
                             {p.portada ? (
-                              <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}  crossOrigin="anonymous" />
+                              <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', backgroundColor: '#f1f5f9', display: 'block' }}  crossOrigin="anonymous" />
                             ) : (
                               <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -3253,7 +3376,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
                             {/* Botones superpuestos en la foto */}
                             <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                              <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
+                              <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); setPdfAutores(p.autores || ''); setPdfIdentificacion(p.identificacion || ''); }} title="Editar Metadatos">✏️</button>
                               {(p.hasBlog || blogs.some(b => b.pdfSourceId == p.id)) ? (
                                 <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
                               ) : (
@@ -3266,6 +3389,14 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                           <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
                             📄 {p.titulo || p.nombreOriginal}
                           </a>
+                          
+                          {/* Información adicional */}
+                          {(p.autores || p.identificacion) && (
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', marginTop: '-4px', padding: '0 4px' }}>
+                              {p.autores && <span>👤 {p.autores}</span>}
+                              {p.identificacion && <span style={{ marginLeft: '6px' }}>🏷️ {p.identificacion}</span>}
+                            </div>
+                          )}
 
                           {/* Botón generar blog debajo del título */}
                           <button type="button" onClick={() => setBlogGenPdf(p)} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', alignSelf: 'center', boxShadow: '0 2px 4px rgba(245,158,11,0.3)' }}>
@@ -3288,12 +3419,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                                         <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
                                       )}
                                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                        <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                                        <a href={`/dashboard/admin/blog/${b.id}?from=${entityType}&fromId=${entityId}&fromName=${encodeURIComponent(formData?.especiesnombre || entityType)}&fromTab=pdfs`} style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'} title={b.titulo}>
                                           {b.titulo}
                                         </a>
                                       </div>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '46px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', paddingLeft: '46px', flexWrap: 'wrap', gap: '4px' }}>
                                       <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
                                         {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
                                       </span>
@@ -3301,9 +3432,24 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                                         <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
                                           {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                                         </span>
-                                        <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
-                                          🗑️
-                                        </button>
+                                        <a 
+                                          href={`/dashboard/admin/blog/${b.id}?from=${entityType}&fromId=${entityId}&fromName=${encodeURIComponent(formData?.especiesnombre || entityType)}&fromTab=pdfs`} 
+                                          style={{ 
+                                            background: 'none', 
+                                            border: 'none', 
+                                            color: '#475569', 
+                                            cursor: 'pointer', 
+                                            padding: '0 2px', 
+                                            fontSize: '0.8rem', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            textDecoration: 'none'
+                                          }} 
+                                          title="Editar blog"
+                                        >
+                                          ✏️
+                                        </a>
                                       </div>
                                     </div>
                                   </div>
@@ -3719,7 +3865,9 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       {editingPdf && (() => {
         const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') || 
                               pdfSummary !== (editingPdf.resumen || '') || 
-                              pdfApuntes !== (editingPdf.apuntes || '');
+                              pdfApuntes !== (editingPdf.apuntes || '') ||
+                              pdfAutores !== (editingPdf.autores || '') ||
+                              pdfIdentificacion !== (editingPdf.identificacion || '');
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setEditingPdf(null)}>
@@ -3742,7 +3890,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
               <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {editingPdf.portada ? (
-                    <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }}  crossOrigin="anonymous" />
+                    <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#f1f5f9' }}  crossOrigin="anonymous" />
                   ) : (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
                       <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>
@@ -3774,6 +3922,30 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                     style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
                   />
                 </div>
+                
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Autores / Institución</label>
+                    <input 
+                      type="text" 
+                      value={pdfAutores} 
+                      onChange={e => setPdfAutores(e.target.value)} 
+                      style={{ padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem', outline: 'none' }}
+                      placeholder="Ej: Juan Pérez, Universidad Agraria..."
+                    />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Identificador (DOI/ISBN)</label>
+                    <input 
+                      type="text" 
+                      value={pdfIdentificacion} 
+                      onChange={e => setPdfIdentificacion(e.target.value)} 
+                      style={{ padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.95rem', outline: 'none' }}
+                      placeholder="Ej: 10.1016/j.scienta.2021.110599"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
                   <textarea 
@@ -3785,9 +3957,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                   />
                 </div>
                 <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🎓 Apuntes (Modo Estudiante)
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🎓 Apuntes (Modo Estudiante)
+                    </label>
+                    <DownloadApuntesButton apuntes={pdfApuntes} titulo={pdfTitle || editingPdf.nombreOriginal} urlOrigen={editingPdf.ruta} nombreOriginal={editingPdf.nombreOriginal} />
+                  </div>
                   <textarea 
                     value={pdfApuntes} 
                     onChange={e => setPdfApuntes(e.target.value)} 
@@ -3847,47 +4022,49 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 disabled={pdfSearchLoading || !pdfSearchTopic}
                 style={{ padding: '0 20px', borderRadius: '8px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: pdfSearchLoading ? 'wait' : 'pointer', transition: 'all 0.2s', opacity: (pdfSearchLoading || !pdfSearchTopic) ? 0.7 : 1 }}
               >
-                {pdfSearchLoading ? 'Buscando...' : 'Buscar'}
+                {pdfSearchLoading ? '⏳ Analizando y Buscando...' : '🔍 Buscar PDFs'}
               </button>
             </div>
 
-            {pdfSearchLoading && (
-              <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
-                <span style={{ fontSize: '2rem', display: 'inline-block', animation: 'spin 2s linear infinite' }}>⏳</span>
-                <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>Buscando en repositorios agrícolas, por favor espera...</p>
-              </div>
-            )}
-
             {pdfSearchError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', padding: '16px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
-                <p style={{ margin: 0, fontSize: '0.95rem', flex: 1 }}>{pdfSearchError}</p>
+              <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+                {pdfSearchError}
               </div>
             )}
 
             {!pdfSearchLoading && pdfSearchResults.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ margin: 0, color: '#334155', fontSize: '1rem' }}>Resultados Encontrados:</h4>
-                {pdfSearchResults.map((res, i) => (
-                  <div key={i} style={{ border: '1px solid #e2e8f0', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', background: '#f8fafc' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <a href={res.url} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', color: '#0f172a', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
-                        {res.title}
-                      </a>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
-                        {res.url}
-                      </span>
-                      {res.summary && (
-                        <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                          ✨ {res.summary}
-                        </p>
+                <h4 style={{ margin: 0, color: '#334155', fontSize: '1rem' }}>Resultados ({pdfSearchResults.length})</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+                  {pdfSearchResults.map((res: any, idx) => (
+                    <div key={idx} style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <div>
+                        <a href={res.url} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', color: '#0f172a', textDecoration: 'none', fontSize: '1.05rem', display: 'inline-block', marginBottom: '4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                          📄 {res.nombre || res.title}
+                        </a>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', wordBreak: 'break-all', marginBottom: '4px' }}>{res.url}</div>
+                        {(res.autores || res.identificacion) && (
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>
+                            {res.autores && <span>👤 {res.autores} </span>}
+                            {res.identificacion && <span>🏷️ {res.identificacion}</span>}
+</div>
+                        )}
+                      </div>
+                      {res.resumenCorto && (
+                        <div style={{ fontSize: '0.9rem', color: '#334155' }}>
+                          {res.resumenCorto}
+                        </div>
                       )}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => handleAddPdfLink(res.nombre || res.title, res.url, res.resumenCorto, res.apuntes, res.autores, res.identificacion)}
+                          style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                          ➕ Añadir PDF
+                        </button>
+                      </div>
                     </div>
-                    <button type="button" onClick={() => handleAddPdfLink(res.title, res.url, res.summary, res.apuntes)} style={{ background: 'white', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                      ➕ Añadir
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -3896,11 +4073,13 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
       {/* MODAL GENERADOR DE BLOG */}
       {blogGenPdf && (
-        <div className="ai-modal-overlay">
-          <div className="ai-modal-content" style={{ maxWidth: '600px' }}>
-            <div className="ai-modal-header">
-              <h2>📝 Generar Artículo Automático</h2>
-              <button className="btn-close-modal" onClick={() => setBlogGenPdf(null)}>✖ Cerrar</button>
+        <div className="ai-modal-overlay" onClick={handleCancelBlogGen} style={{ zIndex: 10000 }}>
+          <div className="ai-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="ai-modal-header" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ color: 'white', margin: 0 }}>✨ Asistente IA de Blog</h2>
+              <button className="btn-close-modal" style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer' }} onClick={handleCancelBlogGen}>
+                {blogGenLoading || blogGenTitlesLoading ? '🛑 Parar Asistente' : '✖ Cerrar'}
+              </button>
             </div>
             <div className="ai-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {/* Contexto: Entidad + PDF */}
@@ -3937,12 +4116,6 @@ CONTEXTO: Este blog trata sobre una ESPECIE vegetal/hortaliza.
 
 INDICACIONES DEL USUARIO: "${blogGenInstructions}"
 
-REGLAS DE ESTRUCTURA OBLIGATORIAS (Blog Verdantia):
-1. SIN PAJA: Párrafos de máximo 3 líneas.
-2. NEGRITAS en conceptos clave. DATOS CONCRETOS.
-3. TONO: Profesional pero cercano.
-4. TÍTULO: Interrogativo siempre que sea posible (ej: "¿Cómo cultivar...?").
-
 JSON de salida obligatorio:
 → titulo, slug, resumen, tags[]
 → ficha_rapida[6]: 🌡️ Temp, 🗓️ Siembra, 🌱 Germinación, 📏 Marco, 🕐 Cosecha, 💧 Riego
@@ -3957,7 +4130,7 @@ JSON de salida obligatorio:
               {blogGenLoading ? (
                 <div style={{ padding: '30px 20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <span style={{ fontSize: '2.5rem', display: 'inline-block', animation: 'spin 2s linear infinite', marginBottom: '15px' }}>⏳</span>
-                  <h4 style={{ margin: '0 0 8px 0', color: '#0f766e', fontSize: '1.1rem' }}>Generación en curso</h4>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#0f766e', fontSize: '1.1rem' }}>Generación en curso... {blogGenTitlesSeconds}s</h4>
                   <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', fontWeight: 500, minHeight: '24px', transition: 'all 0.3s' }}>
                     {blogGenProgress}
                   </p>
@@ -3965,15 +4138,65 @@ JSON de salida obligatorio:
                     <div style={{ height: '100%', background: '#10b981', width: '100%', animation: 'progress 60s ease-out forwards' }}></div>
                   </div>
                   <style>{`@keyframes progress { 0% { width: 0%; } 100% { width: 95%; } }`}</style>
+                  <button type="button" onClick={handleCancelBlogGen} style={{ marginTop: '20px', padding: '8px 16px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(239,68,68,0.2)' }}>
+                    🛑 Parar Asistente
+                  </button>
+                </div>
+              ) : blogGenTitles.length === 0 ? (
+                <div style={{ padding: '30px 20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '2.5rem', display: 'inline-block', animation: 'spin 2s linear infinite', marginBottom: '15px' }}>⏳</span>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#0f766e', fontSize: '1.1rem' }}>Analizando PDF...</h4>
+                  <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', fontWeight: 500 }}>
+                    Extrayendo contexto y proponiendo títulos... {blogGenTitlesSeconds}s
+                  </p>
                 </div>
               ) : (
-                <button 
-                  type="button" 
-                  onClick={submitBlogGen} 
-                  style={{ padding: '12px', borderRadius: '8px', border: 'none', background: '#f59e0b', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '10px' }}
-                >
-                  🚀 ¡Crear Artículo Ahora!
-                </button>
+                <div style={{ marginTop: '10px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>✨</span> Elige un título para el artículo:
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {blogGenTitles.map((t, idx) => (
+                      <label key={idx} style={{
+                        display: 'flex', alignItems: 'center', gap: '10px', padding: '12px',
+                        border: blogGenSelectedTitle === t ? '2px solid #8b5cf6' : '1px solid #cbd5e1',
+                        borderRadius: '8px', cursor: 'pointer',
+                        background: blogGenSelectedTitle === t ? '#f5f3ff' : '#fff',
+                        transition: 'all 0.2s',
+                        boxShadow: blogGenSelectedTitle === t ? '0 4px 6px -1px rgba(139, 92, 246, 0.1)' : 'none'
+                      }}>
+                        <input
+                          type="radio"
+                          name="blogGenSelectedTitle"
+                          checked={blogGenSelectedTitle === t}
+                          onChange={() => setBlogGenSelectedTitle(t)}
+                          style={{ margin: 0, accentColor: '#8b5cf6', width: '18px', height: '18px', flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: '0.95rem', color: blogGenSelectedTitle === t ? '#5b21b6' : '#334155', fontWeight: blogGenSelectedTitle === t ? 'bold' : 'normal', lineHeight: 1.4 }}>
+                          {t}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setBlogGenTitles([]); setBlogGenSelectedTitle(''); }}
+                      style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                    >
+                      ↩ Reintentar títulos
+                    </button>
+                    <button 
+                      type="button" 
+                      disabled={!blogGenSelectedTitle}
+                      onClick={submitBlogGen} 
+                      style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', background: blogGenSelectedTitle ? '#10b981' : '#cbd5e1', color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: blogGenSelectedTitle ? 'pointer' : 'not-allowed', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', boxShadow: blogGenSelectedTitle ? '0 4px 6px rgba(16, 185, 129, 0.2)' : 'none', transition: 'all 0.2s' }}
+                    >
+                      🚀 ¡Crear Artículo Ahora!
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -4293,10 +4516,12 @@ JSON de salida obligatorio:
             onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🗑️</div>
             <h3 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '1.1rem' }}>
-              Eliminar {deleteConfirm.type === 'photos' ? 'foto' : 'documento'}
+              {deleteConfirm.type === 'photos' ? 'Eliminar foto' : 'Inactivar documento PDF'}
             </h3>
             <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '24px', lineHeight: 1.5 }}>
-              Esta acción no se puede deshacer. ¿Confirmas que quieres eliminar este {deleteConfirm.type === 'photos' ? 'archivo de imagen' : 'documento PDF'}?
+              {deleteConfirm.type === 'photos' 
+                ? 'Esta acción no se puede deshacer. ¿Confirmas que quieres eliminar este archivo de imagen?' 
+                : '¿Confirmas que quieres quitar este documento PDF? El archivo se marcará como INACTIVO y desaparecerá de la lista, pero se conservará en el sistema para no romper los artículos de blog generados.'}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button type="button" onClick={() => setDeleteConfirm(null)}

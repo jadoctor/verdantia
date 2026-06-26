@@ -20,6 +20,7 @@ import { SeguridadTab } from './components/SeguridadTab';
 import { SuscripcionTab } from './components/SuscripcionTab';
 import { LogrosTab } from './components/LogrosTab';
 import { RolesTab } from './components/RolesTab';
+import { UsoIaTab } from './components/UsoIaTab';
 import { DangerZoneTab } from './components/DangerZoneTab';
 import { PhotoEditorModal } from './components/PhotoEditorModal';
 import { AchievementModals } from './components/AchievementModals';
@@ -125,6 +126,10 @@ function PerfilContent() {
 
       <div style={{ display: activeTab === 'roles' ? 'block' : 'none' }}>
         <RolesTab profileData={profileData} />
+      </div>
+
+      <div style={{ display: activeTab === 'usoia' ? 'block' : 'none' }}>
+        <UsoIaTab />
       </div>
 
       <div style={{ display: activeTab === 'cuenta' ? 'block' : 'none' }}>

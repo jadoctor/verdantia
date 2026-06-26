@@ -138,6 +138,13 @@
   resize: vertical;
 }
 
+.especie-form-container input::placeholder,
+.especie-form-container textarea::placeholder {
+  color: #94a3b8;
+  opacity: 0.6;
+  font-weight: 400;
+}
+
 .checkbox-group .cb-list {
   display: flex;
   flex-wrap: wrap;

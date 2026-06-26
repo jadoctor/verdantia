@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import pool from '@/lib/db';
+import { getUserByEmail } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -24,8 +26,10 @@ Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdo
   {
     "url": "URL_DEL_DOCUMENTO_AQUI",
     "nombre": "Nombre descriptivo y breve (max 10 palabras)",
+    "autores": "Nombre de los autores o institución (si está disponible, sino dejar vacío)",
+    "identificacion": "DOI, ISBN, o número de publicación oficial (si está disponible, sino dejar vacío)",
     "resumenCorto": "Resumen técnico detallado de al menos 4 líneas. Menciona métodos, climas y consejos clave de forma redactada y sin viñetas.",
-    "apuntes": "Apuntes muy extensos y técnicos extraídos del documento. Genera al menos 5 viñetas detalladas con datos concretos, plagas, cuidados o metodologías."
+    "apuntes": "Una guía exhaustiva, técnica y extensa en formato Markdown. Actúa como un estudiante de ingeniería agronómica brillante. Extrae absolutamente todos los datos de valor del PDF: dosis exactas, temperaturas, ingredientes activos, métodos de aplicación, fechas, proporciones y consejos vitales. Usa títulos (##), listas con viñetas, y negritas para resaltar métricas y cifras. Tu objetivo es que el agricultor NUNCA tenga que abrir el PDF original porque tus apuntes ya contienen toda la sabiduría técnica. Si el PDF es largo, extiende este campo con múltiples párrafos."
   }
 ]`;
 
@@ -53,6 +57,22 @@ Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdo
 
     const data = await response.json();
     const textOutput = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Log the AI usage
+    const email = request.headers.get('x-user-email');
+    if (email) {
+      try {
+        const user = await getUserByEmail(email);
+        if (user) {
+          await pool.query(`
+            INSERT INTO historialia (xhistorialiaidusuarios, historialiamodulo, historialiaprompt, historialiarespuesta, historialiaexito)
+            VALUES (?, 'pdf-search', ?, 'Búsqueda completada exitosamente', 1)
+          `, [user.id, prompt]);
+        }
+      } catch (logErr) {
+        console.error('Error logging AI interaction:', logErr);
+      }
+    }
 
     // 1. Extraer los links reales de Google Search (Grounding Chunks) - Fuente de la Verdad
     const realLinks: { title: string, url: string }[] = [];
@@ -143,10 +163,12 @@ Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdo
         // Si hay un enlace real disponible, lo usamos (para evitar error 404).
         if (i < realLinks.length) {
           links.push({
-            title: parsedLinks[i].nombre || realLinks[i].title, // Priorizamos el nombre IA para evitar dominios crudos
-            url: realLinks[i].url, // SIEMPRE URL REAL
+            title: parsedLinks[i].nombre || realLinks[i].title,
+            url: realLinks[i].url,
             summary: parsedLinks[i].resumenCorto || 'Análisis técnico no disponible.',
-            apuntes: parsedLinks[i].apuntes || ''
+            apuntes: parsedLinks[i].apuntes || '',
+            autores: parsedLinks[i].autores || '',
+            identificacion: parsedLinks[i].identificacion || ''
           });
         }
       }
@@ -157,7 +179,9 @@ Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdo
           title: realLinks[i].title,
           url: realLinks[i].url,
           summary: 'Documento técnico encontrado en internet vía Google Search.',
-          apuntes: ''
+          apuntes: '',
+          autores: '',
+          identificacion: ''
         });
       }
     } else {
@@ -167,7 +191,9 @@ Devuelve tu respuesta ÚNICAMENTE como un array JSON válido, sin bloques markdo
           title: 'Documento Encontrado',
           url: p.url,
           summary: p.resumenCorto || '',
-          apuntes: p.apuntes || ''
+          apuntes: p.apuntes || '',
+          autores: p.autores || '',
+          identificacion: p.identificacion || ''
         });
       }
     }

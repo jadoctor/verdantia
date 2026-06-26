@@ -94,6 +94,8 @@ function DashboardLayoutContent({
   const FROM_LABELS: Record<string, { label: string; path: string; icon: string }> = {
     mantenimiento: { label: 'Copias de Seguridad', path: '/dashboard/admin/mantenimiento', icon: '📁' },
     analisis: { label: 'Análisis de Dashboard', path: '/dashboard/admin/mantenimiento/analisis', icon: '📊' },
+    enlaces: { label: 'Salud de Enlaces', path: '/dashboard/admin/mantenimiento/enlaces', icon: '🔗' },
+    biblia: { label: 'La Biblia', path: '/dashboard/admin/mantenimiento/biblia', icon: '📜' }
   };
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,8 @@ function DashboardLayoutContent({
   const [utilidadesAdminHover, setUtilidadesAdminHover] = useState(false);
   const [bancalesHover, setBancalesHover] = useState(false);
   const [mantenimientoHover, setMantenimientoHover] = useState(false);
+  const [gestionUsuariosHover, setGestionUsuariosHover] = useState(false);
+  const [gestionPublicacionesHover, setGestionPublicacionesHover] = useState(false);
   const [bancalesList, setBancalesList] = useState<any[]>([]);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -138,7 +142,8 @@ function DashboardLayoutContent({
     '/dashboard/admin/variedades': { label: 'Variedades Globales', icon: '🏷️' },
     '/dashboard/admin/labores': { label: 'Labores Globales', icon: '🔧' },
     '/dashboard/admin/labores/nueva': { label: 'Nueva Labor', icon: '🛠️' },
-    '/dashboard/admin/plagas': { label: 'Plagas Globales', icon: '🐛' },
+    '/dashboard/admin/afecciones': { label: 'Afecciones Globales', icon: '🦠' },
+    '/dashboard/admin/tratamientos': { label: 'Tratamientos Globales', icon: '🧪' },
     '/dashboard/admin/tareas/contenedores': { label: 'Contenedores', icon: '🌱' },
     '/dashboard/admin/tareas/plantasparte': { label: 'Partes de la Planta', icon: '🍃' },
     '/dashboard/admin/tareas/identificar-especie': { label: 'Identificador de Especies', icon: '🔍' },
@@ -151,8 +156,12 @@ function DashboardLayoutContent({
     '/dashboard/admin/asuntos-pendientes': { label: 'Asuntos Pendientes', icon: '📋' },
     '/dashboard/admin/asuntos-realizados': { label: 'Asuntos Realizados', icon: '✅' },
     '/dashboard/admin/blog': { label: 'Gestor Blog IA', icon: '📝' },
+    '/dashboard/admin/pdfs': { label: 'Gestor de PDFs', icon: '📄' },
+    '/dashboard/admin/uso-ia': { label: 'Uso de IA Global', icon: '🤖' },
+    '/dashboard/uso-ia': { label: 'Uso de IA', icon: '🤖' },
     '/dashboard/admin/mantenimiento': { label: 'Copias de Seguridad', icon: '📁' },
     '/dashboard/admin/mantenimiento/analisis': { label: 'Análisis de Dashboard', icon: '📊' },
+    '/dashboard/admin/mantenimiento/enlaces': { label: 'Salud de Enlaces', icon: '🔗' },
     '/dashboard/admin/mantenimiento/biblia': { label: 'La Biblia', icon: '📜' },
   };
 
@@ -608,24 +617,34 @@ function DashboardLayoutContent({
               {superAdminExpanded && (
                 <nav className="sidebar-nav">
 
-                  <a href="/dashboard/admin/usuarios" className={`nav-item ${isActive('/dashboard/admin/usuarios')}`} onClick={handleNavClick}>
-                    <span className="nav-icon">👥</span>
-                    <span>Usuarios</span>
-                  </a>
+                  <div className="nav-submenu-wrapper" onMouseEnter={() => setGestionUsuariosHover(true)} onMouseLeave={() => setGestionUsuariosHover(false)}>
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/usuarios') || pathname.includes('/admin/uso-ia') ? 'active' : ''}`}
+                      onClick={(e) => { e.preventDefault(); setGestionUsuariosHover(h => !h); }}
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                      <span className="nav-icon">👥</span>
+                      <span style={{flex: 1}}>Gestión de Usuarios</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: gestionUsuariosHover || pathname.includes('/admin/usuarios') || pathname.includes('/admin/uso-ia') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                    </button>
+                    <div style={{ display: gestionUsuariosHover || pathname.includes('/admin/usuarios') || pathname.includes('/admin/uso-ia') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                      <a href="/dashboard/admin/usuarios" className={`nav-item ${isActive('/dashboard/admin/usuarios')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>👤 Usuarios</a>
+                      <a href="/dashboard/admin/uso-ia" className={`nav-item ${isActive('/dashboard/admin/uso-ia')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🤖 Uso de IA Global</a>
+                    </div>
+                  </div>
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setTareasAgricolasHover(true)} onMouseLeave={() => setTareasAgricolasHover(false)}>
-                    <button type="button" className={`nav-item ${pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'active' : ''}`}
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/afecciones') || pathname.includes('/admin/tratamientos') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setTareasAgricolasHover(h => !h); }}
                       style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">🚜</span>
                       <span style={{flex: 1}}>Tareas Agrícolas</span>
-                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: tareasAgricolasHover || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/afecciones') || pathname.includes('/admin/tratamientos') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                     </button>
-                    <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/fases') || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/plagas') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                    <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/fases') || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/afecciones') || pathname.includes('/admin/tratamientos') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
                       <a href="/dashboard/admin/familias" className={`nav-item ${isActive('/dashboard/admin/familias')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🧬 Familias Botánicas</a>
                       <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌍 Especies Globales</a>
                       <a href="/dashboard/admin/fases" className={`nav-item ${isActive('/dashboard/admin/fases')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Fases de Cultivo</a>
                       <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔧 Labores Globales</a>
-                      <a href="/dashboard/admin/plagas" className={`nav-item ${isActive('/dashboard/admin/plagas')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🐛 Plagas Globales</a>
+                      <a href="/dashboard/admin/afecciones" className={`nav-item ${isActive('/dashboard/admin/afecciones')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🦠 Afecciones Globales</a>
+                      <a href="/dashboard/admin/tratamientos" className={`nav-item ${isActive('/dashboard/admin/tratamientos')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🧪 Tratamientos Globales</a>
                       <a href="/dashboard/admin/tareas/contenedores" className={`nav-item ${isActive('/dashboard/admin/tareas/contenedores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Contenedores</a>
                       <a href="/dashboard/admin/tareas/plantasparte" className={`nav-item ${isActive('/dashboard/admin/tareas/plantasparte')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🍃 Partes de la Planta</a>
                     </div>
@@ -656,10 +675,19 @@ function DashboardLayoutContent({
                       <a href="/dashboard/admin/tareas/identificar-especie" className={`nav-item ${isActive('/dashboard/admin/tareas/identificar-especie')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔍 Identificar Especie (IA)</a>
                     </div>
                   </div>
-                  <a href="/dashboard/admin/blog" className={`nav-item ${isActive('/dashboard/admin/blog')}`} onClick={handleNavClick}>
-                    <span className="nav-icon">📝</span>
-                    <span>Gestor Blog IA</span>
-                  </a>
+                  <div className="nav-submenu-wrapper" onMouseEnter={() => setGestionPublicacionesHover(true)} onMouseLeave={() => setGestionPublicacionesHover(false)}>
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/blog') || pathname.includes('/admin/pdfs') ? 'active' : ''}`}
+                      onClick={(e) => { e.preventDefault(); setGestionPublicacionesHover(h => !h); }}
+                      style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
+                      <span className="nav-icon">📰</span>
+                      <span style={{flex: 1}}>Gestor de publicaciones</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: gestionPublicacionesHover || pathname.includes('/admin/blog') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                    </button>
+                    <div style={{ display: gestionPublicacionesHover || pathname.includes('/admin/blog') || pathname.includes('/admin/pdfs') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                      <a href="/dashboard/admin/blog" className={`nav-item ${isActive('/dashboard/admin/blog')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>📝 Gestor Blog IA</a>
+                      <a href="/dashboard/admin/pdfs" className={`nav-item ${isActive('/dashboard/admin/pdfs')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>📄 Gestor de PDFs</a>
+                    </div>
+                  </div>
                   <a href="/dashboard/admin/chat" className={`nav-item ${isActive('/dashboard/admin/chat')}`} onClick={handleNavClick}>
                     <span className="nav-icon">💬</span>
                     <span>Chat Moderación</span>
@@ -703,6 +731,13 @@ function DashboardLayoutContent({
                         }
                         handleNavClick();
                       }}>📊 Análisis de Dashboard</a>
+                      <a href="/dashboard/admin/mantenimiento/enlaces?clean=true" className={`nav-item ${pathname === '/dashboard/admin/mantenimiento/enlaces' ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={(e) => {
+                        if (typeof window !== 'undefined') {
+                          sessionStorage.removeItem('verdantia_enlaces_state');
+                          sessionStorage.removeItem('verdantia_enlaces_lastClicked');
+                        }
+                        handleNavClick();
+                      }}>🔗 Salud de Enlaces</a>
                       <a href="/dashboard/admin/mantenimiento/biblia" className={`nav-item ${pathname === '/dashboard/admin/mantenimiento/biblia' ? 'active' : ''}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>📜 La Biblia</a>
                     </div>
                   </div>
@@ -845,6 +880,10 @@ function DashboardLayoutContent({
                 <a href="/dashboard/admin/guia-usuario" className={`nav-item ${isActive('/dashboard/admin/guia-usuario')}`} onClick={handleNavClick}>
                   <span className="nav-icon">📖</span>
                   <span>Guía de Usuario</span>
+                </a>
+                <a href="/dashboard/uso-ia" className={`nav-item ${isActive('/dashboard/uso-ia')}`} onClick={handleNavClick}>
+                  <span className="nav-icon">🤖</span>
+                  <span>Uso de IA</span>
                 </a>
               </nav>
             )}

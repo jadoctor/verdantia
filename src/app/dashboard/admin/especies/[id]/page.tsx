@@ -2,6 +2,7 @@
 // Responsividad controlada en EspecieForm (isMobile, @media, innerWidth) - Hot-reload trigger: 2026-06-18T12:58:30
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import EspecieForm from '@/components/admin/EspecieForm';
 import { useEditarEspecie } from './hooks/useEditarEspecie';
 
@@ -10,7 +11,12 @@ import { useEditarEspecie } from './hooks/useEditarEspecie';
 export default function EditarEspeciePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
   const { userEmail, authReady } = useEditarEspecie();
+  const searchParams = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab');
+    return tabParam && ['detalles', 'cultivo', 'fotos', 'pdfs', 'blogs'].includes(tabParam) ? tabParam : 'detalles';
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

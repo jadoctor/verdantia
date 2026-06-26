@@ -16,6 +16,7 @@ export function ProfileTabsNav({ activeTab, setActiveTab }: ProfileTabsNavProps)
     { id: 'suscripcion', label: '⭐ Suscripción' },
     { id: 'logros', label: '🏆 Logros' },
     { id: 'roles', label: '👑 Roles' },
+    { id: 'usoia', label: '✨ Uso de IA' },
     { id: 'cuenta', label: '⚠️ Eliminar Cuenta' }
   ];
 

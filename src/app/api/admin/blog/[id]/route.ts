@@ -53,3 +53,19 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const resolvedParams = await params;
+    const body = await request.json();
+    if (!body.blogestado) return NextResponse.json({ error: 'Estado requerido' }, { status: 400 });
+    
+    await pool.query(
+      'UPDATE blog SET blogestado = ? WHERE idblog = ?',
+      [body.blogestado, resolvedParams.id]
+    );
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Error al actualizar estado' }, { status: 500 });
+  }
+}

@@ -1,0 +1,2925 @@
+﻿diff --git a/src/components/admin/VariedadMediaManager.tsx b/src/components/admin/VariedadMediaManager.tsx
+index 0ce5fc2b..04ea0770 100644
+--- a/src/components/admin/VariedadMediaManager.tsx
++++ b/src/components/admin/VariedadMediaManager.tsx
+@@ -1,9 +1,30 @@
+ 'use client';
++// Next.js Hot Reload Refresh Trigger - Cover ObjectFit Cover And Aspect Ratio 3:4 Applied
+ import React, { useState, useEffect, useRef } from 'react';
+ import { Blurhash } from 'react-blurhash';
+ import { getMediaUrl } from '@/lib/media-url';
+ import { storage } from '@/lib/firebase/config';
+ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
++import DownloadApuntesButton from './DownloadApuntesButton';
++
++// Helper to parse PDF resumen column which might store visual cover metadata as JSON
++const parsePdfResumen = (resumenField: string) => {
++  try {
++    if (resumenField && resumenField.trim().startsWith('{')) {
++      const parsed = JSON.parse(resumenField);
++      return {
++        summary: parsed.resumen || '',
++        metadata: parsed.portadaMetadata || {}
++      };
++    }
++  } catch (e) {
++    console.error('Error parsing pdf resumen JSON:', e);
++  }
++  return {
++    summary: resumenField || '',
++    metadata: {}
++  };
++};
+ 
+ interface VariedadMediaManagerProps {
+   variedadId: string;
+@@ -12,41 +33,60 @@ interface VariedadMediaManagerProps {
+   especieNombre?: string;
+   especieNombreCientifico?: string;
+   especieFamilia?: string;
+-  section?: 'photos' | 'pdfs' | 'all';
++  section?: 'photos' | 'pdfs' | 'blogs' | 'all';
+   onMediaChange?: () => void;
+   apiBasePath?: string;
++  entityType?: 'variedades' | 'afecciones' | 'tratamientos';
+ }
+ 
+-export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange, apiBasePath }: VariedadMediaManagerProps) {
++export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange, apiBasePath, entityType = 'variedades' }: VariedadMediaManagerProps) {
+   const basePath = apiBasePath || `/api/admin/variedades/${variedadId}`;
+   const [photos, setPhotos] = useState<any[]>([]);
+   const [pdfs, setPdfs] = useState<any[]>([]);
+   const [blogs, setBlogs] = useState<any[]>([]);
+   const [uploading, setUploading] = useState(false);
+ 
++  const [aiStats, setAiStats] = useState<{ used: number, max: number, remaining: number } | null>(null);
++
++  const fetchAiStats = async () => {
++    try {
++      const res = await fetch('/api/user/ai-stats', { headers: { 'x-user-email': userEmail || '' } });
++      if (res.ok) setAiStats(await res.json());
++    } catch (e) { console.error('Error fetching ai stats', e); }
++  };
++
+   // AI Image States
+   const [showAiImageModal, setShowAiImageModal] = useState(false);
+   const [aiImageConcept, setAiImageConcept] = useState('');
+   const [aiImageLoading, setAiImageLoading] = useState(false);
+-  const [aiImageTimer, setAiImageTimer] = useState(0);
+   const [aiImageResult, setAiImageResult] = useState<string | null>(null);
+-  const [aiImageDescription, setAiImageDescription] = useState('');
++  const [aiImageDescription, setAiImageDescription] = useState<string>('');
++  const [aiImageUploadSuccess, setAiImageUploadSuccess] = useState(false);
++  const [aiImageTimer, setAiImageTimer] = useState(0);
++  const [uploadTimer, setUploadTimer] = useState(0);
+   const [aiImagePromptPreview, setAiImagePromptPreview] = useState('');
+   const [aiImagePromptEdited, setAiImagePromptEdited] = useState(false);
+   const [showPromptDetails, setShowPromptDetails] = useState(false);
++  const [aiImageCategories, setAiImageCategories] = useState<{ label: string, enabled: boolean }[]>([]);
+ 
+   // PDF Editor & AI States
+   const [editingPdf, setEditingPdf] = useState<any>(null);
+   const [pdfTitle, setPdfTitle] = useState('');
+   const [pdfSummary, setPdfSummary] = useState('');
+   const [pdfApuntes, setPdfApuntes] = useState('');
++  const [pdfAutores, setPdfAutores] = useState('');
++  const [pdfIdentificacion, setPdfIdentificacion] = useState('');
++  const [pdfActivo, setPdfActivo] = useState(true);
+   const [pdfEditorSaveStatus, setPdfEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
++  const [isPdfFormCollapsed, setIsPdfFormCollapsed] = useState(false);
++  const [isBlogsCollapsed, setIsBlogsCollapsed] = useState(true);
++  const [aiImageTargetPdf, setAiImageTargetPdf] = useState<any>(null);
+   const [generatingCoverId, setGeneratingCoverId] = useState<number | null>(null);
+ 
+   // AI PDF Search State
+   const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
+   const [pdfSearchTopic, setPdfSearchTopic] = useState('');
+-  const [pdfSearchResults, setPdfSearchResults] = useState<{title: string, url: string, summary?: string, apuntes?: string}[]>([]);
++  const [pdfSearchResults, setPdfSearchResults] = useState<{title: string, url: string, summary?: string, apuntes?: string, autores?: string, identificacion?: string}[]>([]);
+   const [pdfSearchLoading, setPdfSearchLoading] = useState(false);
+   const [pdfSearchTimer, setPdfSearchTimer] = useState(0);
+   const [pdfSearchError, setPdfSearchError] = useState<string | null>(null);
+@@ -54,6 +94,11 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+ 
+   // Blog Generator State
+   const [blogGenPdf, setBlogGenPdf] = useState<any>(null);
++  const [blogGenTitles, setBlogGenTitles] = useState<string[]>([]);
++  const [blogGenSelectedTitle, setBlogGenSelectedTitle] = useState<string>('');
++  const [blogGenTitlesLoading, setBlogGenTitlesLoading] = useState(false);
++  const [blogGenTitlesSeconds, setBlogGenTitlesSeconds] = useState(0);
++  const blogGenTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+   const [blogGenInstructions, setBlogGenInstructions] = useState('Escribe un post de blog para agricultores principiantes, con un tono motivador, consejos pr├ícticos, emojis y una buena estructura de Markdown.');
+   const [blogGenLoading, setBlogGenLoading] = useState(false);
+   const [blogGenProgress, setBlogGenProgress] = useState('Iniciando motor de IA...');
+@@ -62,6 +107,10 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+   // Drag states
+   const [dragOverPdfs, setDragOverPdfs] = useState(false);
+   const [dragOverPhotos, setDragOverPhotos] = useState(false);
++  const [pdfUrlStatus, setPdfUrlStatus] = useState<Record<string, boolean | null>>({});
++  
++  // Current PDF validation state
++  const [isCurrentPdfRouteOk, setIsCurrentPdfRouteOk] = useState<boolean | null>(null);
+ 
+   // Photo Editor States
+   const [editingPhoto, setEditingPhoto] = useState<any>(null);
+@@ -72,6 +121,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+   const [editorContrast, setEditorContrast] = useState(100);
+   const [editorStyle, setEditorStyle] = useState('');
+   const [editorSeoAlt, setEditorSeoAlt] = useState('');
++  const [editorSeoTitle, setEditorSeoTitle] = useState('');
+   const [editorInitialState, setEditorInitialState] = useState('');
+   const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
+ 
+@@ -122,6 +172,93 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     return () => clearInterval(interval);
+   }, [aiImageLoading]);
+ 
++  useEffect(() => {
++    let interval: any;
++    if (uploading) {
++      setUploadTimer(0);
++      interval = setInterval(() => {
++        setUploadTimer(prev => prev + 1);
++      }, 1000);
++    } else {
++      setUploadTimer(0);
++    }
++    return () => clearInterval(interval);
++  }, [uploading]);
++
++  useEffect(() => {
++    if (!aiImagePromptEdited) {
++      setAiImagePromptPreview(buildPromptPreview(aiImageTargetPdf));
++    }
++  }, [aiImageConcept, aiImageTargetPdf, aiImagePromptEdited]);
++
++  const handleToggleCategory = (label: string) => {
++    let isNowEnabled = false;
++    setAiImageCategories(prev => {
++      const next = prev.map(c => {
++        if (c.label === label) {
++          isNowEnabled = !c.enabled;
++          return { ...c, enabled: isNowEnabled };
++        }
++        return c;
++      });
++      
++      setAiImageConcept(curr => {
++        if (isNowEnabled) {
++          if (curr.toLowerCase().includes(label.toLowerCase())) return curr;
++          return curr.trim() ? `${label}, ${curr}` : label;
++        } else {
++          const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++          const escaped = escapeRegExp(label);
++          const regex = new RegExp(`\\b${escaped}\\b\\s*,?\\s*`, 'gi');
++          let cleaned = curr.replace(regex, '');
++          cleaned = cleaned.replace(/,\s*,/g, ',').trim().replace(/^,|,$/g, '').trim();
++          return cleaned;
++        }
++      });
++      
++      return next;
++    });
++  };
++
++
++  useEffect(() => {
++    if (!editingPdf || !editingPdf.ruta) {
++      setIsCurrentPdfRouteOk(null);
++      return;
++    }
++    
++    let isMounted = true;
++    setIsCurrentPdfRouteOk(null);
++
++    const checkUrl = async () => {
++      const fullUrl = getMediaUrl(editingPdf.ruta);
++      try {
++        const res = await fetch('/api/admin/check-url', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify({ urls: [fullUrl] })
++        });
++        if (!isMounted) return;
++        if (res.ok) {
++          const data = await res.json();
++          setIsCurrentPdfRouteOk(data.results[fullUrl] === true);
++        } else {
++          setIsCurrentPdfRouteOk(false);
++        }
++      } catch (e) {
++        console.error('Error checking current PDF URL:', e);
++        if (isMounted) {
++          setIsCurrentPdfRouteOk(false);
++        }
++      }
++    };
++
++    checkUrl();
++    return () => {
++      isMounted = false;
++    };
++  }, [editingPdf?.ruta]);
++
+   const loadMedia = async () => {
+     try {
+       const promises: Promise<void>[] = [];
+@@ -135,13 +272,19 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+         );
+       }
+       
+-      if (section === 'all' || section === 'pdfs') {
+-        promises.push(
+-          fetch(`${basePath}/pdfs`, { headers: { 'x-user-email': userEmail } })
+-            .then(res => res.json())
+-            .then(data => setPdfs(data.pdfs || []))
+-            .catch(e => console.error('Error loading pdfs:', e))
+-        );
++      if (section === 'all' || section === 'pdfs' || section === 'blogs') {
++        if (section === 'all' || section === 'pdfs') {
++          promises.push(
++            fetch(`${basePath}/pdfs`, { headers: { 'x-user-email': userEmail } })
++              .then(res => res.json())
++              .then(data => {
++                const loadedPdfs = data.pdfs || [];
++                setPdfs(loadedPdfs);
++                checkPdfUrls(loadedPdfs);
++              })
++              .catch(e => console.error('Error loading pdfs:', e))
++          );
++        }
+         promises.push(
+           fetch(`${basePath}/blogs`, { headers: { 'x-user-email': userEmail } })
+             .then(res => res.json())
+@@ -157,6 +300,26 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     }
+   };
+ 
++  const checkPdfUrls = async (pdfList: any[]) => {
++    const externalUrls = pdfList
++      .filter(p => p.ruta && p.ruta.startsWith('http'))
++      .map(p => p.ruta);
++    if (externalUrls.length === 0) return;
++    try {
++      const res = await fetch('/api/admin/check-url', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ urls: externalUrls })
++      });
++      if (res.ok) {
++        const data = await res.json();
++        setPdfUrlStatus(prev => ({ ...prev, ...data.results }));
++      }
++    } catch (e) {
++      console.error('Error checking PDF URLs:', e);
++    }
++  };
++
+   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photos' | 'pdfs') => {
+     if (!e.target.files || e.target.files.length === 0) return;
+     setUploading(true);
+@@ -194,8 +357,11 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     }
+   };
+ 
+-  const handleDelete = async (id: string, type: 'photos' | 'pdfs') => {
+-    if (!confirm('┬┐Seguro que quieres eliminar este archivo?')) return;
++  const handleDelete = async (id: string, type: 'photos' | 'pdfs', action: 'delete' | 'inactivate' = 'delete') => {
++    const msg = action === 'delete'
++      ? '┬┐Seguro que quieres eliminar este archivo?'
++      : '┬┐Seguro que quieres inactivar este archivo? Dejar├í de ser visible pero se conservar├í al tener blogs asociados.';
++    if (!confirm(msg)) return false;
+     
+     try {
+       const res = await fetch(`${basePath}/${type}?id=${id}`, {
+@@ -204,9 +370,20 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+       });
+       if (res.ok) {
+         await loadMedia();
++        return true;
+       }
++      return false;
+     } catch (e) {
+       console.error('Error deleting:', e);
++      return false;
++    }
++  };
++
++  const handleEditorDelete = async () => {
++    if (!editingPdf) return;
++    const success = await handleDelete(editingPdf.id, 'pdfs', 'delete');
++    if (success) {
++      setEditingPdf(null);
+     }
+   };
+ 
+@@ -225,46 +402,77 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     }
+   };
+ 
+-  // ÔöÇÔöÇ Guardar edici├│n de PDF ÔöÇÔöÇ
+-  const savePdfEdits = async () => {
+-    if (!editingPdf || !variedadId) return;
+-
++  // ÔöÇÔöÇ Auto-Guardado de edici├│n de PDF ÔöÇÔöÇ
++  useEffect(() => {
++    if (!editingPdf) return;
++    
++    const { summary: initialSummary, metadata: coverMeta } = parsePdfResumen(editingPdf.resumen);
++    
++    const initialActivo = editingPdf.activo !== 0;
+     const hasChanges = pdfTitle !== (editingPdf.titulo || '') ||
+-      pdfSummary !== (editingPdf.resumen || '') ||
+-      pdfApuntes !== (editingPdf.apuntes || '');
++      pdfSummary !== initialSummary ||
++      pdfApuntes !== (editingPdf.apuntes || '') ||
++      pdfAutores !== (editingPdf.autores || '') ||
++      pdfIdentificacion !== (editingPdf.identificacion || '') ||
++      pdfActivo !== initialActivo;
+ 
+     if (!hasChanges) {
+-      setPdfEditorSaveStatus('no-changes');
+-      setTimeout(() => {
+-        setPdfEditorSaveStatus('idle');
+-        setEditingPdf(null);
+-      }, 1500);
++      if (pdfEditorSaveStatus !== 'idle' && pdfEditorSaveStatus !== 'no-changes') {
++        setPdfEditorSaveStatus('no-changes');
++      }
+       return;
+     }
+ 
+     setPdfEditorSaveStatus('saving');
+-    try {
+-      await fetch(`${basePath}/pdfs`, {
+-        method: 'PUT',
+-        headers: {
+-          'Content-Type': 'application/json',
+-          'x-user-email': userEmail || ''
+-        },
+-        body: JSON.stringify({ pdfId: editingPdf.id, titulo: pdfTitle, resumen: pdfSummary, apuntes: pdfApuntes })
+-      });
+-      setEditingPdf(null);
+-      loadMedia();
+-    } catch {
+-      alert('ÔØî Error guardando PDF');
+-    } finally {
+-      setPdfEditorSaveStatus('idle');
+-    }
+-  };
++    const timer = setTimeout(async () => {
++      try {
++        const serializedResumen = JSON.stringify({
++          resumen: pdfSummary,
++          portadaMetadata: coverMeta
++        });
++
++        await fetch(`${basePath}/pdfs`, {
++          method: 'PUT',
++          headers: {
++            'Content-Type': 'application/json',
++            'x-user-email': userEmail || ''
++          },
++          body: JSON.stringify({ 
++            pdfId: editingPdf.id, 
++            titulo: pdfTitle, 
++            resumen: serializedResumen, 
++            apuntes: pdfApuntes, 
++            autores: pdfAutores, 
++            identificacion: pdfIdentificacion,
++            activo: pdfActivo ? 1 : 0
++          })
++        });
++        
++        setPdfEditorSaveStatus('no-changes');
++        setEditingPdf((prev: any) => prev ? ({
++          ...prev,
++          titulo: pdfTitle,
++          resumen: serializedResumen,
++          apuntes: pdfApuntes,
++          autores: pdfAutores,
++          identificacion: pdfIdentificacion,
++          activo: pdfActivo ? 1 : 0
++        }) : prev);
++        
++        loadMedia();
++      } catch (err) {
++        console.error('Error auto-guardando PDF', err);
++      }
++    }, 1000);
++
++    return () => clearTimeout(timer);
++  }, [pdfTitle, pdfSummary, pdfApuntes, pdfAutores, pdfIdentificacion, pdfActivo]);
+ 
+   // ÔöÇÔöÇ Generar Portada de PDF con IA ÔöÇÔöÇ
+   const generatePdfCover = async (pdf: any) => {
+     setGeneratingCoverId(pdf.id);
+     try {
++      const { summary } = parsePdfResumen(pdf.resumen);
+       const res = await fetch('/api/ai/generate-image', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+@@ -272,12 +480,12 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+           tipoEntidad: 'documento',
+           especieNombre: especieNombre,
+           variedadNombre: variedadNombre,
+-          concept: `Portada del documento titulado "${pdf.titulo}" sobre la variedad de ${especieNombre} llamada "${variedadNombre}". Estilo limpio, acad├®mico, con ilustraci├│n bot├ínica. Contenido principal: ${pdf.resumen}`
++          concept: `Portada del documento titulado "${pdf.titulo}" sobre la variedad de ${especieNombre} llamada "${variedadNombre}". Estilo limpio, acad├®mico, con ilustraci├│n bot├ínica. Contenido principal: ${summary}`
+         })
+       });
+       const data = await res.json();
+       if (data.success && data.base64) {
+-        await fetch(`${basePath}/pdfs`, {
++        const updateRes = await fetch(`${basePath}/pdfs`, {
+           method: 'PUT',
+           headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+           body: JSON.stringify({
+@@ -286,11 +494,12 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+           })
+         });
+ 
++        const updateData = updateRes.ok ? await updateRes.json() : null;
+         await loadMedia();
+ 
+         setEditingPdf((prev: any) => {
+           if (prev && prev.id === pdf.id) {
+-            return { ...prev, portada: `data:image/jpeg;base64,${data.base64}` };
++            return { ...prev, portada: updateData?.portada || `data:image/jpeg;base64,${data.base64}` };
+           }
+           return prev;
+         });
+@@ -321,7 +530,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     try {
+       const res = await fetch('/api/ai/pdf-search', {
+         method: 'POST',
+-        headers: { 'Content-Type': 'application/json' },
++        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+         body: JSON.stringify({ topic: pdfSearchTopic, especieNombre: especieNombre, variedadNombre: variedadNombre }),
+         signal: abortController.signal
+       });
+@@ -335,6 +544,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+ 
+       if (res.ok && data.links) {
+         setPdfSearchResults(data.links);
++        fetchAiStats(); // Refrescar el contador de interacciones IA
+       } else {
+         setPdfSearchError(data.error || 'No se encontraron resultados o hubo un error.');
+       }
+@@ -350,14 +560,12 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     }
+   };
+ 
+-  const handleAddPdfLink = async (title: string, url: string, summary: string = '', apuntes: string = '') => {
++  const handleAddPdfLink = async (title: string, url: string, summary: string = '', apuntes: string = '', autores: string = '', identificacion: string = '') => {
+     try {
+-      // Usamos el endpoint gen├®rico de links que se conecta con Firebase y crea el registro
+-      // Haremos una peque├▒a adaptaci├│n enviando variedadId a su propio endpoint
+       const res = await fetch(`${basePath}/pdfs/link`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+-        body: JSON.stringify({ title, url, summary, apuntes, targetModel: 'variedad' })
++        body: JSON.stringify({ title, url, summary, apuntes, autores, identificacion })
+       });
+       const data = await res.json();
+       if (data.success) {
+@@ -384,7 +592,9 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+           pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
+-          instructions: blogGenInstructions,
++          instructions: blogGenSelectedTitle 
++            ? `${blogGenInstructions}\n\nREQUISITO OBLIGATORIO: El t├¡tulo del art├¡culo DEBE SER EXACTAMENTE ESTE: "${blogGenSelectedTitle}"`
++            : blogGenInstructions,
+           especieId: null,
+           variedadId: variedadId,
+           autorEmail: userEmail,
+@@ -412,8 +622,54 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     }
+   };
+ 
++  const fetchBlogTitles = async () => {
++    if (!blogGenPdf) return;
++    setBlogGenTitlesLoading(true);
++    setBlogGenTitles([]);
++    setBlogGenSelectedTitle('');
++    setBlogGenTitlesSeconds(0);
++    
++    if (blogGenTimerRef.current) clearInterval(blogGenTimerRef.current);
++    blogGenTimerRef.current = setInterval(() => setBlogGenTitlesSeconds(s => s + 1), 1000);
++
++    try {
++      const res = await fetch('/api/ai/generate-blog-titles', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
++        body: JSON.stringify({
++          pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
++          instructions: blogGenInstructions,
++          especieNombre: variedadNombre,
++          contexto: {
++            tipo: 'variedad',
++            nombre: variedadNombre || 'Variedad'
++          },
++          existingTitles: blogs.map((b: any) => b.titulo)
++        })
++      });
++      const data = await res.json();
++      if (data.success && data.titles) {
++        setBlogGenTitles(data.titles);
++      } else {
++        alert(data.error || 'Error al proponer t├¡tulos con IA');
++      }
++    } catch (e) {
++      console.error(e);
++      alert('Error de conexi├│n al obtener t├¡tulos');
++    } finally {
++      setBlogGenTitlesLoading(false);
++      if (blogGenTimerRef.current) clearInterval(blogGenTimerRef.current);
++    }
++  };
++
++  useEffect(() => {
++    if (blogGenPdf && blogGenTitles.length === 0 && !blogGenTitlesLoading && !blogGenSelectedTitle) {
++      fetchBlogTitles();
++    }
++  }, [blogGenPdf]);
++
+   const handleDeleteBlog = async (blogId: number) => {
+-    if (!confirm('┬┐Est├ís seguro de que quieres eliminar este blog generado de la base de datos?')) return;
++    if (!confirm('┬┐Est├ís seguro de que quieres eliminar DEFINITIVAMENTE este blog generado de la base de datos?')) return;
+     try {
+       const res = await fetch(`/api/admin/blog/${blogId}`, {
+         method: 'DELETE',
+@@ -431,6 +687,26 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     }
+   };
+ 
++  const handleInactivateBlog = async (blogId: number, blog: any) => {
++    if (!confirm('┬┐Quieres cambiar el estado de este blog a INACTIVO? Seguir├í existiendo pero no ser├í visible.')) return;
++    try {
++      const res = await fetch(`/api/admin/blog/${blogId}`, {
++        method: 'PATCH',
++        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
++        body: JSON.stringify({ blogestado: 'inactivo' })
++      });
++      if (res.ok) {
++        loadMedia();
++      } else {
++        const data = await res.json();
++        alert(data.error || 'Error al inactivar blog');
++      }
++    } catch (e) {
++      console.error(e);
++      alert('Error al inactivar blog');
++    }
++  };
++
+   // ÔöÇÔöÇ Drag-to-Pan en el editor de fotos ÔöÇÔöÇ
+   const editorDragRef = React.useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
+     dragging: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50
+@@ -481,7 +757,8 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+         brightness: meta.profile_brightness ?? 100,
+         contrast: meta.profile_contrast ?? 100,
+         style: meta.profile_style ?? '',
+-        seo_alt: meta.seo_alt ?? ''
++        seo_alt: meta.seo_alt ?? '',
++        seo_title: meta.seo_title ?? ''
+       };
+       setEditorX(initial.x);
+       setEditorY(initial.y);
+@@ -490,11 +767,12 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+       setEditorContrast(initial.contrast);
+       setEditorStyle(initial.style);
+       setEditorSeoAlt(initial.seo_alt);
++      setEditorSeoTitle(initial.seo_title);
+       setEditorInitialState(JSON.stringify(initial));
+     } catch {
+       setEditorX(50); setEditorY(50); setEditorZoom(100);
+-      setEditorBrightness(100); setEditorContrast(100); setEditorStyle(''); setEditorSeoAlt('');
+-      setEditorInitialState(JSON.stringify({ x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: '' }));
++      setEditorBrightness(100); setEditorContrast(100); setEditorStyle(''); setEditorSeoAlt(''); setEditorSeoTitle('');
++      setEditorInitialState(JSON.stringify({ x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: '', seo_title: '' }));
+     }
+     setEditingPhoto(photo);
+   };
+@@ -509,49 +787,204 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+       profile_brightness: editorBrightness,
+       profile_contrast: editorContrast,
+       profile_style: editorStyle,
+-      seo_alt: editorSeoAlt
++      seo_alt: editorSeoAlt,
++      seo_title: editorSeoTitle
+     });
+     try {
+-      const res = await fetch(`${basePath}/photos`, {
+-        method: 'PUT',
+-        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+-        body: JSON.stringify({ 
+-          action: 'updateMeta', 
+-          photoId: editingPhoto.id, 
+-          resumen 
+-        })
+-      });
++      if (editingPhoto.isPdfCover) {
++        const targetPdf = pdfs.find(p => p.id === editingPhoto.id);
++        if (!targetPdf) throw new Error('PDF no encontrado');
++
++        const { summary } = parsePdfResumen(targetPdf.resumen);
++        const serializedResumen = JSON.stringify({
++          resumen: summary,
++          portadaMetadata: {
++            profile_object_x: editorX,
++            profile_object_y: editorY,
++            profile_object_zoom: editorZoom,
++            profile_brightness: editorBrightness,
++            profile_contrast: editorContrast,
++            profile_style: editorStyle,
++            seo_alt: editorSeoAlt,
++            seo_title: editorSeoTitle
++          }
++        });
+ 
+-      if (res.ok) {
+-        setEditingPhoto(null);
+-        await loadMedia();
++        const res = await fetch(`${basePath}/pdfs`, {
++          method: 'PUT',
++          headers: {
++            'Content-Type': 'application/json',
++            'x-user-email': userEmail || ''
++          },
++          body: JSON.stringify({ 
++            pdfId: targetPdf.id, 
++            resumen: serializedResumen
++          })
++        });
++
++        if (res.ok) {
++          setEditingPhoto(null);
++          if (editingPdf && editingPdf.id === targetPdf.id) {
++            setEditingPdf((prev: any) => prev ? ({ ...prev, resumen: serializedResumen }) : prev);
++          }
++          await loadMedia();
++        } else {
++          alert('ÔØî Error guardando ajustes de portada');
++        }
+       } else {
+-        alert('ÔØî Error guardando ajustes');
++        const res = await fetch(`${basePath}/photos`, {
++          method: 'PUT',
++          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
++          body: JSON.stringify({ 
++            action: 'updateMeta', 
++            photoId: editingPhoto.id, 
++            resumen 
++          })
++        });
++
++        if (res.ok) {
++          setEditingPhoto(null);
++          await loadMedia();
++        } else {
++          alert('ÔØî Error guardando ajustes');
++        }
+       }
+     } catch (e) {
+       console.error('Error saving photo edits:', e);
+-      alert('Error al guardar los cambios de la foto');
++      alert('Error al guardar los cambios');
+     } finally {
+       setPhotoEditorSaveStatus('idle');
+     }
+   };
+ 
+-  const buildPromptPreview = () => {
++  const buildPromptPreview = (targetPdf?: any) => {
++    const activeTarget = targetPdf || aiImageTargetPdf;
++    if (activeTarget) {
++      const subject = variedadNombre ? `la variedad "${variedadNombre}" de la especie "${especieNombre}"` : `"${especieNombre}"`;
++      return `Ilustraci├│n digital de alta calidad, estilo editorial y acad├®mico, dise├▒o limpio y minimalista.\n` +
++        `Tema principal: Portada de documento t├®cnico o manual sobre ${subject}.\n` +
++        `Contexto y situaci├│n: ${aiImageConcept || `Portada del documento titulado "${activeTarget.titulo || activeTarget.nombreOriginal}". Estilo limpio, acad├®mico, con ilustraci├│n bot├ínica.`}.\n` +
++        `REGLAS ESTRICTAS E INQUEBRANTABLES:\n` +
++        `1. La imagen DEBE parecer la portada de un libro o manual t├®cnico, con composici├│n equilibrada y espacio negativo.\n` +
++        `2. Usa colores sobrios y elementos gr├íficos relacionados con la agricultura o la bot├ínica, pero manteniendo un formato de publicaci├│n profesional.`;
++    }
++    if (entityType === 'tratamientos') {
++      const defaultConcept = `botella, envase, caja o aplicaci├│n del producto/tratamiento agr├¡cola "${variedadNombre}" sobre un cultivo, con un fondo r├║stico o de invernadero`;
++      return `Fotograf├¡a profesional de stock de alta resoluci├│n (8K), tomada con una c├ímara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminaci├│n natural suave de hora dorada.\n` +
++      `Sujeto principal: Producto o tratamiento agr├¡cola "${variedadNombre}".\n` +
++      `Escena concreta: ${aiImageConcept || defaultConcept}.\n` +
++      `Composici├│n: regla de los tercios, sujeto n├¡tido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetaci├│n de huerto o herramientas de aplicaci├│n.\n` +
++      `REGLAS ESTRICTAS E INQUEBRANTABLES:\n` +
++      `1. El sujeto de la fotograf├¡a es SIEMPRE el tratamiento o producto agr├¡cola "${variedadNombre}". Es obligatorio y sumamente cr├¡tico que la imagen contemple e ilustre fielmente las caracter├¡sticas de este producto.\n` +
++      `2. La fotograf├¡a debe parecer tomada por un fot├│grafo profesional de productos agr├¡colas.\n` +
++      `3. El entorno debe ser obligatoriamente agr├¡cola: huerto, bancal, invernadero, mesa de herramientas o almac├®n r├║stico.\n` +
++      `4. NO incluir personas, texto, logotipos ni marcas de agua.\n` +
++      `5. Mostrar el producto en su mejor estado, limpio y apetecible visualmente.\n` +
++      `6. Buscar descripciones reales del tratamiento "${variedadNombre}" en internet para que el generador pueda ilustrarlo con total fidelidad.`;
++    }
++    if (entityType === 'afecciones') {
++      const defaultConcept = `s├¡ntomas visibles de la afecci├│n/plaga "${variedadNombre}" en las hojas o frutos de una planta de huerto, con un nivel de detalle macrosc├│pico`;
++      return `Fotograf├¡a profesional cient├¡fica macro de alta resoluci├│n (8K), tomada con c├ímara DSLR y objetivo macro.\n` +
++      `Sujeto principal: Da├▒os, plaga o enfermedad bot├ínica llamada "${variedadNombre}".\n` +
++      `Escena concreta: ${aiImageConcept || defaultConcept}.\n` +
++      `Composici├│n: sujeto n├¡tido en primer plano (insectos, hongos, manchas en hojas), fondo desenfocado vegetal.\n` +
++      `REGLAS ESTRICTAS E INQUEBRANTABLES:\n` +
++      `1. El sujeto de la fotograf├¡a es SIEMPRE la plaga o enfermedad bot├ínica "${variedadNombre}".\n` +
++      `2. Fotograf├¡a macro de extrema cercan├¡a, realista y cient├¡fica.\n` +
++      `3. El entorno debe ser obligatoriamente agr├¡cola.\n` +
++      `4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n` +
++      `5. Buscar fotos reales de la afecci├│n "${variedadNombre}" en internet para ilustrar sus s├¡ntomas reales (clorosis, necrosis, pulgones, etc) con total fidelidad y exactitud fitopatol├│gica.`;
++    }
++
+     const defaultConcept = `varios ejemplares de la variedad "${variedadNombre}" (perteneciente a la especie bot├ínica "${especieNombre}") reci├®n cosechados, dispuestos sobre una mesa r├║stica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
+     const sciNameContext = especieNombreCientifico ? ` Nombre cient├¡fico: ${especieNombreCientifico}.` : '';
+     const familyContext = especieFamilia ? ` Familia bot├ínica: ${especieFamilia}.` : '';
+ 
+-    return `Fotograf├¡a profesional de stock de alta resoluci├│n (8K), tomada con una c├ímara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminaci├│n natural suave de hora dorada.\\n` +
+-      `Sujeto principal: La variedad "${variedadNombre}" de la especie bot├ínica "${especieNombre}" (hortaliza/planta comestible de huerto).${sciNameContext}${familyContext}\\n` +
+-      `Escena concreta: ${aiImageConcept || defaultConcept}.\\n` +
+-      `Composici├│n: regla de los tercios, sujeto n├¡tido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetaci├│n de huerto.\\n` +
+-      `REGLAS ESTRICTAS E INQUEBRANTABLES:\\n` +
+-      `1. El sujeto de la fotograf├¡a es SIEMPRE la variedad "${variedadNombre}" perteneciente a la especie "${especieNombre}". Es obligatorio y sumamente cr├¡tico que la imagen contemple e ilustre fielmente las caracter├¡sticas espec├¡ficas de esta variedad bot├ínica y de su especie progenitora. La representaci├│n visual debe centrarse en mostrar con absoluta fidelidad y exactitud bot├ínica los rasgos fenot├¡picos de la especie "${especieNombre}" y los atributos caracter├¡sticos de la variedad "${variedadNombre}" (color del fruto o follaje, forma, tama├▒o, textura y apariencia foliar/fruto).\\n` +
+-      `2. La fotograf├¡a debe parecer tomada por un fot├│grafo profesional de gastronom├¡a o agricultura, con colores naturales muy realistas y texturas detalladas, sin parecer artificial.\\n` +
+-      `3. El entorno debe ser obligatoriamente agr├¡cola: huerto, bancal, invernadero, mesa de cosecha o cocina r├║stica.\\n` +
+-      `4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\\n` +
+-      `5. Mostrar el producto hort├¡cola en su mejor estado: fresco, limpio, apetecible, con gotas de roc├¡o o tierra suelta si es apropiado.\\n` +
+-      `6. Buscar fotos, im├ígenes y descripciones reales de la variedad de ${especieNombre} llamada "${variedadNombre}" en internet para ver c├│mo es f├¡sicamente. A partir de lo que observes en las im├ígenes y la informaci├│n, describe con detalle sus caracter├¡sticas visuales reales y fenotipo (color exacto, forma, tama├▒o, hojas y aspecto general) para que un generador de im├ígenes de IA pueda ilustrarla con total fidelidad bot├ínica y no se la invente.`;
++    return `Fotograf├¡a profesional de stock de alta resoluci├│n (8K), tomada con una c├ímara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminaci├│n natural suave de hora dorada.\n` +
++      `Sujeto principal: La variedad "${variedadNombre}" de la especie bot├ínica "${especieNombre}" (hortaliza/planta comestible de huerto).${sciNameContext}${familyContext}\n` +
++      `Escena concreta: ${aiImageConcept || defaultConcept}.\n` +
++      `Composici├│n: regla de los tercios, sujeto n├¡tido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetaci├│n de huerto.\n` +
++      `REGLAS ESTRICTAS E INQUEBRANTABLES:\n` +
++      `1. El sujeto de la fotograf├¡a es SIEMPRE la variedad "${variedadNombre}" perteneciente a la especie "${especieNombre}". Es obligatorio y sumamente cr├¡tico que la imagen contemple e ilustre fielmente las caracter├¡sticas espec├¡ficas de esta variedad bot├ínica y de su especie progenitora.\n` +
++      `2. La fotograf├¡a debe parecer tomada por un fot├│grafo profesional de gastronom├¡a o agricultura, con colores naturales muy realistas y texturas detalladas, sin parecer artificial.\n` +
++      `3. El entorno debe ser obligatoriamente agr├¡cola: huerto, bancal, invernadero, mesa de cosecha o cocina r├║stica.\n` +
++      `4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n` +
++      `5. Mostrar el producto hort├¡cola en su mejor estado: fresco, limpio, apetecible.\n` +
++      `6. Buscar fotos, im├ígenes y descripciones reales de la variedad de ${especieNombre} llamada "${variedadNombre}" en internet para describir sus caracter├¡sticas visuales reales y fenotipo (color exacto, forma, tama├▒o, hojas y aspecto general) para ilustrarla con total fidelidad bot├ínica.`;
++  };
++
++  const openAiImageModal = async () => {
++    await fetchAiStats();
++    setAiImageTargetPdf(null);
++    setAiImageCategories([
++      { label: 'Alta resoluci├│n', enabled: true },
++      { label: 'Iluminaci├│n natural', enabled: true },
++      { label: 'Detalle macro', enabled: true },
++      { label: 'Entorno agr├¡cola', enabled: true }
++    ]);
++    setAiImageConcept('Alta resoluci├│n, Iluminaci├│n natural, Detalle macro, Entorno agr├¡cola');
++    setShowAiImageModal(true);
++    setAiImageResult(null);
++    setAiImageDescription('');
++    setAiImagePromptEdited(false);
++    setAiImageUploadSuccess(false);
++    setAiImagePromptPreview(buildPromptPreview(null));
++  };
++
++  const openAiCoverModal = async (pdf: any) => {
++    await fetchAiStats();
++    setAiImageTargetPdf(pdf);
++    setAiImageCategories([
++      { label: 'Ilustraci├│n bot├ínica', enabled: true },
++      { label: 'Dise├▒o minimalista', enabled: true },
++      { label: 'Estilo editorial', enabled: true },
++      { label: 'Formato acad├®mico', enabled: true }
++    ]);
++    
++    const { summary } = parsePdfResumen(pdf.resumen);
++    const resolvedSummary = pdfSummary || summary || '';
++    const resolvedApuntes = pdfApuntes || pdf.apuntes || '';
++    const resolvedAutores = pdfAutores || pdf.autores || '';
++    const resolvedTitle = pdfTitle || pdf.titulo || pdf.nombreOriginal || '';
++
++    let technicalContext = '';
++    if (resolvedSummary) technicalContext += `Resumen del documento: ${resolvedSummary}. `;
++    if (resolvedApuntes) {
++      const snippet = resolvedApuntes.length > 250 ? resolvedApuntes.substring(0, 250) + '...' : resolvedApuntes;
++      technicalContext += `Detalles t├®cnicos y apuntes agr├¡colas: ${snippet}. `;
++    }
++    if (resolvedAutores) technicalContext += `Autores/Instituci├│n: ${resolvedAutores}. `;
++    if (especieNombreCientifico) technicalContext += `Nombre cient├¡fico: ${especieNombreCientifico}. `;
++    if (especieFamilia) technicalContext += `Familia bot├ínica: ${especieFamilia}. `;
++
++    const conceptText = `Ilustraci├│n bot├ínica, Dise├▒o minimalista, Estilo editorial, Formato acad├®mico. Portada para el manual/gu├¡a titulado "${resolvedTitle}". Contexto t├®cnico: ${technicalContext}`;
++    
++    setAiImageConcept(conceptText);
++    setShowAiImageModal(true);
++    setAiImageResult(null);
++    setAiImageDescription('');
++    setAiImagePromptEdited(false);
++    setAiImageUploadSuccess(false);
++    
++    const subject = variedadNombre ? `la variedad "${variedadNombre}" de la especie "${especieNombre}"` : `"${especieNombre}"`;
++    const tempPrompt = `Ilustraci├│n digital de alta calidad, estilo editorial y acad├®mico, dise├▒o limpio y minimalista.\n` +
++      `Tema principal: Portada de documento t├®cnico o manual sobre ${subject}.\n` +
++      `Contexto y situaci├│n: ${conceptText}.\n` +
++      `REGLAS ESTRICTAS E INQUEBRANTABLES:\n` +
++      `1. La imagen DEBE parecer la portada de un libro o manual t├®cnico, con composici├│n equilibrada y espacio negativo.\n` +
++      `2. Usa colores sobrios y elementos gr├íficos relacionados con la agricultura o la bot├ínica, pero manteniendo un formato de publicaci├│n profesional.`;
++    setAiImagePromptPreview(tempPrompt);
++  };
++
++  const openPdfSearchModal = async () => {
++    await fetchAiStats();
++    setShowPdfSearchModal(true);
++  };
++
++  const openBlogModal = async (p: any) => {
++    await fetchAiStats();
++    setBlogGenPdf(p);
++    setShowBlogPrompt(true);
+   };
+ 
+   const generateAiImage = async () => {
+@@ -560,16 +993,14 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     setAiImageDescription('');
+     try {
+       const body: any = { 
+-        tipoEntidad: 'variedad',
++        tipoEntidad: aiImageTargetPdf ? 'documento' : (entityType === 'tratamientos' ? 'tratamiento' : entityType === 'afecciones' ? 'afeccion' : 'variedad'),
+         especieNombre: especieNombre,
+         variedadNombre: variedadNombre,
+         especieNombreCientifico: especieNombreCientifico,
+         especieFamilia: especieFamilia,
+-        concept: aiImageConcept 
++        concept: aiImageConcept,
++        customPrompt: aiImagePromptPreview || buildPromptPreview()
+       };
+-      if (aiImagePromptEdited && aiImagePromptPreview.trim()) {
+-        body.customPrompt = aiImagePromptPreview;
+-      }
+       const res = await fetch('/api/ai/generate-image', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+@@ -598,43 +1029,107 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+     if (!aiImageResult) return;
+     setUploading(true);
+     try {
+-      const base64Data = aiImageResult.split(',')[1];
+-      const byteCharacters = atob(base64Data);
+-      const byteNumbers = new Array(byteCharacters.length);
+-      for (let i = 0; i < byteCharacters.length; i++) {
+-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+-      }
+-      const byteArray = new Uint8Array(byteNumbers);
+-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+-      
+-      const file = new File([blob], `ai_generated_${Date.now()}.jpg`, { type: 'image/jpeg' });
+-      
+-      const tempPath = `uploads/temp/${Date.now()}_ai_variedad_${variedadId}.jpg`;
+-      const storageRef = ref(storage, tempPath);
+-      await uploadBytes(storageRef, file);
+-      
+-      const saveRes = await fetch(`${basePath}/photos`, {
+-        method: 'POST',
+-        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
+-        body: JSON.stringify({
+-          rawStoragePath: tempPath,
+-          originalFilename: file.name
+-        })
+-      });
+-      if (!saveRes.ok) {
+-        throw new Error('Error guardando en BD');
++      if (aiImageTargetPdf) {
++        const targetPdf = pdfs.find(p => p.id === aiImageTargetPdf.id);
++        let summaryText = '';
++        if (targetPdf) {
++          summaryText = parsePdfResumen(targetPdf.resumen).summary;
++        } else {
++          const parsed = parsePdfResumen(aiImageTargetPdf.resumen || '');
++          summaryText = pdfSummary || parsed.summary;
++        }
++
++        const defaultSeoAlt = aiImageDescription || `Ilustraci├│n bot├ínica para la portada de ${aiImageTargetPdf.titulo || aiImageTargetPdf.nombreOriginal} - Verdantia`;
++        const defaultSeoTitle = `Portada de ${aiImageTargetPdf.titulo || aiImageTargetPdf.nombreOriginal} - Verdantia`;
++
++        const serializedResumen = JSON.stringify({
++          resumen: summaryText,
++          portadaMetadata: {
++            profile_object_x: 50,
++            profile_object_y: 50,
++            profile_object_zoom: 100,
++            profile_brightness: 100,
++            profile_contrast: 100,
++            profile_style: '',
++            seo_alt: defaultSeoAlt,
++            seo_title: defaultSeoTitle
++          }
++        });
++
++        const saveRes = await fetch(`${basePath}/pdfs`, {
++          method: 'PUT',
++          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
++          body: JSON.stringify({
++            pdfId: aiImageTargetPdf.id,
++            base64Cover: aiImageResult,
++            resumen: serializedResumen
++          })
++        });
++
++        if (saveRes.ok) {
++          const updateData = await saveRes.json();
++          setAiImageUploadSuccess(true);
++          setTimeout(() => {
++            setShowAiImageModal(false);
++            setUploading(false);
++            setAiImageUploadSuccess(false);
++            setEditingPdf((prev: any) => {
++              if (prev && prev.id === aiImageTargetPdf.id) {
++                return { 
++                  ...prev, 
++                  portada: updateData?.portada || aiImageResult,
++                  resumen: serializedResumen
++                };
++              }
++              return prev;
++            });
++            setAiImageTargetPdf(null);
++            if (onMediaChange) onMediaChange();
++            loadMedia();
++          }, 1500);
++        } else {
++          throw new Error('Error guardando portada en BD');
++        }
++      } else {
++        const base64Data = aiImageResult.split(',')[1];
++        const byteCharacters = atob(base64Data);
++        const byteNumbers = new Array(byteCharacters.length);
++        for (let i = 0; i < byteCharacters.length; i++) {
++          byteNumbers[i] = byteCharacters.charCodeAt(i);
++        }
++        const byteArray = new Uint8Array(byteNumbers);
++        const blob = new Blob([byteArray], { type: 'image/jpeg' });
++        
++        const file = new File([blob], `ai_generated_${Date.now()}.jpg`, { type: 'image/jpeg' });
++        
++        const tempPath = `uploads/temp/${Date.now()}_ai_variedad_${variedadId}.jpg`;
++        const storageRef = ref(storage, tempPath);
++        await uploadBytes(storageRef, file);
++        
++        const saveRes = await fetch(`${basePath}/photos`, {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
++          body: JSON.stringify({
++            rawStoragePath: tempPath,
++            originalFilename: file.name
++          })
++        });
++        if (saveRes.ok) {
++          setAiImageUploadSuccess(true);
++          setTimeout(() => {
++            setShowAiImageModal(false);
++            setUploading(false);
++            setAiImageUploadSuccess(false);
++            if (onMediaChange) onMediaChange();
++            loadMedia();
++          }, 1500);
++        } else {
++          throw new Error('Error guardando en BD');
++        }
+       }
+-      await loadMedia();
+-      setAiImageResult(null);
+-      setAiImageConcept('');
+-      setAiImageDescription('');
+-      setAiImagePromptPreview('');
+-      setAiImagePromptEdited(false);
+-      setShowAiImageModal(false);
+     } catch (error) {
+       console.error('Error uploading AI image:', error);
+       alert('Error al guardar la imagen generada.');
+-    } finally {
+       setUploading(false);
+     }
+   };
+@@ -646,14 +1141,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+         {/* PHOTOS */}
+         {(section === 'all' || section === 'photos') && (
+         <div className="form-group full" style={{ marginBottom: '30px' }}>
+-        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+-            Fotos
+-          </span>
+-          <small style={{ color: photos.length >= 4 ? '#ef4444' : '#64748b' }}>
+-            {photos.length} / 4 permitidas
+-          </small>
+-        </label>
++
+         
+         <div className="gallery">
+           {photos.map(p => {
+@@ -736,6 +1224,9 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+                 <div className="drop-zone-content">
+                   <span style={{ fontSize: '1.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>ÔÅ│</span>
+                   <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.75rem', textAlign: 'center' }}>Procesando...</span>
++                  <small style={{ color: '#10b981', fontSize: '0.7rem', fontWeight: 'bold', marginTop: '4px' }}>
++                    {photos.length} / 4 permitidas
++                  </small>
+                 </div>
+               ) : (
+                 <div className="drop-zone-content">
+@@ -743,18 +1234,39 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+                     <label htmlFor="upload-photos-variedad" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
+                       <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>­ƒôü</span> Galer├¡a
+                     </label>
+-                    <button type="button" onClick={() => {
+-                      setAiImagePromptPreview(buildPromptPreview());
+-                      setShowAiImageModal(true);
+-                    }} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
++                    <button type="button" onClick={openAiImageModal} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
+                       <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>Ô£¿</span> Generar IA
+                     </button>
+                   </div>
+                   <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br/>aqu├¡</span>
++                  <small style={{ color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold', marginTop: '4px' }}>
++                    {photos.length} / 4 permitidas
++                  </small>
+                 </div>
+               )}
+             </div>
+           )}
++
++          {photos.length === 4 && (
++            <div className="gallery-item" style={{
++              border: '2px dashed #f59e0b',
++              background: '#fffbeb',
++              display: 'flex',
++              flexDirection: 'column',
++              alignItems: 'center',
++              justifyContent: 'center',
++              borderRadius: '12px',
++              padding: '16px',
++              color: '#b45309',
++              textAlign: 'center',
++              cursor: 'default',
++              userSelect: 'none'
++            }}>
++              <span style={{ fontSize: '1.5rem', marginBottom: '8px' }}>­ƒô©</span>
++              <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>4 / 4 permitidas</span>
++              <span style={{ fontSize: '0.65rem', marginTop: '4px', opacity: 0.85 }}>L├¡mite m├íximo alcanzado</span>
++            </div>
++          )}
+         </div>
+       </div>
+       )}
+@@ -762,90 +1274,125 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+       {/* PDFS Y BLOGS */}
+       {(section === 'all' || section === 'pdfs') && (
+       <div className="form-group full" style={{ marginTop: '20px' }}>
+-        <label style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+-          <span style={{ margin: 0, fontWeight: 'bold' }}>­ƒôä Documentos Adicionales (PDF)</span>
+-          <button type="button" onClick={() => setShowPdfSearchModal(true)} style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(139, 92, 246, 0.3)' }}>
+-            Ô£¿ Buscar PDFs con IA
+-          </button>
+-        </label>
++
+         
+         <div className="gallery pdfs">
+-          {pdfs.map(p => (
+-            <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+-              {/* Cuadro de portada ÔÇö solo la foto */}
+-              <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
+-                {p.portada ? (
+-                  <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
+-                ) : (
+-                  <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+-                    <button type="button" onClick={() => generatePdfCover(p)} disabled={generatingCoverId === p.id} style={{ background: 'transparent', border: 'none', color: '#10b981', fontWeight: 'bold', cursor: generatingCoverId === p.id ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+-                      {generatingCoverId === p.id ? 'ÔÅ│ Generando...' : '­ƒÄ¿ Generar Portada'}
+-                    </button>
+-                  </div>
+-                )}
+-
+-                {/* Botones superpuestos en la foto */}
+-                <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
+-                  <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">Ô£Å´©Å</button>
+-                  {(blogs.some(b => b.pdfSourceId == p.id)) ? (
+-                    <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">Ô£ò</button>
++          {pdfs.map(p => {
++            const isPdfInactive = p.activo === 0;
++            return (
++              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px', opacity: isPdfInactive ? 0.65 : 1 }}>
++                {/* Cuadro de portada ÔÇö solo la foto */}
++                <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: isPdfInactive ? '1px dashed #f59e0b' : '1px solid #e2e8f0', padding: 0 }}>
++                  {isPdfInactive && (
++                    <div style={{ position: 'absolute', bottom: '6px', left: '6px', background: '#fffbeb', color: '#b45309', border: '1px solid #fcd34d', borderRadius: '4px', padding: '2px 6px', fontSize: '0.65rem', fontWeight: 'bold', zIndex: 2 }}>
++                      ÔÜá´©Å Inactivo
++                    </div>
++                  )}
++                  {p.portada ? (
++                    (() => {
++                      const { metadata } = parsePdfResumen(p.resumen);
++                      return (
++                        <div style={{ width: '100%', height: '180px', overflow: 'hidden', position: 'relative', backgroundColor: '#f1f5f9' }}>
++                          <img 
++                            src={getMediaUrl(p.portada)} 
++                            alt={p.titulo || 'Portada PDF'} 
++                            style={{ 
++                              position: 'absolute',
++                              inset: 0,
++                              width: '100%', 
++                              height: '100%', 
++                              objectFit: 'cover', 
++                              objectPosition: `${metadata.profile_object_x ?? 50}% ${metadata.profile_object_y ?? 50}%`,
++                              transformOrigin: `${metadata.profile_object_x ?? 50}% ${metadata.profile_object_y ?? 50}%`,
++                              filter: `brightness(${metadata.profile_brightness ?? 100}%) contrast(${metadata.profile_contrast ?? 100}%) ${metadata.profile_style ? STYLE_FILTERS[metadata.profile_style] : ''}`.trim(),
++                              transform: `scale(${(metadata.profile_object_zoom ?? 100) / 100})`
++                            }} 
++                            crossOrigin="anonymous" 
++                          />
++                        </div>
++                      );
++                    })()
+                   ) : (
+-                    <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDelete(p.id, 'pdfs')} title="Eliminar">Ô£ò</button>
++                    <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
++                      <button type="button" onClick={() => openAiCoverModal(p)} style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(139,92,246,0.3)' }}>
++                        Ô£¿ Generar Portada
++                      </button>
++                    </div>
+                   )}
++
++                  {/* Botones superpuestos en la foto */}
++                  <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px', zIndex: 10 }}>
++                    <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(parsePdfResumen(p.resumen).summary); setPdfApuntes(p.apuntes || ''); setPdfAutores(p.autores || ''); setPdfIdentificacion(p.identificacion || ''); setPdfActivo(p.activo !== 0); }} title="Editar Metadatos">Ô£Å´©Å</button>
++                  </div>
+                 </div>
+-              </div>
+ 
+-              {/* T├¡tulo como hiperv├¡nculo debajo del cuadro */}
+-              <a href={getMediaUrl(p.ruta)} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+-                ­ƒôä {p.titulo || p.nombreOriginal}
+-              </a>
++                {/* T├¡tulo como hiperv├¡nculo debajo del cuadro ÔÇö solo clicable si la URL funciona */}
++                {(() => {
++                  const isExternal = p.ruta && p.ruta.startsWith('http');
++                  const href = isExternal ? p.ruta : getMediaUrl(p.ruta);
++                  const urlOk = !isExternal || pdfUrlStatus[p.ruta] === true;
++                  const urlChecking = isExternal && pdfUrlStatus[p.ruta] === undefined;
++                  const urlBroken = isExternal && pdfUrlStatus[p.ruta] === false;
+ 
+-              {/* Bot├│n generar blog debajo del t├¡tulo */}
+-              <button type="button" onClick={() => setBlogGenPdf(p)} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', alignSelf: 'center', boxShadow: '0 2px 4px rgba(245,158,11,0.3)' }}>
+-                ­ƒôØ Generar Blog
+-              </button>
++                  if (urlOk) {
++                    return (
++                      <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', fontWeight: 600, color: '#10b981', textDecoration: 'none', textAlign: 'center', lineHeight: 1.3, padding: '0 4px' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
++                        ­ƒôä {p.titulo || p.nombreOriginal}
++                      </a>
++                    );
++                  }
++                  return (
++                    <span title={urlBroken ? 'ÔÜá´©Å Enlace roto o no accesible' : 'Verificando enlace...'} style={{ fontSize: '0.82rem', fontWeight: 600, color: urlBroken ? '#94a3b8' : '#cbd5e1', textAlign: 'center', lineHeight: 1.3, padding: '0 4px', cursor: 'default', textDecoration: urlBroken ? 'line-through' : 'none' }}>
++                      {urlBroken ? 'ÔÜá´©Å' : 'ÔÅ│'} {p.titulo || p.nombreOriginal}
++                    </span>
++                  );
++                })()}
+ 
+-              {/* Blogs relacionados a este PDF */}
+-              {blogs.filter(b => b.pdfSourceId == p.id).length > 0 && (
+-                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
+-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>Blogs Generados</div>
+-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+-                    {blogs.filter(b => b.pdfSourceId == p.id).map(b => (
+-                      <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
+-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+-                          {b.hero_imagen ? (
+-                            <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
+-                              <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
++
++                {/* Blogs relacionados a este PDF */}
++                {blogs.filter(b => b.pdfSourceId == p.id).length > 0 && (
++                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0', width: '100%' }}>
++                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
++                      {blogs.filter(b => b.pdfSourceId == p.id).map(b => (
++                        <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
++                          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
++                            {b.hero_imagen ? (
++                              <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', overflow: 'hidden', background: '#f1f5f9', marginTop: '2px' }}>
++                                <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
++                              </div>
++                            ) : (
++                              <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>Ô£¿</div>
++                            )}
++                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
++                              <a href={`/dashboard/admin/blog/${b.id}?from=${entityType || 'variedades'}&fromId=${variedadId}&fromName=${encodeURIComponent(variedadNombre || 'Variedad')}&fromTab=pdfs`} style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'} title={b.titulo}>
++                                {b.titulo}
++                              </a>
+                             </div>
+-                          ) : (
+-                            <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>Ô£¿</div>
+-                          )}
+-                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+-                            <a href={`/blog/${b.slug}?preview=true`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+-                              {b.titulo}
+-                            </a>
+                           </div>
+-                        </div>
+-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', paddingLeft: '46px' }}>
+-                          <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
+-                            {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
+-                          </span>
+-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+-                            <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
+-                              {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
++                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', paddingLeft: '46px', flexWrap: 'wrap', gap: '4px' }}>
++                            <span style={{ fontSize: '0.6rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 4px', borderRadius: '4px' }}>
++                              {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
+                             </span>
+-                            <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
+-                              ­ƒùæ´©Å
+-                            </button>
++                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
++                              <span style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
++                                {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
++                              </span>
++                              <button type="button" onClick={() => handleInactivateBlog(b.id, b)} style={{ background: 'none', border: 'none', color: '#d97706', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Inactivar blog (No borrar)">
++                                ÔÅ©´©Å
++                              </button>
++                              <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0 2px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Eliminar blog">
++                                ­ƒùæ´©Å
++                              </button>
++                            </div>
+                           </div>
+                         </div>
+-                      </div>
+-                    ))}
++                      ))}
++                    </div>
+                   </div>
+-                </div>
+-              )}
+-            </div>
+-          ))}
++                )}
++              </div>
++            );
++          })}
+ 
+           <div
+             className={`custom-file-upload drop-zone inline-drop-zone ${dragOverPdfs ? 'drag-over' : ''}`}
+@@ -870,9 +1417,15 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+               </div>
+             ) : (
+               <div className="drop-zone-content">
+-                <label htmlFor="upload-pdfs-variedad" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
+-                  <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>­ƒôä</span> Subir PDF
+-                </label>
++                <div className="drop-zone-buttons" style={{ flexDirection: 'column' }}>
++                  <label htmlFor="upload-pdfs-variedad" className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
++                    <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>­ƒôä</span> Subir PDF
++                  </label>
++                  <button type="button" onClick={openPdfSearchModal} className="btn-upload" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '8px', fontSize: '0.8rem' }}>
++                    <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>Ô£¿</span> Buscar con IA
++                  </button>
++                </div>
++                <span className="drop-hint" style={{ fontSize: '0.7rem', textAlign: 'center', marginTop: '4px' }}>arrastra y suelta<br/>aqu├¡</span>
+               </div>
+             )}
+           </div>
+@@ -880,114 +1433,463 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+ 
+       </div>
+     )}
++
++    {section === 'blogs' && (
++      <div style={{ marginTop: '20px' }}>
++        {/* Bot├│n arriba de los blogs (Redactar en primer lugar, alineado a la izquierda) */}
++        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}>
++          <button 
++            type="button" 
++            onClick={() => {
++              setBlogGenPdf({ id: null, titulo: variedadNombre || 'General' });
++              setShowBlogPrompt(true);
++            }} 
++            style={{ 
++              background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
++              color: 'white', 
++              border: 'none', 
++              padding: '8px 16px', 
++              borderRadius: '8px', 
++              cursor: 'pointer', 
++              fontSize: '0.85rem', 
++              fontWeight: 'bold', 
++              display: 'flex', 
++              alignItems: 'center', 
++              gap: '6px', 
++              boxShadow: '0 2px 4px rgba(245,158,11,0.3)' 
++            }}
++          >
++            ­ƒôØ Redactar Nuevo Blog
++          </button>
++        </div>
++
++        {blogs.length === 0 ? (
++          <div style={{ padding: '40px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
++            No hay ning├║n art├¡culo de blog asociado a este registro.
++          </div>
++        ) : (
++          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
++            {blogs.map(b => (
++              <div key={b.id} style={{ display: 'flex', flexDirection: 'column', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
++                {b.hero_imagen ? (
++                  <div style={{ height: '140px', width: '100%', background: '#f1f5f9' }}>
++                    <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
++                  </div>
++                ) : (
++                  <div style={{ height: '140px', width: '100%', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>
++                    ­ƒôØ
++                  </div>
++                )}
++                
++                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
++                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
++                    <span style={{ fontSize: '0.65rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
++                      {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
++                    </span>
++                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
++                      {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
++                    </span>
++                  </div>
++                  
++                  <a href={`/dashboard/admin/blog/${b.id}?from=${entityType || 'variedades'}&fromId=${variedadId}&fromName=${encodeURIComponent(variedadNombre || 'Variedad')}&fromTab=blogs`} style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3, textDecoration: 'none', marginBottom: '12px', flex: 1 }} onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'} onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}>
++                    {b.titulo}
++                  </a>
++
++                  {b.pdfSourceId && (
++                    <div style={{ fontSize: '0.7rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
++                      <span>­ƒôä</span> Basado en PDF asociado
++                    </div>
++                  )}
++
++                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
++                    <button type="button" onClick={() => handleDeleteBlog(b.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px 8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, borderRadius: '4px' }} onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Eliminar blog">
++                      ­ƒùæ´©Å Eliminar
++                    </button>
++                  </div>
++                </div>
++              </div>
++            ))}
++          </div>
++        )}
++      </div>
++    )}
+     </div>
+ 
+       {showAiImageModal && (
+         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', padding: '20px' }}>
+-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(to right, #f8fafc, #f1f5f9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+-              <div>
+-                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+-                  <span style={{ fontSize: '1.5rem' }}>Ô£¿</span> Generador de Im├ígenes IA
+-                </h3>
+-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Especie: <strong>{especieNombre}</strong> | Variedad: <strong>{variedadNombre || 'Sin nombre'}</strong></p>
+-              </div>
+-              <button onClick={() => setShowAiImageModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
++          <div style={{ 
++            background: 'white', 
++            borderRadius: '20px', 
++            width: '100%', 
++            maxWidth: (aiImageTargetPdf && aiImageTargetPdf.portada) ? '850px' : (aiImageTargetPdf ? '700px' : '650px'), 
++            display: 'flex', 
++            flexDirection: 'column', 
++            maxHeight: '95vh', 
++            overflow: 'hidden', 
++            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
++            transition: 'max-width 0.3s ease'
++          }}>
++            
++            {/* Encabezado del Asistente IA (Dise├▒o Solid Purple) */}
++            <div style={{ padding: '16px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++              <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
++                <span style={{ fontSize: '1.5rem' }}>Ô£¿</span> Asistente IA
++              </h3>
++              {!aiImageLoading ? (
++                <div style={{ display: 'flex', gap: '12px' }}>
++                  <button type="button" onClick={() => setShowAiImageModal(false)} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
++                    Cancelar
++                  </button>
++                  <button type="button" onClick={generateAiImage} style={{ background: 'white', color: '#6d28d9', border: 'none', padding: '6px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
++                    ­ƒÜÇ Generar
++                  </button>
++                </div>
++              ) : (
++                <div style={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
++                  ÔÅ│ Analizando... {aiImageTimer}s
++                </div>
++              )}
+             </div>
+             
+-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+-              {!aiImageResult ? (
+-                <>
+-                  <div>
+-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
+-                      Contexto de la foto deseada
+-                    </label>
+-                    <textarea 
+-                      value={aiImageConcept} 
+-                      onChange={e => { setAiImageConcept(e.target.value); if (!aiImagePromptEdited) setAiImagePromptPreview(buildPromptPreview()); }}
+-                      placeholder={`Ej. Fotograf├¡a macro de la variedad ${variedadNombre} de la especie ${especieNombre}...`}
+-                      rows={3}
+-                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical' }}
+-                    />
++            {/* Contador Mensual de IA */}
++            <div style={{ background: '#f8fafc', padding: '10px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
++              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Interacciones IA este mes:</span>
++              {aiStats ? (
++                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', background: aiStats.remaining > 0 ? '#d1fae5' : '#fee2e2', color: aiStats.remaining > 0 ? '#059669' : '#dc2626', padding: '2px 8px', borderRadius: '12px' }}>
++                  {aiStats.used} / {aiStats.max}
++                </span>
++              ) : (
++                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Cargando...</span>
++              )}
++            </div>
++
++            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
++              
++              {/* Estado de Carga Intermedio: Overlay Atenuado (Fase 2) */}
++              {aiImageLoading && (
++                <div style={{
++                  position: 'absolute',
++                  inset: 0,
++                  background: 'rgba(255,255,255,0.75)',
++                  display: 'flex',
++                  flexDirection: 'column',
++                  alignItems: 'center',
++                  justifyContent: 'center',
++                  gap: '12px',
++                  zIndex: 10
++                }}>
++                  <span style={{ fontSize: '2.5rem', animation: 'spin 2s linear infinite', display: 'inline-block' }}>ÔÅ│</span>
++                  <p style={{ margin: 0, fontWeight: 'bold', color: '#6d28d9', fontSize: '1.1rem' }}>
++                    {aiImageTargetPdf ? 'Dise├▒ando portada de documento...' : 'Dise├▒ando imagen de la variedad...'}
++                  </p>
++                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', padding: '0 20px' }}>
++                    {aiImageCategories.filter(c => c.enabled).map(c => (
++                      <span key={c.label} style={{ background: '#ede9fe', color: '#6d28d9', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
++                        Ô£¿ {c.label}
++                      </span>
++                    ))}
+                   </div>
++                </div>
++              )}
+ 
+-                  <div>
+-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem' }}>
+-                      Sugerencias R├ípidas:
+-                    </label>
+-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+-                      {[
+-                        "En la planta con fruto maduro",
+-                        "En la planta y tras el riego",
+-                        "En la tabla de cocina prepar├índolo para crear un plato",
+-                        "Como plato precocinado"
+-                      ].map(preset => (
+-                        <button 
+-                          key={preset}
+-                          type="button"
+-                          onClick={() => { setAiImageConcept(preset); if (!aiImagePromptEdited) setAiImagePromptPreview(buildPromptPreview()); }}
+-                          style={{
+-                            padding: '6px 12px',
+-                            borderRadius: '20px',
+-                            border: `1px solid ${aiImageConcept === preset ? '#8b5cf6' : '#e2e8f0'}`,
+-                            background: aiImageConcept === preset ? '#f3e8ff' : '#f8fafc',
+-                            color: aiImageConcept === preset ? '#6d28d9' : '#475569',
+-                            fontSize: '0.8rem',
+-                            cursor: 'pointer',
+-                            transition: 'all 0.2s ease'
+-                          }}
+-                        >
+-                          {preset}
+-                        </button>
+-                      ))}
++              {!aiImageResult ? (
++                aiImageTargetPdf && aiImageTargetPdf.portada ? (
++                  /* Fase 2: Configuraci├│n Previa con Portada Existente (Dise├▒o de 2 Columnas) */
++                  <div style={{
++                    opacity: aiImageLoading ? 0.3 : 1,
++                    pointerEvents: aiImageLoading ? 'none' : 'auto',
++                    transition: 'opacity 0.3s ease',
++                    display: 'grid',
++                    gridTemplateColumns: '1fr 260px',
++                    gap: '20px'
++                  }}>
++                    {/* Columna Izquierda: Formulario y Controles */}
++                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
++                      {/* Entidad Objetivo */}
++                      <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
++                        <span style={{ fontSize: '1.5rem' }}>­ƒôä</span>
++                        <div style={{ flex: 1, minWidth: 0 }}>
++                          <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>
++                            Documento Objetivo
++                          </div>
++                          <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={aiImageTargetPdf.titulo || aiImageTargetPdf.nombreOriginal}>
++                            {aiImageTargetPdf.titulo || aiImageTargetPdf.nombreOriginal}
++                          </div>
++                        </div>
++                      </div>
++
++                      {/* System Prompt Base */}
++                      <details open={showPromptDetails} onToggle={(e: any) => setShowPromptDetails(e.target.open)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
++                        <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
++                          <span style={{ transition: 'transform 0.2s', transform: showPromptDetails ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>ÔûÂ</span>
++                          ­ƒöº System Prompt Base {aiImagePromptEdited && <span style={{ background: '#fef08a', color: '#854d0e', padding: '1px 6px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold' }}>Editado</span>}
++                        </summary>
++                        <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0' }}>
++                          <textarea
++                            value={aiImagePromptPreview || buildPromptPreview(aiImageTargetPdf)}
++                            onChange={e => { setAiImagePromptPreview(e.target.value); setAiImagePromptEdited(true); }}
++                            rows={6}
++                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical', lineHeight: '1.5', color: '#334155', background: aiImagePromptEdited ? '#fffbeb' : '#f8fafc' }}
++                          />
++                          {aiImagePromptEdited && (
++                            <button type="button" onClick={() => { setAiImagePromptPreview(buildPromptPreview(aiImageTargetPdf)); setAiImagePromptEdited(false); }} style={{ marginTop: '8px', padding: '4px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontSize: '0.75rem', cursor: 'pointer' }}>
++                              Restaurar prompt original
++                            </button>
++                          )}
++                        </div>
++                      </details>
++
++                      {/* Prompt Din├ímico */}
++                      <div>
++                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
++                          Prompt Din├ímico (Contexto visual extra)
++                        </label>
++                        <textarea 
++                          value={aiImageConcept} 
++                          onChange={e => { setAiImageConcept(e.target.value); }}
++                          placeholder="Instrucciones de la portada..."
++                          rows={3}
++                          style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical' }}
++                        />
++                      </div>
++
++                      {/* Ayudante de Categor├¡as */}
++                      <div>
++                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem' }}>
++                          Ayudante de Categor├¡as (Checkboxes):
++                        </label>
++                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
++                          {aiImageCategories.map(c => (
++                            <label key={c.label} style={{
++                              display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px',
++                              border: c.enabled ? '2px solid #8b5cf6' : '1px solid #cbd5e1',
++                              borderRadius: '8px',
++                              cursor: 'pointer',
++                              background: c.enabled ? '#f5f3ff' : '#fff',
++                              transition: 'all 0.2s',
++                              boxShadow: c.enabled ? '0 4px 6px -1px rgba(139, 92, 246, 0.15)' : 'none',
++                              userSelect: 'none'
++                            }}>
++                              <input
++                                type="checkbox"
++                                checked={c.enabled}
++                                onChange={() => handleToggleCategory(c.label)}
++                                style={{ margin: 0, accentColor: '#8b5cf6', width: '18px', height: '18px', flexShrink: 0 }}
++                              />
++                              <span style={{ fontSize: '0.85rem', color: c.enabled ? '#5b21b6' : '#334155', fontWeight: c.enabled ? 'bold' : 'normal' }}>
++                                {c.label}
++                              </span>
++                            </label>
++                          ))}
++                        </div>
++                      </div>
++                    </div>
++
++                    {/* Columna Derecha: Portada Actual a Tama├▒o Suficiente */}
++                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', borderLeft: '1px solid #cbd5e1', paddingLeft: '20px' }}>
++                      <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>
++                        ­ƒô© Portada Actual
++                      </span>
++                      <div style={{ 
++                        width: '100%', 
++                        height: '320px', 
++                        borderRadius: '12px', 
++                        overflow: 'hidden', 
++                        border: '1px solid #cbd5e1', 
++                        backgroundColor: '#f1f5f9',
++                        display: 'flex',
++                        alignItems: 'center',
++                        justifyContent: 'center',
++                        boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
++                      }}>
++                        <img 
++                          src={getMediaUrl(aiImageTargetPdf.portada)} 
++                          alt="Portada anterior" 
++                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
++                          crossOrigin="anonymous" 
++                        />
++                      </div>
++                      <div style={{ fontSize: '0.72rem', color: '#8b5cf6', fontWeight: 'bold', textAlign: 'center', marginTop: '6px', lineHeight: 1.4 }}>
++                        Regenerando sobre la versi├│n actual
++                      </div>
+                     </div>
+                   </div>
++                ) : (
++                  /* Caso normal (sin portada anterior o no es PDF) */
++                  <div style={{
++                    opacity: aiImageLoading ? 0.3 : 1,
++                    pointerEvents: aiImageLoading ? 'none' : 'auto',
++                    transition: 'opacity 0.3s ease',
++                    display: 'flex',
++                    flexDirection: 'column',
++                    gap: '16px'
++                  }}>
++                    {/* 1. Entidad Objetivo */}
++                    <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', gap: '16px' }}>
++                      <span style={{ fontSize: '1.5rem' }}>
++                        {aiImageTargetPdf ? '­ƒôä' : (entityType === 'tratamientos' ? '­ƒº¬' : entityType === 'afecciones' ? '­ƒÉø' : '­ƒî▒')}
++                      </span>
++                      <div style={{ flex: 1, minWidth: 0 }}>
++                        <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>
++                          {aiImageTargetPdf ? 'Documento Objetivo' : `Entidad Objetivo (${entityType})`}
++                        </div>
++                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={aiImageTargetPdf ? (aiImageTargetPdf.titulo || aiImageTargetPdf.nombreOriginal) : variedadNombre}>
++                          {aiImageTargetPdf ? (aiImageTargetPdf.titulo || aiImageTargetPdf.nombreOriginal) : `${variedadNombre} (${especieNombre})`}
++                        </div>
++                      </div>
++                    </div>
+ 
+-                  <details open={showPromptDetails} onToggle={(e: any) => setShowPromptDetails(e.target.open)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+-                    <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
+-                      <span style={{ transition: 'transform 0.2s', transform: showPromptDetails ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>ÔûÂ</span>
+-                      ­ƒöº Prompt t├®cnico {aiImagePromptEdited && <span style={{ background: '#fef08a', color: '#854d0e', padding: '1px 6px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold' }}>Editado</span>}
+-                    </summary>
+-                    <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0' }}>
+-                      <textarea
+-                        value={aiImagePromptPreview || buildPromptPreview()}
+-                        onChange={e => { setAiImagePromptPreview(e.target.value); setAiImagePromptEdited(true); }}
+-                        rows={8}
+-                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical', lineHeight: '1.5', color: '#334155', background: aiImagePromptEdited ? '#fffbeb' : '#f8fafc' }}
++                    {/* 2. System Prompt Base */}
++                    <details open={showPromptDetails} onToggle={(e: any) => setShowPromptDetails(e.target.open)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
++                      <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
++                        <span style={{ transition: 'transform 0.2s', transform: showPromptDetails ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>ÔûÂ</span>
++                        ­ƒöº System Prompt Base {aiImagePromptEdited && <span style={{ background: '#fef08a', color: '#854d0e', padding: '1px 6px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 'bold' }}>Editado</span>}
++                      </summary>
++                      <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0' }}>
++                        <textarea
++                          value={aiImagePromptPreview || buildPromptPreview(aiImageTargetPdf)}
++                          onChange={e => { setAiImagePromptPreview(e.target.value); setAiImagePromptEdited(true); }}
++                          rows={8}
++                          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical', lineHeight: '1.5', color: '#334155', background: aiImagePromptEdited ? '#fffbeb' : '#f8fafc' }}
++                        />
++                        {aiImagePromptEdited && (
++                          <button type="button" onClick={() => { setAiImagePromptPreview(buildPromptPreview(aiImageTargetPdf)); setAiImagePromptEdited(false); }} style={{ marginTop: '8px', padding: '4px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontSize: '0.75rem', cursor: 'pointer' }}>
++                            Restaurar prompt original
++                          </button>
++                        )}
++                      </div>
++                    </details>
++
++                    {/* 3. Prompt Din├ímico (Texto Libre) */}
++                    <div>
++                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
++                        Prompt Din├ímico (Contexto visual extra)
++                      </label>
++                      <textarea 
++                        value={aiImageConcept} 
++                        onChange={e => { setAiImageConcept(e.target.value); }}
++                        placeholder={aiImageTargetPdf ? "Instrucciones de la portada..." : "Ej. En un envase azul sobre una mesa r├║stica..."}
++                        rows={3}
++                        style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem', resize: 'vertical' }}
+                       />
+-                      {aiImagePromptEdited && (
+-                        <button type="button" onClick={() => { setAiImagePromptPreview(buildPromptPreview()); setAiImagePromptEdited(false); }} style={{ marginTop: '8px', padding: '4px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#64748b', fontSize: '0.75rem', cursor: 'pointer' }}>
+-                          Ôå®´©Å Restaurar prompt original
+-                        </button>
+-                      )}
+                     </div>
+-                  </details>
+ 
+-                  <button 
+-                    type="button" 
+-                    onClick={generateAiImage} 
+-                    disabled={aiImageLoading}
+-                    style={{ 
+-                      padding: '14px', 
+-                      borderRadius: '12px', 
+-                      border: 'none', 
+-                      background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+-                      color: 'white', 
+-                      fontWeight: 'bold', 
+-                      fontSize: '1rem', 
+-                      cursor: aiImageLoading ? 'not-allowed' : 'pointer',
+-                      opacity: aiImageLoading ? 0.7 : 1,
+-                      marginTop: '10px'
+-                    }}
+-                  >
+-                    {aiImageLoading ? `ÔÅ│ Generando Imagen... (${aiImageTimer}s)` : 'Ô£¿ Generar Ahora'}
+-                  </button>
+-                </>
+-              ) : (
+-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+-                  <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+-                    <img src={aiImageResult} alt="Generated by AI" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
++                    {/* 4. Ayudante de Categor├¡as (Checkboxes) */}
++                    <div>
++                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem' }}>
++                        Ayudante de Categor├¡as (Checkboxes):
++                      </label>
++                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
++                        {aiImageCategories.map(c => (
++                          <label key={c.label} style={{
++                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px',
++                            border: c.enabled ? '2px solid #8b5cf6' : '1px solid #cbd5e1',
++                            borderRadius: '8px',
++                            cursor: 'pointer',
++                            background: c.enabled ? '#f5f3ff' : '#fff',
++                            transition: 'all 0.2s',
++                            boxShadow: c.enabled ? '0 4px 6px -1px rgba(139, 92, 246, 0.15)' : 'none',
++                            userSelect: 'none'
++                          }}>
++                            <input
++                              type="checkbox"
++                              checked={c.enabled}
++                              onChange={() => handleToggleCategory(c.label)}
++                              style={{ margin: 0, accentColor: '#8b5cf6', width: '18px', height: '18px', flexShrink: 0 }}
++                            />
++                            <span style={{ fontSize: '0.9rem', color: c.enabled ? '#5b21b6' : '#334155', fontWeight: c.enabled ? 'bold' : 'normal' }}>
++                              {c.label}
++                            </span>
++                          </label>
++                        ))}
++                      </div>
++                    </div>
+                   </div>
++                )
++              ) : (
++                /* Fase 3: Visualizaci├│n y Aceptaci├│n de Resultados */
++                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
++                  {aiImageTargetPdf && aiImageTargetPdf.portada ? (
++                    /* Dise├▒o de 2 Columnas para Regeneraci├│n / Comparaci├│n a tama├▒o suficiente */
++                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
++                      
++                      {/* Columna Izquierda: Portada Anterior */}
++                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
++                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>
++                          ÔÅ¬ Portada Anterior
++                        </span>
++                        <div style={{ 
++                          width: '100%', 
++                          height: '380px', 
++                          borderRadius: '12px', 
++                          overflow: 'hidden', 
++                          border: '1px dashed #cbd5e1', 
++                          backgroundColor: '#f1f5f9',
++                          display: 'flex',
++                          alignItems: 'center',
++                          justifyContent: 'center',
++                          boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
++                        }}>
++                          <img 
++                            src={getMediaUrl(aiImageTargetPdf.portada)} 
++                            alt="Portada Anterior" 
++                            style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
++                            crossOrigin="anonymous"
++                          />
++                        </div>
++                      </div>
++
++                      {/* Columna Derecha: Propuesta IA */}
++                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
++                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#8b5cf6', textTransform: 'uppercase' }}>
++                          Ô£¿ Propuesta IA
++                        </span>
++                        <div style={{ 
++                          width: '100%', 
++                          height: '380px', 
++                          borderRadius: '12px', 
++                          overflow: 'hidden', 
++                          border: '2px solid #8b5cf6', 
++                          backgroundColor: '#f1f5f9',
++                          display: 'flex',
++                          alignItems: 'center',
++                          justifyContent: 'center',
++                          boxShadow: '0 4px 12px rgba(139, 92, 246, 0.15)'
++                        }}>
++                          <img 
++                            src={aiImageResult} 
++                            alt="Nueva Propuesta IA" 
++                            style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
++                          />
++                        </div>
++                      </div>
++
++                    </div>
++                  ) : (
++                    /* Previsualizaci├│n del Resultado de Imagen ├║nico a tama├▒o suficiente */
++                    <div style={{ 
++                      width: '100%', 
++                      height: '420px', 
++                      borderRadius: '16px', 
++                      overflow: 'hidden', 
++                      border: '1px solid #e2e8f0', 
++                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
++                      backgroundColor: '#f1f5f9',
++                      display: 'flex',
++                      alignItems: 'center',
++                      justifyContent: 'center'
++                    }}>
++                      <img 
++                        src={aiImageResult} 
++                        alt="Generated by AI" 
++                        style={{ 
++                          maxHeight: '100%', 
++                          maxWidth: '100%', 
++                          objectFit: 'contain' 
++                        }} 
++                      />
++                    </div>
++                  )}
+                   
+                   <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                     <button 
+@@ -1000,10 +1902,16 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+                     <button 
+                       type="button" 
+                       onClick={uploadAiImage} 
+-                      disabled={uploading}
+-                      style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.7 : 1 }}
++                      disabled={uploading || aiImageUploadSuccess}
++                      style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#10b981', color: 'white', fontWeight: 'bold', cursor: (uploading || aiImageUploadSuccess) ? 'not-allowed' : 'pointer', opacity: (uploading && !aiImageUploadSuccess) ? 0.7 : 1 }}
+                     >
+-                      {uploading ? 'Guardando...' : 'Guardar en Galer├¡a'}
++                      {aiImageUploadSuccess 
++                        ? 'Ô£à ┬íGuardado con ├®xito!' 
++                        : uploading 
++                          ? `ÔÅ│ Guardando... ${uploadTimer}s` 
++                          : aiImageTargetPdf 
++                            ? 'Guardar Portada' 
++                            : 'Guardar en Galer├¡a'}
+                     </button>
+                   </div>
+                 </div>
+@@ -1013,106 +1921,476 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+         </div>
+       )}
+ 
+-      {/* MODAL DE EDICI├ôN DE METADATOS DE PDF */}
+-      {/* MODAL DE EDICI├ôN DE METADATOS DE PDF */}
+-      {editingPdf && (() => {
+-        const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') ||
+-          pdfSummary !== (editingPdf.resumen || '') ||
+-          pdfApuntes !== (editingPdf.apuntes || '');
+-        return (
+-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+-            onClick={() => setEditingPdf(null)}>
+-            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
+-              onClick={e => e.stopPropagation()}>
+-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+-                <div>
+-                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+-                    ­ƒôä Editar Metadatos del PDF
+-                  </h3>
+-                  <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+-                    ­ƒî▒ Especie: {especieNombre} | Variedad: {variedadNombre || 'Sin nombre'}
+-                  </span>
+-                </div>
+-                <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>Ô£ò</button>
++      {/* DASHBOARD DE EDICI├ôN DE PDF (Overlay ÔÇö z-index por debajo de Sidebar) */}
++      {editingPdf && (
++        <div style={{ position: 'fixed', top: '64px', right: 0, bottom: 0, left: '280px', background: '#f8fafc', zIndex: 50, overflowY: 'auto' }}>
++          <div style={{ width: '100%', minHeight: '100vh', padding: '24px' }}>
++            
++            {/* Navegaci├│n Hier├írquica Superior */}
++            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
++              <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
++                ­ƒöÖ Volver a {variedadNombre || 'Documentos PDF'}
++              </button>
++            </div>
++
++            {/* Subheader Contextual y Autoguardado (Dos L├¡neas Est├índar) */}
++            <div style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', padding: '12px 20px', borderRadius: '14px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
++              
++              {/* Bloque Izquierdo */}
++              <div style={{ display: 'flex', flexDirection: 'column' }}>
++                <h2 style={{ margin: 0, color: 'white', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
++                  Ô£Å´©Å {editingPdf.titulo || editingPdf.nombreOriginal || 'Editar Documento'}
++                </h2>
++                <span style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.8rem', marginTop: '4px' }}>
++                  Asociado a {especieNombre || 'Registro'} ({variedadNombre})
++                </span>
++              </div>
++
++              {/* Bloque Derecho */}
++              {(() => {
++                const hasAssociatedBlogs = blogs.some(b => b.pdfSourceId == editingPdf.id);
++                return (
++                  <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '16px' }}>
++                    <button
++                      type="button"
++                      disabled={hasAssociatedBlogs}
++                      onClick={handleEditorDelete}
++                      title={hasAssociatedBlogs ? "No se puede eliminar porque tiene blogs asociados" : "Eliminar este documento"}
++                      style={{
++                        padding: '6px 12px',
++                        borderRadius: '8px',
++                        fontWeight: 600,
++                        fontSize: '0.75rem',
++                        border: '1px solid #f87171',
++                        background: hasAssociatedBlogs ? 'rgba(255, 255, 255, 0.15)' : '#fef2f2',
++                        color: hasAssociatedBlogs ? 'rgba(255, 255, 255, 0.6)' : '#ef4444',
++                        cursor: hasAssociatedBlogs ? 'not-allowed' : 'pointer',
++                        display: 'inline-flex',
++                        alignItems: 'center',
++                        gap: '6px',
++                        transition: 'all 0.2s',
++                        opacity: hasAssociatedBlogs ? 0.7 : 1
++                      }}
++                    >
++                      ­ƒùæ´©Å Eliminar Registro
++                    </button>
++                  </div>
++                );
++              })()}
++            </div>
++
++            {/* Estado Global (Activo) */}
++            <div style={{ marginBottom: '16px', background: 'white', padding: '12px 18px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
++              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', color: pdfActivo ? '#166534' : '#94a3b8', fontSize: '0.9rem' }}>
++                <input 
++                  type="checkbox" 
++                  checked={pdfActivo} 
++                  onChange={(e) => setPdfActivo(e.target.checked)}
++                  style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
++                />
++                {pdfActivo ? '­ƒƒó Visibilidad Global: Activo' : '­ƒö┤ Visibilidad Global: Inactivo'}
++              </label>
++              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Determina si este documento es visible p├║blicamente en el sistema.</span>
++            </div>
++
++            {/* Bot├│n Ver PDF ÔÇö entre t├¡tulo y portada */}
++            {editingPdf.ruta && (
++              <div style={{ marginBottom: '16px' }}>
++                <a 
++                  href={getMediaUrl(editingPdf.ruta)} 
++                  target="_blank" 
++                  rel="noopener noreferrer" 
++                  style={{ 
++                    padding: '10px 18px', 
++                    borderRadius: '8px', 
++                    fontWeight: 600, 
++                    fontSize: '0.85rem', 
++                    display: 'inline-flex', 
++                    alignItems: 'center', 
++                    gap: '8px', 
++                    textDecoration: 'none', 
++                    transition: 'all 0.2s', 
++                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
++                    wordBreak: 'break-all',
++                    background: isCurrentPdfRouteOk === null ? '#f8fafc' : (isCurrentPdfRouteOk ? '#ecfdf5' : '#fef2f2'),
++                    color: isCurrentPdfRouteOk === null ? '#64748b' : (isCurrentPdfRouteOk ? '#047857' : '#b91c1c'),
++                    border: isCurrentPdfRouteOk === null ? '1px dashed #cbd5e1' : (isCurrentPdfRouteOk ? '1px solid #10b981' : '1px solid #ef4444')
++                  }}
++                >
++                  {isCurrentPdfRouteOk === null ? '­ƒöì' : (isCurrentPdfRouteOk ? '­ƒƒó' : '­ƒö┤')} {editingPdf.ruta}
++                </a>
+               </div>
++            )}
+ 
+-              <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
+-                {/* Columna Izquierda: Portada */}
+-                <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+-                  <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+-                    {editingPdf.portada ? (
+-                      <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+-                    ) : (
+-                      <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+-                        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>­ƒôä</span>
+-                        <p style={{ margin: 0, fontSize: '0.9rem' }}>Sin portada generada</p>
++            {/* Hero Carousel ÔÇö Portada PDF (Estilo Regla 9) */}
++            <div style={{
++              display: 'flex', gap: '16px', marginBottom: '24px',
++              alignItems: 'center'
++            }}>
++              {/* Hero Photo */}
++              <div style={{
++                width: '180px', height: '220px', borderRadius: '12px', overflow: 'hidden',
++                boxShadow: '0 10px 25px rgba(0,0,0,0.3)', flexShrink: 0,
++                background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
++                position: 'relative'
++              }}>
++                {editingPdf.portada ? (
++                  (() => {
++                    const { metadata } = parsePdfResumen(editingPdf.resumen);
++                    return (
++                      <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', backgroundColor: '#f1f5f9' }}>
++                        <img 
++                          src={getMediaUrl(editingPdf.portada)} 
++                          alt="Portada PDF" 
++                          style={{ 
++                            position: 'absolute',
++                            inset: 0,
++                            width: '100%', 
++                            height: '100%', 
++                            objectFit: 'cover', 
++                            objectPosition: `${metadata.profile_object_x ?? 50}% ${metadata.profile_object_y ?? 50}%`,
++                            transformOrigin: `${metadata.profile_object_x ?? 50}% ${metadata.profile_object_y ?? 50}%`,
++                            filter: `brightness(${metadata.profile_brightness ?? 100}%) contrast(${metadata.profile_contrast ?? 100}%) ${metadata.profile_style ? STYLE_FILTERS[metadata.profile_style] : ''}`.trim(),
++                            transform: `scale(${(metadata.profile_object_zoom ?? 100) / 100})`
++                          }} 
++                          crossOrigin="anonymous" 
++                        />
++                        {/* Circular Edit Button overlay on top of cover */}
++                        <button
++                          type="button"
++                          onClick={() => {
++                            const { metadata: latestMeta } = parsePdfResumen(editingPdf.resumen);
++                            openPhotoEditor({
++                              id: editingPdf.id,
++                              ruta: editingPdf.portada,
++                              resumen: JSON.stringify(latestMeta),
++                              isPdfCover: true
++                            });
++                          }}
++                          style={{
++                            position: 'absolute',
++                            top: '10px',
++                            right: '10px',
++                            width: '32px',
++                            height: '32px',
++                            borderRadius: '50%',
++                            background: 'white',
++                            border: '1px solid #cbd5e1',
++                            color: '#475569',
++                            fontSize: '1.1rem',
++                            display: 'flex',
++                            alignItems: 'center',
++                            justifyContent: 'center',
++                            cursor: 'pointer',
++                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
++                            zIndex: 6,
++                            transition: 'all 0.2s'
++                          }}
++                          title="Ajustar portada (Recorte/Zoom/Brillo)"
++                          onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.transform = 'scale(1.08)'; }}
++                          onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'scale(1)'; }}
++                        >
++                          Ô£Å´©Å
++                        </button>
+                       </div>
+-                    )}
++                    );
++                  })()
++                ) : (
++                  <div style={{ textAlign: 'center', color: '#94a3b8' }}>
++                    <span style={{ fontSize: '3rem', display: 'block' }}>­ƒôä</span>
++                    <p style={{ margin: '6px 0 0', fontSize: '0.75rem', fontWeight: 600 }}>Sin portada</p>
+                   </div>
+-                  <button
+-                    type="button"
+-                    onClick={() => {
+-                      generatePdfCover({ ...editingPdf, titulo: pdfTitle, resumen: pdfSummary });
+-                    }}
+-                    disabled={generatingCoverId === editingPdf.id}
+-                    style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: generatingCoverId === editingPdf.id ? 'wait' : 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+-                  >
+-                    {generatingCoverId === editingPdf.id ? 'ÔÅ│ Generando...' : (editingPdf.portada ? 'Ô£¿ Regenerar Portada IA' : 'Ô£¿ Generar Portada IA')}
+-                  </button>
+-                </div>
++                )}
++              </div>
++            </div>
+ 
+-                {/* Columna Derecha: Formulario */}
+-                <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+-                  <div>
+-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
++            {/* Columna Derecha: Formulario de Datos */}
++            <div style={{
++              flex: '1 1 500px',
++              display: 'flex',
++              flexDirection: 'column',
++              gap: '16px',
++              background: 'white',
++              padding: '24px',
++              borderRadius: '16px',
++              border: '1px solid #e2e8f0',
++              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
++              transition: 'all 0.3s ease'
++            }}>
++              
++              {/* Cabecera Colapsable */}
++              <div
++                onClick={() => setIsPdfFormCollapsed(!isPdfFormCollapsed)}
++                style={{
++                  display: 'flex',
++                  justifyContent: 'flex-start',
++                  alignItems: 'center',
++                  gap: '12px',
++                  cursor: 'pointer',
++                  userSelect: 'none',
++                  borderBottom: isPdfFormCollapsed ? 'none' : '1px solid #f1f5f9',
++                  paddingBottom: isPdfFormCollapsed ? '0px' : '12px',
++                  marginBottom: isPdfFormCollapsed ? '0px' : '4px'
++                }}
++              >
++                <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
++                  <span style={{ fontSize: '1.2rem' }}>­ƒôä</span> Datos del PDF
++                </span>
++                <span style={{ transform: isPdfFormCollapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.2s', color: '#64748b', fontSize: '0.75rem', display: 'inline-block' }}>ÔûÂ</span>
++                
++                {isPdfFormCollapsed && (
++                  <span style={{
++                    background: '#f1f5f9',
++                    padding: '3px 10px',
++                    borderRadius: '6px',
++                    fontWeight: 600,
++                    color: '#475569',
++                    fontSize: '0.76rem',
++                    textOverflow: 'ellipsis',
++                    overflow: 'hidden',
++                    whiteSpace: 'nowrap',
++                    maxWidth: '300px',
++                    marginLeft: '8px'
++                  }} title={pdfTitle || editingPdf.nombreOriginal}>
++                    {pdfTitle || editingPdf.nombreOriginal}
++                  </span>
++                )}
++              </div>
++
++              {/* Contenido del Formulario */}
++              <div style={{ display: isPdfFormCollapsed ? 'none' : 'flex', flexDirection: 'column', gap: '20px' }}>
++                {pdfApuntes && (
++                  <div style={{ alignSelf: 'flex-start' }}>
++                    <DownloadApuntesButton apuntes={pdfApuntes} titulo={pdfTitle || editingPdf.nombreOriginal} urlOrigen={editingPdf.ruta} nombreOriginal={editingPdf.nombreOriginal} />
++                  </div>
++                )}
++
++                <div>
++                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '0.95rem', color: '#334155' }}>Nombre del Documento</label>
++                  <input
++                    type="text"
++                    value={pdfTitle}
++                    onChange={e => setPdfTitle(e.target.value)}
++                    placeholder={editingPdf.nombreOriginal}
++                    style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', background: '#f8fafc' }}
++                  />
++                </div>
++                
++                <div>
++                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '0.95rem', color: '#334155' }}>Resumen Corto</label>
++                  <textarea
++                    value={pdfSummary}
++                    onChange={e => setPdfSummary(e.target.value)}
++                    placeholder="Describe brevemente el documento (1-2 l├¡neas)..."
++                    rows={3}
++                    style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', resize: 'vertical', background: '#f8fafc' }}
++                  />
++                </div>
++                
++                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
++                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
++                    <label style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
++                      ­ƒÄô Apuntes (Modo Estudiante)
++                    </label>
++                  </div>
++                  <textarea
++                    value={pdfApuntes}
++                    onChange={e => setPdfApuntes(e.target.value)}
++                    placeholder="Apuntes t├®cnicos detallados extra├¡dos del PDF..."
++                    style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', resize: 'vertical', minHeight: '200px', background: '#f8fafc' }}
++                  />
++                </div>
++                
++                <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
++                  <div style={{ flex: '1 1 200px' }}>
++                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '0.95rem', color: '#334155' }}>Ô£ì´©Å Autores</label>
+                     <input
+                       type="text"
+-                      value={pdfTitle}
+-                      onChange={e => setPdfTitle(e.target.value)}
+-                      placeholder={editingPdf.nombreOriginal}
+-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
++                      value={pdfAutores}
++                      onChange={e => setPdfAutores(e.target.value)}
++                      placeholder="Nombres de los autores del documento..."
++                      style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', background: '#f8fafc' }}
+                     />
+                   </div>
+-                  <div>
+-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
+-                    <textarea
+-                      value={pdfSummary}
+-                      onChange={e => setPdfSummary(e.target.value)}
+-                      placeholder="Describe brevemente el documento (1-2 l├¡neas)..."
+-                      rows={3}
+-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
+-                    />
+-                  </div>
+-                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+-                    <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+-                      ­ƒÄô Apuntes (Modo Estudiante)
+-                    </label>
+-                    <textarea
+-                      value={pdfApuntes}
+-                      onChange={e => setPdfApuntes(e.target.value)}
+-                      placeholder="Apuntes t├®cnicos detallados extra├¡dos del PDF..."
+-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', flexGrow: 1, minHeight: '120px' }}
++                  <div style={{ flex: '1 1 200px' }}>
++                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '0.95rem', color: '#334155' }}>­ƒöû Identificaci├│n</label>
++                    <input
++                      type="text"
++                      value={pdfIdentificacion}
++                      onChange={e => setPdfIdentificacion(e.target.value)}
++                      placeholder="ISBN, DOI, c├│digo interno..."
++                      style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', background: '#f8fafc' }}
+                     />
+                   </div>
+                 </div>
+               </div>
+-
+-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+-                <button type="button" onClick={() => setEditingPdf(null)}
+-                  style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+-                  Cancelar
+-                </button>
+-                {hasPdfChanges && (
+-                  <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
+-                    style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+-                    {pdfEditorSaveStatus === 'saving' ? 'ÔÅ│ Guardando...' : pdfEditorSaveStatus === 'no-changes' ? 'Ô£ô Sin cambios' : '­ƒÆ¥ Guardar Metadatos'}
+-                  </button>
+-                )}
+-              </div>
+             </div>
++
++            {/* Blogs Relacionados Card (Pesta├▒a/Secci├│n Colapsable Separada) */}
++            {(() => {
++              const pdfBlogs = blogs.filter(b => b.pdfSourceId == editingPdf.id);
++              return (
++                <div style={{
++                  marginTop: '20px',
++                  background: 'white',
++                  padding: '24px',
++                  borderRadius: '16px',
++                  border: '1px solid #e2e8f0',
++                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
++                  transition: 'all 0.3s ease',
++                  display: 'flex',
++                  flexDirection: 'column',
++                  gap: isBlogsCollapsed ? '0px' : '16px'
++                }}>
++                  {/* Collapsible Header */}
++                  <div 
++                    onClick={() => setIsBlogsCollapsed(!isBlogsCollapsed)}
++                    style={{
++                      display: 'flex',
++                      justifyContent: 'flex-start',
++                      alignItems: 'center',
++                      gap: '12px',
++                      cursor: 'pointer',
++                      userSelect: 'none',
++                      borderBottom: isBlogsCollapsed ? 'none' : '1px solid #f1f5f9',
++                      paddingBottom: isBlogsCollapsed ? '0px' : '12px',
++                      marginBottom: isBlogsCollapsed ? '0px' : '4px'
++                    }}
++                  >
++                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
++                      <span style={{ fontSize: '1.2rem' }}>Ô£ì´©Å</span> Blogs Relacionados con el PDF
++                    </span>
++                    <span style={{ transform: isBlogsCollapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.2s', color: '#64748b', fontSize: '0.75rem', display: 'inline-block' }}>ÔûÂ</span>
++                    
++                    <button
++                      type="button"
++                      onClick={(e) => {
++                        e.stopPropagation();
++                        openBlogModal(editingPdf);
++                      }}
++                      style={{
++                        background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
++                        color: 'white',
++                        border: 'none',
++                        padding: '6px 12px',
++                        borderRadius: '8px',
++                        fontSize: '0.8rem',
++                        fontWeight: 'bold',
++                        cursor: 'pointer',
++                        display: 'flex',
++                        alignItems: 'center',
++                        gap: '6px',
++                        boxShadow: '0 2px 4px rgba(139,92,246,0.2)',
++                        transition: 'all 0.2s',
++                        zIndex: 10
++                      }}
++                      onMouseEnter={e => {
++                        e.currentTarget.style.transform = 'scale(1.05)';
++                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(139,92,246,0.3)';
++                      }}
++                      onMouseLeave={e => {
++                        e.currentTarget.style.transform = 'scale(1)';
++                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(139,92,246,0.2)';
++                      }}
++                    >
++                      Ô£¿ Generar Blog IA
++                    </button>
++
++                    {isBlogsCollapsed && (
++                      <span style={{
++                        background: '#f3e8ff',
++                        padding: '3px 10px',
++                        borderRadius: '6px',
++                        fontWeight: 600,
++                        color: '#6d28d9',
++                        fontSize: '0.76rem',
++                        marginLeft: '8px'
++                      }}>
++                        {pdfBlogs.length} {pdfBlogs.length === 1 ? 'blog' : 'blogs'}
++                      </span>
++                    )}
++                  </div>
++
++                  {/* Collapsible Content */}
++                  {!isBlogsCollapsed && (
++                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
++                      {pdfBlogs.length > 0 ? (
++                        pdfBlogs.map(b => (
++                          <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', position: 'relative' }}>
++                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
++                              {b.hero_imagen ? (
++                                <div style={{ flex: '0 0 50px', height: '50px', borderRadius: '6px', overflow: 'hidden', background: '#f1f5f9' }}>
++                                  <img src={getMediaUrl(b.hero_imagen)} alt={b.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
++                                </div>
++                              ) : (
++                                <div style={{ flex: '0 0 50px', height: '50px', borderRadius: '6px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>Ô£¿</div>
++                              )}
++                              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
++                                <a 
++                                  href={`/dashboard/admin/blog/${b.id}?from=${entityType || 'variedades'}&fromId=${variedadId}&fromName=${encodeURIComponent(variedadNombre || 'Variedad')}&fromTab=pdfs`} 
++                                  target="_blank"
++                                  rel="noopener noreferrer"
++                                  style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none' }} 
++                                  onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} 
++                                  onMouseLeave={e => e.currentTarget.style.textDecoration='none'} 
++                                  title={b.titulo}
++                                >
++                                  {b.titulo}
++                                </a>
++                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
++                                  <span style={{ fontSize: '0.65rem', color: b.estado === 'publicado' ? '#059669' : '#d97706', fontWeight: 700, background: b.estado === 'publicado' ? '#d1fae5' : '#fef3c7', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
++                                    {b.estado === 'publicado' ? 'Publicado' : 'Borrador'}
++                                  </span>
++                                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 500 }}>
++                                    {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
++                                  </span>
++                                </div>
++                              </div>
++                            </div>
++                          </div>
++                        ))
++                      ) : (
++                        <div style={{ padding: '24px 20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
++                          <span>No hay blogs generados para este PDF.</span>
++                          <button
++                            type="button"
++                            onClick={() => openBlogModal(editingPdf)}
++                            style={{
++                              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
++                              color: 'white',
++                              border: 'none',
++                              padding: '8px 16px',
++                              borderRadius: '8px',
++                              fontSize: '0.85rem',
++                              fontWeight: 'bold',
++                              cursor: 'pointer',
++                              display: 'flex',
++                              alignItems: 'center',
++                              gap: '6px',
++                              boxShadow: '0 2px 4px rgba(139,92,246,0.2)',
++                              transition: 'all 0.2s'
++                            }}
++                            onMouseEnter={e => {
++                              e.currentTarget.style.transform = 'scale(1.05)';
++                              e.currentTarget.style.boxShadow = '0 4px 8px rgba(139,92,246,0.3)';
++                            }}
++                            onMouseLeave={e => {
++                              e.currentTarget.style.transform = 'scale(1)';
++                              e.currentTarget.style.boxShadow = '0 2px 4px rgba(139,92,246,0.2)';
++                            }}
++                          >
++                            Ô£¿ Generar Blog con IA
++                          </button>
++                        </div>
++                      )}
++                    </div>
++                  )}
++                </div>
++              );
++            })()}
+           </div>
+-        );
+-      })()}
++        </div>
++      )}
+ 
+       {/* MODAL GENERADOR DE BLOG */}
+       {blogGenPdf && (
+@@ -1124,132 +2402,241 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
+             onClick={(e) => e.stopPropagation()}
+             style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+           >
+-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(to right, #fffbeb, #fef3c7)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+-              <div>
+-                <h3 style={{ margin: 0, color: '#b45309', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+-                  <span style={{ fontSize: '1.5rem' }}>­ƒôØ</span> Generador de Blog IA
+-                </h3>
+-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#92400e' }}>
+-                  Basado en: <strong>{blogGenPdf.titulo || blogGenPdf.nombreOriginal}</strong>
+-                </p>
++            <div style={{ padding: '16px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++              <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
++                <span style={{ fontSize: '1.5rem' }}>Ô£¿</span> Generador de Blog IA
++              </h3>
++              <div style={{ display: 'flex', gap: '12px' }}>
++                <button onClick={() => { if (!blogGenLoading) { setBlogGenPdf(null); setBlogGenTitles([]); setBlogGenSelectedTitle(''); } }} disabled={blogGenLoading} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '6px 12px', borderRadius: '8px', cursor: blogGenLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
++                  Cancelar
++                </button>
++                <button onClick={submitBlogGen} disabled={blogGenLoading || blogGenTitlesLoading || !blogGenSelectedTitle} style={{ background: 'white', color: (blogGenLoading || blogGenTitlesLoading || !blogGenSelectedTitle) ? '#94a3b8' : '#6d28d9', border: 'none', padding: '6px 16px', borderRadius: '8px', cursor: (blogGenLoading || blogGenTitlesLoading || !blogGenSelectedTitle) ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: (blogGenLoading || blogGenTitlesLoading || !blogGenSelectedTitle) ? 0.7 : 1, boxShadow: '0 2px 4px rgba(0,0,0,0.2)', transition: 'all 0.3s' }}>
++                  {blogGenLoading ? `ÔÅ│ Generando...` : blogGenTitlesLoading ? `ÔÅ│ Analizando... ${blogGenTitlesSeconds}s` : '­ƒÜÇ Generar'}
++                </button>
+               </div>
+-              <button onClick={() => !blogGenLoading && setBlogGenPdf(null)} disabled={blogGenLoading} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#d97706', cursor: blogGenLoading ? 'not-allowed' : 'pointer', opacity: blogGenLoading ? 0.5 : 1 }}>&times;</button>
+             </div>
+-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
++
++            <div style={{ background: '#f8fafc', padding: '10px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
++              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Interacciones IA este mes:</span>
++              {aiStats ? (
++                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', background: aiStats.remaining > 0 ? '#d1fae5' : '#fee2e2', color: aiStats.remaining > 0 ? '#059669' : '#dc2626', padding: '2px 8px', borderRadius: '12px' }}>
++                  {aiStats.used} / {aiStats.max}
++                </span>
++              ) : (
++                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Cargando...</span>
++              )}
++            </div>
++
++            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+               {blogGenLoading ? (
+                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
+                   <div style={{ fontSize: '4rem', animation: 'bounce 1s infinite' }}>­ƒºá</div>
+                   <h3 style={{ color: '#0f172a', marginTop: '20px', marginBottom: '8px' }}>Escribiendo art├¡culo...</h3>
+                   <p style={{ color: '#64748b', margin: 0 }}>La IA est├í leyendo el PDF y redactando el post (puede tardar un minuto).</p>
++                  <p style={{ color: '#8b5cf6', margin: '10px 0 0', fontWeight: 'bold' }}>{blogGenProgress}</p>
+                 </div>
+               ) : (
+                 <>
+-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+-                    <span style={{ fontSize: '1.5rem' }}>­ƒÆí</span>
+-                    <div>
+-                      <h4 style={{ margin: '0 0 4px 0', color: '#334155' }}>┬┐C├│mo funciona?</h4>
+-                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+-                        La IA leer├í el contenido t├®cnico del PDF y lo transformar├í en un art├¡culo de blog atractivo. Puedes cambiar el tono de redacci├│n editando las instrucciones de abajo.
+-                      </p>
++                  <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
++                    <span style={{ fontSize: '1.5rem' }}>­ƒôä</span>
++                    <div style={{ flex: 1, minWidth: 0 }}>
++                      <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>
++                        Documento Objetivo
++                      </div>
++                      <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
++                        {blogGenPdf.titulo || blogGenPdf.nombreOriginal}
++                      </div>
+                     </div>
+                   </div>
++
++                  <details open={showBlogPrompt} onToggle={(e: any) => setShowBlogPrompt(e.target.open)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
++                    <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
++                      <span style={{ transition: 'transform 0.2s', transform: showBlogPrompt ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>ÔûÂ</span>
++                      ­ƒöº System Prompt Base
++                    </summary>
++                    <div style={{ padding: '16px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', color: '#334155', fontSize: '0.75rem', fontFamily: 'monospace', maxHeight: '200px', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
++                      {`Act├║a como un experto redactor de blogs agron├│micos y de jardiner├¡a moderna. Vas a leer el documento adjunto sobre la variedad "${variedadNombre}" y vas a escribir un art├¡culo de blog profesional, SEO-optimizado y visualmente estructurado.\n\nCONTEXTO: Este blog trata sobre una VARIEDAD vegetal/hortaliza.\n\nINDICACIONES DEL USUARIO: "${blogGenInstructions}"\n\nREGLAS DE ESTRUCTURA OBLIGATORIAS (Blog Verdantia):\n1. SIN PAJA: P├írrafos de m├íximo 3 l├¡neas.\n2. NEGRITAS en conceptos clave. DATOS CONCRETOS.\n3. TONO: Profesional pero cercano.\n4. T├ìTULO: Interrogativo siempre que sea posible.\n\nJSON de salida obligatorio...`}
++                    </div>
++                  </details>
++
+                   <div>
+-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>Instrucciones para la IA (Tono y Estilo)</label>
++                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
++                      Prompt Din├ímico (Instrucciones de estilo)
++                    </label>
+                     <textarea 
+                       value={blogGenInstructions} 
+                       onChange={e => setBlogGenInstructions(e.target.value)} 
+-                      style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', resize: 'vertical', minHeight: '120px', fontSize: '0.95rem', lineHeight: 1.5 }}
++                      style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', resize: 'vertical', minHeight: '80px', fontSize: '0.95rem', lineHeight: 1.5 }}
+                     />
+                   </div>
+ 
+-                  {/* Toggle para ver el prompt del sistema usando el est├índar <details> */}
+-                  <details open={showBlogPrompt} onToggle={(e: any) => setShowBlogPrompt(e.target.open)} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', marginTop: '4px' }}>
+-                    <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
+-                      <span style={{ transition: 'transform 0.2s', transform: showBlogPrompt ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>ÔûÂ</span>
+-                      ­ƒæü´©Å Ver Prompt del Sistema enviado a Gemini
+-                    </summary>
+-                    <div style={{ padding: '16px', borderTop: '1px solid #e2e8f0', background: '#0f172a', color: '#e2e8f0', fontSize: '0.75rem', fontFamily: 'monospace', maxHeight: '300px', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+-                      {`Act├║a como un experto redactor de blogs agron├│micos y de jardiner├¡a moderna. Vas a leer el documento adjunto sobre la variedad "${variedadNombre}" y vas a escribir un art├¡culo de blog profesional, SEO-optimizado y visualmente estructurado.
+-
+-CONTEXTO: Este blog trata sobre una VARIEDAD vegetal/hortaliza.
+-
+-INDICACIONES DEL USUARIO: "${blogGenInstructions}"
+-
+-REGLAS DE ESTRUCTURA OBLIGATORIAS (Blog Verdantia):
+-1. SIN PAJA: P├írrafos de m├íximo 3 l├¡neas.
+-2. NEGRITAS en conceptos clave. DATOS CONCRETOS.
+-3. TONO: Profesional pero cercano.
+-4. T├ìTULO: Interrogativo siempre que sea posible (ej: "┬┐C├│mo cultivar...?").
+-
+-JSON de salida obligatorio:
+-ÔåÆ titulo, slug, resumen, tags[]
+-ÔåÆ ficha_rapida[6]: ­ƒîí´©Å Temp, ­ƒùô´©Å Siembra, ­ƒî▒ Germinaci├│n, ­ƒôÅ Marco, ­ƒòÉ Cosecha, ­ƒÆº Riego
+-ÔåÆ introduccion (max 100 palabras)
+-ÔåÆ secciones[]: {titulo_h2, contenido_markdown, imagen_posicion}
+-ÔåÆ consejos: {titulo, items[]}
+-ÔåÆ cta: {titulo, subtitulo, botones}
+-ÔåÆ imagenes[3]: {prompt_en, titulo_seo, descripcion_seo}`}
++                  <div>
++                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem' }}>
++                      Selectores Visuales (Tonos predefinidos):
++                    </label>
++                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
++                      {[
++                        "Tono divulgativo para aficionados y principiantes",
++                        "Tono t├®cnico para agricultores profesionales",
++                        "Enfoque en soluciones ecol├│gicas y sostenibles",
++                        "Enfoque directo en rentabilidad y rendimiento"
++                      ].map(preset => (
++                        <button 
++                          key={preset}
++                          type="button"
++                          onClick={() => setBlogGenInstructions(preset)}
++                          style={{
++                            padding: '6px 12px',
++                            borderRadius: '20px',
++                            border: `1px solid ${blogGenInstructions === preset ? '#8b5cf6' : '#e2e8f0'}`,
++                            background: blogGenInstructions === preset ? '#f3e8ff' : '#f8fafc',
++                            color: blogGenInstructions === preset ? '#6d28d9' : '#475569',
++                            fontSize: '0.8rem',
++                            cursor: 'pointer',
++                            transition: 'all 0.2s ease',
++                            textAlign: 'left'
++                          }}
++                        >
++                          {preset}
++                        </button>
++                      ))}
+                     </div>
+-                  </details>
++                  </div>
++                  
++                  {blogGenTitles.length > 0 && (
++                    <div style={{ marginTop: '10px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', animation: 'fadeIn 0.3s ease-in-out' }}>
++                      <h4 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
++                        <span style={{ fontSize: '1.2rem' }}>Ô£¿</span> Elige un t├¡tulo para el art├¡culo:
++                      </h4>
++                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
++                        {blogGenTitles.map((t, idx) => (
++                          <label key={idx} style={{
++                            display: 'flex', alignItems: 'center', gap: '10px', padding: '12px',
++                            border: blogGenSelectedTitle === t ? '2px solid #8b5cf6' : '1px solid #cbd5e1',
++                            borderRadius: '8px', cursor: 'pointer',
++                            background: blogGenSelectedTitle === t ? '#f5f3ff' : '#fff',
++                            transition: 'all 0.2s',
++                            boxShadow: blogGenSelectedTitle === t ? '0 4px 6px -1px rgba(139, 92, 246, 0.1)' : 'none'
++                          }}>
++                            <input
++                              type="radio"
++                              name="blogGenSelectedTitle"
++                              checked={blogGenSelectedTitle === t}
++                              onChange={() => setBlogGenSelectedTitle(t)}
++                              style={{ margin: 0, accentColor: '#8b5cf6', width: '18px', height: '18px', flexShrink: 0 }}
++                            />
++                            <span style={{ fontSize: '0.95rem', color: blogGenSelectedTitle === t ? '#5b21b6' : '#334155', fontWeight: blogGenSelectedTitle === t ? 'bold' : 'normal', lineHeight: 1.4 }}>
++                              {t}
++                            </span>
++                          </label>
++                        ))}
++                      </div>
++                      <div style={{ marginTop: '12px', textAlign: 'right' }}>
++                        <button
++                          type="button"
++                          onClick={() => { setBlogGenTitles([]); setBlogGenSelectedTitle(''); }}
++                          style={{ padding: '6px 12px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
++                        >
++                          Ôå® Reintentar t├¡tulos
++                        </button>
++                      </div>
++                    </div>
++                  )}
+                 </>
+               )}
+             </div>
+-            {!blogGenLoading && (
+-              <div style={{ padding: '20px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+-                <button onClick={() => setBlogGenPdf(null)} style={{ padding: '12px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>Cancelar</button>
+-                <button onClick={submitBlogGen} style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(245,158,11,0.4)' }}>
+-                  Ô£¿ Comenzar Magia
+-                </button>
+-              </div>
+-            )}
+           </div>
+         </div>
+       )}
+ 
+       {/* MODAL SEARCH PDFS */}
+       {showPdfSearchModal && (
+-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
+-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '600px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #4c1d95', background: 'linear-gradient(to right, #6d28d9, #4c1d95)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+-              <div>
+-                <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+-                  <span style={{ fontSize: '1.5rem' }}>Ô£¿</span> Buscador IA de PDFs
+-                </h3>
+-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#ddd6fe' }}>
+-                  Especie: <strong style={{ color: 'white' }}>{especieNombre}</strong> | Variedad: <strong style={{ color: 'white' }}>{variedadNombre || 'Sin nombre'}</strong>
+-                </p>
+-              </div>
+-              <button 
+-                type="button" 
+-                onClick={() => {
+-                  if (pdfSearchAbortControllerRef.current) {
+-                    pdfSearchAbortControllerRef.current.abort();
+-                  }
++        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', padding: '20px' }}>
++          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
++            <div style={{ padding: '16px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++              <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
++                <span style={{ fontSize: '1.5rem' }}>Ô£¿</span> Buscador IA de PDFs
++              </h3>
++              <div style={{ display: 'flex', gap: '12px' }}>
++                <button onClick={() => {
++                  if (pdfSearchAbortControllerRef.current) pdfSearchAbortControllerRef.current.abort();
+                   setPdfSearchLoading(false);
+                   setShowPdfSearchModal(false);
+-                }} 
+-                style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', color: 'white', transition: 'all 0.2s' }} 
+-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; }} 
+-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+-              >
+-                Cancelar
+-              </button>
++                }} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
++                  Cancelar
++                </button>
++                <button onClick={handleSearchPdfs} disabled={pdfSearchLoading || !pdfSearchTopic} style={{ background: 'white', color: '#6d28d9', border: 'none', padding: '6px 16px', borderRadius: '8px', cursor: (pdfSearchLoading || !pdfSearchTopic) ? 'not-allowed' : 'pointer', fontWeight: 'bold', opacity: (pdfSearchLoading || !pdfSearchTopic) ? 0.7 : 1, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
++                  {pdfSearchLoading ? `ÔÅ│ Analizando... ${pdfSearchTimer}s` : '­ƒÜÇ Buscar'}
++                </button>
++              </div>
++            </div>
++
++            <div style={{ background: '#f8fafc', padding: '10px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
++              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#475569' }}>Interacciones IA este mes:</span>
++              {aiStats ? (
++                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', background: aiStats.remaining > 0 ? '#d1fae5' : '#fee2e2', color: aiStats.remaining > 0 ? '#059669' : '#dc2626', padding: '2px 8px', borderRadius: '12px' }}>
++                  {aiStats.used} / {aiStats.max}
++                </span>
++              ) : (
++                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Cargando...</span>
++              )}
+             </div>
+ 
+-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
++            <div style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
++              
++              {pdfSearchLoading && (
++                <div style={{
++                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
++                  background: 'rgba(255,255,255,0.75)', zIndex: 50, backdropFilter: 'blur(2px)',
++                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
++                  color: '#6d28d9', textAlign: 'center'
++                }}>
++                  <span style={{ fontSize: '3rem', display: 'inline-block', animation: 'spin 2s linear infinite' }}>ÔÅ│</span>
++                  <p style={{ marginTop: '16px', fontSize: '1.25rem', fontWeight: 'bold' }}>
++                    Buscando documentos... {pdfSearchTimer}s
++                  </p>
++                  <p style={{ marginTop: '4px', fontSize: '0.9rem', color: '#475569', maxWidth: '300px' }}>
++                    La IA est├í consultando repositorios agr├¡colas y analizando resultados en tiempo real.
++                  </p>
++                </div>
++              )}
++              <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
++                <span style={{ fontSize: '1.5rem' }}>
++                  {entityType === 'tratamientos' ? '­ƒº¬' : entityType === 'afecciones' ? '­ƒÉø' : '­ƒî▒'}
++                </span>
++                <div>
++                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>
++                    Entidad Objetivo ({entityType})
++                  </div>
++                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#0f172a' }}>
++                    {variedadNombre || 'Sin nombre'} {especieNombre && <span style={{ opacity: 0.6, fontSize: '0.85rem' }}>({especieNombre})</span>}
++                  </div>
++                </div>
++              </div>
++
++              <details style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
++                <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
++                  <span style={{ display: 'inline-block' }}>ÔûÂ</span>
++                  ­ƒöº System Prompt Base
++                </summary>
++                <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
++                  <textarea
++                    readOnly
++                    value={`Act├║a como un bibliotecario agr├│nomo experto. Busca 4 enlaces reales a manuales, gu├¡as o documentos PDF (preferiblemente de instituciones agr├¡colas, universidades o ministerios) sobre el cultivo de la especie "${especieNombre}" y variedad "${variedadNombre}", espec├¡ficamente enfocados en el tema: "${pdfSearchTopic}".\n\nEs IMPRESCINDIBLE que uses tu herramienta de b├║squeda en internet para obtener enlaces reales y actualizados.`}
++                    rows={6}
++                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical', lineHeight: '1.5', color: '#334155', background: '#f8fafc' }}
++                  />
++                </div>
++              </details>
++
+               <div>
+                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155' }}>
+-                  ┬┐Qu├® tipo de documento buscas sobre esta variedad?
++                  Prompt Din├ímico (Tipo de documento)
+                 </label>
+                 <textarea
+                   value={pdfSearchTopic}
+                   onChange={e => setPdfSearchTopic(e.target.value)}
+-                  onKeyDown={e => {
+-                    if (e.key === 'Enter' && !e.shiftKey) {
+-                      e.preventDefault();
+-                      handleSearchPdfs();
+-                    }
+-                  }}
++                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSearchPdfs(); } }}
+                   placeholder="Ej. enfermedades comunes..."
+                   rows={2}
+                   style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', resize: 'vertical', minHeight: '60px' }}
+@@ -1258,16 +2645,28 @@ JSON de salida obligatorio:
+ 
+               <div>
+                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#334155', fontSize: '0.85rem' }}>
+-                  Sugerencias R├ípidas:
++                  Selectores Visuales (Sugerencias):
+                 </label>
+                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+-                  {[
++                  {(entityType === 'tratamientos' ? [
++                    "Ficha t├®cnica del producto",
++                    "Hoja de seguridad (SDS)",
++                    "Dosificaci├│n y modo de empleo",
++                    "Registro fitosanitario oficial",
++                    "Compatibilidad con otros productos"
++                  ] : entityType === 'afecciones' ? [
++                    "Gu├¡a de identificaci├│n visual",
++                    "Ciclo biol├│gico y propagaci├│n",
++                    "Umbrales de da├▒o econ├│mico",
++                    "M├®todos de control integrado",
++                    "Ficha t├®cnica de la plaga"
++                  ] : [
+                     "Manual de cultivo",
+                     "Plagas y enfermedades comunes",
+                     "Requerimientos h├¡dricos y riego",
+                     "Marco de plantaci├│n ideal",
+                     "Ficha t├®cnica oficial"
+-                  ].map(preset => (
++                  ]).map(preset => (
+                     <button 
+                       key={preset}
+                       type="button"
+@@ -1280,7 +2679,8 @@ JSON de salida obligatorio:
+                         color: pdfSearchTopic === preset ? '#6d28d9' : '#475569',
+                         fontSize: '0.8rem',
+                         cursor: 'pointer',
+-                        transition: 'all 0.2s ease'
++                        transition: 'all 0.2s ease',
++                        textAlign: 'left'
+                       }}
+                     >
+                       {preset}
+@@ -1289,51 +2689,7 @@ JSON de salida obligatorio:
+                 </div>
+               </div>
+ 
+-              <details style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+-                <summary style={{ padding: '10px 14px', background: '#f8fafc', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none', listStyle: 'none' }}>
+-                  <span style={{ display: 'inline-block' }}>ÔûÂ</span>
+-                  ­ƒöº Prompt t├®cnico
+-                </summary>
+-                <div style={{ padding: '12px 14px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+-                  <textarea
+-                    readOnly
+-                    value={`Act├║a como un bibliotecario agr├│nomo experto. Busca 4 enlaces reales a manuales, gu├¡as o documentos PDF (preferiblemente de instituciones agr├¡colas, universidades o ministerios) sobre el cultivo de la especie "${especieNombre}" y variedad "${variedadNombre}", espec├¡ficamente enfocados en el tema: "${pdfSearchTopic}".\n\nEs IMPRESCINDIBLE que uses tu herramienta de b├║squeda en internet para obtener enlaces reales y actualizados.`}
+-                    rows={6}
+-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: 'monospace', resize: 'vertical', lineHeight: '1.5', color: '#334155', background: '#f8fafc' }}
+-                  />
+-                </div>
+-              </details>
+-
+-              <button
+-                type="button"
+-                onClick={handleSearchPdfs}
+-                disabled={pdfSearchLoading || !pdfSearchTopic}
+-                style={{ 
+-                  width: '100%',
+-                  padding: '14px', 
+-                  borderRadius: '12px', 
+-                  border: 'none', 
+-                  background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+-                  color: 'white', 
+-                  fontWeight: 'bold', 
+-                  fontSize: '1rem',
+-                  cursor: (pdfSearchLoading || !pdfSearchTopic) ? 'not-allowed' : 'pointer', 
+-                  opacity: (pdfSearchLoading || !pdfSearchTopic) ? 0.7 : 1,
+-                  marginTop: '10px'
+-                }}
+-              >
+-                {pdfSearchLoading ? 'ÔÅ│ Buscando Documentos...' : 'Ô£¿ Buscar Ahora'}
+-              </button>
+ 
+-            {pdfSearchLoading && (
+-              <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+-                <span style={{ fontSize: '2rem', display: 'inline-block', animation: 'spin 2s linear infinite' }}>ÔÅ│</span>
+-                <p style={{ marginTop: '10px', fontSize: '1rem', color: '#6d28d9', fontWeight: 'bold' }}>
+-                  Buscando documentos... {pdfSearchTimer}s
+-                </p>
+-                <p style={{ marginTop: '4px', fontSize: '0.85rem' }}>La IA est├í leyendo los repositorios agr├¡colas.</p>
+-              </div>
+-            )}
+ 
+             {pdfSearchError && (
+               <div style={{ background: '#fef2f2', border: '1px solid #f87171', borderRadius: '8px', padding: '16px', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+@@ -1360,7 +2716,7 @@ JSON de salida obligatorio:
+                         </p>
+                       )}
+                     </div>
+-                    <button type="button" onClick={() => handleAddPdfLink(res.title, res.url, res.summary, res.apuntes)} style={{ background: 'white', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
++                    <button type="button" onClick={() => handleAddPdfLink(res.title, res.url, res.summary, res.apuntes, res.autores, res.identificacion)} style={{ background: 'white', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                       Ô×ò A├▒adir
+                     </button>
+                   </div>
+@@ -1385,7 +2741,7 @@ JSON de salida obligatorio:
+               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                 <button type="button" onClick={() => setEditingPhoto(null)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
+                 {(() => {
+-                  const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
++                  const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt, seo_title: editorSeoTitle });
+                   if (currentState !== editorInitialState) {
+                     return (
+                       <button
+@@ -1429,6 +2785,38 @@ JSON de salida obligatorio:
+                 <div className="photo-editor-hint">
+                   <span>Arrastra para encuadrar</span>
+                 </div>
++                {editingPhoto.isPdfCover && (
++                  <button
++                    type="button"
++                    onClick={() => {
++                      const targetPdf = pdfs.find(p => p.id === editingPhoto.id);
++                      if (targetPdf) {
++                        setEditingPhoto(null);
++                        openAiCoverModal(targetPdf);
++                      }
++                    }}
++                    style={{
++                      marginTop: '12px',
++                      padding: '10px 16px',
++                      background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
++                      color: 'white',
++                      border: 'none',
++                      borderRadius: '8px',
++                      fontWeight: 'bold',
++                      cursor: 'pointer',
++                      fontSize: '0.85rem',
++                      display: 'flex',
++                      alignItems: 'center',
++                      gap: '6px',
++                      boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
++                      transition: 'all 0.2s',
++                      width: '100%',
++                      justifyContent: 'center'
++                    }}
++                  >
++                    Ô£¿ Regenerar Portada IA
++                  </button>
++                )}
+               </div>
+ 
+               <div className="photo-editor-controls">
+@@ -1532,6 +2920,15 @@ JSON de salida obligatorio:
+                 </div>
+ 
+                 <div className="editor-control-group">
++                  <label style={{ margin: 0 }}><span className="control-label">­ƒÅÀ´©Å T├¡tulo SEO (Title Text)</span></label>
++                  <input 
++                    type="text" 
++                    value={editorSeoTitle} 
++                    onChange={e => setEditorSeoTitle(e.target.value)}
++                    placeholder="T├¡tulo para buscadores..."
++                    style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.9rem', marginBottom: '10px' }}
++                  />
++                  
+                   <label style={{ margin: 0 }}><span className="control-label">­ƒÅÀ´©Å Descripci├│n SEO (Alt Text)</span></label>
+                   <input 
+                     type="text" 
+@@ -1540,7 +2937,7 @@ JSON de salida obligatorio:
+                     placeholder="Descripci├│n para buscadores..."
+                     style={{ width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.9rem' }}
+                   />
+-                  <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Ayuda al posicionamiento en buscadores.</small>
++                  <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Fundamentales para cumplir con el mandato SEO y accesibilidad.</small>
+                 </div>
+               </div>
+             </div>

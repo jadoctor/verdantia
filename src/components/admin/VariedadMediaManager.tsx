@@ -12,13 +12,15 @@ interface VariedadMediaManagerProps {
   especieNombre?: string;
   especieNombreCientifico?: string;
   especieFamilia?: string;
-  section?: 'photos' | 'pdfs' | 'all';
+  section?: 'photos' | 'pdfs' | 'blogs' | 'all';
   onMediaChange?: () => void;
   apiBasePath?: string;
+  initialEditPdfId?: number | null;
+  entityType?: string;
 }
 
-export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange, apiBasePath }: VariedadMediaManagerProps) {
-  const basePath = apiBasePath || `/api/admin/variedades/${variedadId}`;
+export default function VariedadMediaManager({ variedadId, userEmail, variedadNombre = 'Variedad', especieNombre = 'Especie', especieNombreCientifico = '', especieFamilia = '', section = 'all', onMediaChange, apiBasePath, initialEditPdfId, entityType = 'variedades' }: VariedadMediaManagerProps) {
+  const basePath = apiBasePath || `/api/admin/${entityType}/${variedadId}`;
   const [photos, setPhotos] = useState<any[]>([]);
   const [pdfs, setPdfs] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -90,11 +92,27 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
     hdr: 'contrast(1.35) saturate(1.3) brightness(1.07)'
   };
 
+  const initialEditPdfHandledRef = useRef(false);
+
   useEffect(() => {
     if (variedadId && userEmail) {
       loadMedia();
     }
   }, [variedadId, userEmail]);
+
+  // Auto-open PDF editor when initialEditPdfId is provided and PDFs are loaded
+  useEffect(() => {
+    if (initialEditPdfId && pdfs.length > 0 && !initialEditPdfHandledRef.current) {
+      const targetPdf = pdfs.find((p: any) => p.id === initialEditPdfId);
+      if (targetPdf) {
+        initialEditPdfHandledRef.current = true;
+        setEditingPdf(targetPdf);
+        setPdfTitle(targetPdf.titulo || '');
+        setPdfSummary(targetPdf.resumen || '');
+        setPdfApuntes(targetPdf.apuntes || '');
+      }
+    }
+  }, [initialEditPdfId, pdfs]);
 
   useEffect(() => {
     let interval: any;
@@ -786,7 +804,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
 
                 {/* Botones superpuestos en la foto */}
                 <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                  <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
+                  <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => window.location.href = `/dashboard/admin/pdfs/${p.id}`} title="Editar en Dashboard de PDFs">✏️</button>
                   {(blogs.some(b => b.pdfSourceId == p.id)) ? (
                     <button type="button" style={{ background: 'linear-gradient(135deg, #9ca3af, #6b7280)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'not-allowed', boxShadow: '0 2px 4px rgba(0,0,0,0.25)', opacity: 0.8 }} disabled title="No se puede eliminar: Hay un blog asociado a este PDF.">✕</button>
                   ) : (
@@ -1013,106 +1031,7 @@ export default function VariedadMediaManager({ variedadId, userEmail, variedadNo
         </div>
       )}
 
-      {/* MODAL DE EDICIÓN DE METADATOS DE PDF */}
-      {/* MODAL DE EDICIÓN DE METADATOS DE PDF */}
-      {editingPdf && (() => {
-        const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') ||
-          pdfSummary !== (editingPdf.resumen || '') ||
-          pdfApuntes !== (editingPdf.apuntes || '');
-        return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-            onClick={() => setEditingPdf(null)}>
-            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-                <div>
-                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    📄 Editar Metadatos del PDF
-                  </h3>
-                  <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                    🌱 Especie: {especieNombre} | Variedad: {variedadNombre || 'Sin nombre'}
-                  </span>
-                </div>
-                <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
-              </div>
 
-              <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
-                {/* Columna Izquierda: Portada */}
-                <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {editingPdf.portada ? (
-                      <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                    ) : (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
-                        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>
-                        <p style={{ margin: 0, fontSize: '0.9rem' }}>Sin portada generada</p>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      generatePdfCover({ ...editingPdf, titulo: pdfTitle, resumen: pdfSummary });
-                    }}
-                    disabled={generatingCoverId === editingPdf.id}
-                    style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: generatingCoverId === editingPdf.id ? 'wait' : 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
-                  >
-                    {generatingCoverId === editingPdf.id ? '⏳ Generando...' : (editingPdf.portada ? '✨ Regenerar Portada IA' : '✨ Generar Portada IA')}
-                  </button>
-                </div>
-
-                {/* Columna Derecha: Formulario */}
-                <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
-                    <input
-                      type="text"
-                      value={pdfTitle}
-                      onChange={e => setPdfTitle(e.target.value)}
-                      placeholder={editingPdf.nombreOriginal}
-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
-                    <textarea
-                      value={pdfSummary}
-                      onChange={e => setPdfSummary(e.target.value)}
-                      placeholder="Describe brevemente el documento (1-2 líneas)..."
-                      rows={3}
-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
-                    />
-                  </div>
-                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      🎓 Apuntes (Modo Estudiante)
-                    </label>
-                    <textarea
-                      value={pdfApuntes}
-                      onChange={e => setPdfApuntes(e.target.value)}
-                      placeholder="Apuntes técnicos detallados extraídos del PDF..."
-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', flexGrow: 1, minHeight: '120px' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                <button type="button" onClick={() => setEditingPdf(null)}
-                  style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
-                  Cancelar
-                </button>
-                {hasPdfChanges && (
-                  <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
-                    style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : pdfEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Metadatos'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* MODAL GENERADOR DE BLOG */}
       {blogGenPdf && (

@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const idvariedades = resolvedParams.id;
 
   try {
-    const { url, title, summary, apuntes } = await request.json();
+    const { url, title, summary, apuntes, autores, identificacion } = await request.json();
 
     if (!url || !title) {
       return NextResponse.json({ error: 'URL y título requeridos' }, { status: 400 });
@@ -32,24 +32,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
     const total = (countResult as any[])[0].total;
 
-    // Convert to Archive.org URL to prevent Link Rot
     let finalUrl = url;
-    if (!url.includes('web.archive.org')) {
-      finalUrl = `https://web.archive.org/web/2/${url}`;
-    }
 
     const safeTitle = Array.isArray(title) ? title.join(' ') : (title || '');
     const safeSummary = Array.isArray(summary) ? summary.join(' ') : (summary || '');
     const safeApuntes = Array.isArray(apuntes) ? apuntes.join('\n') : (apuntes || '');
+    const safeAutores = Array.isArray(autores) ? autores.join(' ') : (autores || '');
+    const safeIdentificacion = Array.isArray(identificacion) ? identificacion.join(' ') : (identificacion || '');
 
     const [result] = await pool.query(
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
         datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
         datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidvariedades,
-        datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes
-      ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, 0, ?, ?, ?)`,
-      ['Documento_Web', finalUrl, total + 1, idvariedades, safeTitle, safeSummary, safeApuntes]
+        datosadjuntospesobytes, datosadjuntostitulo, datosadjuntosresumen, datosadjuntosapuntes, datosadjuntosautores, datosadjuntosidentificacion
+      ) VALUES ('documento', 'application/pdf', ?, ?, 0, ?, 1, NOW(), ?, 0, ?, ?, ?, ?, ?)`,
+      ['Documento_Web', finalUrl, total + 1, idvariedades, safeTitle, safeSummary, safeApuntes, safeAutores, safeIdentificacion]
     );
 
     return NextResponse.json({
@@ -60,7 +58,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         nombreOriginal: 'Documento_Web',
         titulo: title,
         resumen: summary || '',
-        apuntes: apuntes || ''
+        apuntes: apuntes || '',
+        autores: autores || '',
+        identificacion: identificacion || ''
       }
     });
 

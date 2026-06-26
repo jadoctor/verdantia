@@ -36,18 +36,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       WHERE a.xasociacionesperjudicialesidespecieorigen = ?
     `, [idespecies]);
 
-    // 3. Plagas
-    const [plagas]: any = await pool.query(`
-      SELECT ep.*, p.plagasnombre, p.plagastipo 
-      FROM especiesplagas ep
-      JOIN plagas p ON ep.xespeciesplagasidplagas = p.idplagas
-      WHERE ep.xespeciesplagasidespecies = ?
+    // 3. Afecciones
+    const [afecciones]: any = await pool.query(`
+      SELECT ea.*, a.afeccionesnombre, a.afeccionestipo 
+      FROM especiesafecciones ea
+      JOIN afecciones a ON ea.xespeciesafeccionesidafecciones = a.idafecciones
+      WHERE ea.xespeciesafeccionesidespecies = ?
     `, [idespecies]);
 
     return NextResponse.json({
       beneficiosas,
       perjudiciales,
-      plagas
+      afecciones
     });
   } catch (error: any) {
     console.error('Error fetching relations:', error);
@@ -65,7 +65,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const connection = await pool.getConnection();
   try {
     const idespecies = resolvedParams.id;
-    const { beneficiosas, perjudiciales, plagas } = await request.json();
+    const { beneficiosas, perjudiciales, afecciones } = await request.json();
 
     await connection.beginTransaction();
 
@@ -89,17 +89,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       `, [values]);
     }
 
-    // -- PLAGAS --
-    await connection.query('DELETE FROM especiesplagas WHERE xespeciesplagasidespecies = ?', [idespecies]);
-    if (plagas && plagas.length > 0) {
-      const values = plagas.map((p: any) => [
+    // -- AFECCIONES --
+    await connection.query('DELETE FROM especiesafecciones WHERE xespeciesafeccionesidespecies = ?', [idespecies]);
+    if (afecciones && afecciones.length > 0) {
+      const values = afecciones.map((a: any) => [
         idespecies, 
-        p.xespeciesplagasidplagas !== undefined ? p.xespeciesplagasidplagas : p.xrelacionesplagasideplaga, 
-        p.especiesplagasnivelriesgo || p.relacionesplagasriesgo || 'media', 
-        p.especiesplagasnotasespecificas || p.relacionesplagasnotas || null
+        a.xespeciesafeccionesidafecciones !== undefined ? a.xespeciesafeccionesidafecciones : a.xrelacionesafeccionesideplaga, 
+        a.especiesafeccionesnivelriesgo || a.relacionesafeccionesriesgo || 'media', 
+        a.especiesafeccionesnotasespecificas || a.relacionesafeccionesnotas || null
       ]);
       await connection.query(`
-        INSERT INTO especiesplagas (xespeciesplagasidespecies, xespeciesplagasidplagas, especiesplagasnivelriesgo, especiesplagasnotasespecificas)
+        INSERT INTO especiesafecciones (xespeciesafeccionesidespecies, xespeciesafeccionesidafecciones, especiesafeccionesnivelriesgo, especiesafeccionesnotasespecificas)
         VALUES ?
       `, [values]);
     }

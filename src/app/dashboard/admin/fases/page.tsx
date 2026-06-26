@@ -1,5 +1,7 @@
 'use client';
 // Force compilation refresh for 100% unique database phase icons
+// Refresh
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';

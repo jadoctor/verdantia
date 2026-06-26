@@ -1,9 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import DownloadApuntesButton from './DownloadApuntesButton'; // Import estático: garantiza initializeApp() en carga del módulo
 import './EspecieForm.css'; // Reuse the EspecieForm CSS for the common classes
 
 interface LaborFormProps {
@@ -62,6 +64,8 @@ const STYLE_FILTERS: Record<string, string> = {
 
 export default function LaborForm({ laborId, userEmail, isMobile = false }: LaborFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editPdfParam = searchParams.get('editPdf');
 
   const defaultFormData = {
     laboresnombre: '',
@@ -138,6 +142,22 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
       loadAttachments(laborId);
     }
   }, [laborId, userEmail]);
+
+  const initialEditPdfHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (editPdfParam && pdfs.length > 0 && !initialEditPdfHandledRef.current) {
+      const targetPdfId = parseInt(editPdfParam, 10);
+      const targetPdf = pdfs.find(p => p.id === targetPdfId);
+      if (targetPdf) {
+        initialEditPdfHandledRef.current = true;
+        setEditingPdf(targetPdf);
+        setPdfTitle(targetPdf.titulo || '');
+        setPdfSummary(targetPdf.resumen || '');
+        setPdfApuntes(targetPdf.apuntes || '');
+      }
+    }
+  }, [editPdfParam, pdfs]);
 
   const loadLabor = async (id: string) => {
     setLoading(true);
@@ -714,12 +734,18 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
         <button onClick={() => router.push('/dashboard')} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={() => {
-          if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
-          if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/labores'); }
-        }} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a Especie' : '🔙 Volver a Labores'}
-        </button>
+        {searchParams.get('from') === 'pdfs' ? (
+          <button onClick={() => router.push('/dashboard/admin/pdfs')} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🔙 Volver a Gestor de PDFs
+          </button>
+        ) : (
+          <button onClick={() => {
+            if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
+            if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/labores'); }
+          }} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a Especie' : '🔙 Volver a Labores'}
+          </button>
+        )}
       </div>
 
       {/* ── Subheader Integrado ── */}
@@ -1037,7 +1063,7 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
                             <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <div className="gallery-item pdf" style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid #e2e8f0', padding: 0 }}>
                                 {p.portada ? (
-                                  <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
+                                  <img src={getMediaUrl(p.portada)} alt={p.titulo || 'Portada PDF'} style={{ width: '100%', height: '180px', objectFit: 'contain', backgroundColor: '#f1f5f9', display: 'block' }} crossOrigin="anonymous" />
                                 ) : (
                                   <div style={{ width: '100%', height: '180px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                                     {generatingCoverId === p.id && (
@@ -1052,7 +1078,7 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
                                   </div>
                                 )}
                                 <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '4px' }}>
-                                  <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => { setEditingPdf(p); setPdfTitle(p.titulo || ''); setPdfSummary(p.resumen || ''); setPdfApuntes(p.apuntes || ''); }} title="Editar Metadatos">✏️</button>
+                                  <button type="button" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => window.location.href = `/dashboard/admin/pdfs/${p.id}`} title="Editar en Dashboard de PDFs">✏️</button>
                                   <button type="button" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 6px', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.25)' }} onClick={() => handleDeletePdf(p.id)} title="Eliminar Documento">✕</button>
                                 </div>
                                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', padding: '6px', backdropFilter: 'blur(2px)' }}>
@@ -1375,104 +1401,6 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
           </div>
         </div>
       )}
-      {editingPdf && (() => {
-        const hasPdfChanges = pdfTitle !== (editingPdf.titulo || '') ||
-          pdfSummary !== (editingPdf.resumen || '') ||
-          pdfApuntes !== (editingPdf.apuntes || '');
-        return (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-            onClick={() => setEditingPdf(null)}>
-            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '16px' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-                <div>
-                  <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    📄 Editar Metadatos del PDF
-                  </h3>
-                  <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                    🚜 Labor: {formData.laboresnombre || 'Sin nombre'}
-                  </span>
-                </div>
-                <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '24px', flexDirection: 'row', flexWrap: 'wrap' }}>
-                {/* Columna Izquierda: Portada */}
-                <div style={{ flex: '0 0 250px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {editingPdf.portada ? (
-                      <img src={getMediaUrl(editingPdf.portada)} alt="Portada PDF" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-                    ) : (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
-                        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>📄</span>
-                        <p style={{ margin: 0, fontSize: '0.9rem' }}>Sin portada generada</p>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      generatePdfCover({ ...editingPdf, titulo: pdfTitle, resumen: pdfSummary });
-                    }}
-                    disabled={generatingCoverId === editingPdf.id}
-                    style={{ width: '100%', padding: '8px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontWeight: 'bold', cursor: generatingCoverId === editingPdf.id ? 'wait' : 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
-                  >
-                    {generatingCoverId === editingPdf.id ? '⏳ Generando...' : (editingPdf.portada ? '✨ Regenerar Portada IA' : '✨ Generar Portada IA')}
-                  </button>
-                </div>
-
-                {/* Columna Derecha: Formulario */}
-                <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Nombre del Documento</label>
-                    <input
-                      type="text"
-                      value={pdfTitle}
-                      onChange={e => setPdfTitle(e.target.value)}
-                      placeholder={editingPdf.nombreOriginal}
-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#334155' }}>Resumen Corto</label>
-                    <textarea
-                      value={pdfSummary}
-                      onChange={e => setPdfSummary(e.target.value)}
-                      placeholder="Describe brevemente el documento (1-2 líneas)..."
-                      rows={3}
-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical' }}
-                    />
-                  </div>
-                  <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ marginBottom: '4px', fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      🎓 Apuntes (Modo Estudiante)
-                    </label>
-                    <textarea
-                      value={pdfApuntes}
-                      onChange={e => setPdfApuntes(e.target.value)}
-                      placeholder="Apuntes técnicos detallados extraídos del PDF..."
-                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', resize: 'vertical', flexGrow: 1, minHeight: '120px' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                <button type="button" onClick={() => setEditingPdf(null)}
-                  style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
-                  Cancelar
-                </button>
-                {hasPdfChanges && (
-                  <button type="button" onClick={savePdfEdits} disabled={pdfEditorSaveStatus === 'saving'}
-                    style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#10b981', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Metadatos'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
       {showPdfSearchModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', padding: '12px' }}
           onClick={() => setShowPdfSearchModal(false)}>

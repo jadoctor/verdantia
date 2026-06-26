@@ -1,6 +1,6 @@
 'use client'; // Reload: 2026-06-12T19:53:05 (Dashboard refactor standards)
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import '@/components/admin/EspecieForm.css';
 import { auth } from '@/lib/firebase/config';
@@ -11,6 +11,12 @@ import { getMediaUrl } from '@/lib/media-url';
 export default function BlogEditorDashboard() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromEntity = searchParams.get('from');
+  const fromId = searchParams.get('fromId');
+  const fromName = searchParams.get('fromName');
+  const fromTab = searchParams.get('fromTab');
+
   const [blog, setBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -167,6 +173,29 @@ export default function BlogEditorDashboard() {
       alert('Error de conexión al enviar prueba');
     } finally {
       setNotifying(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('¿Seguro que quieres eliminar este artículo de blog permanentemente? Esta acción no se puede deshacer.')) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/blog/${params.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        alert('Artículo de blog eliminado correctamente.');
+        if (fromEntity && fromId) {
+          router.push(`/dashboard/admin/${fromEntity}/${fromId}${fromTab ? `?tab=${fromTab}` : ''}`);
+        } else {
+          router.push('/dashboard/admin/blog');
+        }
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (e) {
+      alert('Error de conexión al eliminar');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -334,9 +363,15 @@ export default function BlogEditorDashboard() {
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={() => router.push('/dashboard/admin/blog')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          🔙 Volver al Listado de Blogs
-        </button>
+        {fromEntity && fromId ? (
+          <button onClick={() => router.push(`/dashboard/admin/${fromEntity}/${fromId}${fromTab ? `?tab=${fromTab}` : ''}`)} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            🔙 Volver a {fromName || fromEntity}
+          </button>
+        ) : (
+          <button onClick={() => router.push('/dashboard/admin/blog')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            🔙 Volver al Listado de Blogs
+          </button>
+        )}
       </div>
 
       {/* ── Subheader Integrado ── */}
@@ -427,6 +462,29 @@ export default function BlogEditorDashboard() {
                 </button>
               </>
             )}
+
+            <button 
+              onClick={handleDelete} 
+              disabled={blog.blogestado === 'publicado'}
+              style={{ 
+                padding: '8px 16px', 
+                borderRadius: '8px', 
+                border: 'none', 
+                background: blog.blogestado === 'publicado' ? '#94a3b8' : 'linear-gradient(135deg, #ef4444, #dc2626)', 
+                color: 'white', 
+                fontWeight: 'bold', 
+                cursor: blog.blogestado === 'publicado' ? 'not-allowed' : 'pointer', 
+                fontSize: '0.85rem',
+                opacity: blog.blogestado === 'publicado' ? 0.6 : 1,
+                boxShadow: blog.blogestado === 'publicado' ? 'none' : '0 2px 4px rgba(239,68,68,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title={blog.blogestado === 'publicado' ? 'No se puede eliminar un artículo publicado' : 'Eliminar artículo permanentemente'}
+            >
+              🗑️ Eliminar
+            </button>
           </div>
         </div>
       </div>
