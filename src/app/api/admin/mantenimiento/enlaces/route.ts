@@ -26,15 +26,15 @@ export async function GET(request: Request) {
         d.datosadjuntosresumen as apuntes,
         d.datosadjuntosautores as autores,
         d.datosadjuntosidentificacion as identificacion,
-        d.xdatosadjuntosidespecies,
-        d.xdatosadjuntosidvariedades,
+        d.xdatosadjuntosidespeciesvegetales,
+        d.xdatosadjuntosidvariedadesvegetales,
         d.xdatosadjuntosidtratamientos,
         d.xdatosadjuntosidlabores,
         d.xdatosadjuntosidafecciones,
-        COALESCE(d.xdatosadjuntosidespecies, d.xdatosadjuntosidvariedades, d.xdatosadjuntosidtratamientos, d.xdatosadjuntosidlabores, d.xdatosadjuntosidafecciones) as entityId,
+        COALESCE(d.xdatosadjuntosidespeciesvegetales, d.xdatosadjuntosidvariedadesvegetales, d.xdatosadjuntosidtratamientos, d.xdatosadjuntosidlabores, d.xdatosadjuntosidafecciones) as entityId,
         CASE
-          WHEN d.xdatosadjuntosidespecies IS NOT NULL THEN 'Especies'
-          WHEN d.xdatosadjuntosidvariedades IS NOT NULL THEN 'Variedades'
+          WHEN d.xdatosadjuntosidespeciesvegetales IS NOT NULL THEN 'Especies'
+          WHEN d.xdatosadjuntosidvariedadesvegetales IS NOT NULL THEN 'Variedades'
           WHEN d.xdatosadjuntosidtratamientos IS NOT NULL THEN 'Tratamientos'
           WHEN d.xdatosadjuntosidlabores IS NOT NULL THEN 'Labores'
           WHEN d.xdatosadjuntosidafecciones IS NOT NULL THEN 'Afecciones'
@@ -43,8 +43,8 @@ export async function GET(request: Request) {
           ELSE 'Desconocido'
         END as modulo,
         CASE
-          WHEN d.xdatosadjuntosidespecies IS NOT NULL THEN CONCAT('/dashboard/admin/especies/', d.xdatosadjuntosidespecies)
-          WHEN d.xdatosadjuntosidvariedades IS NOT NULL THEN CONCAT('/dashboard/admin/variedades/', d.xdatosadjuntosidvariedades)
+          WHEN d.xdatosadjuntosidespeciesvegetales IS NOT NULL THEN CONCAT('/dashboard/admin/especiesvegetales/', d.xdatosadjuntosidespeciesvegetales)
+          WHEN d.xdatosadjuntosidvariedadesvegetales IS NOT NULL THEN CONCAT('/dashboard/admin/variedadesvegetales/', d.xdatosadjuntosidvariedadesvegetales)
           WHEN d.xdatosadjuntosidtratamientos IS NOT NULL THEN CONCAT('/dashboard/admin/tratamientos/', d.xdatosadjuntosidtratamientos)
           WHEN d.xdatosadjuntosidlabores IS NOT NULL THEN CONCAT('/dashboard/admin/labores/', d.xdatosadjuntosidlabores)
           WHEN d.xdatosadjuntosidafecciones IS NOT NULL THEN CONCAT('/dashboard/admin/afecciones/', d.xdatosadjuntosidafecciones)

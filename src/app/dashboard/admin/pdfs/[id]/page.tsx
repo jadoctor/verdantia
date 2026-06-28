@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
-import '@/components/admin/EspecieForm.css';
+import '@/components/admin/EspecieVegetalForm.css';
 import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
 
 const STYLE_FILTERS: Record<string, string> = {
@@ -51,6 +51,7 @@ export default function EditarPdfPage({ params }: { params: Promise<{ id: string
   const [pdfMetadata, setPdfMetadata] = useState<any>({});
   const [pdfApuntes, setPdfApuntes] = useState('');
   const [pdfActivo, setPdfActivo] = useState(true);
+  const [pdfUrlStatus, setPdfUrlStatus] = useState<boolean | null>(null);
   const [pdfEditorSaveStatus, setPdfEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
   const [generatingCoverId, setGeneratingCoverId] = useState<number | null>(null);
 
@@ -96,6 +97,25 @@ export default function EditarPdfPage({ params }: { params: Promise<{ id: string
         setPdfMetadata(metadata);
         setPdfApuntes(data.pdf.apuntes || '');
         setPdfActivo(!!data.pdf.activo);
+
+        const resolvedUrl = getMediaUrl(data.pdf.ruta);
+        if (resolvedUrl) {
+          const cachedStr = sessionStorage.getItem('pdfs_url_status');
+          const cached = cachedStr ? JSON.parse(cachedStr) : {};
+          if (cached[data.pdf.ruta] !== undefined) {
+            setPdfUrlStatus(cached[data.pdf.ruta]);
+          } else {
+            fetch('/api/admin/check-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ urls: [resolvedUrl] })
+            }).then(r => r.json()).then(res => {
+               if (res.results && res.results[resolvedUrl] !== undefined) {
+                 setPdfUrlStatus(res.results[resolvedUrl]);
+               }
+            }).catch(console.error);
+          }
+        }
 
         const blogsRes = await fetch(`/api/admin/pdfs/${pdfId}/blogs`, { headers: { 'x-user-email': userEmail || '' } });
         if (blogsRes.ok) {
@@ -299,14 +319,7 @@ export default function EditarPdfPage({ params }: { params: Promise<{ id: string
               ✏️ Editar Documento · ID del Registro: {pdf.id}
             </div>
           </div>
-          <div style={{ flex: '1', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
-            <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', backdropFilter: 'blur(4px)' }}>
-              📂 {pdf.nombreOriginal}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
-              {pdfEditorSaveStatus === 'saving' ? '⏳ Guardando...' : pdfEditorSaveStatus === 'no-changes' ? '✅ Guardado' : '📝 Esperando...'}
-            </div>
-          </div>
+
         </div>
 
         {/* ESTADO GLOBAL/ACTIVO EN PRIMER LUGAR (Regla 8) */}
@@ -327,9 +340,21 @@ export default function EditarPdfPage({ params }: { params: Promise<{ id: string
                 transition: 'left 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
               }} />
             </button>
-            <span style={{ fontWeight: 600, color: pdfActivo ? '#059669' : '#64748b', fontSize: '0.95rem' }}>
-              {pdfActivo ? '🟢 El PDF es visible y está activo en el sistema' : '⚪ El PDF está inhabilitado (Oculto)'}
-            </span>
+            {pdfUrlStatus === true && (
+              <a href={getMediaUrl(pdf?.ruta) || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                🟢 {pdf?.ruta}
+              </a>
+            )}
+            {pdfUrlStatus === false && (
+              <a href={getMediaUrl(pdf?.ruta) || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', textDecorationLine: 'line-through' }}>
+                🔴 {pdf?.ruta}
+              </a>
+            )}
+            {pdfUrlStatus === null && pdf?.ruta && (
+              <a href={getMediaUrl(pdf?.ruta) || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                🔍 Comprobando enlace...
+              </a>
+            )}
           </div>
         </div>
 
@@ -572,7 +597,7 @@ export default function EditarPdfPage({ params }: { params: Promise<{ id: string
               {blogsList.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Artículos Generados</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
                     {blogsList.map(b => (
                       <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', transition: 'all 0.2s' }}>
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -691,7 +716,7 @@ export default function EditarPdfPage({ params }: { params: Promise<{ id: string
               {/* 4. Selector de Idioma */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <label style={{ fontWeight: 600, color: '#334155' }}>Idioma del Artículo</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: '12px' }}>
                   <button 
                     type="button" 
                     onClick={() => setBlogIaLanguage('es')}

@@ -9,29 +9,29 @@ export async function GET() {
   // 1. Tabla variedades: +2 columnas
   // ═══════════════════════════════════════════
   try {
-    await pool.query(`ALTER TABLE variedades ADD COLUMN xvariedadesidusuarios INT DEFAULT NULL`);
-    results.push('✅ variedades.xvariedadesidusuarios creada');
+    await pool.query(`ALTER TABLE variedades ADD COLUMN xvariedadesvegetalesidusuarios INT DEFAULT NULL`);
+    results.push('✅ variedades.xvariedadesvegetalesidusuarios creada');
   } catch (e: any) {
-    results.push(e.code === 'ER_DUP_FIELDNAME' ? '⏭️ variedades.xvariedadesidusuarios ya existía' : `❌ variedades.xvariedadesidusuarios: ${e.message}`);
+    results.push(e.code === 'ER_DUP_FIELDNAME' ? '⏭️ variedades.xvariedadesvegetalesidusuarios ya existía' : `❌ variedades.xvariedadesvegetalesidusuarios: ${e.message}`);
   }
 
   try {
-    await pool.query(`ALTER TABLE variedades ADD COLUMN xvariedadesidvariedadorigen INT DEFAULT NULL`);
-    results.push('✅ variedades.xvariedadesidvariedadorigen creada');
+    await pool.query(`ALTER TABLE variedades ADD COLUMN xvariedadesvegetalesidvariedadorigen INT DEFAULT NULL`);
+    results.push('✅ variedades.xvariedadesvegetalesidvariedadorigen creada');
   } catch (e: any) {
-    results.push(e.code === 'ER_DUP_FIELDNAME' ? '⏭️ variedades.xvariedadesidvariedadorigen ya existía' : `❌ variedades.xvariedadesidvariedadorigen: ${e.message}`);
+    results.push(e.code === 'ER_DUP_FIELDNAME' ? '⏭️ variedades.xvariedadesvegetalesidvariedadorigen ya existía' : `❌ variedades.xvariedadesvegetalesidvariedadorigen: ${e.message}`);
   }
 
   // Índices
   try {
-    await pool.query(`CREATE INDEX idx_variedades_usuario ON variedades(xvariedadesidusuarios)`);
+    await pool.query(`CREATE INDEX idx_variedades_usuario ON variedades(xvariedadesvegetalesidusuarios)`);
     results.push('✅ Índice idx_variedades_usuario creado');
   } catch (e: any) {
     results.push(e.code === 'ER_DUP_KEYNAME' ? '⏭️ Índice idx_variedades_usuario ya existía' : `❌ Índice: ${e.message}`);
   }
 
   try {
-    await pool.query(`CREATE INDEX idx_variedades_origen ON variedades(xvariedadesidvariedadorigen)`);
+    await pool.query(`CREATE INDEX idx_variedades_origen ON variedades(xvariedadesvegetalesidvariedadorigen)`);
     results.push('✅ Índice idx_variedades_origen creado');
   } catch (e: any) {
     results.push(e.code === 'ER_DUP_KEYNAME' ? '⏭️ Índice idx_variedades_origen ya existía' : `❌ Índice: ${e.message}`);
@@ -39,14 +39,14 @@ export async function GET() {
 
   // FK constraints (may fail if data integrity issues, so catch gracefully)
   try {
-    await pool.query(`ALTER TABLE variedades ADD CONSTRAINT fk_variedades_usuario FOREIGN KEY (xvariedadesidusuarios) REFERENCES usuarios(idusuarios) ON DELETE CASCADE`);
+    await pool.query(`ALTER TABLE variedades ADD CONSTRAINT fk_variedades_usuario FOREIGN KEY (xvariedadesvegetalesidusuarios) REFERENCES usuarios(idusuarios) ON DELETE CASCADE`);
     results.push('✅ FK fk_variedades_usuario creada');
   } catch (e: any) {
     results.push(e.code === 'ER_FK_DUP_NAME' || e.message?.includes('Duplicate') ? '⏭️ FK fk_variedades_usuario ya existía' : `❌ FK: ${e.message}`);
   }
 
   try {
-    await pool.query(`ALTER TABLE variedades ADD CONSTRAINT fk_variedades_origen FOREIGN KEY (xvariedadesidvariedadorigen) REFERENCES variedades(idvariedades) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE variedades ADD CONSTRAINT fk_variedades_origen FOREIGN KEY (xvariedadesvegetalesidvariedadorigen) REFERENCES variedades(idvariedadesvegetales) ON DELETE SET NULL`);
     results.push('✅ FK fk_variedades_origen creada');
   } catch (e: any) {
     results.push(e.code === 'ER_FK_DUP_NAME' || e.message?.includes('Duplicate') ? '⏭️ FK fk_variedades_origen ya existía' : `❌ FK: ${e.message}`);
@@ -63,10 +63,10 @@ export async function GET() {
   }
 
   try {
-    await pool.query(`ALTER TABLE laborespauta ADD COLUMN xlaborespautaidvariedades INT DEFAULT NULL`);
-    results.push('✅ laborespauta.xlaborespautaidvariedades creada');
+    await pool.query(`ALTER TABLE laborespauta ADD COLUMN xlaborespautaidvariedadesvegetales INT DEFAULT NULL`);
+    results.push('✅ laborespauta.xlaborespautaidvariedadesvegetales creada');
   } catch (e: any) {
-    results.push(e.code === 'ER_DUP_FIELDNAME' ? '⏭️ laborespauta.xlaborespautaidvariedades ya existía' : `❌ laborespauta.xlaborespautaidvariedades: ${e.message}`);
+    results.push(e.code === 'ER_DUP_FIELDNAME' ? '⏭️ laborespauta.xlaborespautaidvariedadesvegetales ya existía' : `❌ laborespauta.xlaborespautaidvariedadesvegetales: ${e.message}`);
   }
 
   // Índice
@@ -86,7 +86,7 @@ export async function GET() {
   }
 
   try {
-    await pool.query(`ALTER TABLE laborespauta ADD CONSTRAINT fk_laborespauta_variedad FOREIGN KEY (xlaborespautaidvariedades) REFERENCES variedades(idvariedades) ON DELETE CASCADE`);
+    await pool.query(`ALTER TABLE laborespauta ADD CONSTRAINT fk_laborespauta_variedad FOREIGN KEY (xlaborespautaidvariedadesvegetales) REFERENCES variedades(idvariedadesvegetales) ON DELETE CASCADE`);
     results.push('✅ FK fk_laborespauta_variedad creada');
   } catch (e: any) {
     results.push(e.code === 'ER_FK_DUP_NAME' || e.message?.includes('Duplicate') ? '⏭️ FK fk_laborespauta_variedad ya existía' : `❌ FK: ${e.message}`);

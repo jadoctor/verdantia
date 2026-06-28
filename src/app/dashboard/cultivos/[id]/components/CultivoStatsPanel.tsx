@@ -12,9 +12,9 @@ export default function CultivoStatsPanel({ cultivo, formData, userEmail }: Cult
   const [historicos, setHistoricos] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!isFinished || !userEmail || !cultivo?.xcultivosidvariedades) return;
+    if (!isFinished || !userEmail || !cultivo?.xcultivosidvariedadesvegetales) return;
     // Buscar ciclos anteriores de la misma variedad finalizados
-    fetch(`/api/user/cultivos?estado=finalizado&variedadId=${cultivo.xcultivosidvariedades}`, {
+    fetch(`/api/user/cultivos?estado=finalizado&variedadId=${cultivo.xcultivosidvariedadesvegetales}`, {
       headers: { 'x-user-email': userEmail }
     })
       .then(r => r.json())
@@ -92,7 +92,7 @@ export default function CultivoStatsPanel({ cultivo, formData, userEmail }: Cult
       </h2>
 
       {/* Métricas principales */}
-      <div className="cultivo-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div className="cultivo-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#34d399' }}>{totalDays}</div>
           <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Días totales</div>

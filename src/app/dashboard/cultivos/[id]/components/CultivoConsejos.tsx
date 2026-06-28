@@ -46,7 +46,7 @@ export default function CultivoConsejos({ cultivo, formData }: CultivoConsejosPr
     const esInvierno = mes === 11 || mes <= 1;
     const esPrimavera = mes >= 2 && mes <= 4;
 
-    const especie = (cultivo?.especiesnombre || '').toLowerCase();
+    const especie = (cultivo?.especiesvegetalesnombre || '').toLowerCase();
     const duracionTotal = cultivo?.duracion_total || 0;
 
     // ── REGLAS DE CONSEJOS ────────────────────────────────────────
@@ -56,7 +56,7 @@ export default function CultivoConsejos({ cultivo, formData }: CultivoConsejosPr
       result.push({
         icon: '🚨',
         titulo: 'Fase estancada — revisión urgente',
-        texto: `Tu ${cultivo?.especiesnombre || 'cultivo'} lleva ${diasDesdeUltimaFase} días en la fase actual sin avanzar. Comprueba el riego, las plagas y la temperatura. Si todo está bien, actualiza la fase manualmente.`,
+        texto: `Tu ${cultivo?.especiesvegetalesnombre || 'cultivo'} lleva ${diasDesdeUltimaFase} días en la fase actual sin avanzar. Comprueba el riego, las plagas y la temperatura. Si todo está bien, actualiza la fase manualmente.`,
         color: '#dc2626',
         urgente: true
       });

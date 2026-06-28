@@ -133,19 +133,19 @@ function DashboardLayoutContent({
     '/dashboard/semillas': { label: 'Semillas', icon: '🌾' },
     '/dashboard/cultivos': { label: 'Mis Cultivos', icon: '🌿' },
     '/dashboard/tareas': { label: 'Tareas', icon: '🔔' },
-    '/dashboard/admin/especies': { label: 'Gestor de Especies Globales', icon: '🌍' },
-    '/dashboard/admin/especies/nueva': { label: 'Nueva Especie', icon: '➕' },
-    '/dashboard/admin/consumidores': { label: 'Especies de Granja', icon: '🐰' },
-    '/dashboard/admin/consumidores/nuevo': { label: 'Nueva Especie de Granja', icon: '➕' },
+    '/dashboard/admin/especiesvegetales': { label: 'Gestor de Especies Vegetales', icon: '🌍' },
+    '/dashboard/admin/especiesvegetales/nueva': { label: 'Nueva Especie', icon: '➕' },
+    '/dashboard/admin/especiesanimales': { label: 'Especies animales', icon: '🐰' },
+    '/dashboard/admin/especiesanimales/nuevo': { label: 'Nuevo Especie animal', icon: '➕' },
     '/dashboard/admin/fases': { label: 'Fases de Cultivo', icon: '🌱' },
     '/dashboard/admin/fases/nueva': { label: 'Nueva Fase', icon: '➕' },
-    '/dashboard/admin/variedades': { label: 'Variedades Globales', icon: '🏷️' },
+    '/dashboard/admin/variedadesvegetales': { label: 'Variedades Globales', icon: '🏷️' },
     '/dashboard/admin/labores': { label: 'Labores Globales', icon: '🔧' },
     '/dashboard/admin/labores/nueva': { label: 'Nueva Labor', icon: '🛠️' },
     '/dashboard/admin/afecciones': { label: 'Afecciones Globales', icon: '🦠' },
     '/dashboard/admin/tratamientos': { label: 'Tratamientos Globales', icon: '🧪' },
-    '/dashboard/admin/tareas/contenedores': { label: 'Contenedores', icon: '🌱' },
-    '/dashboard/admin/tareas/plantasparte': { label: 'Partes de la Planta', icon: '🍃' },
+    '/dashboard/admin/contenedores': { label: 'Contenedores', icon: '🌱' },
+    '/dashboard/admin/plantasparte': { label: 'Partes de la Planta', icon: '🍃' },
     '/dashboard/admin/tareas/identificar-especie': { label: 'Identificador de Especies', icon: '🔍' },
     '/dashboard/admin/familias': { label: 'Familias Botánicas', icon: '🧬' },
     '/dashboard/admin/usuarios': { label: 'Usuarios', icon: '👥' },
@@ -171,19 +171,19 @@ function DashboardLayoutContent({
       if (pathname === '/dashboard') return [];
       return [ROUTE_MAP[pathname]];
     }
-    // Rutas dinámicas: /dashboard/admin/consumidores/[id]
-    const consumidorMatch = pathname.match(/^\/dashboard\/admin\/consumidores\/(\d+)$/);
-    if (consumidorMatch) {
+    // Rutas dinámicas: /dashboard/admin/especiesanimales/[id]
+    const animalMatch = pathname.match(/^\/dashboard\/admin\/animales\/(\d+)$/);
+    if (animalMatch) {
       return [
-        ROUTE_MAP['/dashboard/admin/consumidores'],
-        { label: 'Detalle Consumidor', icon: '🐰' },
+        ROUTE_MAP['/dashboard/admin/especiesanimales'],
+        { label: 'Detalle Animal', icon: '🐰' },
       ];
     }
-    // Rutas dinámicas: /dashboard/admin/especies/[id]
+    // Rutas dinámicas: /dashboard/admin/especiesvegetales/[id]
     const especieMatch = pathname.match(/^\/dashboard\/admin\/especies\/(\d+)$/);
     if (especieMatch) {
       return [
-        ROUTE_MAP['/dashboard/admin/especies'],
+        ROUTE_MAP['/dashboard/admin/especiesvegetales'],
         { label: 'Detalle Especie', icon: '🌿' },
       ];
     }
@@ -212,14 +212,14 @@ function DashboardLayoutContent({
     const contenedorMatch = pathname.match(/^\/dashboard\/admin\/tareas\/contenedores\/(.+)$/);
     if (contenedorMatch) {
       return [
-        ROUTE_MAP['/dashboard/admin/tareas/contenedores'],
+        ROUTE_MAP['/dashboard/admin/contenedores'],
         { label: 'Editar Contenedor', icon: '🌱' },
       ];
     }
     const plantasParteMatch = pathname.match(/^\/dashboard\/admin\/tareas\/plantasparte\/(.+)$/);
     if (plantasParteMatch) {
       return [
-        ROUTE_MAP['/dashboard/admin/tareas/plantasparte'] || { label: 'Partes de la Planta', icon: '🍃' },
+        ROUTE_MAP['/dashboard/admin/plantasparte'] || { label: 'Partes de la Planta', icon: '🍃' },
         { label: plantasParteMatch[1] === 'nueva' ? 'Nueva Parte' : 'Editar Parte', icon: '🍃' },
       ];
     }
@@ -250,10 +250,10 @@ function DashboardLayoutContent({
   const breadcrumbs = getBreadcrumbs();
   // URL padre (penúltimo nivel) para el botón de retroceso
   const getParentUrl = () => {
-    const consumidorMatch = pathname.match(/^\/dashboard\/admin\/consumidores\/(\d+|nuevo)$/);
-    if (consumidorMatch) return '/dashboard/admin/consumidores';
+    const animalMatch = pathname.match(/^\/dashboard\/admin\/animales\/(\d+|nuevo)$/);
+    if (animalMatch) return '/dashboard/admin/especiesanimales';
     const especieMatch = pathname.match(/^\/dashboard\/admin\/especies\/(\d+|nueva)$/);
-    if (especieMatch) return '/dashboard/admin/especies';
+    if (especieMatch) return '/dashboard/admin/especiesvegetales';
     const faseMatch = pathname.match(/^\/dashboard\/admin\/fases\/(\d+|nueva)$/);
     if (faseMatch) return '/dashboard/admin/fases';
     const laborMatch = pathname.match(/^\/dashboard\/admin\/labores\/(\d+)$/);
@@ -265,7 +265,7 @@ function DashboardLayoutContent({
     const misPlantasMatch = pathname.match(/^\/dashboard\/mis-plantas\/(\d+)$/);
     if (misPlantasMatch) return '/dashboard/mis-plantas';
     const plantasParteMatch = pathname.match(/^\/dashboard\/admin\/tareas\/plantasparte\/(\d+|nueva)$/);
-    if (plantasParteMatch) return '/dashboard/admin/tareas/plantasparte';
+    if (plantasParteMatch) return '/dashboard/admin/plantasparte';
     const bancalMatch = pathname.match(/^\/dashboard\/bancales\/(\d+)$/);
     if (bancalMatch) return '/dashboard';
     return '/dashboard';
@@ -640,26 +640,26 @@ function DashboardLayoutContent({
                     </button>
                     <div style={{ display: tareasAgricolasHover || pathname.includes('/admin/fases') || pathname.includes('/admin/especies') || pathname.includes('/admin/labores') || pathname.includes('/admin/afecciones') || pathname.includes('/admin/tratamientos') || pathname.includes('/admin/tareas/contenedores') || pathname.includes('/admin/tareas/plantasparte') || pathname.includes('/admin/familias') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
                       <a href="/dashboard/admin/familias" className={`nav-item ${isActive('/dashboard/admin/familias')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🧬 Familias Botánicas</a>
-                      <a href="/dashboard/admin/especies" className={`nav-item ${isActive('/dashboard/admin/especies')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌍 Especies Globales</a>
+                      <a href="/dashboard/admin/especiesvegetales" className={`nav-item ${isActive('/dashboard/admin/especiesvegetales')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌍 Especies Vegetales</a>
                       <a href="/dashboard/admin/fases" className={`nav-item ${isActive('/dashboard/admin/fases')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Fases de Cultivo</a>
                       <a href="/dashboard/admin/labores" className={`nav-item ${isActive('/dashboard/admin/labores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🔧 Labores Globales</a>
                       <a href="/dashboard/admin/afecciones" className={`nav-item ${isActive('/dashboard/admin/afecciones')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🦠 Afecciones Globales</a>
                       <a href="/dashboard/admin/tratamientos" className={`nav-item ${isActive('/dashboard/admin/tratamientos')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🧪 Tratamientos Globales</a>
-                      <a href="/dashboard/admin/tareas/contenedores" className={`nav-item ${isActive('/dashboard/admin/tareas/contenedores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Contenedores</a>
-                      <a href="/dashboard/admin/tareas/plantasparte" className={`nav-item ${isActive('/dashboard/admin/tareas/plantasparte')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🍃 Partes de la Planta</a>
+                      <a href="/dashboard/admin/contenedores" className={`nav-item ${isActive('/dashboard/admin/contenedores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🌱 Contenedores</a>
+                      <a href="/dashboard/admin/plantasparte" className={`nav-item ${isActive('/dashboard/admin/plantasparte')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🍃 Partes de la Planta</a>
                     </div>
                   </div>
 
                   <div className="nav-submenu-wrapper" onMouseEnter={() => setGranjaHover(true)} onMouseLeave={() => setGranjaHover(false)}>
-                    <button type="button" className={`nav-item ${pathname.includes('/admin/consumidores') ? 'active' : ''}`}
+                    <button type="button" className={`nav-item ${pathname.includes('/admin/animales') ? 'active' : ''}`}
                       onClick={(e) => { e.preventDefault(); setGranjaHover(h => !h); }}
                       style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'inherit', display: 'flex', alignItems: 'center', padding: undefined }}>
                       <span className="nav-icon">🐄</span>
                       <span style={{flex: 1}}>Granja y Ganadería</span>
-                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: granjaHover || pathname.includes('/admin/consumidores') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                      <span style={{ fontSize: '0.6rem', transition: 'transform 0.2s', transform: granjaHover || pathname.includes('/admin/animales') ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                     </button>
-                    <div style={{ display: granjaHover || pathname.includes('/admin/consumidores') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
-                      <a href="/dashboard/admin/consumidores" className={`nav-item ${isActive('/dashboard/admin/consumidores')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🐰 Especies de Granja</a>
+                    <div style={{ display: granjaHover || pathname.includes('/admin/animales') ? 'flex' : 'none', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                      <a href="/dashboard/admin/especiesanimales" className={`nav-item ${isActive('/dashboard/admin/especiesanimales')}`} style={{ fontSize: '0.85rem', padding: '6px 12px' }} onClick={handleNavClick}>🐰 Especies animales</a>
                     </div>
                   </div>
 

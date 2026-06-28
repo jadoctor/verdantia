@@ -18,12 +18,12 @@ async function getSpaceUsage(userId: number) {
       c.idcultivos,
       c.cultivoscantidad,
       c.xcultivosidbancales,
-      COALESCE(e.especiesmarcoplantas, 30) AS especiesmarcoplantas,
-      COALESCE(e.especiesmarcofilas, 30) AS especiesmarcofilas
+      COALESCE(e.especiesvegetalesmarcoplantas, 30) AS especiesmarcoplantas,
+      COALESCE(e.especiesvegetalesmarcofilas, 30) AS especiesmarcofilas
     FROM cultivos c
-    JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
-    LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-    JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+    JOIN variedadesvegetales vu ON c.xcultivosidvariedadesvegetales = vu.idvariedadesvegetales
+    LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+    JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
     WHERE c.xcultivosidusuarios = ? 
       AND c.cultivosactivosino = 1 
       AND c.cultivosestado NOT IN ('finalizado', 'perdido')

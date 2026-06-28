@@ -173,9 +173,9 @@ export default function BlogAdminDashboard() {
     
     try {
       const endpoint = type === 'especie' 
-        ? '/api/admin/especies' 
+        ? '/api/admin/especiesvegetales' 
         : type === 'variedad' 
-          ? '/api/admin/variedades' 
+          ? '/api/admin/variedadesvegetales' 
           : '/api/admin/labores';
 
       const res = await fetch(endpoint, {
@@ -200,9 +200,9 @@ export default function BlogAdminDashboard() {
     setPdfsList([]);
     try {
       const endpoint = type === 'especie'
-        ? `/api/admin/especies/${entityId}/pdfs`
+        ? `/api/admin/especiesvegetales/${entityId}/pdfs`
         : type === 'variedad'
-          ? `/api/admin/variedades/${entityId}/pdfs`
+          ? `/api/admin/variedadesvegetales/${entityId}/pdfs`
           : `/api/admin/labores/${entityId}/pdfs`;
 
       const res = await fetch(endpoint, {
@@ -236,7 +236,7 @@ export default function BlogAdminDashboard() {
   const buildPromptPreviewText = () => {
     if (!entityType || !selectedEntity) return 'Selecciona un elemento en los pasos anteriores para ver la estructura del prompt.';
     
-    const nombreEntidad = selectedEntity.especiesnombre || selectedEntity.variedadesnombre || selectedEntity.laboresnombre || 'agronómico';
+    const nombreEntidad = selectedEntity.especiesvegetalesnombre || selectedEntity.variedadesvegetalesnombre || selectedEntity.laboresnombre || 'agronómico';
     const contextoTexto = entityType === 'labor' 
       ? `la labor agrícola "${nombreEntidad}"` 
       : entityType === 'variedad' 
@@ -303,13 +303,13 @@ ${fichaRapidaEjemplo}
     }, 3200);
 
     try {
-      const nombreEntidad = selectedEntity.especiesnombre || selectedEntity.variedadesnombre || selectedEntity.laboresnombre || 'agronómico';
+      const nombreEntidad = selectedEntity.especiesvegetalesnombre || selectedEntity.variedadesvegetalesnombre || selectedEntity.laboresnombre || 'agronómico';
       
       const payload = {
         pdfUrl: selectedPdf.ruta.startsWith('http') ? selectedPdf.ruta : `${window.location.origin}${selectedPdf.ruta.startsWith('/') ? '' : '/'}${selectedPdf.ruta}`,
         instructions: instructions,
-        especieId: entityType === 'especie' ? selectedEntity.idespecies : null,
-        variedadId: entityType === 'variedad' ? selectedEntity.idvariedades : null,
+        especieId: entityType === 'especie' ? selectedEntity.idespeciesvegetales : null,
+        variedadId: entityType === 'variedad' ? selectedEntity.idvariedadesvegetales : null,
         laborId: entityType === 'labor' ? selectedEntity.idlabores : null,
         autorEmail: userEmail,
         especieNombre: nombreEntidad,
@@ -356,8 +356,8 @@ ${fichaRapidaEjemplo}
     const cumpleFiltro = filtroEstado === 'todos' || art.blogestado === filtroEstado;
     const cumpleBusqueda = !searchQuery || 
       art.blogtitulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (art.especiesnombre && art.especiesnombre.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (art.variedadesnombre && art.variedadesnombre.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (art.especiesvegetalesnombre && art.especiesvegetalesnombre.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (art.variedadesvegetalesnombre && art.variedadesvegetalesnombre.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (art.autor && art.autor.toLowerCase().includes(searchQuery.toLowerCase()));
     return cumpleFiltro && cumpleBusqueda;
   });
@@ -524,13 +524,13 @@ ${fichaRapidaEjemplo}
 
                       {/* Vinculado a */}
                       <td style={{ padding: '16px 20px' }}>
-                        {art.especiesnombre ? (
+                        {art.especiesvegetalesnombre ? (
                           <span style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: '6px', background: '#dcfce7', color: '#166534', fontWeight: 600 }}>
-                            🌱 {art.especiesnombre}
+                            🌱 {art.especiesvegetalesnombre}
                           </span>
-                        ) : art.variedadesnombre ? (
+                        ) : art.variedadesvegetalesnombre ? (
                           <span style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: '6px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d', fontWeight: 600 }}>
-                            🍇 {art.variedadesnombre}
+                            🍇 {art.variedadesvegetalesnombre}
                           </span>
                         ) : (
                           <span style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>
@@ -754,7 +754,7 @@ ${fichaRapidaEjemplo}
                           <div>
                             <div style={{ fontWeight: 700, color: '#166534', fontSize: '0.88rem' }}>Paso 2: Tema y PDF de origen</div>
                             <div style={{ fontSize: '0.82rem', color: '#15803d' }}>
-                              Tema: <strong>{selectedEntity?.especiesnombre || selectedEntity?.variedadesnombre || selectedEntity?.laboresnombre}</strong> | PDF: <strong>{selectedPdf?.titulo || selectedPdf?.nombreOriginal}</strong>
+                              Tema: <strong>{selectedEntity?.especiesvegetalesnombre || selectedEntity?.variedadesvegetalesnombre || selectedEntity?.laboresnombre}</strong> | PDF: <strong>{selectedPdf?.titulo || selectedPdf?.nombreOriginal}</strong>
                             </div>
                           </div>
                         </div>
@@ -795,13 +795,13 @@ ${fichaRapidaEjemplo}
                             <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px', background: '#f8fafc' }}>
                               {entities
                                 .filter(e => {
-                                  const n = e.especiesnombre || e.variedadesnombre || e.laboresnombre || '';
+                                  const n = e.especiesvegetalesnombre || e.variedadesvegetalesnombre || e.laboresnombre || '';
                                   return n.toLowerCase().includes(entitySearch.toLowerCase());
                                 })
                                 .map(e => {
-                                  const id = e.idespecies || e.idvariedades || e.idlabores;
-                                  const name = e.especiesnombre || e.variedadesnombre || e.laboresnombre;
-                                  const isSelected = selectedEntity && (selectedEntity.idespecies === id || selectedEntity.idvariedades === id || selectedEntity.idlabores === id);
+                                  const id = e.idespeciesvegetales || e.idvariedadesvegetales || e.idlabores;
+                                  const name = e.especiesvegetalesnombre || e.variedadesvegetalesnombre || e.laboresnombre;
+                                  const isSelected = selectedEntity && (selectedEntity.idespeciesvegetales === id || selectedEntity.idvariedadesvegetales === id || selectedEntity.idlabores === id);
                                   
                                   return (
                                     <div 
@@ -836,7 +836,7 @@ ${fichaRapidaEjemplo}
                                     ⚠️ No se encontraron PDFs de referencia cargados
                                   </div>
                                   <p style={{ margin: '0 0 12px 0', fontSize: '0.8rem', lineHeight: 1.4 }}>
-                                    Para generar un artículo sobre <strong>{selectedEntity.especiesnombre || selectedEntity.variedadesnombre || selectedEntity.laboresnombre}</strong> mediante IA, necesitas subir antes al menos un PDF técnico de referencia.
+                                    Para generar un artículo sobre <strong>{selectedEntity.especiesvegetalesnombre || selectedEntity.variedadesvegetalesnombre || selectedEntity.laboresnombre}</strong> mediante IA, necesitas subir antes al menos un PDF técnico de referencia.
                                   </p>
                                   <button
                                     onClick={() => {
@@ -1037,7 +1037,7 @@ ${fichaRapidaEjemplo}
 
                                   <span style={{ color: '#64748b', fontWeight: 500 }}>Tema Principal:</span>
                                   <span style={{ color: '#0f172a', fontWeight: 700 }}>
-                                    {selectedEntity?.especiesnombre || selectedEntity?.variedadesnombre || selectedEntity?.laboresnombre}
+                                    {selectedEntity?.especiesvegetalesnombre || selectedEntity?.variedadesvegetalesnombre || selectedEntity?.laboresnombre}
                                   </span>
 
                                   <span style={{ color: '#64748b', fontWeight: 500 }}>PDF de Referencia:</span>

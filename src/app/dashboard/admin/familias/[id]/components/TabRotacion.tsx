@@ -127,7 +127,7 @@ export default function TabRotacion({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '40px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '40px', alignItems: 'start' }}>
         <div>
           {renderSelectores('familiasprecedentes', '⬅️ Cultivos Precedentes', `¿Qué se recomienda plantar ANTES de ${familia.familiasnombre}?`)}
         </div>

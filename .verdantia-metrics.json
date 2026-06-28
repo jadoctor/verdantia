@@ -1,0 +1,341 @@
+{
+  "admin/especies/page.tsx": {
+    "lines": 0,
+    "responsiveScore": 0,
+    "codeClean": false,
+    "last_updated": "2026-06-27T11:05:13.457Z"
+  },
+  "admin/especiesvegetales/page.tsx": {
+    "lines": 61,
+    "responsiveScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/especiesvegetales/page.tsx",
+      "totalLines": 61,
+      "metrics": {
+        "useState": 0,
+        "useEffect": 0,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 1,
+        "jsxBlocks": 1,
+        "componentRefs": 2,
+        "commentedLines": 0,
+        "todos": 0
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/especiesvegetales/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      }
+    },
+    "last_updated": "2026-06-28T14:22:17.357Z"
+  },
+  "admin/especiesvegetales/[id]/page.tsx": {
+    "lines": 45,
+    "responsiveScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/especiesvegetales/[id]/page.tsx",
+      "totalLines": 45,
+      "metrics": {
+        "useState": 2,
+        "useEffect": 1,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 2,
+        "jsxBlocks": 2,
+        "componentRefs": 1,
+        "commentedLines": 3,
+        "todos": 0
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/especiesvegetales/[id]/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      }
+    },
+    "last_updated": "2026-06-28T14:21:47.981Z"
+  },
+  "admin/familias/page.tsx": {
+    "lines": 68,
+    "responsiveScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/familias/page.tsx",
+      "totalLines": 68,
+      "metrics": {
+        "useState": 0,
+        "useEffect": 0,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 1,
+        "jsxBlocks": 1,
+        "componentRefs": 3,
+        "commentedLines": 0,
+        "todos": 0
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/familias/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      }
+    },
+    "last_updated": "2026-06-28T14:24:37.693Z"
+  },
+  "admin/tratamientos/[id]/page.tsx": {
+    "lines": 131,
+    "responsiveScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/tratamientos/[id]/page.tsx",
+      "totalLines": 131,
+      "metrics": {
+        "useState": 0,
+        "useEffect": 0,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 1,
+        "jsxBlocks": 2,
+        "componentRefs": 11,
+        "commentedLines": 1,
+        "todos": 0
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/tratamientos/[id]/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      },
+      "premium": {
+        "score": 100,
+        "usedPremium": [
+          "PremiumBackButton",
+          "PremiumDeleteButton",
+          "PremiumDevInsights",
+          "PremiumSubheader"
+        ],
+        "missingPremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumCancelButton",
+          "PremiumEditButton",
+          "PremiumFilterTabs",
+          "PremiumFormTabs",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumSaveButton",
+          "PremiumSlider",
+          "PremiumTableHeader"
+        ],
+        "availablePremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumBackButton",
+          "PremiumCancelButton",
+          "PremiumDeleteButton",
+          "PremiumDevInsights",
+          "PremiumEditButton",
+          "PremiumFilterTabs",
+          "PremiumFormTabs",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumSaveButton",
+          "PremiumSlider",
+          "PremiumSubheader",
+          "PremiumTableHeader"
+        ],
+        "diagnostics": [
+          "✅ El dashboard cumple con todos los criterios del Encabezado Premium."
+        ],
+        "improvementsForAgent": "Antigravity, el dashboard en 'src/app/dashboard/admin/tratamientos/[id]/page.tsx' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: 100%."
+      }
+    },
+    "last_updated": "2026-06-28T18:38:48.354Z"
+  },
+  "admin/tratamientos/page.tsx": {
+    "lines": 60,
+    "responsiveScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/tratamientos/page.tsx",
+      "totalLines": 60,
+      "metrics": {
+        "useState": 0,
+        "useEffect": 0,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 1,
+        "jsxBlocks": 1,
+        "componentRefs": 3,
+        "commentedLines": 1,
+        "todos": 0
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/tratamientos/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      },
+      "premium": {
+        "score": 100,
+        "usedPremium": [
+          "PremiumAddButton",
+          "PremiumBackButton",
+          "PremiumDevInsights",
+          "PremiumEditButton",
+          "PremiumFilterTabs",
+          "PremiumSubheader",
+          "PremiumTableHeader"
+        ],
+        "missingPremium": [
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumCancelButton",
+          "PremiumDeleteButton",
+          "PremiumFormTabs",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumSaveButton",
+          "PremiumSlider"
+        ],
+        "availablePremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumBackButton",
+          "PremiumCancelButton",
+          "PremiumDeleteButton",
+          "PremiumDevInsights",
+          "PremiumEditButton",
+          "PremiumFilterTabs",
+          "PremiumFormTabs",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumSaveButton",
+          "PremiumSlider",
+          "PremiumSubheader",
+          "PremiumTableHeader"
+        ],
+        "diagnostics": [
+          "✅ El dashboard cumple con todos los criterios del Encabezado Premium."
+        ],
+        "improvementsForAgent": "Antigravity, el dashboard en 'src/app/dashboard/admin/tratamientos/page.tsx' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: 100%."
+      }
+    },
+    "last_updated": "2026-06-28T16:08:38.782Z"
+  },
+  "admin/mantenimiento/analisis/page.tsx": {
+    "lines": 108,
+    "responsiveScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/mantenimiento/analisis/page.tsx",
+      "totalLines": 108,
+      "metrics": {
+        "useState": 0,
+        "useEffect": 0,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 1,
+        "jsxBlocks": 1,
+        "componentRefs": 3,
+        "commentedLines": 1,
+        "todos": 0
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/mantenimiento/analisis/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      },
+      "premium": {
+        "score": 100,
+        "usedPremium": [
+          "PremiumBackButton",
+          "PremiumDevInsights",
+          "PremiumFilterTabs",
+          "PremiumSubheader"
+        ],
+        "missingPremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumCancelButton",
+          "PremiumDeleteButton",
+          "PremiumEditButton",
+          "PremiumFormTabs",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumSaveButton",
+          "PremiumSlider",
+          "PremiumTableHeader"
+        ],
+        "availablePremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumBackButton",
+          "PremiumCancelButton",
+          "PremiumDeleteButton",
+          "PremiumDevInsights",
+          "PremiumEditButton",
+          "PremiumFilterTabs",
+          "PremiumFormTabs",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumSaveButton",
+          "PremiumSlider",
+          "PremiumSubheader",
+          "PremiumTableHeader"
+        ],
+        "diagnostics": [
+          "✅ El dashboard cumple con todos los criterios del Encabezado Premium."
+        ],
+        "improvementsForAgent": "Antigravity, el dashboard en 'src/app/dashboard/admin/mantenimiento/analisis/page.tsx' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: 100%."
+      }
+    },
+    "last_updated": "2026-06-28T18:31:24.288Z"
+  }
+}

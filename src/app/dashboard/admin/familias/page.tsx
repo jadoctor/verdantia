@@ -31,7 +31,7 @@ export default function FamiliasPage() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   return (
-    <div style={{ width: '100%', padding: '0' }}>
+    <div style={{ width: '100%', padding: isMobile ? '12px 8px' : '20px' }}>
       <FamiliasHeader 
         filter={filter} 
         setFilter={setFilter} 

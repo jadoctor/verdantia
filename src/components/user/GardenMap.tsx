@@ -138,7 +138,7 @@ export default function GardenMap({ misCultivos, profile }: GardenMapProps) {
       </div>
 
       {/* Grid of Beds */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 330px), 1fr))', gap: '20px' }}>
         {renderedBancales.map(bancal => {
           const crops = getCropsForBancal(bancal.idbancales);
           const w = bancal.bancalesancho || 4;
@@ -334,7 +334,7 @@ export default function GardenMap({ misCultivos, profile }: GardenMapProps) {
                           fontSize={`${r * 1.1}px`}
                           style={{ userSelect: 'none', pointerEvents: 'none' }}
                         >
-                          {c.especiesicono && !c.especiesicono.startsWith('/') ? c.especiesicono : '🌱'}
+                          {c.especiesvegetalesicono && !c.especiesvegetalesicono.startsWith('/') ? c.especiesvegetalesicono : '🌱'}
                         </text>
 
                         {/* Mini Collection Number Badge */}
@@ -412,12 +412,12 @@ export default function GardenMap({ misCultivos, profile }: GardenMapProps) {
         }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '6px', marginBottom: '6px' }}>
-            <SpeciesIcon icon={hoveredCrop.especiesicono || '🌱'} size="1.5rem" />
+            <SpeciesIcon icon={hoveredCrop.especiesvegetalesicono || '🌱'} size="1.5rem" />
             <div>
               <div style={{ fontSize: '0.65rem', color: '#34d399', fontWeight: 800, textTransform: 'uppercase' }}>
                 Nº {hoveredCrop.cultivosnumerocoleccion || hoveredCrop.idcultivos}
               </div>
-              <h5 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800 }}>{hoveredCrop.especiesnombre}</h5>
+              <h5 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800 }}>{hoveredCrop.especiesvegetalesnombre}</h5>
             </div>
           </div>
 

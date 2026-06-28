@@ -17,11 +17,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     // Check if user owns this plant
     const [ownerCheck]: any = await pool.query(
-      `SELECT vu.idvariedades, vg.idvariedades AS idgold, e.idespecies 
-       FROM variedades vu
-       JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-       JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
-       WHERE vu.idvariedades = ? AND vu.xvariedadesidusuarios = ?`,
+      `SELECT vu.idvariedadesvegetales, vg.idvariedadesvegetales AS idgold, e.idespeciesvegetales 
+       FROM variedadesvegetales vu
+       JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+       JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
+       WHERE vu.idvariedadesvegetales = ? AND vu.xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
 
@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Planta no encontrada o no te pertenece' }, { status: 404 });
     }
 
-    const { idvariedades, idgold, idespecies } = ownerCheck[0];
+    const { idvariedadesvegetales, idgold, idespeciesvegetales } = ownerCheck[0];
 
     // Get photos: User photos (including sanctioned placeholders), Gold photos, Especie photos
     const [rows]: any = await pool.query(
@@ -41,25 +41,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
               da.datosadjuntostipo as tipo,
               inc.incidenciasmotivo as motivoRechazo,
               CASE 
-                WHEN da.xdatosadjuntosidvariedades = ? THEN 'usuario'
-                WHEN da.xdatosadjuntosidvariedades = ? THEN 'gold'
-                WHEN da.xdatosadjuntosidespecies = ? THEN 'especie'
+                WHEN da.xdatosadjuntosidvariedadesvegetales = ? THEN 'usuario'
+                WHEN da.xdatosadjuntosidvariedadesvegetales = ? THEN 'gold'
+                WHEN da.xdatosadjuntosidespeciesvegetales = ? THEN 'especie'
               END AS origen
        FROM datosadjuntos da
        LEFT JOIN incidencias inc ON inc.incidenciasreferenciaid = da.iddatosadjuntos AND inc.incidenciastipo IN ('foto_rechazada', 'foto_sancionada')
-       WHERE (da.xdatosadjuntosidvariedades = ? OR da.xdatosadjuntosidvariedades = ? OR da.xdatosadjuntosidespecies = ?) 
+       WHERE (da.xdatosadjuntosidvariedadesvegetales = ? OR da.xdatosadjuntosidvariedadesvegetales = ? OR da.xdatosadjuntosidespeciesvegetales = ?) 
        AND da.datosadjuntosfechaeliminacion IS NULL
        AND (
          (da.datosadjuntostipo = 'imagen' AND (da.datosadjuntosactivo = 1 OR da.datosadjuntosresultadovalidacion = 'rechazado'))
          OR
-         (da.datosadjuntostipo = 'sancionada' AND da.xdatosadjuntosidvariedades = ?)
+         (da.datosadjuntostipo = 'sancionada' AND da.xdatosadjuntosidvariedadesvegetales = ?)
        )
        ORDER BY 
          CASE WHEN da.datosadjuntosresultadovalidacion = 'rechazado' THEN 1 ELSE 0 END ASC,
          CASE origen WHEN 'usuario' THEN 1 WHEN 'gold' THEN 2 ELSE 3 END ASC,
          da.datosadjuntosesprincipal DESC, 
          da.datosadjuntosorden ASC`,
-      [idvariedades, idgold, idespecies, idvariedades, idgold, idespecies, idvariedades]
+      [idvariedadesvegetales, idgold, idespeciesvegetales, idvariedadesvegetales, idgold, idespeciesvegetales, idvariedadesvegetales]
     );
 
     return NextResponse.json({ photos: rows });
@@ -76,7 +76,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const user = await getUserByEmail(email);
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
-  const idvariedades = resolvedParams.id;
+  const idvariedadesvegetales = resolvedParams.id;
 
   try {
     const body = await request.json();
@@ -85,8 +85,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!rawStoragePath) return NextResponse.json({ error: 'Ruta requerida' }, { status: 400 });
 
     const [ownerCheck]: any = await pool.query(
-      `SELECT idvariedades FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
-      [idvariedades, user.id]
+      `SELECT idvariedadesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
+      [idvariedadesvegetales, user.id]
     );
 
     if (ownerCheck.length === 0) {
@@ -110,13 +110,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // Cuenta cuántas fotos tiene el usuario (no las de la especie)
     const [countResult] = await pool.query(
-      "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidvariedades = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1",
-      [idvariedades]
+      "SELECT COUNT(*) as total FROM datosadjuntos WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1",
+      [idvariedadesvegetales]
     );
     const total = (countResult as any[])[0].total;
     const esPrimera = total === 0 ? 1 : 0;
 
-    const storagePath = `uploads/variedades/user-${user.id}-${idvariedades}-${Date.now()}.webp`;
+    const storagePath = `uploads/variedades/user-${user.id}-${idvariedadesvegetales}-${Date.now()}.webp`;
 
     const sharpInstance = sharp(Buffer.from(downloadedFile));
     let blurhashStr = null;
@@ -187,10 +187,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       `INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
         datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
-        datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidvariedades,
+        datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidvariedadesvegetales,
         datosadjuntospesobytes, datosadjuntosresumen, datosadjuntosvalidado
       ) VALUES ('imagen', 'image/webp', ?, ?, ?, ?, 1, NOW(), ?, ?, ?, 0)`,
-      [originalFilename || 'foto.jpg', storagePath, esPrimera, total + 1, idvariedades, downloadedFile.byteLength, initialResumen]
+      [originalFilename || 'foto.jpg', storagePath, esPrimera, total + 1, idvariedadesvegetales, downloadedFile.byteLength, initialResumen]
     );
 
     if (rawStoragePath.startsWith('uploads/temp/')) {
@@ -217,17 +217,17 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   try {
     // Only delete if it belongs to this variety, which we already checked is owned by the user
-    const [rows]: any = await pool.query('SELECT datosadjuntosruta FROM datosadjuntos WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedades = ?', [photoId, resolvedParams.id]);
+    const [rows]: any = await pool.query('SELECT datosadjuntosruta FROM datosadjuntos WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedadesvegetales = ?', [photoId, resolvedParams.id]);
     const ruta = rows[0]?.datosadjuntosruta;
 
     await pool.query(
-      'UPDATE datosadjuntos SET datosadjuntosactivo = 0, datosadjuntosfechaeliminacion = NOW() WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedades = ?',
+      'UPDATE datosadjuntos SET datosadjuntosactivo = 0, datosadjuntosfechaeliminacion = NOW() WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedadesvegetales = ?',
       [photoId, resolvedParams.id]
     );
 
     // Si solo queda 1 foto activa, hacerla principal
     const [activePhotos]: any = await pool.query(
-      "SELECT iddatosadjuntos, datosadjuntosesprincipal FROM datosadjuntos WHERE xdatosadjuntosidvariedades = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = 'imagen' ORDER BY datosadjuntosorden ASC, datosadjuntosfechacreacion DESC",
+      "SELECT iddatosadjuntos, datosadjuntosesprincipal FROM datosadjuntos WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = 'imagen' ORDER BY datosadjuntosorden ASC, datosadjuntosfechacreacion DESC",
       [resolvedParams.id]
     );
     if (activePhotos.length > 0) {
@@ -260,11 +260,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (action === 'setPrimary') {
       await pool.query(
-        'UPDATE datosadjuntos SET datosadjuntosesprincipal = 0 WHERE xdatosadjuntosidvariedades = ? AND datosadjuntostipo = "imagen"',
+        'UPDATE datosadjuntos SET datosadjuntosesprincipal = 0 WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntostipo = "imagen"',
         [resolvedParams.id]
       );
       await pool.query(
-        'UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedades = ?',
+        'UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedadesvegetales = ?',
         [photoId, resolvedParams.id]
       );
       return NextResponse.json({ success: true });
@@ -272,7 +272,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (action === 'updateMeta' && resumen) {
       await pool.query(
-        'UPDATE datosadjuntos SET datosadjuntosresumen = ? WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedades = ?',
+        'UPDATE datosadjuntos SET datosadjuntosresumen = ? WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedadesvegetales = ?',
         [typeof resumen === 'string' ? resumen : JSON.stringify(resumen), photoId, resolvedParams.id]
       );
       return NextResponse.json({ success: true });
@@ -282,7 +282,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       const { photoIds } = body;
       for (let i = 0; i < photoIds.length; i++) {
         await pool.query(
-          'UPDATE datosadjuntos SET datosadjuntosorden = ? WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedades = ?',
+          'UPDATE datosadjuntos SET datosadjuntosorden = ? WHERE iddatosadjuntos = ? AND xdatosadjuntosidvariedadesvegetales = ?',
           [i, photoIds[i], resolvedParams.id]
         );
       }

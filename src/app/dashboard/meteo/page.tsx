@@ -160,7 +160,7 @@ export default function MeteoPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px', marginBottom: '30px' }}>
         
         {/* Current Weather Card */}
         <div className="card-storm" style={{ background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
@@ -212,7 +212,7 @@ export default function MeteoPage() {
         📅 Pronóstico a 7 Días
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '15px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: '15px' }}>
         {weatherData.daily.time.map((dateStr, index) => {
           const date = new Date(dateStr);
           const dayName = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(date);

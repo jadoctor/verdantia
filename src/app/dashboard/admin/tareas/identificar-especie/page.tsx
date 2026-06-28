@@ -150,20 +150,20 @@ export default function IdentificarEspeciePage() {
   };
 
   const handleIncorporate = async () => {
-    if (!aiResult || !aiResult.especiesnombre) return;
+    if (!aiResult || !aiResult.especiesvegetalesnombre) return;
     
     setIsSaving(true);
     setErrorMsg('');
     try {
       // 1. Create Especie
-      const createRes = await fetch('/api/admin/especies', {
+      const createRes = await fetch('/api/admin/especiesvegetales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({ 
-          especiesnombre: aiResult.especiesnombre,
-          especiesnombrecientifico: aiResult.especiesnombrecientifico || '',
+          especiesvegetalesnombre: aiResult.especiesvegetalesnombre,
+          especiesvegetalesnombrecientifico: aiResult.especiesvegetalesnombrecientifico || '',
           especiestipo: 'otra', // Default, user will change it
-          especiesvisibilidadsino: 0
+          especiesvegetalesvisibilidadsino: 0
         })
       });
       const createData = await createRes.json();
@@ -183,24 +183,24 @@ export default function IdentificarEspeciePage() {
         await uploadBytes(storageRef, img.blob);
 
         // Process through API
-        await fetch(`/api/admin/especies/${newEspecieId}/photos`, {
+        await fetch(`/api/admin/especiesvegetales/${newEspecieId}/photos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
           body: JSON.stringify({
             storagePath: tempStoragePath,
-            especieNombre: aiResult.especiesnombre
+            especieNombre: aiResult.especiesvegetalesnombre
           })
         });
       }
 
-      // Save consumos so EspecieForm can read them
+      // Save consumos so EspecieVegetalForm can read them
       if (aiResult.usos_consumo) {
         sessionStorage.setItem('ai_pending_consumos', JSON.stringify(aiResult.usos_consumo));
       }
 
       // 3. Navigate to Especie
       const advParam = aiResult.es_adventicia ? '1' : '0';
-      router.push(`/dashboard/admin/especies/${newEspecieId}?from=identificar-especie&adv=${advParam}&name=${encodeURIComponent(aiResult.especiesnombre)}`);
+      router.push(`/dashboard/admin/especiesvegetales/${newEspecieId}?from=identificar-especie&adv=${advParam}&name=${encodeURIComponent(aiResult.especiesvegetalesnombre)}`);
       
     } catch (err: any) {
       console.error(err);
@@ -216,7 +216,7 @@ export default function IdentificarEspeciePage() {
         <button onClick={() => router.push('/dashboard')} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: '#334155' }}>
           🏠 Inicio
         </button>
-        <button onClick={() => router.push('/dashboard/admin/especies')} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: '#334155' }}>
+        <button onClick={() => router.push('/dashboard/admin/especiesvegetales')} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: '#334155' }}>
           🔙 Volver a Especies
         </button>
       </div>
@@ -314,7 +314,7 @@ export default function IdentificarEspeciePage() {
 Tu tarea es analizar las imágenes adjuntas e identificar de qué especie botánica o variedad vegetal se trata.
 [INSTRUCCIONES ADICIONALES DEL USUARIO]
 Debes devolver EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
-{ "especiesnombre": "...", "especiesnombrecientifico": "...", "confianza": "...", "descripcion": "..." }`}
+{ "especiesvegetalesnombre": "...", "especiesvegetalesnombrecientifico": "...", "confianza": "...", "descripcion": "..." }`}
               </div>
             )}
 
@@ -384,8 +384,8 @@ Debes devolver EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', color: '#0f172a' }}>{aiResult.especiesnombre}</h3>
-                  <div style={{ fontStyle: 'italic', color: '#64748b', fontSize: '0.95rem' }}>{aiResult.especiesnombrecientifico}</div>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '1.5rem', color: '#0f172a' }}>{aiResult.especiesvegetalesnombre}</h3>
+                  <div style={{ fontStyle: 'italic', color: '#64748b', fontSize: '0.95rem' }}>{aiResult.especiesvegetalesnombrecientifico}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {aiResult.es_adventicia !== undefined && (
@@ -414,7 +414,7 @@ Debes devolver EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura
               {aiResult.usos_consumo && aiResult.usos_consumo.length > 0 && (
                 <div style={{ marginBottom: '24px' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#1e293b' }}>🍽️ Comestibilidad y Forraje</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 250px), 1fr))', gap: '12px' }}>
                     {aiResult.usos_consumo.map((uso: any, idx: number) => {
                       const getUsoStyles = (esapto: number) => {
                         if (esapto === 1) {
@@ -472,7 +472,7 @@ Debes devolver EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura
                       <span style={{ fontSize: '1.2rem' }}>✅</span> Esta especie ya está en Verdantia
                     </div>
                     <button 
-                      onClick={() => router.push(`/dashboard/admin/especies/${dbStatus.especieId}?from=identificar-especie`)}
+                      onClick={() => router.push(`/dashboard/admin/especiesvegetales/${dbStatus.especieId}?from=identificar-especie`)}
                       style={{ background: '#f1f5f9', color: '#0f172a', border: '1px solid #cbd5e1', padding: '12px', borderRadius: '8px', width: '100%', fontWeight: 600, cursor: 'pointer' }}
                     >
                       Ir a la Especie

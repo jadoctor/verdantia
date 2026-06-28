@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '@/lib/firebase/config';
 import { getMediaUrl } from '@/lib/media-url';
-import './EspecieForm.css';
+import './EspecieVegetalForm.css';
 
 interface PlagaFormProps {
   plagaId: string | null;

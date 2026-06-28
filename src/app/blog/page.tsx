@@ -39,7 +39,7 @@ export default function BlogPublicIndex() {
             <p style={{ color: '#64748b' }}>Estamos preparando artículos increíbles para ti.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '30px' }}>
             {articulos.map(art => (
               <Link href={`/blog/${art.blogslug}`} key={art.idblog} style={{ textDecoration: 'none' }}>
                 <article style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', transition: 'transform 0.3s', cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column' }}
@@ -55,7 +55,7 @@ export default function BlogPublicIndex() {
                        </div>
                     )}
                     <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(255,255,255,0.9)', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a' }}>
-                      {art.especiesnombre || 'General'}
+                      {art.especiesvegetalesnombre || 'General'}
                     </div>
                   </div>
                   

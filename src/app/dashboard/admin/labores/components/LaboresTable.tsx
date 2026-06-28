@@ -1,5 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import PremiumEditButton from '@/components/ui/PremiumEditButton';
 import { getMediaUrl } from '@/lib/media-url';
 
 const MDI_TO_EMOJI: Record<string, string> = {
@@ -129,8 +130,7 @@ export function LaboresTable({ labores, handleDelete, isMobile = false, sortConf
                   </td>
                   <td style={{ padding: '12px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => router.push(`/dashboard/admin/labores/${labor.idlabores}`)} title="Editar">✏️</button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }} onClick={() => handleDelete(labor.idlabores)} title="Eliminar">🗑️</button>
+                      <PremiumEditButton onClick={() => router.push(`/dashboard/admin/labores/${labor.idlabores}`)} />
                     </div>
                   </td>
                 </tr>

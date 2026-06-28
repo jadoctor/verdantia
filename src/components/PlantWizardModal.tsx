@@ -6,24 +6,24 @@ import { getMediaUrl } from '@/lib/media-url';
 import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
 
 interface CatalogoEspecie {
-  idespecies: number;
-  especiesnombre: string;
-  especiesnombrecientifico: string;
+  idespeciesvegetales: number;
+  especiesvegetalesnombre: string;
+  especiesvegetalesnombrecientifico: string;
   especiesfamilia: string;
   especiestipo: string;
-  especiesicono: string;
-  especiesdescripcion: string;
+  especiesvegetalesicono: string;
+  especiesvegetalesdescripcion: string;
   especiesdificultad: string;
   foto: string | null;
   total_variedades: number;
 }
 
 interface CatalogoVariedad {
-  idvariedades: number;
-  variedadesnombre: string;
-  variedadesdescripcion: string;
-  variedadesicono: string;
-  variedadesesgenerica: number;
+  idvariedadesvegetales: number;
+  variedadesvegetalesnombre: string;
+  variedadesvegetalesdescripcion: string;
+  variedadesvegetalesicono: string;
+  variedadesvegetalesesgenerica: number;
   variedadesdificultad: string;
   foto: string | null;
 }
@@ -127,8 +127,8 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
   const renderVarietyCard = (v: CatalogoVariedad, matchingSeeds: any[]) => {
     const hasSeeds = matchingSeeds.length > 0;
     const isIncorporated = userPlants.some(p => 
-      (p.xvariedadesidvariedadorigen && Number(p.xvariedadesidvariedadorigen) === Number(v.idvariedades)) ||
-      (p.nombre && v.variedadesnombre && p.nombre.toLowerCase().trim() === v.variedadesnombre.toLowerCase().trim())
+      (p.xvariedadesvegetalesidvariedadorigen && Number(p.xvariedadesvegetalesidvariedadorigen) === Number(v.idvariedadesvegetales)) ||
+      (p.nombre && v.variedadesvegetalesnombre && p.nombre.toLowerCase().trim() === v.variedadesvegetalesnombre.toLowerCase().trim())
     );
     const totalStock = matchingSeeds.reduce((acc, curr) => acc + (Number(curr.semillasstockactual) || 0), 0);
     const hasUnquantified = matchingSeeds.some(s => s.semillasstockactual === null);
@@ -153,7 +153,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
 
     return (
       <button
-        key={v.idvariedades}
+        key={v.idvariedadesvegetales}
         onClick={() => { setSelectedVariedad(v); setStep(3); }}
         style={{
           background: cardBg,
@@ -179,7 +179,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
         }}
       >
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {v.variedadesesgenerica === 1 && (
+          {v.variedadesvegetalesesgenerica === 1 && (
             <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '8px', fontWeight: 800 }}>
               🏅 Recomendada
             </span>
@@ -204,12 +204,12 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
             <img src={getMediaUrl(selectedEspecie.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
           </div>
         ) : (
-          <SpeciesIcon icon={v.variedadesicono || selectedEspecie?.especiesicono || '🌱'} size="1.8rem" />
+          <SpeciesIcon icon={v.variedadesvegetalesicono || selectedEspecie?.especiesvegetalesicono || '🌱'} size="1.8rem" />
         )}
-        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesnombre}</span>
-        {v.variedadesdescripcion && (
+        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesvegetalesnombre}</span>
+        {v.variedadesvegetalesdescripcion && (
           <span style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
-            {v.variedadesdescripcion.substring(0, 80)}...
+            {v.variedadesvegetalesdescripcion.substring(0, 80)}...
           </span>
         )}
         {hasSeeds && (
@@ -254,7 +254,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
     try {
       const email = userEmail || auth.currentUser?.email;
       if (!email) return;
-      const res = await fetch(`/api/user/catalogo/${esp.idespecies}/variedades`, { headers: { 'x-user-email': email } });
+      const res = await fetch(`/api/user/catalogo/${esp.idespeciesvegetales}/variedades`, { headers: { 'x-user-email': email } });
       if (res.ok) {
         const data = await res.json();
         const vars = data.variedades || [];
@@ -272,7 +272,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
   };
 
   const handleContinueWithGeneric = () => {
-    const gold = catalogoVariedades.find(v => v.variedadesesgenerica === 1) || catalogoVariedades[0];
+    const gold = catalogoVariedades.find(v => v.variedadesvegetalesesgenerica === 1) || catalogoVariedades[0];
     if (gold) {
       setSelectedVariedad(gold);
       setStep(3);
@@ -289,8 +289,8 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': email },
         body: JSON.stringify({
-          especieId: selectedEspecie.idespecies,
-          variedadId: selectedVariedad?.idvariedades || null
+          especieId: selectedEspecie.idespeciesvegetales,
+          variedadId: selectedVariedad?.idvariedadesvegetales || null
         })
       });
       if (res.ok) {
@@ -313,8 +313,8 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
   if (!show) return null;
 
   const filteredEspecies = catalogoEspecies.filter(e =>
-    !searchTerm || e.especiesnombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (e.especiesnombrecientifico && e.especiesnombrecientifico.toLowerCase().includes(searchTerm.toLowerCase()))
+    !searchTerm || e.especiesvegetalesnombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (e.especiesvegetalesnombrecientifico && e.especiesvegetalesnombrecientifico.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -343,7 +343,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
             </h2>
             <p style={{ margin: '4px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>
               {step === 1 && 'Paso 1 de 3: Elige la hortaliza'}
-              {step === 2 && `Paso 2 de 3: Elige la variedad de ${selectedEspecie?.especiesnombre}`}
+              {step === 2 && `Paso 2 de 3: Elige la variedad de ${selectedEspecie?.especiesvegetalesnombre}`}
               {step === 3 && 'Paso 3 de 3: Confirmar tu nueva planta'}
               {step === 4 && '¡Planta añadida con éxito!'}
             </p>
@@ -377,7 +377,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
               <div style={{ fontSize: '4.5rem', marginBottom: '16px' }}>🎉</div>
               <h3 style={{ color: '#065f46', margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 900 }}>¡Planta Añadida!</h3>
               <p style={{ color: '#64748b', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
-                <strong>{selectedVariedad?.variedadesnombre || selectedEspecie?.especiesnombre}</strong> se ha añadido a tu huerto.
+                <strong>{selectedVariedad?.variedadesvegetalesnombre || selectedEspecie?.especiesvegetalesnombre}</strong> se ha añadido a tu huerto.
               </p>
             </div>
           ) : (
@@ -400,10 +400,10 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                             <img src={getMediaUrl(selectedEspecie.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                           </div>
                         ) : (
-                          <SpeciesIcon icon={selectedEspecie.especiesicono} size="1.5rem" />
+                          <SpeciesIcon icon={selectedEspecie.especiesvegetalesicono} size="1.5rem" />
                         )}
                         <h3 style={{ margin: 0, color: '#065f46', fontSize: '1.1rem', fontWeight: 800 }}>
-                          Hortaliza: {selectedEspecie.especiesnombre}
+                          Hortaliza: {selectedEspecie.especiesvegetalesnombre}
                         </h3>
                       </div>
                     </div>
@@ -439,11 +439,11 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                       onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                     />
                     <div style={{
-                      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))',
                       gap: '14px', maxHeight: '400px', overflowY: 'auto', padding: '4px'
                     }}>
                       {filteredEspecies.map(esp => (
-                        <button key={esp.idespecies} onClick={() => selectEspecie(esp)} style={{
+                        <button key={esp.idespeciesvegetales} onClick={() => selectEspecie(esp)} style={{
                           background: 'white', border: '2px solid #e2e8f0', borderRadius: '16px',
                           padding: '16px', cursor: 'pointer', textAlign: 'center',
                           transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '8px',
@@ -457,11 +457,11 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                               <img src={getMediaUrl(esp.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                             </div>
                           ) : (
-                            <SpeciesIcon icon={esp.especiesicono} size="2.2rem" />
+                            <SpeciesIcon icon={esp.especiesvegetalesicono} size="2.2rem" />
                           )}
-                          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesnombre}</span>
-                          {esp.especiesnombrecientifico && (
-                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic' }}>{esp.especiesnombrecientifico}</span>
+                          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesvegetalesnombre}</span>
+                          {esp.especiesvegetalesnombrecientifico && (
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic' }}>{esp.especiesvegetalesnombrecientifico}</span>
                           )}
                           <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
                             {esp.total_variedades} variedad{esp.total_variedades !== 1 ? 'es' : ''}
@@ -494,10 +494,10 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                               <img src={getMediaUrl(selectedVariedad.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                             </div>
                           ) : (
-                            <SpeciesIcon icon={selectedVariedad.variedadesicono || selectedEspecie.especiesicono} size="1.5rem" />
+                            <SpeciesIcon icon={selectedVariedad.variedadesvegetalesicono || selectedEspecie.especiesvegetalesicono || '🌱'} size="1.5rem" />
                           )}
                           <h3 style={{ margin: 0, color: '#1e40af', fontSize: '1.1rem', fontWeight: 800 }}>
-                            Variedad: {selectedVariedad.variedadesnombre}
+                            Variedad: {selectedVariedad.variedadesvegetalesnombre}
                           </h3>
                         </div>
                       </div>
@@ -541,7 +541,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
 
                         catalogoVariedades.forEach(v => {
                           const matchingSeeds = userSeeds.filter(
-                            s => Number(s.global_variedad_id) === Number(v.idvariedades) && 
+                            s => Number(s.global_variedad_id) === Number(v.idvariedadesvegetales) && 
                                  (s.semillasstockactual === null || s.semillasstockactual > 0) &&
                                  s.semillasactivosino !== 0
                           );
@@ -553,8 +553,8 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                         });
 
                         // Sort both lists alphabetically
-                        varietiesWithSeeds.sort((a, b) => a.variety.variedadesnombre.localeCompare(b.variety.variedadesnombre));
-                        varietiesWithoutSeeds.sort((a, b) => a.variedadesnombre.localeCompare(b.variedadesnombre));
+                        varietiesWithSeeds.sort((a, b) => a.variety.variedadesvegetalesnombre.localeCompare(b.variety.variedadesvegetalesnombre));
+                        varietiesWithoutSeeds.sort((a, b) => a.variedadesvegetalesnombre.localeCompare(b.variedadesvegetalesnombre));
 
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -566,7 +566,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                                 </h4>
                                 <div style={{
                                   display: 'grid',
-                                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))',
                                   gap: '14px',
                                   maxHeight: '400px',
                                   overflowY: 'auto',
@@ -590,7 +590,7 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                               )}
                               <div style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))',
                                 gap: '14px',
                                 maxHeight: '400px',
                                 overflowY: 'auto',
@@ -635,14 +635,14 @@ export function PlantWizardModal({ show, onClose, onSuccess, userEmail }: PlantW
                             <img src={getMediaUrl(selectedEspecie.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                           </div>
                         ) : (
-                          <SpeciesIcon icon={selectedVariedad.variedadesicono || selectedEspecie.especiesicono} size="4rem" />
+                          <SpeciesIcon icon={selectedVariedad.variedadesvegetalesicono || selectedEspecie.especiesvegetalesicono || '🌱'} size="4rem" />
                         )}
                       </div>
                       <h4 style={{ margin: '0 0 4px', color: '#166534', fontSize: '1.2rem', fontWeight: 800 }}>
-                        {selectedVariedad.variedadesnombre}
+                        {selectedVariedad.variedadesvegetalesnombre}
                       </h4>
                       <p style={{ color: '#15803d', margin: '0 0 16px', fontSize: '0.85rem' }}>
-                        Especie: {selectedEspecie.especiesnombre}
+                        Especie: {selectedEspecie.especiesvegetalesnombre}
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: 320, margin: '0 auto', textAlign: 'left' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#166534' }}>

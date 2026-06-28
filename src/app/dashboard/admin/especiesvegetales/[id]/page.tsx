@@ -1,0 +1,44 @@
+'use client';
+// Responsividad controlada en EspecieVegetalForm (isMobile, @media, innerWidth) - Hot-reload trigger: 2026-06-18T12:58:30
+
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import EspecieVegetalForm from '@/components/admin/EspecieVegetalForm';
+import { useEditarEspecie } from './hooks/useEditarEspecie';
+
+// HMR trigger for db change (removed metadata) - updated phases - added master labor editor - changed to link - updated in especieform - rules 8 and 11 v6
+
+export default function EditarEspeciePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
+  const { userEmail, authReady } = useEditarEspecie();
+  const searchParams = useSearchParams();
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab');
+    return tabParam && ['detalles', 'cultivo', 'fotos', 'pdfs', 'blogs'].includes(tabParam) ? tabParam : 'detalles';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkResize = () => setIsMobile(window.innerWidth <= 768);
+    checkResize();
+    window.addEventListener('resize', checkResize);
+    return () => window.removeEventListener('resize', checkResize);
+  }, []);
+
+  // No renderizamos el formulario hasta que Firebase haya resuelto el usuario
+  if (!authReady) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🌿</div>
+        <p>Cargando especie...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: isMobile ? '0px' : '20px', width: '100%' }}>
+      <EspecieVegetalForm especieId={resolvedParams.id} userEmail={userEmail} />
+    </div>
+  );
+}

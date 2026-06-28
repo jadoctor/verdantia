@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 export async function POST(request: Request) {
   try {
-    const { idespecies, especie, labores, instruccionesAdicionales, datosAdicionales } = await request.json();
+    const { idespeciesvegetales, especie, labores, instruccionesAdicionales, datosAdicionales } = await request.json();
     if (!especie) {
       return NextResponse.json({ error: 'Nombre de la especie requerido' }, { status: 400 });
     }
@@ -102,7 +102,7 @@ Ejemplo de respuesta:
       // Fetch existing ACTIVE pautas for this species
       let existingSet = new Set<string>();
       try {
-        const [existing]: any = await pool.query('SELECT xlaborespautaidlabores, laborespautafase FROM laborespauta WHERE xlaborespautaidespecies = ? AND laborespautaactivosino = 1', [idespecies]);
+        const [existing]: any = await pool.query('SELECT xlaborespautaidlabores, laborespautafase FROM laborespauta WHERE xlaborespautaidespeciesvegetales = ? AND laborespautaactivosino = 1', [idespeciesvegetales]);
         (existing || []).forEach((e: any) => {
           existingSet.add(`${e.xlaborespautaidlabores}_${e.laborespautafase}`);
         });

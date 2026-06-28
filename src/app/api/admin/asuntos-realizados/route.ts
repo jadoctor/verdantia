@@ -17,9 +17,9 @@ export async function GET() {
           inc.incidenciasmotivo AS motivo,
           da.datosadjuntosactivo AS activo,
           da.datosadjuntosfechaeliminacion AS fechaEliminacion,
-          v.idvariedades AS variedadId,
-          v.variedadesnombre AS variedadNombre,
-          e.especiesnombre AS especieNombre,
+          v.idvariedadesvegetales AS variedadId,
+          v.variedadesvegetalesnombre AS variedadNombre,
+          e.especiesvegetalesnombre AS especieNombre,
           u.usuariosnombre AS usuarioPropietario,
           u.usuariosemail AS emailPropietario,
           u.idusuarios AS idPropietario,
@@ -27,15 +27,15 @@ export async function GET() {
           admin.usuariosemail AS adminEmail,
           'planta' AS fotoTipo
         FROM datosadjuntos da
-        LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
-        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
-        LEFT JOIN especies e ON (vg.xvariedadesidespecies = e.idespecies OR v.xvariedadesidespecies = e.idespecies)
-        LEFT JOIN usuarios u ON v.xvariedadesidusuarios = u.idusuarios
+        LEFT JOIN variedadesvegetales v ON da.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
+        LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+        LEFT JOIN especiesvegetales e ON (vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR v.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales)
+        LEFT JOIN usuarios u ON v.xvariedadesvegetalesidusuarios = u.idusuarios
         LEFT JOIN usuarios admin ON da.xdatosadjuntosidusuariovalidador = admin.idusuarios
         LEFT JOIN incidencias inc ON inc.incidenciasreferenciaid = da.iddatosadjuntos AND inc.incidenciastipo IN ('foto_rechazada', 'foto_sancionada')
         WHERE da.datosadjuntosresultadovalidacion IS NOT NULL
           AND da.datosadjuntostipo IN ('imagen', 'sancionada')
-          AND da.xdatosadjuntosidvariedades IS NOT NULL
+          AND da.xdatosadjuntosidvariedadesvegetales IS NOT NULL
 
         UNION ALL
 
@@ -65,7 +65,7 @@ export async function GET() {
         WHERE da.datosadjuntosresultadovalidacion IS NOT NULL
           AND da.datosadjuntostipo IN ('imagen', 'sancionada')
           AND da.xdatosadjuntosidusuarios IS NOT NULL
-          AND da.xdatosadjuntosidvariedades IS NULL
+          AND da.xdatosadjuntosidvariedadesvegetales IS NULL
       ) AS realizados
       ORDER BY fechaValidacion DESC
       LIMIT 100

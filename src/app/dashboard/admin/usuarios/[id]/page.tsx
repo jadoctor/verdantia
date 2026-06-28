@@ -1031,7 +1031,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           <div style={{ padding: '16px 20px', fontWeight: 700, fontSize: '1rem', color: '#1e293b', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
             👤 Datos Básicos
           </div>
-          <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+          <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
             {[
               ['Nombre', u.nombre], ['Apellidos', u.apellidos], ['Usuario', u.nombreUsuario],
               ['Email', u.email], ['País', u.pais], ['CP', u.codigoPostal],
@@ -1277,7 +1277,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>
             Selecciona el tipo de calendario agrícola que rige los cultivos y pautas del huerto.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px' }}>
             {[
               {
                 value: 'Normal',
@@ -1357,7 +1357,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
           <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#64748b' }}>
             Establece el método de trabajo de la tierra del huerto (indica cómo se trata la estructura del suelo).
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px' }}>
             {[
               {
                 value: 'Convencional',
@@ -1425,7 +1425,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
             Medidas predeterminadas del huerto de este usuario en metros reales.
           </p>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '20px' }}>
             
             {/* Cama Bilateral */}
             <div>
@@ -1655,7 +1655,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                         <p style={{ margin: '0 0 12px 0', fontSize: '0.82rem', color: '#475569', fontWeight: 700 }}>
                           Desmarca las labores que NO le interesan (Opt-Out):
                         </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: '10px' }}>
                           {avisosConfig.labores.map((labor: any) => {
                             const laborActiva = avisosConfig.userLaboresPrefs[labor.idlabores] !== 0;
                             return (
@@ -1830,7 +1830,7 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
               }
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
                   {filtered.map((c: any) => {
                     return (
                       <div 
@@ -1850,8 +1850,8 @@ export default function UsuarioDetailPage({ params }: { params: Promise<{ id: st
                         {/* Cabecera Tarjeta */}
                         <div style={{ padding: '14px 16px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>{c.especiesicono || '🌱'}</span>
-                            {c.especiesnombre} <span style={{ color: '#94a3b8', fontWeight: 600 }}>#{c.cultivosnumerocoleccion || c.idcultivos}</span>
+                            <span style={{ fontSize: '1.2rem' }}>{c.especiesvegetalesicono || '🌱'}</span>
+                            {c.especiesvegetalesnombre} <span style={{ color: '#94a3b8', fontWeight: 600 }}>#{c.cultivosnumerocoleccion || c.idcultivos}</span>
                           </span>
 
                           <select

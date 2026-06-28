@@ -21,16 +21,16 @@ export async function GET(request: Request) {
         d.datosadjuntosactivo as activo,
         d.datosadjuntosfechacreacion as fecha,
         d.datosadjuntosportada as portada,
-        e.idespecies, e.especiesnombre as especieNombre,
-        v.idvariedades, v.variedadesnombre as variedadNombre,
+        e.idespeciesvegetales, e.especiesvegetalesnombre as especieNombre,
+        v.idvariedadesvegetales, v.variedadesvegetalesnombre as variedadNombre,
         l.idlabores, l.laboresnombre as laborNombre,
         a.idafecciones, a.afeccionesnombre as afeccionNombre,
         t.idtratamientos, t.tratamientosnombre as tratamientoNombre,
         p.idplantasparte, p.plantaspartenombre as plantaParteNombre,
         (SELECT COUNT(*) FROM blog b WHERE JSON_UNQUOTE(JSON_EXTRACT(b.blogcontenido, '$.pdf_source_id')) = d.iddatosadjuntos) as blogsAsociados
       FROM datosadjuntos d
-      LEFT JOIN especies e ON d.xdatosadjuntosidespecies = e.idespecies
-      LEFT JOIN variedades v ON d.xdatosadjuntosidvariedades = v.idvariedades
+      LEFT JOIN especiesvegetales e ON d.xdatosadjuntosidespeciesvegetales = e.idespeciesvegetales
+      LEFT JOIN variedadesvegetales v ON d.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
       LEFT JOIN labores l ON d.xdatosadjuntosidlabores = l.idlabores
       LEFT JOIN afecciones a ON d.xdatosadjuntosidafecciones = a.idafecciones
       LEFT JOIN tratamientos t ON d.xdatosadjuntosidtratamientos = t.idtratamientos
@@ -47,16 +47,16 @@ export async function GET(request: Request) {
       let entityId = null;
       let urlContext = '';
 
-      if (r.idespecies) {
+      if (r.idespeciesvegetales) {
         entityType = 'Especie';
         entityName = r.especieNombre;
-        entityId = r.idespecies;
-        urlContext = `/dashboard/admin/especies/${r.idespecies}?tab=pdfs`;
-      } else if (r.idvariedades) {
+        entityId = r.idespeciesvegetales;
+        urlContext = `/dashboard/admin/especiesvegetales/${r.idespeciesvegetales}?tab=pdfs`;
+      } else if (r.idvariedadesvegetales) {
         entityType = 'Variedad';
         entityName = r.variedadNombre;
-        entityId = r.idvariedades;
-        urlContext = `/dashboard/admin/variedades/${r.idvariedades}?tab=pdfs`;
+        entityId = r.idvariedadesvegetales;
+        urlContext = `/dashboard/admin/variedadesvegetales/${r.idvariedadesvegetales}?tab=pdfs`;
       } else if (r.idlabores) {
         entityType = 'Labor';
         entityName = r.laborNombre;
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
         entityType = 'Planta Parte';
         entityName = r.plantaParteNombre;
         entityId = r.idplantasparte;
-        urlContext = `/dashboard/admin/tareas/plantasparte/${r.idplantasparte}?tab=pdfs`;
+        urlContext = `/dashboard/admin/plantasparte/${r.idplantasparte}?tab=pdfs`;
       }
 
       return {

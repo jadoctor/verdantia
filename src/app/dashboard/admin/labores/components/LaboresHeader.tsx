@@ -1,5 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import PremiumAddButton from '@/components/ui/PremiumAddButton';
 
 interface LaboresHeaderProps {
   isMobile?: boolean;
@@ -28,12 +29,11 @@ export function LaboresHeader({ isMobile = false, filter, setFilter, filterCount
             </p>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-            <button 
-              style={{ width: isMobile ? '100%' : 'auto', padding: '10px 20px', borderRadius: '8px', background: 'white', color: '#b45309', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            <PremiumAddButton 
               onClick={() => router.push('/dashboard/admin/labores/nueva')}
-            >
-              ➕ Nueva Labor
-            </button>
+              text="➕ Nueva Labor"
+              isMobile={isMobile}
+            />
           </div>
         </div>
 

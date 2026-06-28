@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
            AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 
            AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
-           AND xdatosadjuntosidvariedades IS NULL
+           AND xdatosadjuntosidvariedadesvegetales IS NULL
          ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
          LIMIT 1) AS fotoPrincipal,
         (SELECT datosadjuntosvalidado 
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
            AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 
            AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
-           AND xdatosadjuntosidvariedades IS NULL
+           AND xdatosadjuntosidvariedadesvegetales IS NULL
          ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
          LIMIT 1) AS fotoValidada,
         u.usuariosfechacreacion AS fechaRegistro,

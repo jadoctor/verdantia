@@ -40,7 +40,7 @@ export function PreferenciasTab({ profileData }: PreferenciasTabProps) {
           </div>
           <div className="form-grid">
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '15px' }}>
                 
                 {/* Normal */}
                 <div 
@@ -277,7 +277,7 @@ export function PreferenciasTab({ profileData }: PreferenciasTabProps) {
           </div>
           <div className="form-grid">
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '15px' }}>
                 
                 {/* Convencional */}
                 <div 
@@ -488,7 +488,7 @@ export function PreferenciasTab({ profileData }: PreferenciasTabProps) {
             <h3>🌱 Preferencias de Camas de Cultivo y Pasillos</h3>
             <p>Configura las dimensiones ideales de tu huerto. Estas medidas se utilizarán por defecto al calcular la distribución de tus bancales.</p>
           </div>
-          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
             
             {/* Cama Bilateral */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>

@@ -342,7 +342,7 @@ export default function TratamientoAIAssistant({ show, onClose, currentData, onA
                 <label style={{ display: 'block', fontWeight: 'bold', color: '#334155', marginBottom: '12px' }}>
                   ¿Qué campos del tratamiento deseas investigar?
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '12px' }}>
                   {[
                     { id: 'tratamientostipo', icon: '🌱', label: 'Naturaleza / Origen' },
                     { id: 'tratamientosaccion', icon: '⚔️', label: 'Modo de Acción' },

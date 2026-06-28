@@ -23,18 +23,18 @@ export async function GET(
     const [rows]: any = await pool.query(`
       SELECT 
         c.*,
-        COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS variedad_nombre,
-        e.especiesnombre,
+        COALESCE(NULLIF(vu.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS variedad_nombre,
+        e.especiesvegetalesnombre,
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidcultivos = c.idcultivos AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
-          (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
-          (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedades = vg.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
-          (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
+          (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedadesvegetales = vu.idvariedadesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
+          (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidvariedadesvegetales = vg.idvariedadesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
+          (SELECT datosadjuntosruta FROM datosadjuntos WHERE xdatosadjuntosidespeciesvegetales = e.idespeciesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
         ) AS foto
       FROM cultivos c
-      JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+      JOIN variedadesvegetales vu ON c.xcultivosidvariedadesvegetales = vu.idvariedadesvegetales
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
       WHERE c.idcultivos = ? AND c.xcultivosidusuarios = ?
     `, [cultivoId, user.id]);
 
@@ -51,11 +51,11 @@ export async function GET(
       JOIN labores l ON lp.xlaborespautaidlabores = l.idlabores
       WHERE (
         lp.xlaborespautaidusuarios = ? OR 
-        lp.xlaborespautaidvariedades = ? OR 
-        lp.xlaborespautaidvariedades = (SELECT xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ?) OR
-        lp.xlaborespautaidespecies = (SELECT xvariedadesidespecies FROM variedades WHERE idvariedades = ?)
+        lp.xlaborespautaidvariedadesvegetales = ? OR 
+        lp.xlaborespautaidvariedadesvegetales = (SELECT xvariedadesvegetalesidvariedadorigen FROM variedadesvegetales WHERE idvariedadesvegetales = ?) OR
+        lp.xlaborespautaidespeciesvegetales = (SELECT xvariedadesvegetalesidespeciesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ?)
       )
-    `, [user.id, cultivo.xcultivosidvariedades, cultivo.xcultivosidvariedades, cultivo.xcultivosidvariedades]);
+    `, [user.id, cultivo.xcultivosidvariedadesvegetales, cultivo.xcultivosidvariedadesvegetales, cultivo.xcultivosidvariedadesvegetales]);
 
     // Lógica básica de herencia: si hay una pauta de usuario para una labor y fase, pisa a las demás
     const pautasMap = new Map();
@@ -63,8 +63,8 @@ export async function GET(
       const key = `${p.xlaborespautaidlabores}-${p.laborespautafase}`;
       const current = pautasMap.get(key);
       
-      const priority = p.xlaborespautaidusuarios ? 3 : p.xlaborespautaidvariedades ? 2 : 1;
-      const currentPriority = current ? (current.xlaborespautaidusuarios ? 3 : current.xlaborespautaidvariedades ? 2 : 1) : 0;
+      const priority = p.xlaborespautaidusuarios ? 3 : p.xlaborespautaidvariedadesvegetales ? 2 : 1;
+      const currentPriority = current ? (current.xlaborespautaidusuarios ? 3 : current.xlaborespautaidvariedadesvegetales ? 2 : 1) : 0;
       
       if (priority > currentPriority) {
         pautasMap.set(key, p);
@@ -99,13 +99,13 @@ export async function GET(
 
     // Obtener duraciones teóricas de fases para la especie de este cultivo
     const [especiesFasesRows]: any = await pool.query(`
-      SELECT xespeciesfasesidfasescultivo AS idfase, especiesfasesduraciondias AS duracion
+      SELECT xespeciesvegetalesfasesidfasescultivo AS idfase, especiesfasesduraciondias AS duracion
       FROM especiesfases
-      WHERE xespeciesfasesidespecies = (
-        SELECT COALESCE(v.xvariedadesidespecies, v_orig.xvariedadesidespecies)
+      WHERE xespeciesvegetalesfasesidespeciesvegetales = (
+        SELECT COALESCE(v.xvariedadesvegetalesidespeciesvegetales, v_orig.xvariedadesvegetalesidespeciesvegetales)
         FROM cultivos c
-        JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades
-        LEFT JOIN variedades v_orig ON v.xvariedadesidvariedadorigen = v_orig.idvariedades
+        JOIN variedadesvegetales v ON c.xcultivosidvariedadesvegetales = v.idvariedadesvegetales
+        LEFT JOIN variedadesvegetales v_orig ON v.xvariedadesvegetalesidvariedadorigen = v_orig.idvariedadesvegetales
         WHERE c.idcultivos = ?
       )
     `, [cultivoId]);
@@ -262,9 +262,9 @@ export async function PATCH(
       
       // 2. Eliminar cualquier override global inactivo de esta variedad para este usuario
       // Obtenemos la variedad del cultivo
-      const [cultivos]: any = await pool.query('SELECT xcultivosidvariedades FROM cultivos WHERE idcultivos = ?', [cultivoId]);
+      const [cultivos]: any = await pool.query('SELECT xcultivosidvariedadesvegetales FROM cultivos WHERE idcultivos = ?', [cultivoId]);
       if (cultivos.length > 0) {
-        await pool.query('DELETE FROM laborespauta WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedades = ?', [user.id, cultivos[0].xcultivosidvariedades]);
+        await pool.query('DELETE FROM laborespauta WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedadesvegetales = ?', [user.id, cultivos[0].xcultivosidvariedadesvegetales]);
       }
       
       return NextResponse.json({ success: true });
@@ -351,11 +351,11 @@ export async function PATCH(
         let cultivoNombre = 'su cosecha';
         try {
           const [cRows]: any = await pool.query(
-            `SELECT COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre, e.especiesnombre) AS nombre
+            `SELECT COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre, e.especiesvegetalesnombre) AS nombre
              FROM cultivos c
-             JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades
-             LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
-             LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies OR vg.xvariedadesidespecies = e.idespecies
+             JOIN variedadesvegetales v ON c.xcultivosidvariedadesvegetales = v.idvariedadesvegetales
+             LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+             LEFT JOIN especiesvegetales e ON v.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
              WHERE c.idcultivos = ? LIMIT 1`,
             [cultivoId]
           );

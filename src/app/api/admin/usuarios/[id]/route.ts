@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
            AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 
            AND (datosadjuntosresultadovalidacion IS NULL OR datosadjuntosresultadovalidacion != 'rechazado')
-           AND xdatosadjuntosidvariedades IS NULL
+           AND xdatosadjuntosidvariedadesvegetales IS NULL
          ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
          LIMIT 1) AS fotoPrincipal,
         u.usuarioscodigopostal AS codigoPostal,
@@ -69,7 +69,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const [fotos] = await pool.query(
       `SELECT iddatosadjuntos AS id, datosadjuntosruta AS ruta, datosadjuntosesprincipal AS esPrincipal, datosadjuntosresumen AS resumen, datosadjuntosvalidado AS validado, datosadjuntosresultadovalidacion AS resultado 
        FROM datosadjuntos 
-       WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 AND xdatosadjuntosidvariedades IS NULL
+       WHERE xdatosadjuntosidusuarios = ? AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 AND xdatosadjuntosidvariedadesvegetales IS NULL
        ORDER BY datosadjuntosesprincipal DESC`,
       [id]
     );

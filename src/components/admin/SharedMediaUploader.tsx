@@ -6,7 +6,7 @@ import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import DownloadApuntesButton from './DownloadApuntesButton';
-import './EspecieForm.css';
+import './EspecieVegetalForm.css';
 
 interface SharedMediaUploaderProps {
   entityId: string | null;
@@ -28,7 +28,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   const router = useRouter();
 
   const [formData, setFormData] = useState<any>({
-    especiesnombre: '', especiesnombrecientifico: '', xespeciesidfamilias: '',
+    especiesvegetalesnombre: '', especiesvegetalesnombrecientifico: '', xespeciesvegetalesidfamilias: '',
     especiestipo: [], especiesciclo: [], especiescolor: '', especiestamano: 'mediano',
     especiesviabilidadsemilla: '', 
     especiestemperaturaminima: '', especiestemperaturaoptima: '',
@@ -37,9 +37,9 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     especiesfechasiembradirectadesde: '', especiesfechasiembradirectahasta: '',
     especiestrasplantedesde: '', especiestrasplantehasta: '',
     especiesfecharecolecciondesde: '', especiesfecharecoleccionhasta: '',
-    especieshistoria: '', especiesdescripcion: '', especiesfuentesinformacion: '',
-    especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvisibilidadsino: 1,
-    especiesicono: '',
+    especieshistoria: '', especiesvegetalesdescripcion: '', especiesfuentesinformacion: '',
+    especiesautosuficiencia: '', especiesautosuficienciaparcial: '', especiesautosuficienciaconserva: '', especiesvegetalesvisibilidadsino: 1,
+    especiesvegetalesicono: '',
     especiesorganocomestible: '', especiesbiodinamicanotas: '',
     especiesprofundidadtrasplante: '', especiesphminimosuelo: '', especiesphmaximosuelo: '', especiesnecesidadriego: '',
     especiestiposiembra: '', especiesvolumenmaceta: '', especiesluzsolar: '',
@@ -206,7 +206,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   useEffect(() => {
     // Cargar catálogos maestros
     if (userEmail) {
-      fetch('/api/admin/especies', { headers: { 'x-user-email': userEmail } })
+      fetch('/api/admin/especiesvegetales', { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => setMasterEspecies(data.especies || []));
       fetch('/api/admin/familias', { headers: { 'x-user-email': userEmail } })
@@ -299,7 +299,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
     window.addEventListener('paste', handleGlobalPaste);
     return () => window.removeEventListener('paste', handleGlobalPaste);
-  }, [entityId, formData.especiesnombre, userEmail]);
+  }, [entityId, formData.especiesvegetalesnombre, userEmail]);
 
   const loadEspecie = async (id: string) => {
     if (!userEmail) return;
@@ -313,13 +313,13 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       if (especie) {
         const parsedEspecie = {
           ...especie,
-          especiestemperaturaminima: especie.especiestemperaturaminima !== null ? parseFloat(especie.especiestemperaturaminima).toString() : '',
-          especiestemperaturaoptima: especie.especiestemperaturaoptima !== null ? parseFloat(especie.especiestemperaturaoptima).toString() : '',
-          especiesmarcoplantas: especie.especiesmarcoplantas !== null ? parseInt(especie.especiesmarcoplantas, 10).toString() : '',
-          especiesmarcofilas: especie.especiesmarcofilas !== null ? parseInt(especie.especiesmarcofilas, 10).toString() : '',
-          especiesmarcomargen: especie.especiesmarcomargen !== null ? parseInt(especie.especiesmarcomargen, 10).toString() : '',
-          especiestipo: especie.especiestipo ? especie.especiestipo.split(',') : [],
-          especiesciclo: especie.especiesciclo ? especie.especiesciclo.split(',') : []
+          especiestemperaturaminima: especie.especiesvegetalestemperaturaminima !== null ? parseFloat(especie.especiesvegetalestemperaturaminima).toString() : '',
+          especiestemperaturaoptima: especie.especiesvegetalestemperaturaoptima !== null ? parseFloat(especie.especiesvegetalestemperaturaoptima).toString() : '',
+          especiesmarcoplantas: especie.especiesvegetalesmarcoplantas !== null ? parseInt(especie.especiesvegetalesmarcoplantas, 10).toString() : '',
+          especiesmarcofilas: especie.especiesvegetalesmarcofilas !== null ? parseInt(especie.especiesvegetalesmarcofilas, 10).toString() : '',
+          especiesmarcomargen: especie.especiesvegetalesmarcomargen !== null ? parseInt(especie.especiesvegetalesmarcomargen, 10).toString() : '',
+          especiestipo: especie.especiesvegetalestipo ? especie.especiesvegetalestipo.split(',') : [],
+          especiesciclo: especie.especiesvegetalesciclo ? especie.especiesvegetalesciclo.split(',') : []
         };
         setFormData(parsedEspecie);
         setInitialData(parsedEspecie);
@@ -366,7 +366,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
     setSaveStatus('saving');
     try {
-      const res = await fetch(`/api/admin/especies/${entityId}`, {
+      const res = await fetch(`/api/admin/especiesvegetales/${entityId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -432,7 +432,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     setLoading(true);
     setSaveStatus('saving');
     try {
-      const url = entityId ? `/api/admin/especies/${entityId}` : '/api/admin/especies';
+      const url = entityId ? `/api/admin/especiesvegetales/${entityId}` : '/api/admin/especiesvegetales';
       const method = entityId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -463,7 +463,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         }
 
         if (!entityId) {
-            router.push(`/dashboard/admin/especies/${data.id}`);
+            router.push(`/dashboard/admin/especiesvegetales/${data.id}`);
         } else {
             setSaveStatus('idle');
             // Remove the alert, it's successful implicitly
@@ -481,7 +481,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   };
 
   const callAI = async () => {
-    if (!formData.especiesnombre) {
+    if (!formData.especiesvegetalesnombre) {
       alert('Introduce primero el nombre común de la especie.');
       return;
     }
@@ -493,7 +493,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
           'Content-Type': 'application/json',
           'x-user-email': userEmail || ''
         },
-        body: JSON.stringify({ nombre: formData.especiesnombre })
+        body: JSON.stringify({ nombre: formData.especiesvegetalesnombre })
       });
       const data = await res.json();
       if (data.success) {
@@ -518,10 +518,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     {
       id: 'taxonomia',
       title: '🧬 Identificación',
-      keys: ['especiesnombrecientifico', 'xespeciesidfamilias', 'especiestipo', 'especiesciclo', 'especiescolor', 'especiestamano'],
+      keys: ['especiesvegetalesnombrecientifico', 'xespeciesvegetalesidfamilias', 'especiestipo', 'especiesciclo', 'especiescolor', 'especiestamano'],
       labels: {
-        especiesnombrecientifico: 'Nombre Científico',
-        xespeciesidfamilias: 'Familia botánica (ID)',
+        especiesvegetalesnombrecientifico: 'Nombre Científico',
+        xespeciesvegetalesidfamilias: 'Familia botánica (ID)',
         especiestipo: 'Tipos',
         especiesciclo: 'Ciclo',
         especiescolor: 'Color',
@@ -625,10 +625,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     {
       id: 'textos',
       title: 'Textos y Otros',
-      keys: ['especieshistoria', 'especiesdescripcion', 'especiesfuentesinformacion'],
+      keys: ['especieshistoria', 'especiesvegetalesdescripcion', 'especiesfuentesinformacion'],
       labels: {
         especieshistoria: 'Historia',
-        especiesdescripcion: 'Descripción',
+        especiesvegetalesdescripcion: 'Descripción',
         especiesfuentesinformacion: 'Fuentes'
       }
     }
@@ -668,24 +668,24 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         const name = typeof item === 'string' ? item : item?.nombre;
         const motivo = typeof item === 'string' ? 'Sugerido por IA' : (item?.motivo || 'Sugerido por IA');
         if (!name || typeof name !== 'string') continue;
-        let sp = masterE.find(e => normalize(e.especiesnombre) === normalize(name));
+        let sp = masterE.find(e => normalize(e.especiesvegetalesnombre) === normalize(name));
         if (!sp) {
           const res = await fetch(`/api/admin/${entityType}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ especiesnombre: name, especiesvisibilidadsino: 0 })
+            body: JSON.stringify({ especiesvegetalesnombre: name, especiesvegetalesvisibilidadsino: 0 })
           });
           const data = await res.json();
           if (data.success && data.id) {
-            sp = { idespecies: data.id, especiesnombre: name };
+            sp = { idespeciesvegetales: data.id, especiesvegetalesnombre: name };
             masterE.push(sp);
             setMasterEspecies([...masterE]);
           }
         }
-        if (sp && sp.idespecies.toString() !== entityId && !newBen.some(b => b.xasociacionesbeneficiosasidespeciedestino?.toString() === sp.idespecies?.toString())) {
+        if (sp && sp.idespeciesvegetales.toString() !== entityId && !newBen.some(b => b.xasociacionesbeneficiosasidespeciedestino?.toString() === sp.idespeciesvegetales?.toString())) {
           newBen.push({
-            xasociacionesbeneficiosasidespeciedestino: sp.idespecies,
-            especie_destino_nombre: sp.especiesnombre,
+            xasociacionesbeneficiosasidespeciedestino: sp.idespeciesvegetales,
+            especie_destino_nombre: sp.especiesvegetalesnombre,
             asociacionesbeneficiosasmotivo: motivo
           });
           madeChanges = true;
@@ -696,24 +696,24 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         const name = typeof item === 'string' ? item : item?.nombre;
         const motivo = typeof item === 'string' ? 'Sugerido por IA' : (item?.motivo || 'Sugerido por IA');
         if (!name || typeof name !== 'string') continue;
-        let sp = masterE.find(e => normalize(e.especiesnombre) === normalize(name));
+        let sp = masterE.find(e => normalize(e.especiesvegetalesnombre) === normalize(name));
         if (!sp) {
           const res = await fetch(`/api/admin/${entityType}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
-            body: JSON.stringify({ especiesnombre: name, especiesvisibilidadsino: 0 })
+            body: JSON.stringify({ especiesvegetalesnombre: name, especiesvegetalesvisibilidadsino: 0 })
           });
           const data = await res.json();
           if (data.success && data.id) {
-            sp = { idespecies: data.id, especiesnombre: name };
+            sp = { idespeciesvegetales: data.id, especiesvegetalesnombre: name };
             masterE.push(sp);
             setMasterEspecies([...masterE]);
           }
         }
-        if (sp && sp.idespecies.toString() !== entityId && !newPer.some(p => p.xasociacionesperjudicialesidespeciedestino?.toString() === sp.idespecies?.toString())) {
+        if (sp && sp.idespeciesvegetales.toString() !== entityId && !newPer.some(p => p.xasociacionesperjudicialesidespeciedestino?.toString() === sp.idespeciesvegetales?.toString())) {
           newPer.push({
-            xasociacionesperjudicialesidespeciedestino: sp.idespecies,
-            especie_destino_nombre: sp.especiesnombre,
+            xasociacionesperjudicialesidespeciedestino: sp.idespeciesvegetales,
+            especie_destino_nombre: sp.especiesvegetalesnombre,
             asociacionesperjudicialesmotivo: motivo
           });
           madeChanges = true;
@@ -739,10 +739,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
             setMasterPlagas([...masterP]);
           }
         }
-        if (p && !newPla.some(pl => (pl.xrelacionesplagasideplaga || pl.xespeciesplagasidplagas)?.toString() === p.idplagas?.toString())) {
+        if (p && !newPla.some(pl => (pl.xrelacionesplagasideplaga || pl.xespeciesvegetalesplagasidplagas)?.toString() === p.idplagas?.toString())) {
           newPla.push({
             xrelacionesplagasideplaga: p.idplagas,
-            xespeciesplagasidplagas: p.idplagas,
+            xespeciesvegetalesplagasidplagas: p.idplagas,
             plagasnombre: p.plagasnombre,
             especiesplagasnivelriesgo: riesgo,
             especiesplagasnotasespecificas: notas
@@ -774,7 +774,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   };
 
   const openSinonimosConfig = () => {
-    if (!formData.especiesnombre) {
+    if (!formData.especiesvegetalesnombre) {
       alert('Se necesita el nombre de la especie para proponer sinónimos.');
       return;
     }
@@ -790,11 +790,11 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          especieNombre: formData.especiesnombre,
-          especieCientifico: formData.especiesnombrecientifico,
+          especieNombre: formData.especiesvegetalesnombre,
+          especieCientifico: formData.especiesvegetalesnombrecientifico,
           existingSinonimos: sinonimos.map(s => ({
             nombre: s.especiessinonimosnombre,
-            idPais: s.xespeciessinonimosidpaises
+            idPais: s.xespeciesvegetalessinonimosidpaises
           })),
           extraInstructions: sinExtraInstructions
         })
@@ -803,7 +803,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       if (data.success && data.sinonimos) {
         const propuestos = data.sinonimos.map((s: any) => ({
           ...s,
-          idespeciessinonimos: null,
+          idespeciesvegetalessinonimos: null,
           _selected: true
         }));
         setAiSinonimosProposal(propuestos);
@@ -825,14 +825,14 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     if (!entityId) return;
     try {
       // 1. Encontramos los que hay que borrar (estaban en initial pero no en actuales)
-      const toDelete = initialSinonimos.filter(init => !sinonimos.some(s => s.idespeciessinonimos === init.idespeciessinonimos));
+      const toDelete = initialSinonimos.filter(init => !sinonimos.some(s => s.idespeciesvegetalessinonimos === init.idespeciesvegetalessinonimos));
       for (const del of toDelete) {
-        await fetch(`/api/admin/${entityType}/${entityId}/sinonimos?id=${del.idespeciessinonimos}`, { method: 'DELETE' });
+        await fetch(`/api/admin/${entityType}/${entityId}/sinonimos?id=${del.idespeciesvegetalessinonimos}`, { method: 'DELETE' });
       }
 
       // 2. Guardar o actualizar los actuales
       for (const s of sinonimos) {
-        const isNew = !s.idespeciessinonimos;
+        const isNew = !s.idespeciesvegetalessinonimos;
         const res = await fetch(`/api/admin/${entityType}/${entityId}/sinonimos`, {
           method: isNew ? 'POST' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -894,7 +894,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   };
 
   const buildEspecieStoragePath = (file: File, isAi = false) => {
-    const baseName = normalizePathSegment(formData.especiesnombre || `especie-${entityId || 'nueva'}`) || `especie-${entityId || 'nueva'}`;
+    const baseName = normalizePathSegment(formData.especiesvegetalesnombre || `especie-${entityId || 'nueva'}`) || `especie-${entityId || 'nueva'}`;
     const randomSuffix = Math.random().toString(36).slice(2, 8);
     const extension = getExtensionFromFile(file);
     return `uploads/especies/${baseName}-${Date.now()}-${randomSuffix}.${extension}`;
@@ -988,7 +988,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
             body: JSON.stringify({
               rawStoragePath: storagePath,
-              especieNombre: formData.especiesnombre || 'especie'
+              especieNombre: formData.especiesvegetalesnombre || 'especie'
             })
           });
           if (!res.ok) {
@@ -998,7 +998,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         } else {
           const fd = new FormData();
           fd.append('file', file);
-          fd.append('especieNombre', formData.especiesnombre || '');
+          fd.append('especieNombre', formData.especiesvegetalesnombre || '');
           const res = await fetch(`/api/admin/${entityType}/${entityId}/${type}`, {
             method: 'POST',
             headers: { 'x-user-email': userEmail || '' },
@@ -1029,15 +1029,15 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
   };
 
   const buildPromptPreview = () => {
-    const nombre = formData.especiesnombre || 'especie';
-    const sciCtx = formData.especiesnombrecientifico ? ` Nombre científico: ${formData.especiesnombrecientifico}.` : '';
-    const famCtx = formData.xespeciesidfamilias ? ` ID Familia: ${formData.xespeciesidfamilias}.` : '';
+    const nombre = formData.especiesvegetalesnombre || 'especie';
+    const sciCtx = formData.especiesvegetalesnombrecientifico ? ` Nombre científico: ${formData.especiesvegetalesnombrecientifico}.` : '';
+    const famCtx = formData.xespeciesvegetalesidfamilias ? ` ID Familia: ${formData.xespeciesvegetalesidfamilias}.` : '';
     const defaultConcept = `varios ejemplares de ${nombre} recién cosechados, dispuestos sobre una mesa rústica de madera en un huerto al aire libre, con tierra y hojas verdes visibles al fondo`;
     return `Fotografía profesional de stock de alta resolución (8K), tomada con una cámara DSLR Canon EOS R5 y un objetivo macro 100mm f/2.8, iluminación natural suave de hora dorada.\nSujeto principal: ${nombre} (hortaliza/planta comestible de huerto).${sciCtx}${famCtx}\nEscena concreta: ${aiImageConcept || defaultConcept}.\nComposición: regla de los tercios, sujeto nítido en primer plano, fondo suavemente desenfocado (bokeh) mostrando vegetación de huerto.\nREGLAS ESTRICTAS:\n1. El sujeto es SIEMPRE una planta, hortaliza, fruto o semilla comestible de huerto.\n2. La fotografía debe parecer tomada por un fotógrafo profesional de gastronomía o agricultura.\n3. El entorno debe ser siempre agrícola: huerto, bancal, invernadero, mesa de cosecha o cocina rústica.\n4. NO incluir personas, manos, texto, logotipos ni marcas de agua.\n5. Mostrar el producto hortícola en su mejor estado: fresco, limpio, apetecible.`;
   };
 
   const generateAiImage = async () => {
-    if (!formData.especiesnombre) {
+    if (!formData.especiesvegetalesnombre) {
       alert('Se necesita el nombre de la especie para generar la imagen.');
       return;
     }
@@ -1046,9 +1046,9 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     setAiImageDescription('');
     try {
       const body: any = { 
-        especieNombre: formData.especiesnombre,
-        especieNombreCientifico: formData.especiesnombrecientifico,
-        especieFamiliaId: formData.xespeciesidfamilias,
+        especieNombre: formData.especiesvegetalesnombre,
+        especieNombreCientifico: formData.especiesvegetalesnombrecientifico,
+        especieFamiliaId: formData.xespeciesvegetalesidfamilias,
         concept: aiImageConcept 
       };
       // Si el usuario ha editado manualmente el prompt, enviarlo como customPrompt
@@ -1086,7 +1086,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     try {
       const res = await fetch(aiImageResult);
       const blob = await res.blob();
-      const descBase = aiImageDescription || formData.especiesnombre || 'especie';
+      const descBase = aiImageDescription || formData.especiesvegetalesnombre || 'especie';
 
       // Subir a ruta temporal vía Firebase client-side (mismo flujo que fotos normales)
       const storageApi = await import('firebase/storage');
@@ -1101,7 +1101,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({
           rawStoragePath: tempPath,
-          especieNombre: formData.especiesnombre || 'especie'
+          especieNombre: formData.especiesvegetalesnombre || 'especie'
         })
       });
       if (!saveRes.ok) {
@@ -1185,30 +1185,6 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
   // ── Abrir editor de foto ──
   const openPhotoEditor = (photo: any) => {
-    try {
-      const meta = JSON.parse(photo.resumen || '{}');
-      const initial = {
-        x: meta.profile_object_x ?? 50,
-        y: meta.profile_object_y ?? 50,
-        zoom: meta.profile_object_zoom ?? 100,
-        brightness: meta.profile_brightness ?? 100,
-        contrast: meta.profile_contrast ?? 100,
-        style: meta.profile_style ?? '',
-        seo_alt: meta.seo_alt ?? ''
-      };
-      setEditorX(initial.x);
-      setEditorY(initial.y);
-      setEditorZoom(initial.zoom);
-      setEditorBrightness(initial.brightness);
-      setEditorContrast(initial.contrast);
-      setEditorStyle(initial.style);
-      setEditorSeoAlt(initial.seo_alt);
-      setEditorInitialState(JSON.stringify(initial));
-    } catch {
-      setEditorX(50); setEditorY(50); setEditorZoom(100); 
-      setEditorBrightness(100); setEditorContrast(100); setEditorStyle(''); setEditorSeoAlt('');
-      setEditorInitialState(JSON.stringify({x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '', seo_alt: ''}));
-    }
     setEditingPhoto(photo);
   };
 
@@ -1290,7 +1266,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail || '' },
         body: JSON.stringify({
           tipoEntidad: 'documento',
-          especieNombre: formData.especiesnombre,
+          especieNombre: formData.especiesvegetalesnombre,
           concept: `Portada del documento titulado "${pdf.titulo}". Estilo limpio, académico, con ilustración botánica. Contenido principal: ${pdf.resumen}`
         })
       });
@@ -1335,7 +1311,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       const res = await fetch('/api/ai/pdf-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: pdfSearchTopic, especieNombre: formData.especiesnombre })
+        body: JSON.stringify({ topic: pdfSearchTopic, especieNombre: formData.especiesvegetalesnombre })
       });
       
       let data;
@@ -1422,10 +1398,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
           entityId: entityId,
           variedadId: null,
           autorEmail: userEmail,
-          especieNombre: formData.especiesnombre,
+          especieNombre: formData.especiesvegetalesnombre,
           contexto: {
             tipo: 'especie',
-            nombre: formData.especiesnombre || 'Especie'
+            nombre: formData.especiesvegetalesnombre || 'Especie'
           },
           pdfSourceId: blogGenPdf.id
         })
@@ -1484,10 +1460,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         body: JSON.stringify({
           pdfUrl: blogGenPdf.ruta.startsWith('http') ? blogGenPdf.ruta : `${window.location.origin}${blogGenPdf.ruta.startsWith('/') ? '' : '/'}${blogGenPdf.ruta}`,
           instructions: blogGenInstructions,
-          especieNombre: formData.especiesnombre,
+          especieNombre: formData.especiesvegetalesnombre,
           contexto: {
             tipo: 'especie',
-            nombre: formData.especiesnombre || 'Especie'
+            nombre: formData.especiesvegetalesnombre || 'Especie'
           },
           existingTitles: blogs.map((b: any) => b.titulo)
         })
@@ -1637,8 +1613,8 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
     try {
       const isEditing = editingPauta !== null;
       const url = isEditing 
-        ? `/api/admin/especies/${entityId}/pautas/${editingPauta}` 
-        : `/api/admin/especies/${entityId}/pautas`;
+        ? `/api/admin/especiesvegetales/${entityId}/pautas/${editingPauta}` 
+        : `/api/admin/especiesvegetales/${entityId}/pautas`;
       
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -1726,7 +1702,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
   // ── AI Pautas Handlers ──
   const startPautasAiSearch = async () => {
-    if (!formData.especiesnombre) {
+    if (!formData.especiesvegetalesnombre) {
       alert('Debes darle un nombre a la especie primero.');
       return;
     }
@@ -1746,7 +1722,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         headers: { 'Content-Type': 'application/json' },
         signal: pautasAiAbortControllerRef.current.signal,
         body: JSON.stringify({ 
-          especie: formData.especiesnombre,
+          especie: formData.especiesvegetalesnombre,
           labores: masterLabores.map(l => ({ id: l.idlabores, nombre: l.laboresnombre })),
           instruccionesAdicionales: pautasExtraInstructions
         })
@@ -1843,7 +1819,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         <button onClick={() => router.push('/dashboard')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🏠 Volver al Inicio
         </button>
-        <button onClick={() => router.push('/dashboard/admin/especies')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <button onClick={() => router.push('/dashboard/admin/especiesvegetales')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           🌍 Volver a Especies Globales
         </button>
       </div>
@@ -1853,12 +1829,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {formData.especiesnombre || 'Nueva Especie'}
+              {formData.especiesvegetalesnombre || 'Nueva Especie'}
               {isDirty && <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>Cambios sin guardar</span>}
             </h1>
-            {formData.especiesnombrecientifico ? (
+            {formData.especiesvegetalesnombrecientifico ? (
               <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '1rem', fontStyle: 'italic' }}>
-                {formData.especiesnombrecientifico}
+                {formData.especiesvegetalesnombrecientifico}
               </p>
             ) : (
               <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
@@ -1870,12 +1846,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       </div>
 
       {/* ── Status Bar ── */}
-      <div style={{ background: formData.especiesvisibilidadsino ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid ${formData.especiesvisibilidadsino ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
+      <div style={{ background: formData.especiesvegetalesvisibilidadsino ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid ${formData.especiesvegetalesvisibilidadsino ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
         <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', color: '#334155', margin: 0, fontSize: '1.1rem' }}>
           <input 
             type="checkbox" 
-            name="especiesvisibilidadsino" 
-            checked={!!formData.especiesvisibilidadsino} 
+            name="especiesvegetalesvisibilidadsino" 
+            checked={!!formData.especiesvegetalesvisibilidadsino} 
             onChange={handleChange} 
             style={{ width: '22px', height: '22px', accentColor: '#10b981' }}
           /> 
@@ -1932,7 +1908,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                   : hFilter;
                 return (
                   <img key={heroPhoto.id} src={getMediaUrl(heroPhoto.ruta)}
-                    alt={heroMeta.seo_alt || formData.especiesnombre}
+                    alt={heroMeta.seo_alt || formData.especiesvegetalesnombre}
                     style={{ width: '100%', height: '100%', objectFit: 'cover',
                       objectPosition: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
                       transformOrigin: `${heroMeta.profile_object_x ?? 50}% ${heroMeta.profile_object_y ?? 50}%`,
@@ -2000,7 +1976,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
           </div>
         ) : (
           <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {formData.especiesicono && <span style={{ fontSize: '2.5rem' }}>{formData.especiesicono}</span>}
+            {formData.especiesvegetalesicono && <span style={{ fontSize: '2.5rem' }}>{formData.especiesvegetalesicono}</span>}
             <h2 style={{ margin: 0, color: '#1e293b' }}>Sin fotos en la galería</h2>
           </div>
         )}
@@ -2016,9 +1992,9 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         >
           <span>
             Ficha de Especie
-            {!isEspecieOpen && formData.especiesnombre && (
+            {!isEspecieOpen && formData.especiesvegetalesnombre && (
               <span style={{ color: '#475569', marginLeft: '10px', fontWeight: 'normal' }}>
-                — {formData.especiesnombre} {formData.especiesnombrecientifico ? `(${formData.especiesnombrecientifico})` : ''}
+                — {formData.especiesvegetalesnombre} {formData.especiesvegetalesnombrecientifico ? `(${formData.especiesvegetalesnombrecientifico})` : ''}
               </span>
             )}
           </span>
@@ -2055,18 +2031,18 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
             <div className="grid-form">
               <div className="form-group full">
                 <label>Nombre Común *</label>
-                <input type="text" name="especiesnombre" required value={formData.especiesnombre || ''} onChange={handleChange} />
+                <input type="text" name="especiesvegetalesnombre" required value={formData.especiesvegetalesnombre || ''} onChange={handleChange} />
               </div>
               <div className="form-group">
                 <label>Nombre Científico</label>
-                <input type="text" name="especiesnombrecientifico" value={formData.especiesnombrecientifico || ''} onChange={handleChange} />
+                <input type="text" name="especiesvegetalesnombrecientifico" value={formData.especiesvegetalesnombrecientifico || ''} onChange={handleChange} />
               </div>
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>Familia</span>
                   <a href="/dashboard/admin/familias" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', textDecoration: 'none', background: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', color: '#475569' }}>⚙️ Gestionar</a>
                 </label>
-                <select name="xespeciesidfamilias" value={formData.xespeciesidfamilias || ''} onChange={handleChange} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                <select name="xespeciesvegetalesidfamilias" value={formData.xespeciesvegetalesidfamilias || ''} onChange={handleChange} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
                   <option value="">— Sin familia asignada —</option>
                   {masterFamilias.map((f: any) => (
                     <option key={f.idfamilias} value={f.idfamilias}>
@@ -2139,7 +2115,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
           {activeTab === 'fisiologia' && (
             <div className="grid-form">
               {/* BLOQUE PRINCIPAL SUPERIOR */}
-              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '15px' }}>
                 <div className="form-group" style={{ margin: 0, padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                   <label style={{ color: '#1e293b', fontWeight: 'bold' }}>🌱 Tipo de Siembra Principal</label>
                   <select name="especiestiposiembra" value={formData.especiestiposiembra || ''} onChange={handleChange} style={{ marginTop: '8px' }}>
@@ -2246,7 +2222,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
           {activeTab === 'calendarios' && (
             <div className="grid-form">
               <div className="form-group full">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
                   {['siembradirecta', 'semillero', 'trasplante', 'recoleccion'].map(tipo => {
                     const colorMap: Record<string, string> = {
                       siembradirecta: '#f97316',
@@ -2357,7 +2333,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
               </div>
               <div className="form-group full">
                 <label>Descripción / Cultivo</label>
-                <textarea name="especiesdescripcion" rows={3} value={formData.especiesdescripcion || ''} onChange={handleChange} />
+                <textarea name="especiesvegetalesdescripcion" rows={3} value={formData.especiesvegetalesdescripcion || ''} onChange={handleChange} />
               </div>
               <div className="form-group">
                 <label>pH Mínimo del Suelo</label>
@@ -2781,7 +2757,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                   <select id="selBen" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                     <option value="">Selecciona especie...</option>
-                    {masterEspecies.filter(e => e.idespecies.toString() !== entityId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                    {masterEspecies.filter(e => e.idespeciesvegetales.toString() !== entityId).map(e => <option key={e.idespeciesvegetales} value={e.idespeciesvegetales}>{e.especiesvegetalesnombre}</option>)}
                   </select>
                   <input type="text" id="motivoBen" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
                   <button type="button" onClick={() => {
@@ -2789,12 +2765,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                     const mot = document.getElementById('motivoBen') as HTMLInputElement;
                     if (!sel.value) return;
                     if (relaciones.beneficiosas.some((b: any) => b.xasociacionesbeneficiosasidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
-                    const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                    const sp = masterEspecies.find(e => e.idespeciesvegetales.toString() === sel.value);
                     const updated = {
                       ...relaciones,
                       beneficiosas: [...relaciones.beneficiosas, { 
                         xasociacionesbeneficiosasidespeciedestino: parseInt(sel.value),
-                        especie_destino_nombre: sp?.especiesnombre,
+                        especie_destino_nombre: sp?.especiesvegetalesnombre,
                         asociacionesbeneficiosasmotivo: mot.value 
                       }]
                     };
@@ -2828,7 +2804,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                   <select id="selPer" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                     <option value="">Selecciona especie...</option>
-                    {masterEspecies.filter(e => e.idespecies.toString() !== entityId).map(e => <option key={e.idespecies} value={e.idespecies}>{e.especiesnombre}</option>)}
+                    {masterEspecies.filter(e => e.idespeciesvegetales.toString() !== entityId).map(e => <option key={e.idespeciesvegetales} value={e.idespeciesvegetales}>{e.especiesvegetalesnombre}</option>)}
                   </select>
                   <input type="text" id="motivoPer" placeholder="Motivo (opcional)" style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
                   <button type="button" onClick={() => {
@@ -2836,12 +2812,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                     const mot = document.getElementById('motivoPer') as HTMLInputElement;
                     if (!sel.value) return;
                     if (relaciones.perjudiciales.some((p: any) => p.xasociacionesperjudicialesidespeciedestino.toString() === sel.value)) { alert('Ya añadida'); return; }
-                    const sp = masterEspecies.find(e => e.idespecies.toString() === sel.value);
+                    const sp = masterEspecies.find(e => e.idespeciesvegetales.toString() === sel.value);
                     const updated = {
                       ...relaciones,
                       perjudiciales: [...relaciones.perjudiciales, { 
                         xasociacionesperjudicialesidespeciedestino: parseInt(sel.value),
-                        especie_destino_nombre: sp?.especiesnombre,
+                        especie_destino_nombre: sp?.especiesvegetalesnombre,
                         asociacionesperjudicialesmotivo: mot.value 
                       }]
                     };
@@ -2893,12 +2869,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                     const r = document.getElementById('riesgoPla') as HTMLSelectElement;
                     const n = document.getElementById('notasPla') as HTMLInputElement;
                     if (!sel.value) return;
-                    if (relaciones.plagas.some((p: any) => p.xespeciesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
+                    if (relaciones.plagas.some((p: any) => p.xespeciesvegetalesplagasidplagas.toString() === sel.value)) { alert('Ya añadida'); return; }
                     const pla = masterPlagas.find(p => p.idplagas.toString() === sel.value);
                     const updated = {
                       ...relaciones,
                       plagas: [...relaciones.plagas, { 
-                        xespeciesplagasidplagas: parseInt(sel.value),
+                        xespeciesvegetalesplagasidplagas: parseInt(sel.value),
                         plagasnombre: pla?.plagasnombre,
                         plagastipo: pla?.plagastipo,
                         especiesplagasnivelriesgo: r.value,
@@ -2967,7 +2943,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                   <button 
                     type="button" 
                     onClick={() => {
-                      setSinonimos([...sinonimos, { idespeciessinonimos: null, especiessinonimosnombre: '', xespeciessinonimosididiomas: '', xespeciessinonimosidpaises: '', especiessinonimosnotas: '' }]);
+                      setSinonimos([...sinonimos, { idespeciesvegetalessinonimos: null, especiessinonimosnombre: '', xespeciesvegetalessinonimosididiomas: '', xespeciesvegetalessinonimosidpaises: '', especiessinonimosnotas: '' }]);
                       setSinonimosDirty(true);
                     }}
                     style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
@@ -3005,7 +2981,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                     </thead>
                     <tbody>
                       {sinonimos.map((s, index) => (
-                        <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: s.idespeciessinonimos === null ? '#fefce8' : 'transparent' }}>
+                        <tr key={index} style={{ borderBottom: '1px solid #e2e8f0', background: s.idespeciesvegetalessinonimos === null ? '#fefce8' : 'transparent' }}>
                           <td style={{ padding: '8px' }}>
                             <input 
                               type="text" 
@@ -3022,10 +2998,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                           </td>
                           <td style={{ padding: '8px' }}>
                             <select 
-                              value={s.xespeciessinonimosididiomas || ''} 
+                              value={s.xespeciesvegetalessinonimosididiomas || ''} 
                               onChange={e => {
                                 const newSin = [...sinonimos];
-                                newSin[index].xespeciessinonimosididiomas = e.target.value;
+                                newSin[index].xespeciesvegetalessinonimosididiomas = e.target.value;
                                 setSinonimos(newSin);
                                 setSinonimosDirty(true);
                               }}
@@ -3039,10 +3015,10 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                           </td>
                           <td style={{ padding: '8px' }}>
                             <select 
-                              value={s.xespeciessinonimosidpaises || ''} 
+                              value={s.xespeciesvegetalessinonimosidpaises || ''} 
                               onChange={e => {
                                 const newSin = [...sinonimos];
-                                newSin[index].xespeciessinonimosidpaises = e.target.value;
+                                newSin[index].xespeciesvegetalessinonimosidpaises = e.target.value;
                                 setSinonimos(newSin);
                                 setSinonimosDirty(true);
                               }}
@@ -3077,9 +3053,9 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                                 newSin.splice(index, 1);
                                 setSinonimos(newSin);
                                 // Auto-borrar de la BD si ya estaba guardado
-                                if (sinToDelete.idespeciessinonimos && entityId) {
+                                if (sinToDelete.idespeciesvegetalessinonimos && entityId) {
                                   try {
-                                    await fetch(`/api/admin/${entityType}/${entityId}/sinonimos?id=${sinToDelete.idespeciessinonimos}`, { method: 'DELETE' });
+                                    await fetch(`/api/admin/${entityType}/${entityId}/sinonimos?id=${sinToDelete.idespeciesvegetalessinonimos}`, { method: 'DELETE' });
                                   } catch (err) {
                                     console.error('Error borrando sinónimo:', err);
                                   }
@@ -3114,7 +3090,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
                     {blogs.map(b => {
                       const linkedPdf = b.pdfSourceId ? pdfs.find((p: any) => p.id === b.pdfSourceId) : null;
                       return (
@@ -3419,7 +3395,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                                         <div style={{ flex: '0 0 40px', height: '40px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginTop: '2px' }}>✨</div>
                                       )}
                                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                        <a href={`/dashboard/admin/blog/${b.id}?from=${entityType}&fromId=${entityId}&fromName=${encodeURIComponent(formData?.especiesnombre || entityType)}&fromTab=pdfs`} style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'} title={b.titulo}>
+                                        <a href={`/dashboard/admin/blog/${b.id}?from=${entityType}&fromId=${entityId}&fromName=${encodeURIComponent(formData?.especiesvegetalesnombre || entityType)}&fromTab=pdfs`} style={{ fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', lineHeight: 1.3, textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} onMouseEnter={e => e.currentTarget.style.textDecoration='underline'} onMouseLeave={e => e.currentTarget.style.textDecoration='none'} title={b.titulo}>
                                           {b.titulo}
                                         </a>
                                       </div>
@@ -3433,7 +3409,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                                           {new Date(b.fechaCreacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                                         </span>
                                         <a 
-                                          href={`/dashboard/admin/blog/${b.id}?from=${entityType}&fromId=${entityId}&fromName=${encodeURIComponent(formData?.especiesnombre || entityType)}&fromTab=pdfs`} 
+                                          href={`/dashboard/admin/blog/${b.id}?from=${entityType}&fromId=${entityId}&fromName=${encodeURIComponent(formData?.especiesvegetalesnombre || entityType)}&fromTab=pdfs`} 
                                           style={{ 
                                             background: 'none', 
                                             border: 'none', 
@@ -3522,7 +3498,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
         <div className="ai-modal-overlay">
           <div className="ai-modal-content">
             <div className="ai-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'nowrap' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>✨ Revisión de Inteligencia Artificial — {formData.especiesnombre || 'Ficha Técnica'}</h2>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}>✨ Revisión de Inteligencia Artificial — {formData.especiesvegetalesnombre || 'Ficha Técnica'}</h2>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                 <button 
                   type="button" 
@@ -3613,7 +3589,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                             const name = typeof item === 'string' ? item : item?.nombre;
                             const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
                             if (!name) return null;
-                            const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            const exists = masterEspecies.some(e => e.especiesvegetalesnombre.toLowerCase().trim() === name.toLowerCase().trim());
                             const isChecked = selectedRels.ben.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
@@ -3638,7 +3614,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                             const name = typeof item === 'string' ? item : item?.nombre;
                             const motivo = typeof item === 'string' ? '' : (item?.motivo || '');
                             if (!name) return null;
-                            const exists = masterEspecies.some(e => e.especiesnombre.toLowerCase().trim() === name.toLowerCase().trim());
+                            const exists = masterEspecies.some(e => e.especiesvegetalesnombre.toLowerCase().trim() === name.toLowerCase().trim());
                             const isChecked = selectedRels.per.some((s: any) => (typeof s === 'string' ? s : s?.nombre) === name);
                             return (
                               <li key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
@@ -3879,7 +3855,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
                   📄 Editar Metadatos del PDF
                 </h3>
                 <span style={{ display: 'inline-block', marginTop: '6px', background: '#ecfdf5', color: '#0f766e', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  🌱 Especie: {formData.especiesnombre || 'Sin nombre'}
+                  🌱 Especie: {formData.especiesvegetalesnombre || 'Sin nombre'}
                 </span>
               </div>
               <button type="button" onClick={() => setEditingPdf(null)} style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
@@ -4004,7 +3980,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
 
           {/* SINÓNIMOS (Inteligencia Artificial) */}
             <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569' }}>
-              Dile a la Inteligencia Artificial qué tipo de documento necesitas buscar sobre <strong>{formData.especiesnombre}</strong> (ej. <em>"poda"</em>, <em>"plagas INTA"</em>, <em>"guía de cultivo"</em>).
+              Dile a la Inteligencia Artificial qué tipo de documento necesitas buscar sobre <strong>{formData.especiesvegetalesnombre}</strong> (ej. <em>"poda"</em>, <em>"plagas INTA"</em>, <em>"guía de cultivo"</em>).
             </p>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -4086,7 +4062,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px', background: 'linear-gradient(135deg, #ecfdf5, #f0fdf4)', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '12px 16px' }}>
                   <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', fontWeight: 700, marginBottom: '4px' }}>🌱 Especie</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f766e' }}>{formData.especiesnombre || 'Sin nombre'}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f766e' }}>{formData.especiesvegetalesnombre || 'Sin nombre'}</div>
                 </div>
                 <div style={{ flex: 1, minWidth: '200px', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1px solid #fcd34d', borderRadius: '10px', padding: '12px 16px' }}>
                   <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', fontWeight: 700, marginBottom: '4px' }}>📄 Documento PDF</div>
@@ -4110,7 +4086,7 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
               </button>
               {showBlogPrompt && (
                 <div style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: '8px', padding: '16px', fontSize: '0.75rem', fontFamily: 'monospace', maxHeight: '300px', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                  {`Actúa como un experto redactor de blogs agronómicos y de jardinería moderna. Vas a leer el documento adjunto sobre la especie "${formData.especiesnombre || 'agricultura'}" y vas a escribir un artículo de blog profesional, SEO-optimizado y visualmente estructurado.
+                  {`Actúa como un experto redactor de blogs agronómicos y de jardinería moderna. Vas a leer el documento adjunto sobre la especie "${formData.especiesvegetalesnombre || 'agricultura'}" y vas a escribir un artículo de blog profesional, SEO-optimizado y visualmente estructurado.
 
 CONTEXTO: Este blog trata sobre una ESPECIE vegetal/hortaliza.
 
@@ -4546,7 +4522,7 @@ JSON de salida obligatorio:
                 <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '1.5rem' }}>✨</span> Generador de Imágenes IA
                 </h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Especie: <strong>{formData.especiesnombre || 'Sin nombre'}</strong></p>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Especie: <strong>{formData.especiesvegetalesnombre || 'Sin nombre'}</strong></p>
               </div>
               <button onClick={() => setShowAiImageModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
             </div>
@@ -4709,10 +4685,10 @@ JSON de salida obligatorio:
               <div className="ai-modal-body">
                 <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
                   <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
-                    Objetivo: Encontrar nombres alternativos para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
+                    Objetivo: Encontrar nombres alternativos para <span style={{ color: '#7c3aed' }}>"{formData.especiesvegetalesnombre}"</span>
                   </p>
                   <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                    {formData.especiesnombrecientifico && <em>({formData.especiesnombrecientifico}) — </em>}
+                    {formData.especiesvegetalesnombrecientifico && <em>({formData.especiesvegetalesnombrecientifico}) — </em>}
                     Selecciona un ámbito para cargar las instrucciones, o escribe las tuyas propias.
                   </p>
                 </div>
@@ -4796,15 +4772,15 @@ JSON de salida obligatorio:
         {showSinonimosAiModal && (() => {
           const isExisting = (prop: any) => sinonimos.some(s =>
             s.especiessinonimosnombre?.toLowerCase().trim() === prop.especiessinonimosnombre?.toLowerCase().trim() &&
-            String(s.xespeciessinonimosidpaises || '') === String(prop.xespeciessinonimosidpaises || '')
+            String(s.xespeciesvegetalessinonimosidpaises || '') === String(prop.xespeciesvegetalessinonimosidpaises || '')
           );
           const existingOnes = aiSinonimosProposal.filter(isExisting);
           const newOnes = aiSinonimosProposal.filter(p => !isExisting(p));
           const hasBothColumns = existingOnes.length > 0 && newOnes.length > 0;
 
           const renderCard = (prop: any, idx: number, isAlreadyIncluded: boolean) => {
-            const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciessinonimosididiomas);
-            const pais = masterPaises.find(p => p.idpaises == prop.xespeciessinonimosidpaises);
+            const idioma = masterIdiomas.find(i => i.ididiomas == prop.xespeciesvegetalessinonimosididiomas);
+            const pais = masterPaises.find(p => p.idpaises == prop.xespeciesvegetalessinonimosidpaises);
             return (
               <label key={idx} style={{
                 display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px',
@@ -4994,7 +4970,7 @@ JSON de salida obligatorio:
               <div className="ai-modal-body">
                 <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
                   <p style={{ margin: '0 0 4px', fontWeight: 'bold', color: '#1e293b', fontSize: '1.05rem' }}>
-                    Generar pautas para <span style={{ color: '#7c3aed' }}>"{formData.especiesnombre}"</span>
+                    Generar pautas para <span style={{ color: '#7c3aed' }}>"{formData.especiesvegetalesnombre}"</span>
                   </p>
                   <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
                     La IA analizará el ciclo de vida y propondrá frecuencias para las labores disponibles en el sistema.

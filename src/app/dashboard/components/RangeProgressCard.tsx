@@ -174,7 +174,7 @@ export default function RangeProgressCard({
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
                 <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>
-                  🌱 {s.especiesnombre}{s.variedades_nombre ? ` (${s.variedades_nombre})` : ''}
+                  🌱 {s.especiesvegetalesnombre}{s.variedades_nombre ? ` (${s.variedades_nombre})` : ''}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '0.75rem', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px', color: '#92400e', fontWeight: 700 }}>
@@ -396,7 +396,7 @@ export default function RangeProgressCard({
                   }}>
                     <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        🌿 {c.especiesnombre}{c.variedad_nombre ? <span style={{ fontWeight: 500, color: '#64748b' }}> ({c.variedad_nombre})</span> : null}
+                        🌿 {c.especiesvegetalesnombre}{c.variedad_nombre ? <span style={{ fontWeight: 500, color: '#64748b' }}> ({c.variedad_nombre})</span> : null}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', color: '#64748b' }}>Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>

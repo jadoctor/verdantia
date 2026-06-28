@@ -166,12 +166,12 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     const [rechazadasRows] = await pool.query(
       `SELECT COUNT(*) as count 
        FROM datosadjuntos da
-       LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
+       LEFT JOIN variedadesvegetales v ON da.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
        LEFT JOIN incidencias i ON i.incidenciasreferenciaid = da.iddatosadjuntos AND i.incidenciasreferenciatipo = 'datosadjuntos' AND i.incidenciastipo = 'foto_rechazada'
        WHERE da.datosadjuntosresultadovalidacion = 'rechazado'
          AND da.datosadjuntosfechaeliminacion IS NULL
          AND (i.incidenciasestado IS NULL OR i.incidenciasestado != 'apelada')
-         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesidusuarios = ?)`,
+         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesvegetalesidusuarios = ?)`,
       [user.idusuarios, user.idusuarios]
     );
     const fotosRechazadasCount = (rechazadasRows as any[])[0].count;

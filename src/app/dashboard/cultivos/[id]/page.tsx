@@ -54,7 +54,7 @@ export default function CultivoDashboard() {
     if (!confirm('¿Estás seguro de que quieres eliminar este cultivo por completo?')) return;
     try {
       const res = await fetch(`/api/user/cultivos/${cultivoId}`, { method: 'DELETE', headers: { 'x-user-email': userEmail! } });
-      if (res.ok) router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedades}`);
+      if (res.ok) router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedadesvegetales}`);
     } catch (e) {
       console.error(e);
     }
@@ -82,7 +82,7 @@ export default function CultivoDashboard() {
             onClick={() => {
               if (from === 'bancal') router.push(`/dashboard/bancales/${searchParams.get('bancalId')}`);
               else if (from === 'dashboard') router.push('/dashboard');
-              else router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedades}`);
+              else router.push(`/dashboard/mis-plantas/${cultivo.xcultivosidvariedadesvegetales}`);
             }}
             style={{ background: 'white', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
           >
@@ -121,7 +121,7 @@ export default function CultivoDashboard() {
                     </span>
                   )}
                 </h1>
-                <p style={{ margin: '4px 0 0', opacity: 0.9 }}>{cultivo.especiesnombre} {cultivo.variedad_nombre !== cultivo.especiesnombre ? ` - ${cultivo.variedad_nombre}` : ''}</p>
+                <p style={{ margin: '4px 0 0', opacity: 0.9 }}>{cultivo.especiesvegetalesnombre} {cultivo.variedad_nombre !== cultivo.especiesvegetalesnombre ? ` - ${cultivo.variedad_nombre}` : ''}</p>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {['finalizado', 'recoleccion'].includes(formData.cultivosestado) && (
@@ -365,7 +365,7 @@ export default function CultivoDashboard() {
           
           /* Agenda 7 días: scroll horizontal */
           .cultivo-agenda-grid { 
-            grid-template-columns: repeat(7, minmax(80px, 1fr)) !important;
+            grid-template-columns: repeat(7, minmax(min(100%, 80px), 1fr)) !important;
             overflow-x: auto !important;
             -webkit-overflow-scrolling: touch;
           }

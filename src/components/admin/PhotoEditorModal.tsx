@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import './EspecieForm.css';
+import './EspecieVegetalForm.css';
+import PremiumSlider from '@/components/ui/PremiumSlider';
 
 const STYLE_FILTERS: Record<string, string> = {
   '': 'none',
@@ -40,27 +41,26 @@ export default function PhotoEditorModal({ isOpen, onClose, photoUrl, fileName =
 
   useEffect(() => {
     if (isOpen) {
-      setEditorX(initialMetadata.profile_object_x ?? 50);
-      setEditorY(initialMetadata.profile_object_y ?? 50);
-      setEditorZoom(initialMetadata.profile_object_zoom ?? 100);
-      setEditorBrightness(initialMetadata.profile_brightness ?? 100);
-      setEditorContrast(initialMetadata.profile_contrast ?? 100);
-      setEditorStyle(initialMetadata.profile_style || '');
-      setEditorSeoAlt(initialMetadata.seo_alt || '');
+      const meta = initialMetadata || {};
+      setEditorX(meta.profile_object_x ?? 50);
+      setEditorY(meta.profile_object_y ?? 50);
+      setEditorZoom(meta.profile_object_zoom ?? 100);
+      setEditorBrightness(meta.profile_brightness ?? 100);
+      setEditorContrast(meta.profile_contrast ?? 100);
+      setEditorStyle(meta.profile_style || '');
+      setEditorSeoAlt(meta.seo_alt || '');
       
       setEditorInitialState(JSON.stringify({
-        x: initialMetadata.profile_object_x ?? 50,
-        y: initialMetadata.profile_object_y ?? 50,
-        zoom: initialMetadata.profile_object_zoom ?? 100,
-        brightness: initialMetadata.profile_brightness ?? 100,
-        contrast: initialMetadata.profile_contrast ?? 100,
-        style: initialMetadata.profile_style || '',
-        seo_alt: initialMetadata.seo_alt || ''
+        x: meta.profile_object_x ?? 50,
+        y: meta.profile_object_y ?? 50,
+        zoom: meta.profile_object_zoom ?? 100,
+        brightness: meta.profile_brightness ?? 100,
+        contrast: meta.profile_contrast ?? 100,
+        style: meta.profile_style || '',
+        seo_alt: meta.seo_alt || ''
       }));
     }
   }, [isOpen, initialMetadata]);
-
-  if (!isOpen) return null;
 
   const handleSave = () => {
     const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
@@ -68,6 +68,10 @@ export default function PhotoEditorModal({ isOpen, onClose, photoUrl, fileName =
       onSave({ noChanges: true });
       return;
     }
+    
+    // Al guardar, el estado actual pasa a ser el nuevo estado inicial
+    setEditorInitialState(currentState);
+    
     onSave({
       profile_object_x: editorX,
       profile_object_y: editorY,
@@ -129,40 +133,67 @@ export default function PhotoEditorModal({ isOpen, onClose, photoUrl, fileName =
   const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast, style: editorStyle, seo_alt: editorSeoAlt });
   const hasChanges = currentState !== editorInitialState;
 
+  // Auto-save debounce (Regla 8 adaptada a modal)
+  useEffect(() => {
+    if (!isOpen || !hasChanges) return;
+    const timer = setTimeout(() => {
+      handleSave();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [editorX, editorY, editorZoom, editorBrightness, editorContrast, editorStyle, editorSeoAlt, isOpen, hasChanges]);
+
+  if (!isOpen) return null;
+
   return (
     <div className="photo-editor-overlay">
       <div className="photo-editor-content">
-        <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ margin: 0 }}>Ajustar Fotografía y SEO</h3>
-            <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
-              📄 {fileName}
-            </small>
+        <div className="photo-editor-header" style={{ padding: '12px 20px' }}>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0 }}>Ajustar Fotografía</h3>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
-            {hasChanges && (
-              <button
-                type="button"
-                onClick={handleSave}
-                className={`btn-primary ${saveStatus === 'no-changes' ? 'success' : ''}`}
-                style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
-                disabled={saveStatus === 'saving'}
-              >
-                {saveStatus === 'saving' ? '⏳ Guardando...' : saveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Cambios'}
-              </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            { (saveStatus === 'saving' || hasChanges) && (
+              <span style={{ fontSize: '0.8rem', color: saveStatus === 'saving' ? '#d97706' : '#64748b', fontWeight: 600, marginRight: '8px' }}>
+                {saveStatus === 'saving' ? '⏳ Guardando...' : '✏️ Editando...'}
+              </span>
             )}
+            <button
+              type="button"
+              className="btn-premium-reset"
+              onClick={() => {
+                setEditorBrightness(100);
+                setEditorContrast(100);
+                setEditorStyle('');
+                setEditorZoom(100);
+                setEditorX(50);
+                setEditorY(50);
+              }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>↻</span> Reset
+            </button>
+            <button 
+              type="button" 
+              className="btn-premium-close"
+              onClick={onClose} 
+            >
+              ✖ Cerrar
+            </button>
           </div>
         </div>
         
         <div className="photo-editor-body">
+          <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 4px 0', color: '#1e293b', fontSize: '0.95rem' }}>Nombre del Archivo</h4>
+            <div style={{ color: '#475569', fontSize: '0.85rem', wordBreak: 'break-all' }}>📄 {fileName}</div>
+          </div>
+
           <div 
             className="photo-editor-preview-container"
             onMouseDown={onEditorMouseDown}
             onTouchStart={onEditorTouchStart}
             onTouchMove={onEditorTouchMove}
           >
-            <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
+            <div className="photo-editor-preview-mask" style={{ margin: '0 auto' }}>
               <img 
                 src={photoUrl} 
                 alt="preview" 
@@ -177,65 +208,40 @@ export default function PhotoEditorModal({ isOpen, onClose, photoUrl, fileName =
                 crossOrigin="anonymous"
               />
             </div>
-            <div className="photo-editor-hint">
+            <div className="photo-editor-hint" style={{ justifyContent: 'center', width: '100%' }}>
               <span>Arrastra para encuadrar</span>
             </div>
           </div>
 
           <div className="photo-editor-controls">
-            <div className="editor-control-group">
-              <label>
-                <span className="control-label">🔍 Zoom ({editorZoom}%)</span>
-                <button type="button" className="reset-btn" onClick={() => setEditorZoom(100)}>↻</button>
-              </label>
-              <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(Number(e.target.value))} />
-            </div>
+            <PremiumSlider
+              label="Zoom"
+              icon="🔍"
+              min={100}
+              max={300}
+              value={editorZoom}
+              onChange={setEditorZoom}
+            />
             
-            <div className="editor-control-group">
-              <label>
-                <span className="control-label">☀️ Brillo ({editorBrightness}%)</span>
-              </label>
-              <input type="range" min="50" max="150" value={editorBrightness} onChange={e => setEditorBrightness(Number(e.target.value))} />
-            </div>
+            <PremiumSlider
+              label="Brillo"
+              icon="☀️"
+              min={50}
+              max={150}
+              value={editorBrightness}
+              onChange={setEditorBrightness}
+            />
+
+            <PremiumSlider
+              label="Contraste"
+              icon="🌗"
+              min={50}
+              max={150}
+              value={editorContrast}
+              onChange={setEditorContrast}
+            />
 
             <div className="editor-control-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ margin: 0 }}>
-                  <span className="control-label" style={{ margin: 0 }}>🌗 Contraste ({editorContrast}%)</span>
-                </label>
-              </div>
-              <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
-            </div>
-
-            <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditorBrightness(110);
-                  setEditorContrast(115);
-                  setEditorStyle('');
-                }}
-                style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)' }}
-              >
-                ✨ Auto Color
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditorBrightness(100);
-                  setEditorContrast(100);
-                  setEditorStyle('');
-                  setEditorZoom(100);
-                  setEditorX(50);
-                  setEditorY(50);
-                }}
-                style={{ padding: '10px 15px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                ↻ Reset
-              </button>
-            </div>
-
-            <div className="editor-control-group" style={{ marginBottom: '15px' }}>
               <label>
                 <span className="control-label">🎨 Estilos y Filtros de IA</span>
               </label>
@@ -245,7 +251,7 @@ export default function PhotoEditorModal({ isOpen, onClose, photoUrl, fileName =
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
               >
                 <option value="">Sin Filtro (Original)</option>
-                <option value="vibrant">Saturado (Vibrant)</option>
+                <option value="comic">Saturado (Vibrant)</option>
                 <option value="vintage">Vintage (Cálido)</option>
                 <option value="cinematic">Cinemático (Dramatic)</option>
                 <option value="bnw">Blanco y Negro (Clásico)</option>
@@ -256,7 +262,7 @@ export default function PhotoEditorModal({ isOpen, onClose, photoUrl, fileName =
               </select>
             </div>
 
-            <div className="editor-control-group" style={{ marginBottom: '0' }}>
+            <div className="editor-control-group">
               <label>
                 <span className="control-label">🌐 Texto Alternativo SEO (Alt)</span>
               </label>

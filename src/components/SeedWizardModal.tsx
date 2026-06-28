@@ -155,7 +155,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
 
     // Try to find the matched especie to get its seed weight
     const matchedEspecie = detectedEspecie
-      ? catalogoEspecies.find(e => e.especiesnombre.toLowerCase() === detectedEspecie.toLowerCase())
+      ? catalogoEspecies.find(e => e.especiesvegetalesnombre.toLowerCase() === detectedEspecie.toLowerCase())
       : null;
 
     // 2. Calculate stock in seeds if possible
@@ -165,7 +165,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
     if (selectedProposals.semillasstockinicial && aiProposals?.peso_gramos) {
       const gramos = parseFloat(String(aiProposals.peso_gramos));
       const peso1000 = matchedEspecie?.especiespeso1000semillas
-        ? parseFloat(String(matchedEspecie.especiespeso1000semillas))
+        ? parseFloat(String(matchedEspecie.especiesvegetalespeso1000semillas))
         : 0;
 
       if (peso1000 > 0 && !isNaN(gramos)) {
@@ -208,7 +208,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
         try {
           const email = auth.currentUser?.email;
           if (email) {
-            const res = await fetch(`/api/user/catalogo/${matchedEspecie.idespecies}/variedades`, { headers: { 'x-user-email': email } });
+            const res = await fetch(`/api/user/catalogo/${matchedEspecie.idespeciesvegetales}/variedades`, { headers: { 'x-user-email': email } });
             if (res.ok) {
               const data = await res.json();
               const vars = data.variedades || [];
@@ -218,9 +218,9 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
               if (selectedProposals.variedad_detectada && detectedVariedad) {
                 matchedVariedad = vars.find((v: any) =>
                   // Ignorar variedades sin nombre (un nombre vacío siempre haría match por includes(""))
-                  v.variedadesnombre && v.variedadesnombre.trim() !== '' &&
-                  (v.variedadesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
-                  detectedVariedad.toLowerCase().includes(v.variedadesnombre.toLowerCase()))
+                  v.variedadesvegetalesnombre && v.variedadesvegetalesnombre.trim() !== '' &&
+                  (v.variedadesvegetalesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
+                  detectedVariedad.toLowerCase().includes(v.variedadesvegetalesnombre.toLowerCase()))
                 );
               }
 
@@ -231,9 +231,9 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                 setSeedStep(3);
               } else {
                 // Variedad no reconocida: asignamos la variedad genérica como base
-                const validVars = vars.filter((v: any) => v.variedadesnombre && v.variedadesnombre.trim() !== '');
+                const validVars = vars.filter((v: any) => v.variedadesvegetalesnombre && v.variedadesvegetalesnombre.trim() !== '');
                 // eslint-disable-next-line eqeqeq
-                const genericVar = validVars.find((v: any) => v.variedadesesgenerica == 1 || v.variedadesesgenerica === true)
+                const genericVar = validVars.find((v: any) => v.variedadesvegetalesesgenerica == 1 || v.variedadesvegetalesesgenerica === true)
                   || validVars[0];
                 if (genericVar) {
                   setSelectedVariedad(genericVar);
@@ -306,7 +306,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
             setCatalogoEspecies(especiesList);
 
             if (initialEspecieId) {
-              const esp = especiesList.find((e: any) => e.idespecies === initialEspecieId);
+              const esp = especiesList.find((e: any) => e.idespeciesvegetales === initialEspecieId);
               if (esp) {
                 setSelectedEspecie(esp);
               }
@@ -352,8 +352,8 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
               setCatalogoVariedades(vars);
               
               const targetVar = vars.find((v: any) => 
-                v.idvariedades === initialVariedadId || 
-                v.xvariedadesidoriginal === initialVariedadId
+                v.idvariedadesvegetales === initialVariedadId || 
+                v.xvariedadesvegetalesidoriginal === initialVariedadId
               );
               if (targetVar) {
                 setSelectedVariedad(targetVar);
@@ -410,7 +410,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
       const email = auth.currentUser?.email;
       if (!email) return;
 
-      const res = await fetch(`/api/user/catalogo/${esp.idespecies}/variedades`, { headers: { 'x-user-email': email } });
+      const res = await fetch(`/api/user/catalogo/${esp.idespeciesvegetales}/variedades`, { headers: { 'x-user-email': email } });
       if (res.ok) {
         const data = await res.json();
         const vars = data.variedades || [];
@@ -423,9 +423,9 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
   };
 
   const handleContinueWithoutVariety = () => {
-    const validVars = catalogoVariedades.filter(v => v.variedadesnombre && v.variedadesnombre.trim() !== '');
+    const validVars = catalogoVariedades.filter(v => v.variedadesvegetalesnombre && v.variedadesvegetalesnombre.trim() !== '');
     // eslint-disable-next-line eqeqeq
-    const genericVar = validVars.find(v => v.variedadesesgenerica == 1 || v.variedadesesgenerica === true)
+    const genericVar = validVars.find(v => v.variedadesvegetalesesgenerica == 1 || v.variedadesvegetalesesgenerica === true)
       || validVars[0];
     if (genericVar) {
       setSelectedVariedad(genericVar);
@@ -465,7 +465,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
       if (!email) return;
 
       const body = {
-        xsemillasidvariedades: selectedVariedad.idvariedades,
+        xsemillasidvariedadesvegetales: selectedVariedad.idvariedadesvegetales,
         semillasorigen: seedFormData.semillasorigen,
         semillasnumerocoleccion: seedFormData.semillasnumerocoleccion,
         semillasmarca: seedFormData.semillasmarca || null,
@@ -554,8 +554,8 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
             </h2>
             <p style={{ margin: '4px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>
               {seedStep === 1 && 'Paso 1 de 3: Elige la hortaliza'}
-              {seedStep === 2 && `Paso 2 de 3: Elige la variedad de ${selectedEspecie?.especiesnombre}`}
-              {seedStep === 3 && `Paso 3 de 3: Detalles de la semilla para ${seedFormData.customVarietyName || selectedVariedad?.variedadesnombre}`}
+              {seedStep === 2 && `Paso 2 de 3: Elige la variedad de ${selectedEspecie?.especiesvegetalesnombre}`}
+              {seedStep === 3 && `Paso 3 de 3: Detalles de la semilla para ${seedFormData.customVarietyName || selectedVariedad?.variedadesvegetalesnombre}`}
               {seedStep === 4 && '¡Semilla guardada con éxito!'}
             </p>
           </div>
@@ -642,7 +642,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
               <div style={{ fontSize: '4.5rem', marginBottom: '16px' }}>🎉</div>
               <h3 style={{ color: '#0f766e', margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 900 }}>¡Semillas Registradas!</h3>
               <p style={{ color: '#64748b', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
-                La semilla de <strong>{seedFormData.customVarietyName || selectedVariedad?.variedadesnombre}</strong> se ha añadido correctamente a tu banco de semillas.
+                La semilla de <strong>{seedFormData.customVarietyName || selectedVariedad?.variedadesvegetalesnombre}</strong> se ha añadido correctamente a tu banco de semillas.
               </p>
             </div>
           ) : (
@@ -654,7 +654,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                   <div style={{ background: '#f0fdfa', border: '2px solid #0d9488', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.1)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                        <span style={{fontSize: '1.5rem'}}>✅</span>
-                       <h3 style={{ margin: 0, color: '#115e59', fontSize: '1.1rem', fontWeight: 800 }}>Hortaliza: {selectedEspecie.especiesnombre}</h3>
+                       <h3 style={{ margin: 0, color: '#115e59', fontSize: '1.1rem', fontWeight: 800 }}>Hortaliza: {selectedEspecie.especiesvegetalesnombre}</h3>
                     </div>
                     <button onClick={() => { setSelectedEspecie(null); setSelectedVariedad(null); setSeedStep(1); }} style={{ background: 'white', border: '1px solid #99f6e4', color: '#0d9488', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
                   </div>
@@ -763,11 +763,11 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                       onFocus={e => e.target.style.borderColor = '#0d9488'}
                       onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                     />
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px', maxHeight: '400px', overflowY: 'auto', padding: '4px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: '14px', maxHeight: '400px', overflowY: 'auto', padding: '4px' }}>
                       {catalogoEspecies
-                        .filter(esp => !searchTerm || esp.especiesnombre.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .filter(esp => !searchTerm || esp.especiesvegetalesnombre.toLowerCase().includes(searchTerm.toLowerCase()))
                         .map(esp => (
-                          <button key={esp.idespecies} onClick={() => selectSeedEspecie(esp)} style={{
+                          <button key={esp.idespeciesvegetales} onClick={() => selectSeedEspecie(esp)} style={{
                             background: 'white', border: '2px solid #e2e8f0', borderRadius: '16px',
                             padding: '16px', cursor: 'pointer', textAlign: 'center',
                             transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '8px',
@@ -781,9 +781,9 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                                 <img src={getMediaUrl(esp.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                               </div>
                             ) : (
-                              <SpeciesIcon icon={esp.especiesicono} size="2.2rem" />
+                              <SpeciesIcon icon={esp.especiesvegetalesicono} size="2.2rem" />
                             )}
-                            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesnombre}</span>
+                            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesvegetalesnombre}</span>
                           </button>
                         ))}
                     </div>
@@ -799,7 +799,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                     <div style={{ background: '#eff6ff', border: '2px solid #3b82f6', borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.1)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                          <span style={{fontSize: '1.5rem'}}>✅</span>
-                         <h3 style={{ margin: 0, color: '#1e40af', fontSize: '1.1rem', fontWeight: 800 }}>Variedad: {seedFormData.customVarietyName || selectedVariedad.variedadesnombre}</h3>
+                         <h3 style={{ margin: 0, color: '#1e40af', fontSize: '1.1rem', fontWeight: 800 }}>Variedad: {seedFormData.customVarietyName || selectedVariedad.variedadesvegetalesnombre}</h3>
                       </div>
                       <button onClick={() => { setSelectedVariedad(null); setSeedStep(2); }} style={{ background: 'white', border: '1px solid #bfdbfe', color: '#3b82f6', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}>Cambiar</button>
                     </div>
@@ -830,9 +830,9 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             <span>🌱</span> Continuar sin seleccionar
                           </button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px', maxHeight: '400px', overflowY: 'auto', padding: '4px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: '14px', maxHeight: '400px', overflowY: 'auto', padding: '4px' }}>
                         {catalogoVariedades.map(v => (
-                          <button key={v.idvariedades} onClick={() => { setSelectedVariedad(v); setSeedStep(3); }}
+                          <button key={v.idvariedadesvegetales} onClick={() => { setSelectedVariedad(v); setSeedStep(3); }}
                             style={{
                               background: 'white',
                               border: '2px solid #e2e8f0',
@@ -844,15 +844,15 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                             onMouseOut={e => e.currentTarget.style.borderColor = '#e2e8f0'}
                           >
                             {/* eslint-disable-next-line eqeqeq */}
-                            {(v.variedadesesgenerica == 1 || v.variedadesesgenerica === true) && <span style={{ fontSize: '0.65rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, alignSelf: 'flex-start' }}>🏅 Común / Gold</span>}
+                            {(v.variedadesvegetalesesgenerica == 1 || v.variedadesvegetalesesgenerica === true) && <span style={{ fontSize: '0.65rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, alignSelf: 'flex-start' }}>🏅 Común / Gold</span>}
                             {v.foto ? (
                               <div style={{ width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
                                 <img src={getMediaUrl(v.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                               </div>
                             ) : (
-                              <SpeciesIcon icon={v.variedadesicono || selectedEspecie.especiesicono} size="1.8rem" />
+                              <SpeciesIcon icon={v.variedadesvegetalesicono || selectedEspecie.especiesvegetalesicono} size="1.8rem" />
                             )}
-                            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesnombre}</span>
+                            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesvegetalesnombre}</span>
                           </button>
                         ))}
                       </div>
@@ -1147,13 +1147,13 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                           ⚖️ Calcular semillas por peso (Gramos)
                         </span>
                         
-                        {selectedEspecie?.especiespeso1000semillas && Number(selectedEspecie.especiespeso1000semillas) > 0 ? (
+                        {selectedEspecie?.especiespeso1000semillas && Number(selectedEspecie.especiesvegetalespeso1000semillas) > 0 ? (
                           <div>
                             <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
-                              Esta especie tiene un peso estándar registrado de <strong>{selectedEspecie.especiespeso1000semillas}g</strong> por cada 1.000 semillas.
+                              Esta especie tiene un peso estándar registrado de <strong>{selectedEspecie.especiesvegetalespeso1000semillas}g</strong> por cada 1.000 semillas.
                               <br />
                               <span style={{ color: '#0d9488', fontWeight: 700 }}>
-                                Equivalencia: ≈ {Math.round(1000 / Number(selectedEspecie.especiespeso1000semillas))} semillas por gramo.
+                                Equivalencia: ≈ {Math.round(1000 / Number(selectedEspecie.especiesvegetalespeso1000semillas))} semillas por gramo.
                               </span>
                             </p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1208,7 +1208,7 @@ export function SeedWizardModal({ show, onClose, onSuccess, initialEspecieId, in
                       
                       {seedFormData.semillasorigen !== 'por_definir' && (
                         <>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: '10px', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
                               <div>
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginBottom: '4px' }}>Marca / Comercial</label>
                                 <input list="main-brands" type="text" placeholder="Ej. Batlle, Rocalba..." value={seedFormData.semillasmarca} onChange={e => setSeedFormData({ ...seedFormData, semillasmarca: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />

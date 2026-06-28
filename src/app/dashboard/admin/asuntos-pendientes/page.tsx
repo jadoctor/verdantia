@@ -9,7 +9,7 @@ import { UserCard } from './components/UserCard';
 import { ModalRechazo } from './components/ModalRechazo';
 import { ModalRecurso } from './components/ModalRecurso';
 import { LightboxOverlay } from './components/LightboxOverlay';
-import { PhotoEditorModal } from './components/PhotoEditorModal';
+import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
 import { getMediaUrl } from '@/lib/media-url';
 
 export default function AsuntosPendientesPage() {
@@ -144,16 +144,15 @@ export default function AsuntosPendientesPage() {
       )}
       {lightboxUrl && <LightboxOverlay url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
       {editor.editingPhoto && (
-        <PhotoEditorModal editingPhoto={editor.editingPhoto}
-          editorX={editor.editorX} editorY={editor.editorY} editorZoom={editor.editorZoom}
-          editorBrightness={editor.editorBrightness} editorContrast={editor.editorContrast}
-          editorStyle={editor.editorStyle} editorSeoAlt={editor.editorSeoAlt}
-          STYLE_FILTERS={editor.STYLE_FILTERS} saveStatus={editor.saveStatus}
-          setEditorZoom={editor.setEditorZoom} setEditorBrightness={editor.setEditorBrightness}
-          setEditorContrast={editor.setEditorContrast} setEditorStyle={editor.setEditorStyle}
-          setEditorSeoAlt={editor.setEditorSeoAlt} setEditorX={editor.setEditorX} setEditorY={editor.setEditorY}
-          onMouseDown={editor.onMouseDown} onTouchStart={editor.onTouchStart} onTouchMove={editor.onTouchMove}
-          onSave={editor.save} onClose={editor.close} />
+        <PhotoEditorModal
+          isOpen={!!editor.editingPhoto}
+          onClose={editor.close}
+          photoUrl={editor.editingPhoto ? getMediaUrl(editor.editingPhoto.ruta) : ''}
+          fileName={editor.editingPhoto?.nombreOriginal || editor.editingPhoto?.ruta.split('/').pop() || ''}
+          initialMetadata={editor.editingPhoto?.resumen ? (typeof editor.editingPhoto.resumen === 'string' ? JSON.parse(editor.editingPhoto.resumen) : editor.editingPhoto.resumen) : null}
+          onSave={editor.save}
+          saveStatus={editor.saveStatus}
+        />
       )}
 
       {/* Tooltip global */}

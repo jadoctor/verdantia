@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
+import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import '@/components/admin/EspecieVegetalForm.css';
 
 interface InlineLaborPhotosProps {
   isPending: boolean;
@@ -176,7 +178,7 @@ export default function InlineLaborPhotos({
     }
   };
 
-  // Drag to reorder logic (full reorder like EspecieForm)
+  // Drag to reorder logic (full reorder like EspecieVegetalForm)
   const [draggedPhotoIndex, setDraggedPhotoIndex] = useState<number | null>(null);
   const [draggedOverPhotoIndex, setDraggedOverPhotoIndex] = useState<number | null>(null);
 
@@ -200,109 +202,63 @@ export default function InlineLaborPhotos({
   };
 
   // ── Photo Editor State ──
-  const STYLE_FILTERS: Record<string, string> = {
-    '': 'none',
-    comic: 'contrast(1.45) saturate(1.55) brightness(1.08)',
-    manga: 'grayscale(1) contrast(1.85) brightness(1.1)',
-    watercolor: 'saturate(1.35) contrast(0.88) brightness(1.14)',
-    vintage: 'sepia(40%) contrast(110%) saturate(120%) brightness(95%) hue-rotate(-5deg)',
-    cinematic: 'contrast(120%) saturate(110%) brightness(90%) sepia(20%)',
-    vibrant: 'saturate(150%) contrast(105%) brightness(105%)',
-    bnw: 'grayscale(100%) contrast(120%) brightness(105%)',
-    fade: 'contrast(85%) brightness(110%) saturate(80%) sepia(10%)'
-  };
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
-  const [editorX, setEditorX] = useState(50);
-  const [editorY, setEditorY] = useState(50);
-  const [editorZoom, setEditorZoom] = useState(100);
-  const [editorBrightness, setEditorBrightness] = useState(100);
-  const [editorContrast, setEditorContrast] = useState(100);
-  const [editorStyle, setEditorStyle] = useState('');
-  const [editorInitialState, setEditorInitialState] = useState('');
   const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
-  const editorDragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
 
   const openPhotoEditor = (photo: any) => {
-    try {
-      const meta = JSON.parse(photo.resumen || '{}');
-      const initial = {
-        x: meta.profile_object_x ?? 50,
-        y: meta.profile_object_y ?? 50,
-        zoom: meta.profile_object_zoom ?? 100,
-        brightness: meta.profile_brightness ?? 100,
-        contrast: meta.profile_contrast ?? 100,
-        style: meta.profile_style ?? ''
-      };
-      setEditorX(initial.x);
-      setEditorY(initial.y);
-      setEditorZoom(initial.zoom);
-      setEditorBrightness(initial.brightness);
-      setEditorContrast(initial.contrast);
-      setEditorStyle(initial.style);
-      setEditorInitialState(JSON.stringify(initial));
-    } catch {
-      setEditorX(50); setEditorY(50); setEditorZoom(100);
-      setEditorBrightness(100); setEditorContrast(100); setEditorStyle('');
-      setEditorInitialState(JSON.stringify({ x: 50, y: 50, zoom: 100, brightness: 100, contrast: 100, style: '' }));
-    }
     setEditingPhoto(photo);
   };
 
-  const savePhotoEdits = async () => {
+  const savePhotoEdits = async (metadata: any) => {
     if (!editingPhoto) return;
+    if (metadata.noChanges) {
+      setPhotoEditorSaveStatus('no-changes');
+      return;
+    }
     setPhotoEditorSaveStatus('saving');
-    const resumen = JSON.stringify({
-      profile_object_x: editorX,
-      profile_object_y: editorY,
-      profile_object_zoom: editorZoom,
-      profile_brightness: editorBrightness,
-      profile_contrast: editorContrast,
-      profile_style: editorStyle
-    });
+    
     try {
-      const url = isPending
-        ? `/api/user/cultivos/avisos/pending/photos?idcultivos=${idcultivos}`
+      let meta: any = {};
+      try { meta = JSON.parse(editingPhoto.resumen || '{}'); } catch (e) { }
+
+      const newMeta = {
+        ...meta,
+        ...metadata
+      };
+
+      const apiUrl = isPending
+        ? '/api/user/cultivos/avisos/pending/photos'
         : `/api/user/cultivos/avisos/${idcultivosavisos}/photos`;
-      await fetch(url, {
+
+      const bodyPayload: any = {
+        action: 'updateMeta',
+        photoId: editingPhoto.id,
+        resumen: JSON.stringify(newMeta)
+      };
+
+      if (isPending) {
+        bodyPayload.idcultivos = idcultivos;
+        bodyPayload.idpauta = idpauta.toString();
+        bodyPayload.fechaEmision = fechaEmision;
+      }
+
+      const res = await fetch(apiUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
-        body: JSON.stringify({ photoId: editingPhoto.id, action: 'updateMeta', resumen })
+        body: JSON.stringify(bodyPayload)
       });
-      setEditingPhoto(null);
-      await loadPhotos();
-    } catch {
-      alert('❌ Error guardando ajustes');
+
+      if (res.ok) {
+        await loadPhotos();
+      } else {
+        alert('❌ Error guardando ajustes');
+      }
+    } catch (e) {
+      console.error('Error saving photo edits:', e);
+      alert('Error al guardar los cambios de la foto');
     } finally {
       setPhotoEditorSaveStatus('idle');
     }
-  };
-
-  const onEditorMouseDown = (e: React.MouseEvent) => {
-    editorDragRef.current = { startX: e.clientX, startY: e.clientY, origX: editorX, origY: editorY };
-    const onMove = (ev: MouseEvent) => {
-      if (!editorDragRef.current) return;
-      const dx = ev.clientX - editorDragRef.current.startX;
-      const dy = ev.clientY - editorDragRef.current.startY;
-      setEditorX(Math.max(0, Math.min(100, editorDragRef.current.origX - dx * 0.15)));
-      setEditorY(Math.max(0, Math.min(100, editorDragRef.current.origY - dy * 0.15)));
-    };
-    const onUp = () => { editorDragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  };
-
-  const onEditorTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    editorDragRef.current = { startX: t.clientX, startY: t.clientY, origX: editorX, origY: editorY };
-  };
-
-  const onEditorTouchMove = (e: React.TouchEvent) => {
-    if (!editorDragRef.current) return;
-    const t = e.touches[0];
-    const dx = t.clientX - editorDragRef.current.startX;
-    const dy = t.clientY - editorDragRef.current.startY;
-    setEditorX(Math.max(0, Math.min(100, editorDragRef.current.origX - dx * 0.15)));
-    setEditorY(Math.max(0, Math.min(100, editorDragRef.current.origY - dy * 0.15)));
   };
 
   const inputId = `upload-labor-${idpauta}-${isPending ? 'p' : idcultivosavisos}`;
@@ -447,115 +403,15 @@ export default function InlineLaborPhotos({
         </div>
       </div>
 
-      {/* ── Photo Editor Overlay (same as EspecieForm) ── */}
-      {editingPhoto && (
-        <div className="photo-editor-overlay">
-          <div className="photo-editor-content" onClick={e => e.stopPropagation()}>
-            <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ margin: 0 }}>Ajustar Fotografía</h3>
-                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
-                  📄 {editingPhoto.ruta.split('/').pop()}
-                </small>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <button type="button" onClick={() => setEditingPhoto(null)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>Cerrar</button>
-                {(() => {
-                  const currentState = JSON.stringify({ x: editorX, y: editorY, zoom: editorZoom, brightness: editorBrightness, contrast: editorContrast });
-                  if (currentState !== editorInitialState) {
-                    return (
-                      <button
-                        type="button"
-                        onClick={savePhotoEdits}
-                        className="btn-primary"
-                        style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
-                        disabled={photoEditorSaveStatus === 'saving'}
-                      >
-                        {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Cambios'}
-                      </button>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            </div>
-
-            <div className="photo-editor-body">
-              <div className="photo-editor-preview-container"
-                onMouseDown={onEditorMouseDown}
-                onTouchStart={onEditorTouchStart}
-                onTouchMove={onEditorTouchMove}>
-                <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
-                  <img
-                    src={getMediaUrl(editingPhoto.ruta)}
-                    alt="preview"
-                    className="photo-editor-image"
-                    draggable="false"
-                    style={{
-                      objectPosition: `${editorX}% ${editorY}%`,
-                      transformOrigin: `${editorX}% ${editorY}%`,
-                      transform: `scale(${editorZoom / 100})`,
-                      filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%)`
-                    }}
-                    crossOrigin="anonymous" />
-                </div>
-                <div className="photo-editor-hint">
-                  <span>Arrastra para encuadrar</span>
-                </div>
-              </div>
-
-              <div className="photo-editor-controls">
-                <div className="editor-control-group">
-                  <label>
-                    <span className="control-label">🔍 Zoom ({editorZoom}%)</span>
-                    <button type="button" className="reset-btn" onClick={() => setEditorZoom(100)}>↻</button>
-                  </label>
-                  <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(Number(e.target.value))} />
-                </div>
-                <div className="editor-control-group">
-                  <label>
-                    <span className="control-label">☀️ Brillo ({editorBrightness}%)</span>
-                  </label>
-                  <input type="range" min="50" max="150" value={editorBrightness} onChange={e => setEditorBrightness(Number(e.target.value))} />
-                </div>
-                <div className="editor-control-group">
-                  <label>
-                    <span className="control-label">🌗 Contraste ({editorContrast}%)</span>
-                  </label>
-                  <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
-                </div>
-
-                <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => { setEditorBrightness(110); setEditorContrast(115); }}
-                    style={{
-                      flex: 1, padding: '10px',
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
-                      color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      gap: '6px', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
-                    }}
-                  >
-                    ✨ Auto Color
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setEditorBrightness(100); setEditorContrast(100); setEditorZoom(100); setEditorX(50); setEditorY(38); }}
-                    style={{
-                      padding: '10px 15px', background: '#f1f5f9', color: '#475569',
-                      border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                    }}
-                  >
-                    ↺ Reset
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <PhotoEditorModal
+        isOpen={!!editingPhoto}
+        onClose={() => setEditingPhoto(null)}
+        photoUrl={editingPhoto ? getMediaUrl(editingPhoto.ruta) : ''}
+        fileName={editingPhoto?.ruta ? editingPhoto.ruta.split('/').pop() : ''}
+        initialMetadata={editingPhoto?.resumen ? JSON.parse(editingPhoto.resumen) : null}
+        onSave={savePhotoEdits}
+        saveStatus={photoEditorSaveStatus}
+      />
     </div>
   );
 }

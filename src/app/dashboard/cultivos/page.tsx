@@ -60,7 +60,7 @@ export default function CultivosDashboard() {
     setUiModal({
       show: true,
       title: 'Eliminar Cultivo',
-      message: `¿Estás seguro de que quieres eliminar el cultivo Nº ${c.cultivosnumerocoleccion || c.idcultivos} de ${c.especiesnombre}? Esta acción no se puede deshacer.`,
+      message: `¿Estás seguro de que quieres eliminar el cultivo Nº ${c.cultivosnumerocoleccion || c.idcultivos} de ${c.especiesvegetalesnombre}? Esta acción no se puede deshacer.`,
       cropId: c.idcultivos,
     });
   };
@@ -98,7 +98,7 @@ export default function CultivosDashboard() {
     // Filter by Search Term
     const searchMatch =
       !searchTerm ||
-      c.especiesnombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.especiesvegetalesnombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.variedad_nombre && c.variedad_nombre.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Filter by Status Tab
@@ -269,7 +269,7 @@ export default function CultivosDashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div style={{ background: 'white', border: '1px solid #e2e8f0', padding: '16px 20px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
           <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Cultivos Activos</div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#16a34a', marginTop: '4px' }}>{activeCropsCount}</div>
@@ -372,7 +372,7 @@ export default function CultivosDashboard() {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', gap: '20px' }}>
           {filteredCrops.map((c) => {
             const statusConfig = getStatusColor(c.cultivosestado);
             return (
@@ -419,7 +419,7 @@ export default function CultivosDashboard() {
                     {c.foto ? (
                       <img src={getMediaUrl(c.foto)} alt={c.variedad_nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" loading="lazy" />
                     ) : (
-                      <SpeciesIcon icon={c.especiesicono || '🌱'} size="1.8rem" />
+                      <SpeciesIcon icon={c.especiesvegetalesicono || '🌱'} size="1.8rem" />
                     )}
                   </div>
 
@@ -443,7 +443,7 @@ export default function CultivosDashboard() {
                     </div>
 
                     <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {c.especiesnombre}
+                      {c.especiesvegetalesnombre}
                     </h4>
                     <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       Variedad: {c.variedad_nombre || 'Común'}

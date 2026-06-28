@@ -12,10 +12,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Especies asociadas
     const [especies]: any[] = await pool.query(`
-      SELECT idespecies, especiesnombre, especiesicono, especiesvisibilidadsino
+      SELECT idespeciesvegetales, especiesvegetalesnombre, especiesvegetalesicono, especiesvegetalesvisibilidadsino
       FROM especies
-      WHERE xespeciesidfamilias = ?
-      ORDER BY especiesnombre ASC
+      WHERE xespeciesvegetalesidfamilias = ?
+      ORDER BY especiesvegetalesnombre ASC
     `, [id]);
 
     // Todas las familias para selectores de rotación
@@ -110,14 +110,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     // Verificar especies asociadas
     const [especies]: any[] = await pool.query(
-      `SELECT COUNT(*) as c FROM especies WHERE xespeciesidfamilias = ?`,
+      `SELECT COUNT(*) as c FROM especiesvegetales WHERE xespeciesvegetalesidfamilias = ?`,
       [id]
     );
 
     if (hard) {
       if (especies[0].c > 0) {
         // Desasociar especies antes de eliminar
-        await pool.query(`UPDATE especies SET xespeciesidfamilias = NULL WHERE xespeciesidfamilias = ?`, [id]);
+        await pool.query(`UPDATE especiesvegetales SET xespeciesvegetalesidfamilias = NULL WHERE xespeciesvegetalesidfamilias = ?`, [id]);
       }
       await pool.query(`DELETE FROM familias WHERE idfamilias = ?`, [id]);
       return NextResponse.json({ success: true, message: 'Familia eliminada definitivamente' });

@@ -7,7 +7,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import Link from 'next/link';
 import UserSemillaMediaManager from '@/components/user/UserSemillaMediaManager';
 import { getMediaUrl } from '@/lib/media-url';
-import '@/components/admin/EspecieForm.css';
+import '@/components/admin/EspecieVegetalForm.css';
 
 export default function EditarSemillaPage() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function EditarSemillaPage() {
   
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({
-    xsemillasidvariedades: '',
+    xsemillasidvariedadesvegetales: '',
     semillasnumerocoleccion: '',
     semillasorigen: 'cosecha_propia',
     semillasmarca: '',
@@ -192,15 +192,15 @@ export default function EditarSemillaPage() {
   };
 
   useEffect(() => {
-    if (catalogo.length > 0 && formData.xsemillasidvariedades && !selectedEspecieId) {
+    if (catalogo.length > 0 && formData.xsemillasidvariedadesvegetales && !selectedEspecieId) {
       for (const esp of catalogo) {
-        if (esp.variedades?.some((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString())) {
-          setSelectedEspecieId(esp.idespecies.toString());
+        if (esp.variedades?.some((v: any) => v.idvariedadesvegetales.toString() === formData.xsemillasidvariedadesvegetales.toString())) {
+          setSelectedEspecieId(esp.idespeciesvegetales.toString());
           break;
         }
       }
     }
-  }, [catalogo, formData.xsemillasidvariedades, selectedEspecieId]);
+  }, [catalogo, formData.xsemillasidvariedadesvegetales, selectedEspecieId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -233,7 +233,7 @@ export default function EditarSemillaPage() {
         const semilla = data.semillas.find((s: any) => s.idsemillas.toString() === semillaId);
         if (semilla) {
           const parsed = {
-            xsemillasidvariedades: semilla.xsemillasidvariedades || '',
+            xsemillasidvariedadesvegetales: semilla.xsemillasidvariedadesvegetales || '',
             semillasnumerocoleccion: semilla.semillasnumerocoleccion || '',
             semillasorigen: semilla.semillasorigen || 'cosecha_propia',
             semillasmarca: semilla.semillasmarca || '',
@@ -255,7 +255,7 @@ export default function EditarSemillaPage() {
           setFormData(parsed);
           setInitialData(JSON.stringify(parsed));
           setMetaData({
-            especiesnombre: semilla.especiesnombre,
+            especiesvegetalesnombre: semilla.especiesvegetalesnombre,
             variedad_nombre: semilla.variedad_nombre,
             foto: semilla.foto,
             donante_nombreusuario: semilla.donante_nombreusuario,
@@ -315,7 +315,7 @@ export default function EditarSemillaPage() {
           const newVarIdStr = resData.newVariedadId.toString();
           const updatedFormData = {
             ...dataToSave,
-            xsemillasidvariedades: newVarIdStr,
+            xsemillasidvariedadesvegetales: newVarIdStr,
             customVarietyName: ''
           };
           setFormData(updatedFormData);
@@ -458,7 +458,7 @@ export default function EditarSemillaPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {metaData.especiesnombre} {metaData.variedad_nombre ? `- ${metaData.variedad_nombre}` : ''} 
+              {metaData.especiesvegetalesnombre} {metaData.variedad_nombre ? `- ${metaData.variedad_nombre}` : ''} 
               
               {/* Indicador de Autoguardado */}
               {saveStatus === 'saving' && (
@@ -976,7 +976,7 @@ export default function EditarSemillaPage() {
           
           <div style={{ padding: '32px 32px 32px 32px', display: 'grid', gap: '32px' }}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Especie</label>
               <select 
@@ -986,11 +986,11 @@ export default function EditarSemillaPage() {
                   setSelectedEspecieId(newEspecieId);
                   
                   // Auto-seleccionar la primera variedad disponible para mayor comodidad
-                  const esp = catalogo.find(c => c.idespecies.toString() === newEspecieId);
+                  const esp = catalogo.find(c => c.idespeciesvegetales.toString() === newEspecieId);
                   if (esp && esp.variedades && esp.variedades.length > 0) {
-                    setFormData({ ...formData, xsemillasidvariedades: esp.variedades[0].idvariedades.toString() });
+                    setFormData({ ...formData, xsemillasidvariedadesvegetales: esp.variedades[0].idvariedadesvegetales.toString() });
                   } else {
-                    setFormData({ ...formData, xsemillasidvariedades: '' });
+                    setFormData({ ...formData, xsemillasidvariedadesvegetales: '' });
                   }
 
                   // Abrir el custom dropdown automáticamente con un pequeñísimo delay para evitar que eventos click/blur lo cierren de inmediato
@@ -1002,8 +1002,8 @@ export default function EditarSemillaPage() {
               >
                 <option value="">Selecciona una especie...</option>
                 {catalogo.map((esp: any) => (
-                  <option key={esp.idespecies} value={esp.idespecies.toString()}>
-                    {esp.especiesnombre}
+                  <option key={esp.idespeciesvegetales} value={esp.idespeciesvegetales.toString()}>
+                    {esp.especiesvegetalesnombre}
                   </option>
                 ))}
               </select>
@@ -1021,13 +1021,13 @@ export default function EditarSemillaPage() {
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                   }}
                 >
-                  <span style={{ color: formData.xsemillasidvariedades ? '#0f172a' : '#94a3b8' }}>
+                  <span style={{ color: formData.xsemillasidvariedadesvegetales ? '#0f172a' : '#94a3b8' }}>
                     {(() => {
                       if (!selectedEspecieId) return 'Selecciona una variedad...';
-                      if (!formData.xsemillasidvariedades) return 'Selecciona una variedad...';
-                      const esp = catalogo.find(e => e.idespecies.toString() === selectedEspecieId);
-                      const vari = esp?.variedades?.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
-                      return vari?.variedadesnombre || 'Variedad estándar';
+                      if (!formData.xsemillasidvariedadesvegetales) return 'Selecciona una variedad...';
+                      const esp = catalogo.find(e => e.idespeciesvegetales.toString() === selectedEspecieId);
+                      const vari = esp?.variedades?.find((v: any) => v.idvariedadesvegetales.toString() === formData.xsemillasidvariedadesvegetales.toString());
+                      return vari?.variedadesvegetalesnombre || 'Variedad estándar';
                     })()}
                   </span>
                   <span style={{ fontSize: '0.8rem', color: '#64748b' }}>▼</span>
@@ -1041,7 +1041,7 @@ export default function EditarSemillaPage() {
                     maxHeight: '200px', overflowY: 'auto'
                   }}>
                     {(() => {
-                      const vars = catalogo.find(esp => esp.idespecies.toString() === selectedEspecieId)?.variedades || [];
+                      const vars = catalogo.find(esp => esp.idespeciesvegetales.toString() === selectedEspecieId)?.variedades || [];
                       const globalVars = vars;
                       if (globalVars.length === 0) {
                         return (
@@ -1052,21 +1052,21 @@ export default function EditarSemillaPage() {
                       }
                       return globalVars.map((v: any) => (
                         <div 
-                          key={v.idvariedades}
+                          key={v.idvariedadesvegetales}
                           onClick={() => {
-                            setFormData({ ...formData, xsemillasidvariedades: v.idvariedades.toString() });
+                            setFormData({ ...formData, xsemillasidvariedadesvegetales: v.idvariedadesvegetales.toString() });
                             setIsVariedadOpen(false);
                           }}
                           style={{
                             padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
-                            background: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#f0fdf4' : 'white',
-                            color: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#166534' : '#334155',
-                            fontWeight: formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? 600 : 400,
+                            background: formData.xsemillasidvariedadesvegetales?.toString() === v.idvariedadesvegetales.toString() ? '#f0fdf4' : 'white',
+                            color: formData.xsemillasidvariedadesvegetales?.toString() === v.idvariedadesvegetales.toString() ? '#166534' : '#334155',
+                            fontWeight: formData.xsemillasidvariedadesvegetales?.toString() === v.idvariedadesvegetales.toString() ? 600 : 400,
                           }}
                           onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = formData.xsemillasidvariedades?.toString() === v.idvariedades.toString() ? '#f0fdf4' : 'white')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = formData.xsemillasidvariedadesvegetales?.toString() === v.idvariedadesvegetales.toString() ? '#f0fdf4' : 'white')}
                         >
-                          {v.variedadesnombre || 'Variedad estándar'}
+                          {v.variedadesvegetalesnombre || 'Variedad estándar'}
                         </div>
                       ));
                     })()}
@@ -1077,7 +1077,7 @@ export default function EditarSemillaPage() {
 
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Origen de las Semillas</label>
               <select name="semillasorigen" value={formData.semillasorigen} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}>
@@ -1124,7 +1124,7 @@ export default function EditarSemillaPage() {
 
             <div style={{ display: isAdvancedOpen ? 'grid' : 'none', gap: '32px', marginTop: '24px', animation: 'fadeIn 0.3s ease-in-out' }}>
               {(formData.semillasorigen === 'sobre_comprado' || formData.semillasorigen === 'intercambio') && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
                   
                   {formData.semillasorigen === 'sobre_comprado' && (
                     <>
@@ -1201,16 +1201,16 @@ export default function EditarSemillaPage() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Calculadora (Gramos)</label>
                   <input type="number" step="0.01" min="0" placeholder={
                     (() => {
                       if (selectedEspecieId) {
-                        const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
+                        const especie = catalogo.find(c => c.idespeciesvegetales.toString() === selectedEspecieId);
                         let peso1000 = especie?.especiespeso1000semillas;
-                        if (formData.xsemillasidvariedades && especie?.variedades) {
-                          const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
+                        if (formData.xsemillasidvariedadesvegetales && especie?.variedades) {
+                          const variedad = especie.variedades.find((v: any) => v.idvariedadesvegetales.toString() === formData.xsemillasidvariedadesvegetales.toString());
                           if (variedad?.variedadespeso1000semillas) {
                             peso1000 = variedad.variedadespeso1000semillas;
                           }
@@ -1224,10 +1224,10 @@ export default function EditarSemillaPage() {
                   } onChange={(e) => {
                     const gramos = parseFloat(e.target.value);
                     if (gramos > 0 && selectedEspecieId) {
-                      const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
+                      const especie = catalogo.find(c => c.idespeciesvegetales.toString() === selectedEspecieId);
                       let peso1000 = especie?.especiespeso1000semillas;
-                      if (formData.xsemillasidvariedades && especie?.variedades) {
-                        const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
+                      if (formData.xsemillasidvariedadesvegetales && especie?.variedades) {
+                        const variedad = especie.variedades.find((v: any) => v.idvariedadesvegetales.toString() === formData.xsemillasidvariedadesvegetales.toString());
                         if (variedad?.variedadespeso1000semillas) {
                           peso1000 = variedad.variedadespeso1000semillas;
                         }
@@ -1279,7 +1279,7 @@ export default function EditarSemillaPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>Fecha Origen / Cosecha</label>
                   <input type="date" name="semillasfechaorigen" value={formData.semillasfechaorigen} onChange={handleChange} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
@@ -1338,7 +1338,7 @@ export default function EditarSemillaPage() {
                 <tbody>
                   {historial.map((c: any, i: number) => (
                     <tr key={c.idcultivos || i} style={{ borderBottom: '1px solid #e2e8f0', background: i % 2 === 0 ? 'white' : '#f8fafc' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{c.especiesnombre || c.variedad_nombre || `Cultivo #${c.idcultivos}`}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{c.especiesvegetalesnombre || c.variedad_nombre || `Cultivo #${c.idcultivos}`}</td>
                       <td style={{ padding: '10px 12px', color: '#475569' }}>{c.bancalesnombre || '-'}</td>
                       <td style={{ padding: '10px 12px', color: '#475569' }}>
                         {c.cultivosfechainicio ? new Date(c.cultivosfechainicio).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
@@ -1382,7 +1382,7 @@ export default function EditarSemillaPage() {
           ? new Date(formData.semillasfechaorigen).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null;
 
         // Clean species & variety display names to avoid duplication
-        const speciesName = (metaData.especiesnombre || '').trim();
+        const speciesName = (metaData.especiesvegetalesnombre || '').trim();
         let varietyName = (metaData.variedad_nombre || '').trim();
         let cleanVariety = '';
         if (varietyName && speciesName) {
@@ -1573,24 +1573,24 @@ export default function EditarSemillaPage() {
                       const detectedVariedad = ocrData.variedad_detectada;
 
                       if (detectedEspecie) {
-                        const esp = catalogo.find(e => e.especiesnombre.toLowerCase() === detectedEspecie.toLowerCase());
+                        const esp = catalogo.find(e => e.especiesvegetalesnombre.toLowerCase() === detectedEspecie.toLowerCase());
                         if (esp) {
-                          newEspecieId = esp.idespecies.toString();
+                          newEspecieId = esp.idespeciesvegetales.toString();
                           
                           if (detectedVariedad) {
                             matchedVariety = esp.variedades?.find((v: any) =>
-                              v.variedadesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
-                              detectedVariedad.toLowerCase().includes(v.variedadesnombre.toLowerCase())
+                              v.variedadesvegetalesnombre.toLowerCase().includes(detectedVariedad.toLowerCase()) ||
+                              detectedVariedad.toLowerCase().includes(v.variedadesvegetalesnombre.toLowerCase())
                             );
                           }
                           
                           if (matchedVariety) {
-                            updates.xsemillasidvariedades = matchedVariety.idvariedades.toString();
+                            updates.xsemillasidvariedadesvegetales = matchedVariety.idvariedadesvegetales.toString();
                             updates.customVarietyName = '';
                           } else {
-                            const genericVar = esp.variedades?.find((v: any) => v.variedadesesgenerica === 1) || esp.variedades?.[0];
+                            const genericVar = esp.variedades?.find((v: any) => v.variedadesvegetalesesgenerica === 1) || esp.variedades?.[0];
                             if (genericVar) {
-                              updates.xsemillasidvariedades = genericVar.idvariedades.toString();
+                              updates.xsemillasidvariedadesvegetales = genericVar.idvariedadesvegetales.toString();
                               updates.customVarietyName = detectedVariedad;
                             }
                           }
@@ -1601,11 +1601,11 @@ export default function EditarSemillaPage() {
                         const gramosVal = ocrData.peso_gramos || ocrData.gramos_detectados;
                         let peso1000: number | null = null;
                         if (newEspecieId) {
-                          const especie = catalogo.find(c => c.idespecies?.toString() === newEspecieId);
+                          const especie = catalogo.find(c => c.idespeciesvegetales?.toString() === newEspecieId);
                           peso1000 = parseFloat(especie?.especiespeso1000semillas || '0');
-                          const targetVariedadId = updates.xsemillasidvariedades || formData.xsemillasidvariedades;
+                          const targetVariedadId = updates.xsemillasidvariedadesvegetales || formData.xsemillasidvariedadesvegetales;
                           if (targetVariedadId && especie?.variedades) {
-                            const variedad = especie.variedades.find((v: any) => v.idvariedades?.toString() === targetVariedadId?.toString());
+                            const variedad = especie.variedades.find((v: any) => v.idvariedadesvegetales?.toString() === targetVariedadId?.toString());
                             if (variedad?.variedadespeso1000semillas) {
                               peso1000 = parseFloat(variedad.variedadespeso1000semillas);
                             }
@@ -1691,16 +1691,16 @@ export default function EditarSemillaPage() {
                       </div>
                       {(() => {
                         const detected = ocrData.especie_detectada.toLowerCase();
-                        const esp = catalogo.find(e => e.especiesnombre.toLowerCase() === detected);
+                        const esp = catalogo.find(e => e.especiesvegetalesnombre.toLowerCase() === detected);
                         if (esp) {
                           return (
                             <button 
                               type="button"
                               onClick={() => {
-                                setSelectedEspecieId(esp.idespecies.toString());
-                                const genericVar = esp.variedades?.find((v: any) => v.variedadesesgenerica === 1) || esp.variedades?.[0];
+                                setSelectedEspecieId(esp.idespeciesvegetales.toString());
+                                const genericVar = esp.variedades?.find((v: any) => v.variedadesvegetalesesgenerica === 1) || esp.variedades?.[0];
                                 if (genericVar) {
-                                  setFormData((prev: any) => ({ ...prev, xsemillasidvariedades: genericVar.idvariedades.toString() }));
+                                  setFormData((prev: any) => ({ ...prev, xsemillasidvariedadesvegetales: genericVar.idvariedadesvegetales.toString() }));
                                 }
                                 setOcrData((prev: any) => ({ ...prev, especie_detectada: null }));
                               }}
@@ -1730,12 +1730,12 @@ export default function EditarSemillaPage() {
                         
                         for (const esp of catalogo) {
                           const vMatch = esp.variedades?.find((v: any) => 
-                            v.variedadesnombre.toLowerCase().includes(detected) || 
-                            detected.includes(v.variedadesnombre.toLowerCase())
+                            v.variedadesvegetalesnombre.toLowerCase().includes(detected) || 
+                            detected.includes(v.variedadesvegetalesnombre.toLowerCase())
                           );
                           if (vMatch) {
                             matchedVariety = vMatch;
-                            matchedEspecieId = esp.idespecies.toString();
+                            matchedEspecieId = esp.idespeciesvegetales.toString();
                             break;
                           }
                         }
@@ -1748,20 +1748,20 @@ export default function EditarSemillaPage() {
                                 setSelectedEspecieId(matchedEspecieId!);
                                 setFormData((prev: any) => ({ 
                                   ...prev, 
-                                  xsemillasidvariedades: matchedVariety.idvariedades.toString(),
+                                  xsemillasidvariedadesvegetales: matchedVariety.idvariedadesvegetales.toString(),
                                   customVarietyName: ''
                                 }));
                                 setOcrData((prev: any) => ({ ...prev, variedad_detectada: null }));
                               }}
                               style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(139,92,246,0.3)' }}
                             >
-                              Aplicar ({matchedVariety.variedadesnombre})
+                              Aplicar ({matchedVariety.variedadesvegetalesnombre})
                             </button>
                           );
                         } else {
                           const activeEspId = matchedEspecieId || selectedEspecieId;
-                          const esp = catalogo.find(e => e.idespecies.toString() === activeEspId);
-                          const genericVar = esp?.variedades?.find((v: any) => v.variedadesesgenerica === 1) || esp?.variedades?.[0];
+                          const esp = catalogo.find(e => e.idespeciesvegetales.toString() === activeEspId);
+                          const genericVar = esp?.variedades?.find((v: any) => v.variedadesvegetalesesgenerica === 1) || esp?.variedades?.[0];
                           
                           if (genericVar) {
                             return (
@@ -1771,7 +1771,7 @@ export default function EditarSemillaPage() {
                                   if (matchedEspecieId) setSelectedEspecieId(matchedEspecieId);
                                   setFormData((prev: any) => ({ 
                                     ...prev, 
-                                    xsemillasidvariedades: genericVar.idvariedades.toString(),
+                                    xsemillasidvariedadesvegetales: genericVar.idvariedadesvegetales.toString(),
                                     customVarietyName: ocrData.variedad_detectada
                                   }));
                                   setOcrData((prev: any) => ({ ...prev, variedad_detectada: null }));
@@ -1799,10 +1799,10 @@ export default function EditarSemillaPage() {
                       {(() => {
                         let peso1000 = null;
                         if (selectedEspecieId) {
-                          const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
+                          const especie = catalogo.find(c => c.idespeciesvegetales.toString() === selectedEspecieId);
                           peso1000 = especie?.especiespeso1000semillas;
-                          if (formData.xsemillasidvariedades && especie?.variedades) {
-                            const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
+                          if (formData.xsemillasidvariedadesvegetales && especie?.variedades) {
+                            const variedad = especie.variedades.find((v: any) => v.idvariedadesvegetales.toString() === formData.xsemillasidvariedadesvegetales.toString());
                             if (variedad?.variedadespeso1000semillas) {
                               peso1000 = variedad.variedadespeso1000semillas;
                             }
@@ -1843,10 +1843,10 @@ export default function EditarSemillaPage() {
                       {(() => {
                         let peso1000: number | null = null;
                         if (selectedEspecieId) {
-                          const especie = catalogo.find(c => c.idespecies.toString() === selectedEspecieId);
+                          const especie = catalogo.find(c => c.idespeciesvegetales.toString() === selectedEspecieId);
                           peso1000 = parseFloat(especie?.especiespeso1000semillas || '0');
-                          if (formData.xsemillasidvariedades && especie?.variedades) {
-                            const variedad = especie.variedades.find((v: any) => v.idvariedades.toString() === formData.xsemillasidvariedades.toString());
+                          if (formData.xsemillasidvariedadesvegetales && especie?.variedades) {
+                            const variedad = especie.variedades.find((v: any) => v.idvariedadesvegetales.toString() === formData.xsemillasidvariedadesvegetales.toString());
                             if (variedad?.variedadespeso1000semillas) {
                               peso1000 = parseFloat(variedad.variedadespeso1000semillas);
                             }

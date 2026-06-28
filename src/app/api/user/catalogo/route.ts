@@ -17,47 +17,47 @@ export async function GET(request: Request) {
 
     // Especies visibles con su foto principal
     let especiesQuery = `
-      SELECT e.idespecies, e.especiesnombre, e.especiesnombrecientifico, 
+      SELECT e.idespeciesvegetales, e.especiesvegetalesnombre, e.especiesvegetalesnombrecientifico, 
              f.familiasnombre, f.familiasemoji, f.familiascolor,
-             e.especiestipo, e.especiesicono, e.especiesdescripcion, e.especiesdificultad, e.especiespeso1000semillas,
+             e.especiesvegetalestipo, e.especiesvegetalesicono, e.especiesvegetalesdescripcion, e.especiesvegetalesdificultad, e.especiesvegetalespeso1000semillas,
              (SELECT datosadjuntosruta FROM datosadjuntos 
-              WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' 
+              WHERE xdatosadjuntosidespeciesvegetales = e.idespeciesvegetales AND datosadjuntostipo = 'imagen' 
               AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as foto,
-             (SELECT COUNT(*) FROM variedades v 
-              WHERE v.xvariedadesidespecies = e.idespecies 
-              AND v.xvariedadesidusuarios IS NULL 
-              AND v.variedadesesgenerica = 0
-              AND v.variedadesvisibilidadsino = 1) as total_variedades
-      FROM especies e 
-      LEFT JOIN familias f ON e.xespeciesidfamilias = f.idfamilias
-      WHERE e.especiesvisibilidadsino = 1
+             (SELECT COUNT(*) FROM variedadesvegetales v 
+              WHERE v.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales 
+              AND v.xvariedadesvegetalesidusuarios IS NULL 
+              AND v.variedadesvegetalesesgenerica = 0
+              AND v.variedadesvegetalesvisibilidadsino = 1) as total_variedades
+      FROM especiesvegetales e 
+      LEFT JOIN familias f ON e.xespeciesvegetalesidfamilias = f.idfamilias
+      WHERE e.especiesvegetalesvisibilidadsino = 1
     `;
     const params: any[] = [];
 
     if (tipo) {
-      especiesQuery += ` AND FIND_IN_SET(?, e.especiestipo)`;
+      especiesQuery += ` AND FIND_IN_SET(?, e.especiesvegetalestipo)`;
       params.push(tipo);
     }
 
     if (busqueda) {
-      especiesQuery += ` AND (e.especiesnombre LIKE ? OR e.especiesnombrecientifico LIKE ?)`;
+      especiesQuery += ` AND (e.especiesvegetalesnombre LIKE ? OR e.especiesvegetalesnombrecientifico LIKE ?)`;
       params.push(`%${busqueda}%`, `%${busqueda}%`);
     }
 
-    especiesQuery += ` ORDER BY e.especiesnombre`;
+    especiesQuery += ` ORDER BY e.especiesvegetalesnombre`;
 
     const [especies]: any = await pool.query(especiesQuery, params);
 
     const [variedades]: any = await pool.query(`
-      SELECT idvariedades, xvariedadesidespecies, variedadesnombre, variedadesesgenerica, variedadespeso1000semillas, xvariedadesidusuarios
+      SELECT idvariedadesvegetales, xvariedadesvegetalesidespeciesvegetales, variedadesvegetalesnombre, variedadesvegetalesesgenerica, variedadespeso1000semillas, xvariedadesvegetalesidusuarios
       FROM variedades
-      WHERE (xvariedadesidusuarios IS NULL OR xvariedadesidusuarios = ?)
-        AND variedadesvisibilidadsino = 1
-      ORDER BY variedadesesgenerica DESC, variedadesnombre ASC
+      WHERE (xvariedadesvegetalesidusuarios IS NULL OR xvariedadesvegetalesidusuarios = ?)
+        AND variedadesvegetalesvisibilidadsino = 1
+      ORDER BY variedadesvegetalesesgenerica DESC, variedadesvegetalesnombre ASC
     `, [user.id]);
 
     for (const esp of especies) {
-      esp.variedades = variedades.filter((v: any) => v.xvariedadesidespecies === esp.idespecies);
+      esp.variedades = variedades.filter((v: any) => v.xvariedadesvegetalesidespeciesvegetales === esp.idespeciesvegetales);
     }
 
     return NextResponse.json({ especies });

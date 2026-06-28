@@ -15,8 +15,8 @@ export async function GET(request: Request) {
     const [semillas] = await pool.query(`
       SELECT 
         s.idsemillas,
-        s.xsemillasidvariedades,
-        COALESCE(vu.xvariedadesidvariedadorigen, vu.idvariedades) AS global_variedad_id,
+        s.xsemillasidvariedadesvegetales,
+        COALESCE(vu.xvariedadesvegetalesidvariedadorigen, vu.idvariedadesvegetales) AS global_variedad_id,
         s.semillasnumerocoleccion,
         s.semillasorigen,
         s.semillasmarca,
@@ -51,24 +51,24 @@ export async function GET(request: Request) {
             ELSE UPPER(REPLACE(c.cultivosestado, '_', ' '))
           END
         , ')') SEPARATOR '|') FROM cultivos c WHERE c.xcultivosidsemillas = s.idsemillas AND c.cultivosactivosino = 1) AS cultivos_activos_lista,
-        COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS variedad_nombre,
-        e.especiesnombre,
-        e.especiesicono,
+        COALESCE(NULLIF(vu.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS variedad_nombre,
+        e.especiesvegetalesnombre,
+        e.especiesvegetalesicono,
         -- Foto del sobre/semilla, luego variedad, luego especie
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos 
            WHERE xdatosadjuntosidsemillas = s.idsemillas AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC, iddatosadjuntos ASC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
+           WHERE xdatosadjuntosidvariedadesvegetales = vu.idvariedadesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidvariedades = vg.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
+           WHERE xdatosadjuntosidvariedadesvegetales = vg.idvariedadesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
+           WHERE xdatosadjuntosidespeciesvegetales = e.idespeciesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
         ) AS foto
       FROM semillas s
-      JOIN variedades vu ON s.xsemillasidvariedades = vu.idvariedades
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+      JOIN variedadesvegetales vu ON s.xsemillasidvariedadesvegetales = vu.idvariedadesvegetales
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
       LEFT JOIN usuarios u ON s.xsemillasidusuariodonante = u.idusuarios
       WHERE s.xsemillasidusuarios = ?
       ORDER BY s.semillasfechacreacion DESC
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
-      xsemillasidvariedades, 
+      xsemillasidvariedadesvegetales, 
       semillasorigen, 
       semillasfechaorigen, 
       semillasfechacaducidad, 
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       customVarietyName
     } = body;
 
-    if (!xsemillasidvariedades) {
+    if (!xsemillasidvariedadesvegetales) {
       return NextResponse.json({ error: 'La variedad es obligatoria' }, { status: 400 });
     }
 
@@ -175,25 +175,25 @@ export async function POST(request: Request) {
       }
     }
 
-    let finalVariedadId = xsemillasidvariedades;
+    let finalVariedadId = xsemillasidvariedadesvegetales;
 
     if (customVarietyName) {
       const [espRows]: any = await pool.query(`
-        SELECT xvariedadesidespecies FROM variedades WHERE idvariedades = ? LIMIT 1
-      `, [xsemillasidvariedades]);
+        SELECT xvariedadesvegetalesidespeciesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? LIMIT 1
+      `, [xsemillasidvariedadesvegetales]);
       
-      const especieId = espRows.length > 0 ? espRows[0].xvariedadesidespecies : null;
+      const especieId = espRows.length > 0 ? espRows[0].xvariedadesvegetalesidespeciesvegetales : null;
 
       if (especieId) {
         const [varResult]: any = await pool.query(`
-          INSERT INTO variedades (
-            xvariedadesidespecies,
-            xvariedadesidusuarios,
-            xvariedadesidvariedadorigen,
-            variedadesnombre,
-            variedadesesgenerica
+          INSERT INTO variedadesvegetales (
+            xvariedadesvegetalesidespeciesvegetales,
+            xvariedadesvegetalesidusuarios,
+            xvariedadesvegetalesidvariedadorigen,
+            variedadesvegetalesnombre,
+            variedadesvegetalesesgenerica
           ) VALUES (?, ?, ?, ?, 0)
-        `, [especieId, user.id, xsemillasidvariedades, customVarietyName]);
+        `, [especieId, user.id, xsemillasidvariedadesvegetales, customVarietyName]);
         
         finalVariedadId = varResult.insertId;
       }
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
     const [result]: any = await pool.query(
       `INSERT INTO semillas (
         xsemillasidusuarios, 
-        xsemillasidvariedades, 
+        xsemillasidvariedadesvegetales, 
         semillasnumerocoleccion,
         semillasorigen, 
         semillasmarca,
@@ -296,70 +296,70 @@ export async function POST(request: Request) {
     try {
       const [varRows]: any = await pool.query(`
         SELECT 
-          v.idvariedades, 
-          v.xvariedadesidespecies AS especie_id_var,
-          v.xvariedadesidusuarios,
-          vg.xvariedadesidespecies AS especie_id_gen
-        FROM variedades v
-        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
-        WHERE v.idvariedades = ?
+          v.idvariedadesvegetales, 
+          v.xvariedadesvegetalesidespeciesvegetales AS especie_id_var,
+          v.xvariedadesvegetalesidusuarios,
+          vg.xvariedadesvegetalesidespeciesvegetales AS especie_id_gen
+        FROM variedadesvegetales v
+        LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+        WHERE v.idvariedadesvegetales = ?
       `, [finalVariedadId]);
 
       if (varRows.length > 0) {
         const variedadInfo = varRows[0];
         const especieId = variedadInfo.especie_id_gen || variedadInfo.especie_id_var;
 
-        // 1. Asignar Variedad si no la tiene en la tabla cruzada variedadesusuarios
+        // 1. Asignar Variedad si no la tiene en la tabla cruzada variedadesvegetalesusuarios
         const [userVarRows]: any = await pool.query(`
-          SELECT idvariedadesusuarios FROM variedadesusuarios 
-          WHERE Xvariedadesusuariosidusuarios = ? AND xvariedadesusuariosidvariedades = ?
+          SELECT idvariedadesvegetalesusuarios FROM variedadesvegetalesusuarios 
+          WHERE Xvariedadesvegetalesusuariosidusuarios = ? AND xvariedadesvegetalesusuariosidvariedadesvegetales = ?
         `, [user.id, finalVariedadId]);
 
         if (userVarRows.length === 0) {
           await pool.query(`
-            INSERT INTO variedadesusuarios (Xvariedadesusuariosidusuarios, xvariedadesusuariosidvariedades)
+            INSERT INTO variedadesvegetalesusuarios (Xvariedadesvegetalesusuariosidusuarios, xvariedadesvegetalesusuariosidvariedadesvegetales)
             VALUES (?, ?)
           `, [user.id, finalVariedadId]);
         }
 
         // 2. Adquirir la variedad en la tabla 'variedades' (como planta propia del usuario para que aparezca en "Mis Plantas") si no la tiene ya
-        if (especieId && (!variedadInfo.xvariedadesidusuarios || variedadInfo.xvariedadesidusuarios !== user.id)) {
+        if (especieId && (!variedadInfo.xvariedadesvegetalesidusuarios || variedadInfo.xvariedadesvegetalesidusuarios !== user.id)) {
           const [userOwnedVarCheck]: any = await pool.query(`
-            SELECT idvariedades, variedadesvisibilidadsino FROM variedades 
-            WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?
+            SELECT idvariedadesvegetales, variedadesvegetalesvisibilidadsino FROM variedadesvegetales 
+            WHERE xvariedadesvegetalesidusuarios = ? AND xvariedadesvegetalesidvariedadorigen = ?
           `, [user.id, finalVariedadId]);
 
           if (userOwnedVarCheck.length === 0) {
             await pool.query(`
-              INSERT INTO variedades (
-                xvariedadesidespecies, 
-                xvariedadesidusuarios, 
-                xvariedadesidvariedadorigen, 
-                variedadesesgenerica
+              INSERT INTO variedadesvegetales (
+                xvariedadesvegetalesidespeciesvegetales, 
+                xvariedadesvegetalesidusuarios, 
+                xvariedadesvegetalesidvariedadorigen, 
+                variedadesvegetalesesgenerica
               ) VALUES (?, ?, ?, 0)
             `, [especieId, user.id, finalVariedadId]);
-          } else if (userOwnedVarCheck[0].variedadesvisibilidadsino === 0) {
+          } else if (userOwnedVarCheck[0].variedadesvegetalesvisibilidadsino === 0) {
             await pool.query(`
-              UPDATE variedades SET variedadesvisibilidadsino = 1 WHERE idvariedades = ?
-            `, [userOwnedVarCheck[0].idvariedades]);
+              UPDATE variedadesvegetales SET variedadesvegetalesvisibilidadsino = 1 WHERE idvariedadesvegetales = ?
+            `, [userOwnedVarCheck[0].idvariedadesvegetales]);
           }
         }
 
         // 3. Asignar Especie si no la tiene en especiesusuarios
         if (especieId) {
           const [userEspRows]: any = await pool.query(`
-            SELECT idespeciesusuarios FROM especiesusuarios 
-            WHERE xespeciesusuariosidusuarios = ? AND xespeciesusuariosidespecies = ?
+            SELECT idespeciesvegetalesusuarios FROM especiesusuarios 
+            WHERE xespeciesvegetalesusuariosidusuarios = ? AND xespeciesvegetalesusuariosidespeciesvegetales = ?
           `, [user.id, especieId]);
 
           if (userEspRows.length === 0) {
-            const [espInfo]: any = await pool.query(`SELECT especiesnombre FROM especies WHERE idespecies = ?`, [especieId]);
-            const nombreEspecie = espInfo.length > 0 ? espInfo[0].especiesnombre : '';
+            const [espInfo]: any = await pool.query(`SELECT especiesvegetalesnombre FROM especiesvegetales WHERE idespeciesvegetales = ?`, [especieId]);
+            const nombreEspecie = espInfo.length > 0 ? espInfo[0].especiesvegetalesnombre : '';
 
             await pool.query(`
               INSERT INTO especiesusuarios (
-                xespeciesusuariosidusuarios, 
-                xespeciesusuariosidespecies, 
+                xespeciesvegetalesusuariosidusuarios, 
+                xespeciesvegetalesusuariosidespeciesvegetales, 
                 especiesusuariosnombre,
                 especiesusuariosactivosino
               ) VALUES (?, ?, ?, 1)
@@ -376,7 +376,7 @@ export async function POST(request: Request) {
     let variedadNombre = 'sus semillas';
     try {
       const [vRows]: any = await pool.query(
-        'SELECT COALESCE(NULLIF(v.variedadesnombre, ""), vg.variedadesnombre, e.especiesnombre) AS nombre FROM variedades v LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON v.xvariedadesidespecies = e.idespecies OR vg.xvariedadesidespecies = e.idespecies WHERE v.idvariedades = ? LIMIT 1',
+        'SELECT COALESCE(NULLIF(v.variedadesvegetalesnombre, ""), vg.variedadesvegetalesnombre, e.especiesvegetalesnombre) AS nombre FROM variedadesvegetales v LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales LEFT JOIN especiesvegetales e ON v.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales WHERE v.idvariedadesvegetales = ? LIMIT 1',
         [finalVariedadId]
       );
       if (vRows.length > 0 && vRows[0].nombre) variedadNombre = vRows[0].nombre;

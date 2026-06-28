@@ -77,7 +77,7 @@ export function useCropWizard(misSemillas: any[], onSuccess: () => void) {
 
   const getSemillaStock = (idVariedad: number) => {
     const seeds = misSemillas.filter(s => 
-      Number(s.xsemillasidvariedades) === Number(idVariedad) && 
+      Number(s.xsemillasidvariedadesvegetales) === Number(idVariedad) && 
       (s.semillasstockactual === null || s.semillasstockactual > 0) && 
       s.semillasactivosino !== 0
     );
@@ -134,12 +134,12 @@ export function useCropWizard(misSemillas: any[], onSuccess: () => void) {
       const email = auth.currentUser?.email;
       if (!email) return;
 
-      const vars = await fetchCatalogoVariedades(email, esp.idespecies);
+      const vars = await fetchCatalogoVariedades(email, esp.idespeciesvegetales);
       setCropWizardVariedades(vars);
       if (vars.length === 1) {
         selectCropVariedad(vars[0]);
       } else if (vars.length > 0) {
-        const gold = vars.find((v: any) => v.variedadesesgenerica === 1);
+        const gold = vars.find((v: any) => v.variedadesvegetalesesgenerica === 1);
         if (gold) {
           setSelectedCropVariedad(gold);
         }
@@ -172,7 +172,7 @@ export function useCropWizard(misSemillas: any[], onSuccess: () => void) {
 
       if (cropFormData.origen === 'semilla_nueva') {
         const seedBody: any = {
-          xsemillasidvariedades: selectedCropVariedad.idvariedades,
+          xsemillasidvariedadesvegetales: selectedCropVariedad.idvariedadesvegetales,
           semillasorigen: 'sobre_comprado',
           semillaslugarcompra: cropFormData.semillaslugarcompra || null,
           semillasmarca: cropFormData.semillasmarca || null,
@@ -199,7 +199,7 @@ export function useCropWizard(misSemillas: any[], onSuccess: () => void) {
       }
 
       const cropRes = await createCrop(email, {
-        xcultivosidvariedades: selectedCropVariedad.idvariedades,
+        xcultivosidvariedadesvegetales: selectedCropVariedad.idvariedadesvegetales,
         xcultivosidsemillas: seedId,
         cultivosorigen: cropFormData.origen,
         cultivosmetodo: cropFormData.metodo,

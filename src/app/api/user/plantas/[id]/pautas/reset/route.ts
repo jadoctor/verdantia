@@ -22,7 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // Verificar propiedad
     const [ownerCheck]: any = await pool.query(
-      `SELECT idvariedades FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `SELECT idvariedadesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
     if (ownerCheck.length === 0) {
@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Borrar el override → la pauta volverá a heredar de la especie
     await pool.query(
       `DELETE FROM laborespauta 
-       WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedades = ? 
+       WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedadesvegetales = ? 
        AND xlaborespautaidlabores = ? AND laborespautafase = ?`,
       [user.id, plantaId, xlaborespautaidlabores, laborespautafase]
     );

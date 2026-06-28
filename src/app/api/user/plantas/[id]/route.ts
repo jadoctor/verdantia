@@ -16,151 +16,151 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const [rows]: any = await pool.query(`
       SELECT 
-        vu.idvariedades,
-        vu.xvariedadesidvariedadorigen,
-        vu.xvariedadesidespecies,
-        e.idespecies,
-        e.especiesnombre,
-        e.especiesicono,
-        COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiespeso1000semillas) AS especiespeso1000semillas,
-        vg.variedadesnombre AS nombre_gold,
-        vg.variedadesesgenerica AS es_generica,
-        vu.variedadesvisibilidadsino AS variedadesvisibilidadsino,
-        vg.variedadesvisibilidadsino AS origen_visibilidad,
+        vu.idvariedadesvegetales,
+        vu.xvariedadesvegetalesidvariedadorigen,
+        vu.xvariedadesvegetalesidespeciesvegetales,
+        e.idespeciesvegetales,
+        e.especiesvegetalesnombre,
+        e.especiesvegetalesicono,
+        COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiesvegetalespeso1000semillas) AS especiespeso1000semillas,
+        vg.variedadesvegetalesnombre AS nombre_gold,
+        vg.variedadesvegetalesesgenerica AS es_generica,
+        vu.variedadesvegetalesvisibilidadsino AS variedadesvegetalesvisibilidadsino,
+        vg.variedadesvegetalesvisibilidadsino AS origen_visibilidad,
 
         -- Campos con herencia triple: usuario → gold → especie
-        COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS nombre,
-        vg.variedadesnombre AS h_nombre,
+        COALESCE(NULLIF(vu.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS nombre,
+        vg.variedadesvegetalesnombre AS h_nombre,
 
-        COALESCE(NULLIF(vu.variedadesdescripcion, ''), vg.variedadesdescripcion, e.especiesdescripcion) AS descripcion,
-        COALESCE(vg.variedadesdescripcion, e.especiesdescripcion) AS h_descripcion,
+        COALESCE(NULLIF(vu.variedadesdescripcion, ''), vg.variedadesdescripcion, e.especiesvegetalesdescripcion) AS descripcion,
+        COALESCE(vg.variedadesdescripcion, e.especiesvegetalesdescripcion) AS h_descripcion,
 
-        COALESCE(NULLIF(vu.variedadescolor, ''), vg.variedadescolor, e.especiescolor) AS color,
-        COALESCE(vg.variedadescolor, e.especiescolor) AS h_color,
+        COALESCE(NULLIF(vu.variedadescolor, ''), vg.variedadescolor, e.especiesvegetalescolor) AS color,
+        COALESCE(vg.variedadescolor, e.especiesvegetalescolor) AS h_color,
 
-        COALESCE(NULLIF(vu.variedadestamano, ''), vg.variedadestamano, e.especiestamano) AS tamano,
-        COALESCE(vg.variedadestamano, e.especiestamano) AS h_tamano,
+        COALESCE(NULLIF(vu.variedadestamano, ''), vg.variedadestamano, e.especiesvegetalestamano) AS tamano,
+        COALESCE(vg.variedadestamano, e.especiesvegetalestamano) AS h_tamano,
 
-        COALESCE(vu.variedadesviabilidadsemilla, vg.variedadesviabilidadsemilla, e.especiesviabilidadsemilla) AS viabilidadsemilla,
-        COALESCE(vg.variedadesviabilidadsemilla, e.especiesviabilidadsemilla) AS h_viabilidadsemilla,
+        COALESCE(vu.variedadesviabilidadsemilla, vg.variedadesviabilidadsemilla, e.especiesvegetalesviabilidadsemilla) AS viabilidadsemilla,
+        COALESCE(vg.variedadesviabilidadsemilla, e.especiesvegetalesviabilidadsemilla) AS h_viabilidadsemilla,
 
-        COALESCE(vu.variedadestemperaturaminima, vg.variedadestemperaturaminima, e.especiestemperaturaminima) AS temperaturaminima,
-        COALESCE(vg.variedadestemperaturaminima, e.especiestemperaturaminima) AS h_temperaturaminima,
+        COALESCE(vu.variedadestemperaturaminima, vg.variedadestemperaturaminima, e.especiesvegetalestemperaturaminima) AS temperaturaminima,
+        COALESCE(vg.variedadestemperaturaminima, e.especiesvegetalestemperaturaminima) AS h_temperaturaminima,
 
-        COALESCE(vu.variedadestemperaturaoptima, vg.variedadestemperaturaoptima, e.especiestemperaturaoptima) AS temperaturaoptima,
-        COALESCE(vg.variedadestemperaturaoptima, e.especiestemperaturaoptima) AS h_temperaturaoptima,
+        COALESCE(vu.variedadestemperaturaoptima, vg.variedadestemperaturaoptima, e.especiesvegetalestemperaturaoptima) AS temperaturaoptima,
+        COALESCE(vg.variedadestemperaturaoptima, e.especiesvegetalestemperaturaoptima) AS h_temperaturaoptima,
 
-        COALESCE(vu.variedadestemperaturamaxima, vg.variedadestemperaturamaxima, e.especiestemperaturamaxima) AS temperaturamaxima,
-        COALESCE(vg.variedadestemperaturamaxima, e.especiestemperaturamaxima) AS h_temperaturamaxima,
+        COALESCE(vu.variedadestemperaturamaxima, vg.variedadestemperaturamaxima, e.especiesvegetalestemperaturamaxima) AS temperaturamaxima,
+        COALESCE(vg.variedadestemperaturamaxima, e.especiesvegetalestemperaturamaxima) AS h_temperaturamaxima,
 
-        COALESCE(vu.variedadesmarcoplantas, vg.variedadesmarcoplantas, e.especiesmarcoplantas) AS marcoplantas,
-        COALESCE(vg.variedadesmarcoplantas, e.especiesmarcoplantas) AS h_marcoplantas,
+        COALESCE(vu.variedadesmarcoplantas, vg.variedadesmarcoplantas, e.especiesvegetalesmarcoplantas) AS marcoplantas,
+        COALESCE(vg.variedadesmarcoplantas, e.especiesvegetalesmarcoplantas) AS h_marcoplantas,
 
-        COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesmarcofilas) AS marcofilas,
-        COALESCE(vg.variedadesmarcofilas, e.especiesmarcofilas) AS h_marcofilas,
+        COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesvegetalesmarcofilas) AS marcofilas,
+        COALESCE(vg.variedadesmarcofilas, e.especiesvegetalesmarcofilas) AS h_marcofilas,
 
-        COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesmarcomargen) AS marcomargen,
-        COALESCE(vg.variedadesmarcomargen, e.especiesmarcomargen) AS h_marcomargen,
+        COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesvegetalesmarcomargen) AS marcomargen,
+        COALESCE(vg.variedadesmarcomargen, e.especiesvegetalesmarcomargen) AS h_marcomargen,
 
-        COALESCE(vu.variedadesprofundidadsiembra, vg.variedadesprofundidadsiembra, e.especiesprofundidadsiembra) AS profundidadsiembra,
-        COALESCE(vg.variedadesprofundidadsiembra, e.especiesprofundidadsiembra) AS h_profundidadsiembra,
+        COALESCE(vu.variedadesprofundidadsiembra, vg.variedadesprofundidadsiembra, e.especiesvegetalesprofundidadsiembra) AS profundidadsiembra,
+        COALESCE(vg.variedadesprofundidadsiembra, e.especiesvegetalesprofundidadsiembra) AS h_profundidadsiembra,
 
-        COALESCE(vu.variedadesprofundidadtrasplante, vg.variedadesprofundidadtrasplante, e.especiesprofundidadtrasplante) AS profundidadtrasplante,
-        COALESCE(vg.variedadesprofundidadtrasplante, e.especiesprofundidadtrasplante) AS h_profundidadtrasplante,
+        COALESCE(vu.variedadesprofundidadtrasplante, vg.variedadesprofundidadtrasplante, e.especiesvegetalesprofundidadtrasplante) AS profundidadtrasplante,
+        COALESCE(vg.variedadesprofundidadtrasplante, e.especiesvegetalesprofundidadtrasplante) AS h_profundidadtrasplante,
 
-        COALESCE(vu.variedadeshistoria, vg.variedadeshistoria, e.especieshistoria) AS historia,
-        COALESCE(vg.variedadeshistoria, e.especieshistoria) AS h_historia,
+        COALESCE(vu.variedadeshistoria, vg.variedadeshistoria, e.especiesvegetaleshistoria) AS historia,
+        COALESCE(vg.variedadeshistoria, e.especiesvegetaleshistoria) AS h_historia,
 
-        COALESCE(vu.variedadessemillerodesde, vg.variedadessemillerodesde, e.especiesfechasemillerodesde) AS semillerodesde,
-        COALESCE(vg.variedadessemillerodesde, e.especiesfechasemillerodesde) AS h_semillerodesde,
+        COALESCE(vu.variedadessemillerodesde, vg.variedadessemillerodesde, e.especiesvegetalesfechasemillerodesde) AS semillerodesde,
+        COALESCE(vg.variedadessemillerodesde, e.especiesvegetalesfechasemillerodesde) AS h_semillerodesde,
 
-        COALESCE(vu.variedadessemillerohasta, vg.variedadessemillerohasta, e.especiesfechasemillerohasta) AS semillerohasta,
-        COALESCE(vg.variedadessemillerohasta, e.especiesfechasemillerohasta) AS h_semillerohasta,
+        COALESCE(vu.variedadessemillerohasta, vg.variedadessemillerohasta, e.especiesvegetalesfechasemillerohasta) AS semillerohasta,
+        COALESCE(vg.variedadessemillerohasta, e.especiesvegetalesfechasemillerohasta) AS h_semillerohasta,
 
-        COALESCE(vu.variedadessiembradirectadesde, vg.variedadessiembradirectadesde, e.especiesfechasiembradirectadesde) AS siembradirectadesde,
-        COALESCE(vg.variedadessiembradirectadesde, e.especiesfechasiembradirectadesde) AS h_siembradirectadesde,
+        COALESCE(vu.variedadessiembradirectadesde, vg.variedadessiembradirectadesde, e.especiesvegetalesfechasiembradirectadesde) AS siembradirectadesde,
+        COALESCE(vg.variedadessiembradirectadesde, e.especiesvegetalesfechasiembradirectadesde) AS h_siembradirectadesde,
 
-        COALESCE(vu.variedadessiembradirectahasta, vg.variedadessiembradirectahasta, e.especiesfechasiembradirectahasta) AS siembradirectahasta,
-        COALESCE(vg.variedadessiembradirectahasta, e.especiesfechasiembradirectahasta) AS h_siembradirectahasta,
+        COALESCE(vu.variedadessiembradirectahasta, vg.variedadessiembradirectahasta, e.especiesvegetalesfechasiembradirectahasta) AS siembradirectahasta,
+        COALESCE(vg.variedadessiembradirectahasta, e.especiesvegetalesfechasiembradirectahasta) AS h_siembradirectahasta,
 
-        COALESCE(vu.variedadestrasplantedesde, vg.variedadestrasplantedesde, e.especiestrasplantedesde) AS trasplantedesde,
-        COALESCE(vg.variedadestrasplantedesde, e.especiestrasplantedesde) AS h_trasplantedesde,
+        COALESCE(vu.variedadestrasplantedesde, vg.variedadestrasplantedesde, e.especiesvegetalestrasplantedesde) AS trasplantedesde,
+        COALESCE(vg.variedadestrasplantedesde, e.especiesvegetalestrasplantedesde) AS h_trasplantedesde,
 
-        COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS trasplantehasta,
-        COALESCE(vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS h_trasplantehasta,
+        COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiesvegetalestrasplantehasta) AS trasplantehasta,
+        COALESCE(vg.variedadestrasplantehasta, e.especiesvegetalestrasplantehasta) AS h_trasplantehasta,
 
-        COALESCE(vu.variedadesrecolecciondesde, vg.variedadesrecolecciondesde, e.especiesfecharecolecciondesde) AS recolecciondesde,
-        COALESCE(vg.variedadesrecolecciondesde, e.especiesfecharecolecciondesde) AS h_recolecciondesde,
+        COALESCE(vu.variedadesrecolecciondesde, vg.variedadesrecolecciondesde, e.especiesvegetalesfecharecolecciondesde) AS recolecciondesde,
+        COALESCE(vg.variedadesrecolecciondesde, e.especiesvegetalesfecharecolecciondesde) AS h_recolecciondesde,
 
-        COALESCE(vu.variedadesrecoleccionhasta, vg.variedadesrecoleccionhasta, e.especiesfecharecoleccionhasta) AS recoleccionhasta,
-        COALESCE(vg.variedadesrecoleccionhasta, e.especiesfecharecoleccionhasta) AS h_recoleccionhasta,
+        COALESCE(vu.variedadesrecoleccionhasta, vg.variedadesrecoleccionhasta, e.especiesvegetalesfecharecoleccionhasta) AS recoleccionhasta,
+        COALESCE(vg.variedadesrecoleccionhasta, e.especiesvegetalesfecharecoleccionhasta) AS h_recoleccionhasta,
 
-        COALESCE(vu.variedadesautosuficiencia, vg.variedadesautosuficiencia, e.especiesautosuficiencia) AS autosuficiencia,
-        COALESCE(vg.variedadesautosuficiencia, e.especiesautosuficiencia) AS h_autosuficiencia,
+        COALESCE(vu.variedadesautosuficiencia, vg.variedadesautosuficiencia, e.especiesvegetalesautosuficiencia) AS autosuficiencia,
+        COALESCE(vg.variedadesautosuficiencia, e.especiesvegetalesautosuficiencia) AS h_autosuficiencia,
 
-        COALESCE(vu.variedadesautosuficienciaparcial, vg.variedadesautosuficienciaparcial, e.especiesautosuficienciaparcial) AS autosuficienciaparcial,
-        COALESCE(vg.variedadesautosuficienciaparcial, e.especiesautosuficienciaparcial) AS h_autosuficienciaparcial,
+        COALESCE(vu.variedadesautosuficienciaparcial, vg.variedadesautosuficienciaparcial, e.especiesvegetalesautosuficienciaparcial) AS autosuficienciaparcial,
+        COALESCE(vg.variedadesautosuficienciaparcial, e.especiesvegetalesautosuficienciaparcial) AS h_autosuficienciaparcial,
 
-        COALESCE(vu.variedadesautosuficienciaconserva, vg.variedadesautosuficienciaconserva, e.especiesautosuficienciaconserva) AS autosuficienciaconserva,
-        COALESCE(vg.variedadesautosuficienciaconserva, e.especiesautosuficienciaconserva) AS h_autosuficienciaconserva,
+        COALESCE(vu.variedadesautosuficienciaconserva, vg.variedadesautosuficienciaconserva, e.especiesvegetalesautosuficienciaconserva) AS autosuficienciaconserva,
+        COALESCE(vg.variedadesautosuficienciaconserva, e.especiesvegetalesautosuficienciaconserva) AS h_autosuficienciaconserva,
 
-        COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesicono) AS icono,
-        COALESCE(vg.variedadesicono, e.especiesicono) AS h_icono,
+        COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesvegetalesicono) AS icono,
+        COALESCE(vg.variedadesicono, e.especiesvegetalesicono) AS h_icono,
 
-        COALESCE(vu.variedadesbiodinamicacategoria, vg.variedadesbiodinamicacategoria, e.especiesorganocomestible) AS biodinamicacategoria,
-        COALESCE(vg.variedadesbiodinamicacategoria, e.especiesorganocomestible) AS h_biodinamicacategoria,
+        COALESCE(vu.variedadesbiodinamicacategoria, vg.variedadesbiodinamicacategoria, e.especiesvegetalesorganocomestible) AS biodinamicacategoria,
+        COALESCE(vg.variedadesbiodinamicacategoria, e.especiesvegetalesorganocomestible) AS h_biodinamicacategoria,
 
-        COALESCE(vu.variedadesbiodinamicanotas, vg.variedadesbiodinamicanotas, e.especiesbiodinamicanotas) AS biodinamicanotas,
-        COALESCE(vg.variedadesbiodinamicanotas, e.especiesbiodinamicanotas) AS h_biodinamicanotas,
+        COALESCE(vu.variedadesbiodinamicanotas, vg.variedadesbiodinamicanotas, e.especiesvegetalesbiodinamicanotas) AS biodinamicanotas,
+        COALESCE(vg.variedadesbiodinamicanotas, e.especiesvegetalesbiodinamicanotas) AS h_biodinamicanotas,
 
-        COALESCE(vu.variedadeslunarfasesiembra, vg.variedadeslunarfasesiembra, e.especieslunarfasesiembra) AS lunarfasesiembra,
-        COALESCE(vg.variedadeslunarfasesiembra, e.especieslunarfasesiembra) AS h_lunarfasesiembra,
+        COALESCE(vu.variedadeslunarfasesiembra, vg.variedadeslunarfasesiembra, e.especiesvegetaleslunarfasesiembra) AS lunarfasesiembra,
+        COALESCE(vg.variedadeslunarfasesiembra, e.especiesvegetaleslunarfasesiembra) AS h_lunarfasesiembra,
 
-        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
-        COALESCE(vg.variedadestiposiembra, e.especiestiposiembra) AS h_tiposiembra,
+        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiesvegetalestiposiembra) AS tiposiembra,
+        COALESCE(vg.variedadestiposiembra, e.especiesvegetalestiposiembra) AS h_tiposiembra,
 
-        COALESCE(vu.variedadeslunarfasetrasplante, vg.variedadeslunarfasetrasplante, e.especieslunarfasetrasplante) AS lunarfasetrasplante,
-        COALESCE(vg.variedadeslunarfasetrasplante, e.especieslunarfasetrasplante) AS h_lunarfasetrasplante,
+        COALESCE(vu.variedadeslunarfasetrasplante, vg.variedadeslunarfasetrasplante, e.especiesvegetaleslunarfasetrasplante) AS lunarfasetrasplante,
+        COALESCE(vg.variedadeslunarfasetrasplante, e.especiesvegetaleslunarfasetrasplante) AS h_lunarfasetrasplante,
 
-        COALESCE(vu.variedadeslunarobservaciones, vg.variedadeslunarobservaciones, e.especieslunarobservaciones) AS lunarobservaciones,
-        COALESCE(vg.variedadeslunarobservaciones, e.especieslunarobservaciones) AS h_lunarobservaciones,
+        COALESCE(vu.variedadeslunarobservaciones, vg.variedadeslunarobservaciones, e.especiesvegetaleslunarobservaciones) AS lunarobservaciones,
+        COALESCE(vg.variedadeslunarobservaciones, e.especiesvegetaleslunarobservaciones) AS h_lunarobservaciones,
 
-        COALESCE(vu.variedadesbiodinamicafasesiembra, vg.variedadesbiodinamicafasesiembra, e.especiesbiodinamicafasesiembra) AS biodinamicafasesiembra,
-        COALESCE(vg.variedadesbiodinamicafasesiembra, e.especiesbiodinamicafasesiembra) AS h_biodinamicafasesiembra,
+        COALESCE(vu.variedadesbiodinamicafasesiembra, vg.variedadesbiodinamicafasesiembra, e.especiesvegetalesbiodinamicafasesiembra) AS biodinamicafasesiembra,
+        COALESCE(vg.variedadesbiodinamicafasesiembra, e.especiesvegetalesbiodinamicafasesiembra) AS h_biodinamicafasesiembra,
 
-        COALESCE(vu.variedadesbiodinamicafasetrasplante, vg.variedadesbiodinamicafasetrasplante, e.especiesbiodinamicafasetrasplante) AS biodinamicafasetrasplante,
-        COALESCE(vg.variedadesbiodinamicafasetrasplante, e.especiesbiodinamicafasetrasplante) AS h_biodinamicafasetrasplante,
+        COALESCE(vu.variedadesbiodinamicafasetrasplante, vg.variedadesbiodinamicafasetrasplante, e.especiesvegetalesbiodinamicafasetrasplante) AS biodinamicafasetrasplante,
+        COALESCE(vg.variedadesbiodinamicafasetrasplante, e.especiesvegetalesbiodinamicafasetrasplante) AS h_biodinamicafasetrasplante,
 
-        COALESCE(vu.variedadesphsuelo, vg.variedadesphsuelo, CONCAT(e.especiesphminimosuelo, ' - ', e.especiesphmaximosuelo)) AS phsuelo,
-        COALESCE(vg.variedadesphsuelo, CONCAT(e.especiesphminimosuelo, ' - ', e.especiesphmaximosuelo)) AS h_phsuelo,
+        COALESCE(vu.variedadesphsuelo, vg.variedadesphsuelo, CONCAT(e.especiesvegetalesphminimosuelo, ' - ', e.especiesvegetalesphmaximosuelo)) AS phsuelo,
+        COALESCE(vg.variedadesphsuelo, CONCAT(e.especiesvegetalesphminimosuelo, ' - ', e.especiesvegetalesphmaximosuelo)) AS h_phsuelo,
 
-        COALESCE(vu.variedadesnecesidadriego, vg.variedadesnecesidadriego, e.especiesnecesidadriego) AS necesidadriego,
-        COALESCE(vg.variedadesnecesidadriego, e.especiesnecesidadriego) AS h_necesidadriego,
+        COALESCE(vu.variedadesnecesidadriego, vg.variedadesnecesidadriego, e.especiesvegetalesnecesidadriego) AS necesidadriego,
+        COALESCE(vg.variedadesnecesidadriego, e.especiesvegetalesnecesidadriego) AS h_necesidadriego,
 
-        COALESCE(vu.variedadesvolumenmaceta, vg.variedadesvolumenmaceta, e.especiesvolumenmaceta) AS volumenmaceta,
-        COALESCE(vg.variedadesvolumenmaceta, e.especiesvolumenmaceta) AS h_volumenmaceta,
+        COALESCE(vu.variedadesvolumenmaceta, vg.variedadesvolumenmaceta, e.especiesvegetalesvolumenmaceta) AS volumenmaceta,
+        COALESCE(vg.variedadesvolumenmaceta, e.especiesvegetalesvolumenmaceta) AS h_volumenmaceta,
 
-        COALESCE(vu.variedadesluzsolar, vg.variedadesluzsolar, e.especiesluzsolar) AS luzsolar,
-        COALESCE(vg.variedadesluzsolar, e.especiesluzsolar) AS h_luzsolar,
+        COALESCE(vu.variedadesluzsolar, vg.variedadesluzsolar, e.especiesvegetalesluzsolar) AS luzsolar,
+        COALESCE(vg.variedadesluzsolar, e.especiesvegetalesluzsolar) AS h_luzsolar,
 
-        COALESCE(vu.variedadescaracteristicassuelo, vg.variedadescaracteristicassuelo, e.especiescaracteristicassuelo) AS caracteristicassuelo,
-        COALESCE(vg.variedadescaracteristicassuelo, e.especiescaracteristicassuelo) AS h_caracteristicassuelo,
+        COALESCE(vu.variedadescaracteristicassuelo, vg.variedadescaracteristicassuelo, e.especiesvegetalescaracteristicassuelo) AS caracteristicassuelo,
+        COALESCE(vg.variedadescaracteristicassuelo, e.especiesvegetalescaracteristicassuelo) AS h_caracteristicassuelo,
 
-        COALESCE(vu.variedadesdificultad, vg.variedadesdificultad, e.especiesdificultad) AS dificultad,
-        COALESCE(vg.variedadesdificultad, e.especiesdificultad) AS h_dificultad,
+        COALESCE(vu.variedadesdificultad, vg.variedadesdificultad, e.especiesvegetalesdificultad) AS dificultad,
+        COALESCE(vg.variedadesdificultad, e.especiesvegetalesdificultad) AS h_dificultad,
 
         -- Campos adicionales de variedades que sí existen en la tabla
-        COALESCE(NULLIF(vu.variedadesnombrecientifico, ''), vg.variedadesnombrecientifico, e.especiesnombrecientifico) AS nombrecientifico,
-        COALESCE(vg.variedadesnombrecientifico, e.especiesnombrecientifico) AS h_nombrecientifico,
+        COALESCE(NULLIF(vu.variedadesvegetalesnombrecientifico, ''), vg.variedadesvegetalesnombrecientifico, e.especiesvegetalesnombrecientifico) AS nombrecientifico,
+        COALESCE(vg.variedadesvegetalesnombrecientifico, e.especiesvegetalesnombrecientifico) AS h_nombrecientifico,
 
-        COALESCE(NULLIF(vu.variedadesfamilia, ''), vg.variedadesfamilia, e.especiesfamilia) AS familia,
-        COALESCE(vg.variedadesfamilia, e.especiesfamilia) AS h_familia,
+        COALESCE(NULLIF(vu.variedadesfamilia, ''), vg.variedadesfamilia, e.especiesvegetalesfamilia) AS familia,
+        COALESCE(vg.variedadesfamilia, e.especiesvegetalesfamilia) AS h_familia,
 
-        COALESCE(NULLIF(vu.variedadestipo, ''), vg.variedadestipo, e.especiestipo) AS tipo,
-        COALESCE(vg.variedadestipo, e.especiestipo) AS h_tipo,
+        COALESCE(NULLIF(vu.variedadestipo, ''), vg.variedadestipo, e.especiesvegetalestipo) AS tipo,
+        COALESCE(vg.variedadestipo, e.especiesvegetalestipo) AS h_tipo,
 
-        COALESCE(NULLIF(vu.variedadesciclo, ''), vg.variedadesciclo, e.especiesciclo) AS ciclo,
-        COALESCE(vg.variedadesciclo, e.especiesciclo) AS h_ciclo,
+        COALESCE(NULLIF(vu.variedadesciclo, ''), vg.variedadesciclo, e.especiesvegetalesciclo) AS ciclo,
+        COALESCE(vg.variedadesciclo, e.especiesvegetalesciclo) AS h_ciclo,
 
         -- Duraciones desde especiesfases (solo herencia, sin override de usuario por ahora)
         ef_germ.especiesfasesduraciondias AS diasgerminacion,
@@ -169,15 +169,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         ef_cosecha.especiesfasesduraciondias AS diashastarecoleccion,
 
         -- Campos de especie solo lectura (sin override de usuario)
-        e.especiesresistenciahelada,
-        e.especiesnecesidadtutoraje,
-        e.especiesporteplanta,
-        e.especiesrendimientoestimado,
-        e.especiespartecosechable,
-        e.especiesgerminaroscuridad,
+        e.especiesvegetalesresistenciahelada,
+        e.especiesvegetalesnecesidadtutoraje,
+        e.especiesvegetalesporteplanta,
+        e.especiesvegetalesrendimientoestimado,
+        e.especiesvegetalespartecosechable,
+        e.especiesvegetalesgerminaroscuridad,
 
         -- Flags de personalización (para UI: saber qué viene del usuario)
-        vu.variedadesnombre IS NOT NULL AS _p_nombre,
+        vu.variedadesvegetalesnombre IS NOT NULL AS _p_nombre,
         vu.variedadesdescripcion IS NOT NULL AS _p_descripcion,
         vu.variedadescolor IS NOT NULL AS _p_color,
         vu.variedadestamano IS NOT NULL AS _p_tamano,
@@ -216,19 +216,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         vu.variedadesluzsolar IS NOT NULL AS _p_luzsolar,
         vu.variedadescaracteristicassuelo IS NOT NULL AS _p_caracteristicassuelo,
         vu.variedadesdificultad IS NOT NULL AS _p_dificultad,
-        vu.variedadesnombrecientifico IS NOT NULL AS _p_nombrecientifico,
+        vu.variedadesvegetalesnombrecientifico IS NOT NULL AS _p_nombrecientifico,
         vu.variedadesfamilia IS NOT NULL AS _p_familia,
         vu.variedadestipo IS NOT NULL AS _p_tipo,
         vu.variedadesciclo IS NOT NULL AS _p_ciclo
 
-      FROM variedades vu
-      JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
-      LEFT JOIN especiesfases ef_germ ON ef_germ.xespeciesfasesidespecies = e.idespecies AND ef_germ.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'germinacion' LIMIT 1)
-      LEFT JOIN especiesfases ef_trasp ON ef_trasp.xespeciesfasesidespecies = e.idespecies AND ef_trasp.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'trasplante' LIMIT 1)
-      LEFT JOIN especiesfases ef_fruct ON ef_fruct.xespeciesfasesidespecies = e.idespecies AND ef_fruct.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'floracion' LIMIT 1)
-      LEFT JOIN especiesfases ef_cosecha ON ef_cosecha.xespeciesfasesidespecies = e.idespecies AND ef_cosecha.xespeciesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'cosecha' LIMIT 1)
-      WHERE vu.idvariedades = ? AND vu.xvariedadesidusuarios = ?
+      FROM variedadesvegetales vu
+      JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
+      LEFT JOIN especiesfases ef_germ ON ef_germ.xespeciesvegetalesfasesidespeciesvegetales = e.idespeciesvegetales AND ef_germ.xespeciesvegetalesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'germinacion' LIMIT 1)
+      LEFT JOIN especiesfases ef_trasp ON ef_trasp.xespeciesvegetalesfasesidespeciesvegetales = e.idespeciesvegetales AND ef_trasp.xespeciesvegetalesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'trasplante' LIMIT 1)
+      LEFT JOIN especiesfases ef_fruct ON ef_fruct.xespeciesvegetalesfasesidespeciesvegetales = e.idespeciesvegetales AND ef_fruct.xespeciesvegetalesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'floracion' LIMIT 1)
+      LEFT JOIN especiesfases ef_cosecha ON ef_cosecha.xespeciesvegetalesfasesidespeciesvegetales = e.idespeciesvegetales AND ef_cosecha.xespeciesvegetalesfasesidfasescultivo = (SELECT idfasescultivo FROM fasescultivo WHERE fasescultivoclave = 'cosecha' LIMIT 1)
+      WHERE vu.idvariedadesvegetales = ? AND vu.xvariedadesvegetalesidusuarios = ?
     `, [plantaId, user.id]);
 
     if (!rows || rows.length === 0) {
@@ -257,7 +257,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Verificar propiedad
     const [ownerCheck]: any = await pool.query(
-      `SELECT idvariedades FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `SELECT idvariedadesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
     if (ownerCheck.length === 0) {
@@ -270,7 +270,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Campos permitidos (solo los de variedades, nunca las FK)
     const allowedFields = [
-      'variedadesnombre', 'variedadesdescripcion', 'variedadescolor', 'variedadestamano',
+      'variedadesvegetalesnombre', 'variedadesdescripcion', 'variedadescolor', 'variedadestamano',
       'variedadesviabilidadsemilla',
       'variedadestemperaturaminima', 'variedadestemperaturaoptima', 'variedadestemperaturamaxima',
       'variedadesmarcoplantas', 'variedadesmarcofilas', 'variedadesmarcomargen', 'variedadesprofundidadsiembra',
@@ -286,9 +286,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       'variedadesdificultad',
       'variedadeslunarfasesiembra', 'variedadeslunarfasetrasplante', 'variedadeslunarobservaciones',
       'variedadesbiodinamicafasesiembra', 'variedadesbiodinamicafasetrasplante',
-      'variedadesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo',
+      'variedadesvegetalesnombrecientifico', 'variedadesfamilia', 'variedadestipo', 'variedadesciclo',
       'variedadespeso1000semillas',
-      'variedadesvisibilidadsino'
+      'variedadesvegetalesvisibilidadsino'
     ];
 
     const setClauses: string[] = [];
@@ -309,7 +309,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     queryParams.push(plantaId, user.id);
 
     await pool.query(
-      `UPDATE variedades SET ${setClauses.join(', ')} WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `UPDATE variedadesvegetales SET ${setClauses.join(', ')} WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
       queryParams
     );
 
@@ -334,18 +334,18 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     // Verificar propiedad antes de borrar
     const [ownerCheck]: any = await pool.query(
-      `SELECT idvariedades, xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `SELECT idvariedadesvegetales, xvariedadesvegetalesidvariedadorigen FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
     if (ownerCheck.length === 0) {
       return NextResponse.json({ error: 'Planta no encontrada o no te pertenece' }, { status: 404 });
     }
 
-    const { idvariedades, xvariedadesidvariedadorigen } = ownerCheck[0];
+    const { idvariedadesvegetales, xvariedadesvegetalesidvariedadorigen } = ownerCheck[0];
 
     // Verificar si tiene cultivos asociados
     const [cropsCheck]: any = await pool.query(
-      `SELECT idcultivos FROM cultivos WHERE xcultivosidvariedades = ? AND xcultivosidusuarios = ? AND cultivosactivosino = 1 LIMIT 1`,
+      `SELECT idcultivos FROM cultivos WHERE xcultivosidvariedadesvegetales = ? AND xcultivosidusuarios = ? AND cultivosactivosino = 1 LIMIT 1`,
       [plantaId, user.id]
     );
     if (cropsCheck.length > 0) {
@@ -358,16 +358,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // Verificar si tiene semillas asociadas
     const [seedsCheck]: any = await pool.query(
       `SELECT idsemillas FROM semillas 
-       WHERE (xsemillasidvariedades = ? OR xsemillasidvariedades = ?) 
+       WHERE (xsemillasidvariedadesvegetales = ? OR xsemillasidvariedadesvegetales = ?) 
          AND xsemillasidusuarios = ? 
          AND semillasactivosino = 1 LIMIT 1`,
-      [idvariedades, xvariedadesidvariedadorigen, user.id]
+      [idvariedadesvegetales, xvariedadesvegetalesidvariedadorigen, user.id]
     );
 
     if (seedsCheck.length > 0 || forceInactivate) {
-      // Si tiene semillas o se solicita inactivación, no se elimina físicamente, se inactiva (variedadesvisibilidadsino = 0)
+      // Si tiene semillas o se solicita inactivación, no se elimina físicamente, se inactiva (variedadesvegetalesvisibilidadsino = 0)
       await pool.query(
-        `UPDATE variedades SET variedadesvisibilidadsino = 0 WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+        `UPDATE variedadesvegetales SET variedadesvegetalesvisibilidadsino = 0 WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
         [plantaId, user.id]
       );
       return NextResponse.json({ success: true, message: 'Planta inactivada de tu huerto.', inactivated: true });
@@ -375,13 +375,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     // Eliminar overrides de pautas del usuario para esta planta
     await pool.query(
-      `DELETE FROM laborespauta WHERE xlaborespautaidvariedades = ? AND xlaborespautaidusuarios = ?`,
+      `DELETE FROM laborespauta WHERE xlaborespautaidvariedadesvegetales = ? AND xlaborespautaidusuarios = ?`,
       [plantaId, user.id]
     );
 
     // Eliminar la variedad del usuario
     await pool.query(
-      `DELETE FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `DELETE FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
 

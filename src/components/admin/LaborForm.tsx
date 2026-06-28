@@ -1,13 +1,14 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import PremiumBackButton from '@/components/ui/PremiumBackButton';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
-import { storage } from '@/lib/firebase/config'; // Import estático: garantiza initializeApp() en carga del módulo
+import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import DownloadApuntesButton from './DownloadApuntesButton'; // Import estático: garantiza initializeApp() en carga del módulo
-import './EspecieForm.css'; // Reuse the EspecieForm CSS for the common classes
-
+import DownloadApuntesButton from './DownloadApuntesButton';
+import PhotoEditorModal from './PhotoEditorModal';
+import './EspecieVegetalForm.css';
 interface LaborFormProps {
   laborId: string | null;
   userEmail: string | null;
@@ -110,15 +111,7 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
 
   // Editor State
   const [editingPhoto, setEditingPhoto] = useState<any>(null);
-  const [editorX, setEditorX] = useState(50);
-  const [editorY, setEditorY] = useState(50);
-  const [editorZoom, setEditorZoom] = useState(100);
-  const [editorBrightness, setEditorBrightness] = useState(100);
-  const [editorContrast, setEditorContrast] = useState(100);
-  const [editorStyle, setEditorStyle] = useState('');
-  const [editorSeoAlt, setEditorSeoAlt] = useState('');
   const [photoEditorSaveStatus, setPhotoEditorSaveStatus] = useState<'idle' | 'saving' | 'no-changes'>('idle');
-  const [editorInitialState, setEditorInitialState] = useState('');
 
   // PDF State
   const [pdfs, setPdfs] = useState<any[]>([]);
@@ -496,41 +489,26 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
 
   const openPhotoEditor = (photo: any) => {
     setEditingPhoto(photo);
-    let meta: any = {};
-    try { meta = JSON.parse(photo.resumen || '{}'); } catch (e) { }
-    setEditorX(meta.profile_object_x ?? 50);
-    setEditorY(meta.profile_object_y ?? 50);
-    setEditorZoom(meta.profile_object_zoom ?? 100);
-    setEditorBrightness(meta.profile_brightness ?? 100);
-    setEditorContrast(meta.profile_contrast ?? 100);
-    setEditorStyle(meta.profile_style ?? '');
-    setEditorSeoAlt(meta.seo_alt || '');
-    setEditorInitialState(JSON.stringify({ x: meta.profile_object_x ?? 50, y: meta.profile_object_y ?? 50, z: meta.profile_object_zoom ?? 100, b: meta.profile_brightness ?? 100, c: meta.profile_contrast ?? 100, s: meta.profile_style ?? '', alt: meta.seo_alt || '' }));
-    setPhotoEditorSaveStatus('idle');
   };
 
-  const closePhotoEditor = () => { setEditingPhoto(null); };
-
-  const handleSavePhotoEditor = async () => {
+  const handleSavePhotoEditor = async (metadata: any) => {
     if (!editingPhoto || !laborId || !userEmail) return;
 
-    const currentState = JSON.stringify({ x: editorX, y: editorY, z: editorZoom, b: editorBrightness, c: editorContrast, s: editorStyle, alt: editorSeoAlt });
-    if (currentState === editorInitialState) {
+    if (metadata.noChanges) {
       setPhotoEditorSaveStatus('no-changes');
-      setTimeout(() => closePhotoEditor(), 1000);
       return;
     }
 
     setPhotoEditorSaveStatus('saving');
     let meta: any = {};
     try { meta = JSON.parse(editingPhoto.resumen || '{}'); } catch (e) { }
-    meta.profile_object_x = editorX;
-    meta.profile_object_y = editorY;
-    meta.profile_object_zoom = editorZoom;
-    meta.profile_brightness = editorBrightness;
-    meta.profile_contrast = editorContrast;
-    meta.profile_style = editorStyle;
-    meta.seo_alt = editorSeoAlt;
+    meta.profile_object_x = metadata.profile_object_x;
+    meta.profile_object_y = metadata.profile_object_y;
+    meta.profile_object_zoom = metadata.profile_object_zoom;
+    meta.profile_brightness = metadata.profile_brightness;
+    meta.profile_contrast = metadata.profile_contrast;
+    meta.profile_style = metadata.profile_style;
+    meta.seo_alt = metadata.seo_alt;
 
     try {
       await fetch(`/api/admin/labores/${laborId}/photos`, {
@@ -539,7 +517,6 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
         body: JSON.stringify({ photoId: editingPhoto.id, action: 'updateMeta', resumen: meta })
       });
       loadAttachments(laborId);
-      closePhotoEditor();
     } catch (e) {
       alert('Error guardando encuadre');
     } finally {
@@ -653,46 +630,6 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
     }
   };
 
-  // ── Drag-to-Pan en el editor de fotos ──
-  const editorDragRef = React.useRef<{ dragging: boolean; startX: number; startY: number; startPosX: number; startPosY: number }>({
-    dragging: false, startX: 0, startY: 0, startPosX: 50, startPosY: 50
-  });
-
-  const onEditorMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    editorDragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY, startPosX: editorX, startPosY: editorY };
-    const onMove = (ev: MouseEvent) => {
-      if (!editorDragRef.current.dragging) return;
-      const dx = ev.clientX - editorDragRef.current.startX;
-      const dy = ev.clientY - editorDragRef.current.startY;
-      const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
-      setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
-      setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
-    };
-    const onUp = () => {
-      editorDragRef.current.dragging = false;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  };
-
-  const onEditorTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    editorDragRef.current = { dragging: true, startX: t.clientX, startY: t.clientY, startPosX: editorX, startPosY: editorY };
-  };
-
-  const onEditorTouchMove = (e: React.TouchEvent) => {
-    if (!editorDragRef.current.dragging) return;
-    const t = e.touches[0];
-    const dx = t.clientX - editorDragRef.current.startX;
-    const dy = t.clientY - editorDragRef.current.startY;
-    const sensitivity = 0.15 * (100 / Math.max(editorZoom, 100));
-    setEditorX(Math.max(0, Math.min(100, editorDragRef.current.startPosX - dx * sensitivity)));
-    setEditorY(Math.max(0, Math.min(100, editorDragRef.current.startPosY - dy * sensitivity)));
-  };
-
   if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>Cargando Ficha de Labor...</div>;
 
   const sortedPhotos = [...photos].sort((a, b) => {
@@ -731,20 +668,17 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
 
       {/* Navigation Buttons */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={() => router.push('/dashboard')} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          🏠 Volver al Inicio
-        </button>
+        <PremiumBackButton onClick={() => router.push('/dashboard')} text="🏠 Volver al Inicio" />
         {searchParams.get('from') === 'pdfs' ? (
-          <button onClick={() => router.push('/dashboard/admin/pdfs')} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            🔙 Volver a Gestor de PDFs
-          </button>
+          <PremiumBackButton onClick={() => router.push('/dashboard/admin/pdfs')} text="🔙 Volver a Gestor de PDFs" />
         ) : (
-          <button onClick={() => {
-            if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
-            if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/labores'); }
-          }} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a Especie' : '🔙 Volver a Labores'}
-          </button>
+          <PremiumBackButton 
+            onClick={() => {
+              if (isDirty && !confirm('Tienes cambios sin guardar. ¿Seguro que quieres salir?')) return;
+              if (window.history.length > 2) { router.back(); } else { router.push('/dashboard/admin/labores'); }
+            }} 
+            text={typeof window !== 'undefined' && document.referrer.includes('/especies') ? '🔙 Volver a Especie' : '🔙 Volver a Labores'} 
+          />
         )}
       </div>
 
@@ -1105,169 +1039,16 @@ export default function LaborForm({ laborId, userEmail, isMobile = false }: Labo
         </form>
       </div>
 
-      {/* EDITOR DE FOTOS MODAL */}
-      {editingPhoto && (
-        <div className="photo-editor-overlay">
-          <div className="photo-editor-content" onClick={e => e.stopPropagation()}>
-            <div className="photo-editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ margin: 0 }}>Ajustar Fotografía y SEO</h3>
-                <small style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginTop: '4px' }}>
-                  📄 {editingPhoto.ruta.split('/').pop()}
-                </small>
-              </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <button type="button" onClick={closePhotoEditor} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cerrar</button>
-                {(() => {
-                  const currentState = JSON.stringify({ x: editorX, y: editorY, z: editorZoom, b: editorBrightness, c: editorContrast, s: editorStyle, alt: editorSeoAlt });
-                  if (currentState !== editorInitialState) {
-                    return (
-                      <button
-                        type="button"
-                        onClick={handleSavePhotoEditor}
-                        className={`btn-primary ${photoEditorSaveStatus === 'no-changes' ? 'success' : ''}`}
-                        style={{ padding: '8px 16px', fontSize: '0.9rem', margin: 0 }}
-                        disabled={photoEditorSaveStatus === 'saving'}
-                      >
-                        {photoEditorSaveStatus === 'saving' ? '⏳ Guardando...' : photoEditorSaveStatus === 'no-changes' ? '✓ Sin cambios' : '💾 Guardar Cambios'}
-                      </button>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            </div>
-
-            <div className="photo-editor-body">
-              <div className="photo-editor-preview-container"
-                onMouseDown={onEditorMouseDown}
-                onTouchStart={onEditorTouchStart}
-                onTouchMove={onEditorTouchMove}>
-                <div className="photo-editor-preview-mask" style={{ borderRadius: '12px', aspectRatio: '3/4', width: '220px', overflow: 'hidden' }}>
-                  <img
-                    src={getMediaUrl(editingPhoto.ruta)}
-                    alt="preview"
-                    className="photo-editor-image"
-                    draggable="false"
-                    style={{
-                      objectPosition: `${editorX}% ${editorY}%`,
-                      transformOrigin: `${editorX}% ${editorY}%`,
-                      transform: `scale(${editorZoom / 100})`,
-                      filter: `brightness(${editorBrightness}%) contrast(${editorContrast}%) ${editorStyle ? STYLE_FILTERS[editorStyle] : ''}`.trim()
-                    }}
-                    crossOrigin="anonymous" />
-                </div>
-                <div className="photo-editor-hint">
-                  <span>Arrastra para encuadrar</span>
-                </div>
-              </div>
-
-              <div className="photo-editor-controls">
-                <div className="editor-control-group">
-                  <label>
-                    <span className="control-label">🔍 Zoom ({editorZoom}%)</span>
-                    <button type="button" className="reset-btn" onClick={() => setEditorZoom(100)}>↻</button>
-                  </label>
-                  <input type="range" min="100" max="300" value={editorZoom} onChange={e => setEditorZoom(Number(e.target.value))} />
-                </div>
-                <div className="editor-control-group">
-                  <label>
-                    <span className="control-label">☀️ Brillo ({editorBrightness}%)</span>
-                  </label>
-                  <input type="range" min="50" max="150" value={editorBrightness} onChange={e => setEditorBrightness(Number(e.target.value))} />
-                </div>
-                <div className="editor-control-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ margin: 0 }}>
-                      <span className="control-label" style={{ margin: 0 }}>🌗 Contraste ({editorContrast}%)</span>
-                    </label>
-                  </div>
-                  <input type="range" min="50" max="150" value={editorContrast} onChange={e => setEditorContrast(Number(e.target.value))} />
-                </div>
-
-                <div style={{ marginBottom: '15px', display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditorBrightness(110);
-                      setEditorContrast(115);
-                      setEditorStyle('');
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    🪄 Auto-Mejora
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditorX(50); setEditorY(50); setEditorZoom(100);
-                      setEditorBrightness(100); setEditorContrast(100); setEditorStyle('');
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: '#f1f5f9',
-                      color: '#475569',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    ↻ Reset Todo
-                  </button>
-                </div>
-
-                <div className="editor-control-group" style={{ marginBottom: '15px' }}>
-                  <label>
-                    <span className="control-label">🎨 Estilos y Filtros de IA</span>
-                  </label>
-                  <select
-                    value={editorStyle}
-                    onChange={e => setEditorStyle(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white' }}
-                  >
-                    <option value="">Sin Filtro (Original)</option>
-                    <option value="vibrant">Saturado (Vibrant)</option>
-                    <option value="vintage">Vintage (Cálido)</option>
-                    <option value="cinematic">Cinemático (Dramatic)</option>
-                    <option value="bnw">Blanco y Negro (Clásico)</option>
-                    <option value="fade">Desaturado (Fade)</option>
-                  </select>
-                </div>
-
-                <div className="editor-control-group">
-                  <label>
-                    <span className="control-label">📝 Texto Alternativo SEO (Alt Tag)</span>
-                  </label>
-                  <textarea
-                    value={editorSeoAlt}
-                    onChange={e => setEditorSeoAlt(e.target.value)}
-                    rows={2}
-                    placeholder="Descripción para SEO e invidentes..."
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', resize: 'vertical' }}
-                  />
-                  <small style={{ color: '#64748b', fontSize: '0.7rem', display: 'block', marginTop: '4px' }}>
-                    * El alt-text es fundamental para que Verdantia aparezca en Google Images.
-                  </small>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
+      {/* EDITOR DE FOTOS MODAL (Refactorizado Regla 13 DRY) */}
+      <PhotoEditorModal
+        isOpen={!!editingPhoto}
+        onClose={() => setEditingPhoto(null)}
+        photoUrl={editingPhoto ? getMediaUrl(editingPhoto.ruta) : ''}
+        fileName={editingPhoto?.ruta ? editingPhoto.ruta.split('/').pop() : ''}
+        initialMetadata={editingPhoto?.resumen ? JSON.parse(editingPhoto.resumen) : null}
+        onSave={handleSavePhotoEditor}
+        saveStatus={photoEditorSaveStatus}
+      />
 
       {/* AI Image Generator Modal */}
       {showAiImageModal && (

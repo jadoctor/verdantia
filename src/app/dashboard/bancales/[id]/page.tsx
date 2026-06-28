@@ -1349,7 +1349,7 @@ export default function BancalWorkspace() {
 
         } else {
           // ── FRUITING/HARVEST STAGE: GORGEOUS DETAILED BOTANICAL BUSH WITH HANGING VEGETABLES ──
-          const cropName = (crop.especiesnombre || '').toLowerCase();
+          const cropName = (crop.especiesvegetalesnombre || '').toLowerCase();
           const varietyName = (crop.variedad_nombre || '').toLowerCase();
 
           if (cropName.includes('tomate') || varietyName.includes('cherry')) {
@@ -3246,7 +3246,7 @@ export default function BancalWorkspace() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
           body: JSON.stringify({
-            xcultivosidvariedades: item.idespecies,
+            xcultivosidvariedadesvegetales: item.idespeciesvegetales,
             xcultivosidsemillas: null,
             xcultivosidbancales: bedId,
             cultivoscantidad: 1,
@@ -3302,8 +3302,8 @@ export default function BancalWorkspace() {
             especiesmarcoplantas: gc.especiesmarcoplantas || item.especiesmarcoplantas,
             especiesmarcofilas: gc.especiesmarcofilas || item.especiesmarcofilas,
             especiesmarcomargen: gc.especiesmarcomargen || item.especiesmarcomargen,
-            especiesicono: gc.especiesicono || item.especiesicono,
-            especiesnombre: gc.especiesnombre || item.especiesnombre
+            especiesvegetalesicono: gc.especiesvegetalesicono || item.especiesvegetalesicono,
+            especiesvegetalesnombre: gc.especiesvegetalesnombre || item.especiesvegetalesnombre
           };
           
           // Pasar x e y como targetX, targetY para priorizar la cama, y virtualCrops para la secuencia
@@ -3361,15 +3361,15 @@ export default function BancalWorkspace() {
       const virtualCrop = {
         ...targetPlant,
         cultivoscantidad: 1, // Por defecto plantamos 1
-        idespecies: targetPlant.idespecies || targetPlant.xsemillasidvariedades,
+        idespeciesvegetales: targetPlant.idespeciesvegetales || targetPlant.xsemillasidvariedadesvegetales,
         xcultivosidsemillas: targetPlant.idsemillas || null,
         cultivosorigen: targetPlant.idsemillas ? 'semilla_inventario' : 'plantel_comprado',
         cultivosmetodo: targetPlant.idsemillas ? 'siembra_directa' : 'trasplante_directo',
         especiesmarcoplantas: targetPlant.especiesmarcoplantas,
         especiesmarcofilas: targetPlant.especiesmarcofilas,
         especiesmarcomargen: targetPlant.especiesmarcomargen,
-        especiesicono: targetPlant.especiesicono,
-        especiesnombre: targetPlant.especiesnombre
+        especiesvegetalesicono: targetPlant.especiesvegetalesicono,
+        especiesvegetalesnombre: targetPlant.especiesvegetalesnombre
       };
       await handleAutoPlaceCrop(virtualCrop, true, x, y); // silent
       return;
@@ -3409,7 +3409,7 @@ export default function BancalWorkspace() {
     try {
       let cropsToRemove: any[] = [];
       if (varietyId) {
-        cropsToRemove = flattenedCrops.filter(c => c.xcultivosidvariedades === varietyId && String(c.xcultivosidbancales || c.xcultivosubicacionesidbancales) === String(bancal.idbancales));
+        cropsToRemove = flattenedCrops.filter(c => c.xcultivosidvariedadesvegetales === varietyId && String(c.xcultivosidbancales || c.xcultivosubicacionesidbancales) === String(bancal.idbancales));
       } else {
         const myCrop = flattenedCrops.find(c => c.idcultivos === cropId) || allActiveCrops.find(c => c.idcultivos === cropId);
         if (myCrop) cropsToRemove = [myCrop];
@@ -3680,9 +3680,9 @@ export default function BancalWorkspace() {
     }
 
     const N = parseInt(cropToPlace.cultivoscantidad) || 1;
-    const spacingX = parseFloat(cropToPlace.especiesmarcoplantas) || 30;
-    const spacingY = parseFloat(cropToPlace.especiesmarcofilas) || 30;
-    const margin = parseFloat(cropToPlace.especiesmarcomargen) || 0;
+    const spacingX = parseFloat(cropToPlace.especiesvegetalesmarcoplantas) || 30;
+    const spacingY = parseFloat(cropToPlace.especiesvegetalesmarcofilas) || 30;
+    const margin = parseFloat(cropToPlace.especiesvegetalesmarcomargen) || 0;
 
     const spacingXMeters = spacingX / 100;
     const spacingYMeters = spacingY / 100;
@@ -3808,7 +3808,7 @@ export default function BancalWorkspace() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
             body: JSON.stringify({
-              xcultivosidvariedades: cropToPlace.idespecies || cropToPlace.xcultivosidvariedades,
+              xcultivosidvariedadesvegetales: cropToPlace.idespeciesvegetales || cropToPlace.xcultivosidvariedadesvegetales,
               xcultivosidsemillas: null,
               xcultivosidbancales: bedId,
               cultivoscantidad: N,
@@ -3977,7 +3977,7 @@ export default function BancalWorkspace() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail! },
               body: JSON.stringify({
-                xcultivosidvariedades: cropToPlace.xcultivosidvariedades,
+                xcultivosidvariedadesvegetales: cropToPlace.xcultivosidvariedadesvegetales,
                 xcultivosidsemillas: cropToPlace.xcultivosidsemillas || null,
                 xcultivosidbancales: p.bedId,
                 cultivosposicionx: p.x,
@@ -4019,7 +4019,7 @@ export default function BancalWorkspace() {
   };
 
   const filteredCatalog = catalog.filter(item => 
-    item.especiesnombre.toLowerCase().includes(searchQuery.toLowerCase())
+    item.especiesvegetalesnombre.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredActiveCrops = (() => {
@@ -4027,15 +4027,15 @@ export default function BancalWorkspace() {
     const filtered = allActiveCrops.filter(crop => {
       const unassignedQty = parseInt(crop.cultivoscantidad) - (crop.ubicaciones?.length || 0);
       return unassignedQty > 0 &&
-        ((crop.especiesnombre || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ((crop.especiesvegetalesnombre || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (crop.variedad_nombre || '').toLowerCase().includes(searchQuery.toLowerCase()));
     });
 
-    // 2. Group them by xcultivosidvariedades (variety ID)
+    // 2. Group them by xcultivosidvariedadesvegetales (variety ID)
     const groups: Record<number, any[]> = {};
 
     filtered.forEach(crop => {
-      const varId = crop.xcultivosidvariedades;
+      const varId = crop.xcultivosidvariedadesvegetales;
       if (varId) {
         if (!groups[varId]) groups[varId] = [];
         groups[varId].push(crop);
@@ -4371,7 +4371,7 @@ export default function BancalWorkspace() {
               fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
               animation: 'pulse 2s infinite'
             }}>
-              <span style={{ fontSize: '1.1rem' }}>📍</span> Modo Siembra: Haz click en el lienzo para plantar {placingPlant.especiesnombre || placingPlant.variedadesnombre}
+              <span style={{ fontSize: '1.1rem' }}>📍</span> Modo Siembra: Haz click en el lienzo para plantar {placingPlant.especiesvegetalesnombre || placingPlant.variedadesvegetalesnombre}
               <button 
                 onClick={() => setPlacingPlant(null)}
                 style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer', fontWeight: 'bold', marginLeft: '6px' }}
@@ -4387,7 +4387,7 @@ export default function BancalWorkspace() {
               fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
               animation: 'pulse 2s infinite'
             }}>
-              <span style={{ fontSize: '1.1rem' }}>📍</span> Ubicar Cultivo: Haz click en el lienzo para situar {placingCrop.especiesnombre} ({placingCrop.variedad_nombre || 'Común'})
+              <span style={{ fontSize: '1.1rem' }}>📍</span> Ubicar Cultivo: Haz click en el lienzo para situar {placingCrop.especiesvegetalesnombre} ({placingCrop.variedad_nombre || 'Común'})
               <button 
                 onClick={() => setPlacingCrop(null)}
                 style={{ background: 'none', border: 'none', color: '#a7f3d0', cursor: 'pointer', fontWeight: 'bold', marginLeft: '6px' }}
@@ -4684,7 +4684,7 @@ export default function BancalWorkspace() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                        {renderSpeciesIcon(item.especiesicono)}
+                        {renderSpeciesIcon(item.especiesvegetalesicono)}
                         {(item._groupedCultivos || []).length <= 1 ? (
                           <button
                             onClick={(e) => {
@@ -4730,7 +4730,7 @@ export default function BancalWorkspace() {
                                   }
                                   // Desde botón individual: enviar SOLO este cultivo
                                   e.dataTransfer.setData('text/plain', JSON.stringify({
-                                    item: { ...gc, especiesmarcoplantas: item.especiesmarcoplantas, especiesmarcofilas: item.especiesmarcofilas, especiesmarcomargen: item.especiesmarcomargen, especiesicono: item.especiesicono, especiesnombre: item.especiesnombre },
+                                    item: { ...gc, especiesmarcoplantas: item.especiesmarcoplantas, especiesmarcofilas: item.especiesmarcofilas, especiesmarcomargen: item.especiesmarcomargen, especiesvegetalesicono: item.especiesvegetalesicono, especiesvegetalesnombre: item.especiesvegetalesnombre },
                                     source: 'semillas'
                                   }));
                                 }}
@@ -4755,7 +4755,7 @@ export default function BancalWorkspace() {
                                 }}
                                 onMouseEnter={e => {
                                   e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
-                                  setHoveredCropToPreview({ ...gc, especiesmarcoplantas: item.especiesmarcoplantas, especiesmarcofilas: item.especiesmarcofilas, especiesmarcomargen: item.especiesmarcomargen, especiesicono: item.especiesicono, especiesnombre: item.especiesnombre });
+                                  setHoveredCropToPreview({ ...gc, especiesmarcoplantas: item.especiesmarcoplantas, especiesmarcofilas: item.especiesmarcofilas, especiesmarcomargen: item.especiesmarcomargen, especiesvegetalesicono: item.especiesvegetalesicono, especiesvegetalesnombre: item.especiesvegetalesnombre });
                                 }}
                                 onMouseLeave={e => {
                                   e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
@@ -4802,8 +4802,8 @@ export default function BancalWorkspace() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (confirm(`¿Desvincular todos los cultivos de ${item.especiesnombre} de este bancal?`)) {
-                                    handleRemoveCrop(item.idcultivos, item.xcultivosidvariedades);
+                                  if (confirm(`¿Desvincular todos los cultivos de ${item.especiesvegetalesnombre} de este bancal?`)) {
+                                    handleRemoveCrop(item.idcultivos, item.xcultivosidvariedadesvegetales);
                                   }
                                 }}
                                 style={{
@@ -4834,7 +4834,7 @@ export default function BancalWorkspace() {
                           </div>
                         </div>
                         <h4 style={{ margin: '4px 0 2px', fontSize: '0.85rem', color: 'white', fontWeight: 700 }}>
-                          {item.especiesnombre}{item.variedad_nombre ? <span style={{ fontWeight: 400, color: '#9ca3af' }}> ({item.variedad_nombre})</span> : null}
+                          {item.especiesvegetalesnombre}{item.variedad_nombre ? <span style={{ fontWeight: 400, color: '#9ca3af' }}> ({item.variedad_nombre})</span> : null}
                         </h4>
                         <p style={{ margin: 0, fontSize: '0.7rem', color: '#9ca3af' }}>
                           Total: {item.cultivoscantidad || 1} <span style={{ color: '#34d399' }}>(Asignados: {item.asignados || 0})</span> <span style={{ color: '#fbbf24' }}>(Pendientes: {item.pendientes || 0})</span>
@@ -4885,8 +4885,8 @@ export default function BancalWorkspace() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm(`¿Desvincular todos los cultivos de ${item.especiesnombre} de este bancal?`)) {
-                                  handleRemoveCrop(item.idcultivos, item.xcultivosidvariedades);
+                                if (confirm(`¿Desvincular todos los cultivos de ${item.especiesvegetalesnombre} de este bancal?`)) {
+                                  handleRemoveCrop(item.idcultivos, item.xcultivosidvariedadesvegetales);
                                 }
                               }}
                               style={{
@@ -4930,7 +4930,7 @@ export default function BancalWorkspace() {
               ) : (
                 filteredCatalog.map(item => (
                   <div 
-                    key={item.idespecies}
+                    key={item.idespeciesvegetales}
                     draggable
                     onDragStart={(e) => {
                       if (!showBedGuides) {
@@ -4945,22 +4945,22 @@ export default function BancalWorkspace() {
                       background: '#1f2937', border: '1px solid #374151', borderRadius: '12px',
                       padding: '12px', cursor: 'grab', transition: 'all 0.2s',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                      borderColor: placingPlant?.idespecies === item.idespecies ? '#fbbf24' : '#374151'
+                      borderColor: placingPlant?.idespeciesvegetales === item.idespeciesvegetales ? '#fbbf24' : '#374151'
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderColor = '#10b981';
                       setHoveredCropToPreview({ ...item, cultivoscantidad: 1 });
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = placingPlant?.idespecies === item.idespecies ? '#fbbf24' : '#374151';
+                      e.currentTarget.style.borderColor = placingPlant?.idespeciesvegetales === item.idespeciesvegetales ? '#fbbf24' : '#374151';
                       setHoveredCropToPreview(null);
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {renderSpeciesIcon(item.especiesicono)}
+                      {renderSpeciesIcon(item.especiesvegetalesicono)}
                       <div style={{ flex: 1 }}>
                         <h4 style={{ margin: '0 0 2px', fontSize: '0.85rem', color: 'white', fontWeight: 700 }}>
-                          {item.especiesnombre}
+                          {item.especiesvegetalesnombre}
                         </h4>
                         <p style={{ margin: 0, fontSize: '0.7rem', color: '#9ca3af' }}>
                           Marco: {item.especiesmarcoplantas}x{item.especiesmarcofilas}cm{item.especiesmarcomargen !== null && item.especiesmarcomargen !== undefined ? ` • Margen: ${item.especiesmarcomargen}cm` : ''} • Ciclo: {item.especiesciclodevida || 'anual'}
@@ -5168,7 +5168,7 @@ export default function BancalWorkspace() {
                     <div key={c.originalIdCultivos || c.idcultivos} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>
                         <span style={{ color: '#9ca3af', marginRight: '4px' }}>#{c.cultivosnumerocoleccion || String(c.originalIdCultivos || c.idcultivos).substring(0, 3)}</span>
-                        {c.especiesnombre} <span style={{ color: '#64748b' }}>({c.variedad_nombre || 'S/V'})</span>
+                        {c.especiesvegetalesnombre} <span style={{ color: '#64748b' }}>({c.variedad_nombre || 'S/V'})</span>
                       </span>
                       <strong style={{ background: '#1e293b', padding: '2px 6px', borderRadius: '4px' }}>{c.count} uds</strong>
                     </div>
@@ -5725,9 +5725,9 @@ export default function BancalWorkspace() {
 
                   const cropToPlace = activePreviewCrop;
                   const N = parseInt(cropToPlace.cultivoscantidad) || 1;
-                  const spacingX = parseFloat(cropToPlace.especiesmarcoplantas) || 30;
-                  const spacingY = parseFloat(cropToPlace.especiesmarcofilas) || 30;
-                  const margin = parseFloat(cropToPlace.especiesmarcomargen) || 0;
+                  const spacingX = parseFloat(cropToPlace.especiesvegetalesmarcoplantas) || 30;
+                  const spacingY = parseFloat(cropToPlace.especiesvegetalesmarcofilas) || 30;
+                  const margin = parseFloat(cropToPlace.especiesvegetalesmarcomargen) || 0;
                   const spacingXMeters = spacingX / 100;
                   const spacingYMeters = spacingY / 100;
                   const marginMeters = margin / 100;
@@ -6006,7 +6006,7 @@ export default function BancalWorkspace() {
                             {/* Plant Icon (Supports emoji or inline SVG icons) */}
                             {(() => {
                               const emojiSize = Math.max(10, badgeR * 1.1);
-                              const icon = crop.especiesicono || '🌱';
+                              const icon = crop.especiesvegetalesicono || '🌱';
                               
                               if (icon.startsWith('/')) {
                                 const iconSize = Math.max(10, emojiSize * 0.9);
@@ -6518,7 +6518,7 @@ export default function BancalWorkspace() {
               <>
                 {/* Crop General header info */}
                 <div style={{ background: '#1f2937', padding: '16px', borderRadius: '16px', border: '1px solid #374151', textAlign: 'center' }}>
-                  {renderSpeciesIcon(selectedCrop.especiesicono, '3rem')}
+                  {renderSpeciesIcon(selectedCrop.especiesvegetalesicono, '3rem')}
                   <span style={{
                     background: '#374151', color: '#9ca3af', fontSize: '0.65rem',
                     fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
@@ -6528,7 +6528,7 @@ export default function BancalWorkspace() {
                     {selectedCrop.variedad_nombre || 'Variedad Común'}
                   </h4>
                   <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>
-                    {selectedCrop.especiesnombre}
+                    {selectedCrop.especiesvegetalesnombre}
                   </p>
 
                   {/* Status badge & Desvincular button next to it */}

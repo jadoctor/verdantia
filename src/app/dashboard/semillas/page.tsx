@@ -240,7 +240,7 @@ export default function SemillasDashboard() {
               if (filterSearch.trim() !== '') {
                 const term = filterSearch.toLowerCase();
                 return (
-                  s.especiesnombre?.toLowerCase().includes(term) ||
+                  s.especiesvegetalesnombre?.toLowerCase().includes(term) ||
                   s.variedad_nombre?.toLowerCase().includes(term) ||
                   s.semillasmarca?.toLowerCase().includes(term) ||
                   s.semillaslugarcompra?.toLowerCase().includes(term)
@@ -301,7 +301,7 @@ export default function SemillasDashboard() {
                           <tr>
                             <th style={{ padding: '12px', position: 'sticky', left: 0, zIndex: 2, background: '#f8fafc', width: '80px', minWidth: '80px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Foto</th>
                             <th onClick={() => handleSort('idsemillas')} style={thStyle('idsemillas')}>Nº {sortIcon('idsemillas')}</th>
-                            <th onClick={() => handleSort('especiesnombre')} style={thStyle('especiesnombre')}>Especie {sortIcon('especiesnombre')}</th>
+                            <th onClick={() => handleSort('especiesvegetalesnombre')} style={thStyle('especiesvegetalesnombre')}>Especie {sortIcon('especiesvegetalesnombre')}</th>
                             <th onClick={() => handleSort('variedad_nombre')} style={thStyle('variedad_nombre')}>Variedad {sortIcon('variedad_nombre')}</th>
                             <th onClick={() => handleSort('semillasorigen')} style={thStyle('semillasorigen')}>Origen {sortIcon('semillasorigen')}</th>
                             <th onClick={() => handleSort('semillasstockactual')} style={thStyle('semillasstockactual')}>Stock {sortIcon('semillasstockactual')}</th>
@@ -334,7 +334,7 @@ export default function SemillasDashboard() {
                                     {s.foto ? (
                                       <img src={getMediaUrl(s.foto)} alt={s.variedad_nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" loading="lazy" />
                                     ) : (
-                                      <SpeciesIcon icon={s.especiesicono || '🌱'} size="1.5rem" />
+                                      <SpeciesIcon icon={s.especiesvegetalesicono || '🌱'} size="1.5rem" />
                                     )}
                                   </div>
                                 </td>
@@ -345,12 +345,12 @@ export default function SemillasDashboard() {
                                 </td>
 
                                 {/* ESPECIE */}
-                                <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{s.especiesnombre}</td>
+                                <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{s.especiesvegetalesnombre}</td>
 
                                 {/* VARIEDAD + badges */}
                                 <td style={{ padding: '10px', color: '#475569' }}>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <span>{s.variedad_nombre || s.especiesnombre}</span>
+                                    <span>{s.variedad_nombre || s.especiesvegetalesnombre}</span>
                                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                       {s.semillasactivosino === 0 && <span style={{ fontSize: '0.68rem', color: '#475569', background: '#cbd5e1', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>💤 Inactiva</span>}
                                       {needsArchiving && <span style={{ fontSize: '0.68rem', color: '#b91c1c', background: '#fee2e2', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>⚠️ {isOutOfStock ? 'Sin Stock' : 'Caducada'}</span>}

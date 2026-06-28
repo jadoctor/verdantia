@@ -36,7 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Crear el clon con los mismos metadatos pero sin fechas
     const [result]: any = await pool.query(
       `INSERT INTO cultivos (
-        xcultivosidusuarios, xcultivosidvariedades, xcultivosidsemillas,
+        xcultivosidusuarios, xcultivosidvariedadesvegetales, xcultivosidsemillas,
         xcultivosidbancales, cultivosposicionx, cultivosposiciony,
         cultivosorigen, cultivosmetodo, cultivosestado, 
         cultivoscantidad, cultivosubicacion, cultivosobservaciones,
@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'en_espera', ?, ?, ?, ?, ?, 1)`,
       [
         user.id,
-        original.xcultivosidvariedades,
+        original.xcultivosidvariedadesvegetales,
         original.xcultivosidsemillas,
         original.xcultivosidbancales,
         original.cultivosposicionx,

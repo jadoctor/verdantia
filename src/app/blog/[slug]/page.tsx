@@ -237,14 +237,14 @@ export default function BlogPublicArticle() {
           )}
           <div className="vblog-header-text">
             <div className="vblog-badges">
-              {art.especiesnombre && <span className="vblog-badge vblog-badge-green">🌱 {art.especiesnombre}</span>}
+              {art.especiesvegetalesnombre && <span className="vblog-badge vblog-badge-green">🌱 {art.especiesvegetalesnombre}</span>}
               <span className="vblog-badge vblog-badge-gray">⏱️ 5 min</span>
             </div>
             <h1 className="vblog-h1">{art.blogtitulo}</h1>
             <p className="vblog-sub">{blogData.resumen || art.blogresumen}</p>
             <div className="vblog-meta">
               <span>📅 {fecha}</span>
-              {art.especiesnombre && <span>🌍 {art.especiesnombre}</span>}
+              {art.especiesvegetalesnombre && <span>🌍 {art.especiesvegetalesnombre}</span>}
             </div>
             <div className="vblog-author" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

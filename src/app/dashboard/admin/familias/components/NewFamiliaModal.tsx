@@ -1,4 +1,6 @@
 import React from 'react';
+import PremiumCancelButton from '@/components/ui/PremiumCancelButton';
+import PremiumSaveButton from '@/components/ui/PremiumSaveButton';
 
 interface NewFamiliaModalProps {
   showNewForm: boolean;
@@ -28,7 +30,7 @@ export function NewFamiliaModal({
           🧬 Nueva Familia Botánica
         </h2>
         <div style={{ display: 'grid', gap: '14px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151' }}>Nombre *</label>
               <input type="text" value={newFamilia.familiasnombre} onChange={e => setNewFamilia((p: any) => ({ ...p, familiasnombre: e.target.value }))}
@@ -42,7 +44,7 @@ export function NewFamiliaModal({
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', boxSizing: 'border-box' }} />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '10px' }}>
             <div>
               <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151' }}>Grupo Rotación *</label>
               <input type="text" value={newFamilia.familiasgruporotacion} onChange={e => setNewFamilia((p: any) => ({ ...p, familiasgruporotacion: e.target.value }))}
@@ -77,14 +79,12 @@ export function NewFamiliaModal({
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
-          <button type="button" onClick={() => setShowNewForm(false)}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontWeight: 600 }}>
-            Cancelar
-          </button>
-          <button type="submit" disabled={saving}
-            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#059669', color: 'white', cursor: 'pointer', fontWeight: 600, opacity: saving ? 0.6 : 1 }}>
-            {saving ? 'Creando...' : '✅ Crear Familia'}
-          </button>
+          <PremiumCancelButton onClick={() => setShowNewForm(false)} />
+          <PremiumSaveButton 
+            isLoading={saving} 
+            loadingText="Creando..." 
+            text="✅ Crear Familia" 
+          />
         </div>
       </form>
     </div>

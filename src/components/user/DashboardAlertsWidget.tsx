@@ -80,7 +80,7 @@ export default function DashboardAlertsWidget() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
         {alertas.map((a, i) => {
           let icon = a.pauta.laboresicono || '📋';
           if (icon.startsWith('mdi-')) {
@@ -116,8 +116,8 @@ export default function DashboardAlertsWidget() {
                   {a.pauta.laboresnombre}
                 </h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#475569', marginBottom: '6px' }}>
-                  <span>{a.cultivo.especiesicono || '🌿'}</span>
-                  <strong>{a.cultivo.nombre_variedad_usuario || a.cultivo.nombre_variedad_gold || a.cultivo.especiesnombre}</strong>
+                  <span>{a.cultivo.especiesvegetalesicono || '🌿'}</span>
+                  <strong>{a.cultivo.nombre_variedad_usuario || a.cultivo.nombre_variedad_gold || a.cultivo.especiesvegetalesnombre}</strong>
                   <span>({a.cultivo.cultivosubicacion || `Cultivo #${a.cultivo.cultivosnumerocoleccion}`})</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#64748b', background: '#f8fafc', padding: '2px 8px', borderRadius: '4px', display: 'inline-block' }}>

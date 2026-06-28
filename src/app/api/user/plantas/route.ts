@@ -14,34 +14,34 @@ export async function GET(request: Request) {
     // Cada planta del usuario con herencia COALESCE para el listado
     const [plantas] = await pool.query(`
       SELECT 
-        vu.idvariedades,
-        vu.xvariedadesidvariedadorigen,
-        vu.xvariedadesidespecies,
-        COALESCE(vu.variedadesvisibilidadsino, 1) AS variedadesvisibilidadsino,
-        COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS nombre,
-        COALESCE(NULLIF(vu.variedadesdescripcion, ''), vg.variedadesdescripcion, e.especiesdescripcion) AS descripcion,
-        COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesicono) AS icono,
-        COALESCE(vu.variedadesdificultad, vg.variedadesdificultad, e.especiesdificultad) AS dificultad,
-        e.especiesnombre,
-        e.especiesicono,
-        COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiespeso1000semillas) AS especiespeso1000semillas,
-        vg.variedadesnombre AS nombre_gold,
-        vg.variedadesesgenerica AS es_generica,
-        vg.variedadesvisibilidadsino AS origen_visibilidad,
+        vu.idvariedadesvegetales,
+        vu.xvariedadesvegetalesidvariedadorigen,
+        vu.xvariedadesvegetalesidespeciesvegetales,
+        COALESCE(vu.variedadesvegetalesvisibilidadsino, 1) AS variedadesvegetalesvisibilidadsino,
+        COALESCE(NULLIF(vu.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS nombre,
+        COALESCE(NULLIF(vu.variedadesdescripcion, ''), vg.variedadesdescripcion, e.especiesvegetalesdescripcion) AS descripcion,
+        COALESCE(vu.variedadesicono, vg.variedadesicono, e.especiesvegetalesicono) AS icono,
+        COALESCE(vu.variedadesdificultad, vg.variedadesdificultad, e.especiesvegetalesdificultad) AS dificultad,
+        e.especiesvegetalesnombre,
+        e.especiesvegetalesicono,
+        COALESCE(vu.variedadespeso1000semillas, vg.variedadespeso1000semillas, e.especiesvegetalespeso1000semillas) AS especiespeso1000semillas,
+        vg.variedadesvegetalesnombre AS nombre_gold,
+        vg.variedadesvegetalesesgenerica AS es_generica,
+        vg.variedadesvegetalesvisibilidadsino AS origen_visibilidad,
         -- Foto: primero la del usuario, luego la de la variedad gold, luego la de la especie
         COALESCE(
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' 
+           WHERE xdatosadjuntosidvariedadesvegetales = vu.idvariedadesvegetales AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidvariedades = vg.idvariedades AND datosadjuntostipo = 'imagen' 
+           WHERE xdatosadjuntosidvariedadesvegetales = vg.idvariedadesvegetales AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' 
+           WHERE xdatosadjuntosidespeciesvegetales = e.idespeciesvegetales AND datosadjuntostipo = 'imagen' 
            AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
         ) AS foto,
         (
-          (vu.variedadesnombre IS NOT NULL AND vu.variedadesnombre != '') +
+          (vu.variedadesvegetalesnombre IS NOT NULL AND vu.variedadesvegetalesnombre != '') +
           (vu.variedadesdescripcion IS NOT NULL AND vu.variedadesdescripcion != '') +
           (vu.variedadestemperaturaminima IS NOT NULL) +
           (vu.variedadestemperaturaoptima IS NOT NULL) +
@@ -49,24 +49,24 @@ export async function GET(request: Request) {
           (vu.variedadescolor IS NOT NULL AND vu.variedadescolor != '') +
           (vu.variedadestamano IS NOT NULL AND vu.variedadestamano != '')
         ) AS campos_personalizados,
-        COALESCE(vu.variedadessemillerodesde, vg.variedadessemillerodesde, e.especiesfechasemillerodesde) AS semillerodesde,
-        COALESCE(vu.variedadessemillerohasta, vg.variedadessemillerohasta, e.especiesfechasemillerohasta) AS semillerohasta,
-        COALESCE(vu.variedadessiembradirectadesde, vg.variedadessiembradirectadesde, e.especiesfechasiembradirectadesde) AS siembradirectadesde,
-        COALESCE(vu.variedadessiembradirectahasta, vg.variedadessiembradirectahasta, e.especiesfechasiembradirectahasta) AS siembradirectahasta,
-        COALESCE(vu.variedadestrasplantedesde, vg.variedadestrasplantedesde, e.especiestrasplantedesde) AS trasplantedesde,
-        COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiestrasplantehasta) AS trasplantehasta,
-        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiestiposiembra) AS tiposiembra,
+        COALESCE(vu.variedadessemillerodesde, vg.variedadessemillerodesde, e.especiesvegetalesfechasemillerodesde) AS semillerodesde,
+        COALESCE(vu.variedadessemillerohasta, vg.variedadessemillerohasta, e.especiesvegetalesfechasemillerohasta) AS semillerohasta,
+        COALESCE(vu.variedadessiembradirectadesde, vg.variedadessiembradirectadesde, e.especiesvegetalesfechasiembradirectadesde) AS siembradirectadesde,
+        COALESCE(vu.variedadessiembradirectahasta, vg.variedadessiembradirectahasta, e.especiesvegetalesfechasiembradirectahasta) AS siembradirectahasta,
+        COALESCE(vu.variedadestrasplantedesde, vg.variedadestrasplantedesde, e.especiesvegetalestrasplantedesde) AS trasplantedesde,
+        COALESCE(vu.variedadestrasplantehasta, vg.variedadestrasplantehasta, e.especiesvegetalestrasplantehasta) AS trasplantehasta,
+        COALESCE(vu.variedadestiposiembra, vg.variedadestiposiembra, e.especiesvegetalestiposiembra) AS tiposiembra,
         (
           SELECT COUNT(*) FROM semillas s 
-          WHERE (s.xsemillasidvariedades = vu.idvariedades OR s.xsemillasidvariedades = vu.xvariedadesidvariedadorigen)
-            AND s.xsemillasidusuarios = vu.xvariedadesidusuarios
+          WHERE (s.xsemillasidvariedadesvegetales = vu.idvariedadesvegetales OR s.xsemillasidvariedadesvegetales = vu.xvariedadesvegetalesidvariedadorigen)
+            AND s.xsemillasidusuarios = vu.xvariedadesvegetalesidusuarios
             AND s.semillasactivosino = 1
         ) AS semillas_count,
         (
           SELECT GROUP_CONCAT(COALESCE(s.semillasnumerocoleccion, s.idsemillas) ORDER BY s.semillasnumerocoleccion ASC SEPARATOR ', ')
           FROM semillas s 
-          WHERE (s.xsemillasidvariedades = vu.idvariedades OR s.xsemillasidvariedades = vu.xvariedadesidvariedadorigen)
-            AND s.xsemillasidusuarios = vu.xvariedadesidusuarios
+          WHERE (s.xsemillasidvariedadesvegetales = vu.idvariedadesvegetales OR s.xsemillasidvariedadesvegetales = vu.xvariedadesvegetalesidvariedadorigen)
+            AND s.xsemillasidusuarios = vu.xvariedadesvegetalesidusuarios
             AND s.semillasactivosino = 1
         ) AS semillas_colecciones,
         (
@@ -77,22 +77,22 @@ export async function GET(request: Request) {
             'cultivos_count', (SELECT COUNT(*) FROM cultivos c WHERE c.xcultivosidsemillas = s.idsemillas AND c.cultivosactivosino = 1)
           ))
           FROM semillas s
-          WHERE (s.xsemillasidvariedades = vu.idvariedades OR s.xsemillasidvariedades = vu.xvariedadesidvariedadorigen)
-            AND s.xsemillasidusuarios = vu.xvariedadesidusuarios
+          WHERE (s.xsemillasidvariedadesvegetales = vu.idvariedadesvegetales OR s.xsemillasidvariedadesvegetales = vu.xvariedadesvegetalesidvariedadorigen)
+            AND s.xsemillasidusuarios = vu.xvariedadesvegetalesidusuarios
             AND s.semillasactivosino = 1
         ) AS semillas_lista,
         (
           SELECT JSON_ARRAYAGG(JSON_OBJECT('id', idcultivos, 'numero', COALESCE(cultivosnumerocoleccion, idcultivos), 'estado', cultivosestado, 'cantidad', cultivoscantidad))
           FROM cultivos 
-          WHERE (xcultivosidvariedades = vu.idvariedades OR xcultivosidvariedades = vu.xvariedadesidvariedadorigen) 
-            AND xcultivosidusuarios = vu.xvariedadesidusuarios
+          WHERE (xcultivosidvariedadesvegetales = vu.idvariedadesvegetales OR xcultivosidvariedadesvegetales = vu.xvariedadesvegetalesidvariedadorigen) 
+            AND xcultivosidusuarios = vu.xvariedadesvegetalesidusuarios
             AND cultivosactivosino = 1
         ) AS cultivos_lista
-      FROM variedades vu
-      JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies
-      WHERE vu.xvariedadesidusuarios = ?
-      ORDER BY e.especiesnombre, COALESCE(vu.variedadesnombre, vg.variedadesnombre)
+      FROM variedadesvegetales vu
+      JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
+      WHERE vu.xvariedadesvegetalesidusuarios = ?
+      ORDER BY e.especiesvegetalesnombre, COALESCE(vu.variedadesvegetalesnombre, vg.variedadesvegetalesnombre)
     `, [user.id]);
 
     return NextResponse.json({ plantas });
@@ -122,20 +122,20 @@ export async function POST(request: Request) {
     let targetVariedadId = variedadId;
     if (!targetVariedadId) {
       const [goldRows]: any = await pool.query(
-        `SELECT idvariedades FROM variedades 
-         WHERE xvariedadesidespecies = ? AND variedadesesgenerica = 1 AND xvariedadesidusuarios IS NULL 
+        `SELECT idvariedadesvegetales FROM variedadesvegetales 
+         WHERE xvariedadesvegetalesidespeciesvegetales = ? AND variedadesvegetalesesgenerica = 1 AND xvariedadesvegetalesidusuarios IS NULL 
          LIMIT 1`,
         [especieId]
       );
       if (goldRows.length === 0) {
         return NextResponse.json({ error: 'No se encontró variedad Gold para esta especie' }, { status: 404 });
       }
-      targetVariedadId = goldRows[0].idvariedades;
+      targetVariedadId = goldRows[0].idvariedadesvegetales;
     }
 
     // Verificar que la variedad existe y es global
     const [varCheck]: any = await pool.query(
-      `SELECT idvariedades, xvariedadesidespecies FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios IS NULL`,
+      `SELECT idvariedadesvegetales, xvariedadesvegetalesidespeciesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios IS NULL`,
       [targetVariedadId]
     );
     if (varCheck.length === 0) {
@@ -144,21 +144,21 @@ export async function POST(request: Request) {
 
     // Verificar que no la tenga ya adquirida (misma variedad origen para el mismo usuario)
     const [duplicateCheck]: any = await pool.query(
-      `SELECT idvariedades, variedadesvisibilidadsino FROM variedades 
-       WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?`,
+      `SELECT idvariedadesvegetales, variedadesvegetalesvisibilidadsino FROM variedadesvegetales 
+       WHERE xvariedadesvegetalesidusuarios = ? AND xvariedadesvegetalesidvariedadorigen = ?`,
       [user.id, targetVariedadId]
     );
     if (duplicateCheck.length > 0) {
       const existing = duplicateCheck[0];
-      if (existing.variedadesvisibilidadsino === 0) {
+      if (existing.variedadesvegetalesvisibilidadsino === 0) {
         // Reactivar planta inactiva
         await pool.query(
-          `UPDATE variedades SET variedadesvisibilidadsino = 1 WHERE idvariedades = ?`,
-          [existing.idvariedades]
+          `UPDATE variedadesvegetales SET variedadesvegetalesvisibilidadsino = 1 WHERE idvariedadesvegetales = ?`,
+          [existing.idvariedadesvegetales]
         );
         return NextResponse.json({ 
           success: true, 
-          id: existing.idvariedades,
+          id: existing.idvariedadesvegetales,
           message: '¡Planta reactivada en tu huerto!'
         });
       }
@@ -167,10 +167,10 @@ export async function POST(request: Request) {
 
     // INSERT vacío: solo las FK, todo lo demás NULL (hereda)
     const [result]: any = await pool.query(
-      `INSERT INTO variedades (
-        xvariedadesidespecies, xvariedadesidusuarios, xvariedadesidvariedadorigen, variedadesesgenerica
+      `INSERT INTO variedadesvegetales (
+        xvariedadesvegetalesidespeciesvegetales, xvariedadesvegetalesidusuarios, xvariedadesvegetalesidvariedadorigen, variedadesvegetalesesgenerica
       ) VALUES (?, ?, ?, 0)`,
-      [varCheck[0].xvariedadesidespecies, user.id, targetVariedadId]
+      [varCheck[0].xvariedadesvegetalesidespeciesvegetales, user.id, targetVariedadId]
     );
 
     return NextResponse.json({ 

@@ -201,7 +201,7 @@ ${fichaRapidaEjemplo}
     // 5. Insert blog entry first (to get the ID for datosadjuntos FK)
     const [result] = await pool.query<any>(`
       INSERT INTO blog 
-      (blogslug, blogtitulo, blogresumen, blogcontenido, blogimagen, blogestado, xblogidusuarios, xblogidespecies, xblogidvariedades) 
+      (blogslug, blogtitulo, blogresumen, blogcontenido, blogimagen, blogestado, xblogidusuarios, xblogidespeciesvegetales, xblogidvariedadesvegetales) 
       VALUES (?, ?, ?, ?, NULL, 'borrador', ?, ?, ?)
     `, [
       finalSlug,
@@ -308,7 +308,7 @@ ${fichaRapidaEjemplo}
                 datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
                 datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
                 datosadjuntosactivo, datosadjuntosfechacreacion, 
-                xdatosadjuntosidespecies, datosadjuntospesobytes, 
+                xdatosadjuntosidespeciesvegetales, datosadjuntospesobytes, 
                 datosadjuntostitulo, datosadjuntosresumen
               ) VALUES ('imagen_blog', 'image/webp', ?, ?, ?, ?, 1, NOW(), ?, ?, ?, ?)`,
               [

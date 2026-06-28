@@ -1,380 +1,182 @@
 import React from 'react';
-import { DashboardItem, FRIENDLY_NAMES, getCategory } from '../services/analisisApi';
+import { dashboards, getCategory, FRIENDLY_NAMES, getDashboardGroup, DASHBOARD_GROUPS } from '../services/analisisApi';
 import { AnalisisRowDetails } from './AnalisisRowDetails';
 
 interface AnalisisTableProps {
-  sortedDashboards: DashboardItem[];
-  sortBy: 'ruta' | 'acceso' | 'categoria' | 'lineas';
-  sortDirection: 'desc' | 'asc';
-  handleSort: (field: 'ruta' | 'acceso' | 'categoria' | 'lineas') => void;
+  sortedDashboards: typeof dashboards;
   maxLines: number;
-  loadingCode: Record<string, boolean>;
-  loadingResponsive: Record<string, boolean>;
-  expandedCode: Record<string, boolean>;
-  expandedResponsive: Record<string, boolean>;
+  origin: string;
+  isMobile: boolean;
   analysisData: Record<string, any>;
-  changesInfo: any;
-  completedDates: Record<string, { refactoredAt: string | null; responsiveAt: string | null }>;
+  loading: Record<string, boolean>;
+  expanded: Record<string, boolean>;
+  completedDates: Record<string, { refactoredAt: string | null; responsiveAt: string | null; premiumAt: string | null }>;
   restored: boolean;
   focoFile: string | null;
-  setLastFocusedFile: (file: string | null) => void;
-  handleTriggerAnalysis: (file: string, type: 'code' | 'responsive') => void;
+  sortBy: string;
+  sortDirection: string;
+  handleSort: (field: 'ruta' | 'acceso' | 'categoria' | 'lineas') => void;
+  handleTriggerAnalysis: (file: string) => void;
   saveAndNavigate: (path: string, file: string) => void;
-  isMobile?: boolean;
 }
 
 export function AnalisisTable({
-  sortedDashboards,
-  sortBy,
-  sortDirection,
-  handleSort,
-  maxLines,
-  loadingCode,
-  loadingResponsive,
-  expandedCode,
-  expandedResponsive,
-  analysisData,
-  changesInfo,
-  completedDates,
-  restored,
-  focoFile,
-  setLastFocusedFile,
-  handleTriggerAnalysis,
-  saveAndNavigate,
-  isMobile = false
+  sortedDashboards, maxLines, origin, isMobile, analysisData,
+  loading, expanded, completedDates, restored, focoFile,
+  sortBy, sortDirection, handleSort, handleTriggerAnalysis, saveAndNavigate
 }: AnalisisTableProps) {
-  const renderSortIcon = (field: 'ruta' | 'acceso' | 'categoria' | 'lineas') => {
-    if (sortBy !== field) return <span style={{ marginLeft: '4px', opacity: 0.35 }}>↕</span>;
-    return <span style={{ marginLeft: '4px', color: '#6366f1', fontWeight: 900 }}>{sortDirection === 'asc' ? '▲' : '▼'}</span>;
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortBy !== field) return <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>;
+    return <span style={{ fontSize: '0.7rem' }}>{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
+
   return (
     <div style={{ overflowX: 'auto', width: '100%' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: isMobile ? '800px' : '1000px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
         <thead>
-          <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-            <th style={{ padding: '10px 8px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '50px' }}>#</th>
-            <th
-              onClick={() => handleSort('ruta')}
-              style={{
-                padding: '10px 16px',
-                textAlign: 'left',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: sortBy === 'ruta' ? '#4f46e5' : '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                width: '18%',
-                cursor: 'pointer',
-                userSelect: 'none',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={e => e.currentTarget.style.background = '#e2e8f0'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                Dashboard {renderSortIcon('ruta')}
-              </div>
+          <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+            <th onClick={() => handleSort('ruta')} style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, cursor: 'pointer', userSelect: 'none', color: '#475569', whiteSpace: 'nowrap' }}>
+              📄 Ruta <SortIcon field="ruta" />
             </th>
-            <th
-              onClick={() => handleSort('acceso')}
-              style={{
-                padding: '10px 16px',
-                textAlign: 'left',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: sortBy === 'acceso' ? '#4f46e5' : '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                width: '12%',
-                cursor: 'pointer',
-                userSelect: 'none',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={e => e.currentTarget.style.background = '#e2e8f0'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                Acceso {renderSortIcon('acceso')}
-              </div>
+            {!isMobile && (
+              <th onClick={() => handleSort('acceso')} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, cursor: 'pointer', userSelect: 'none', color: '#475569', whiteSpace: 'nowrap' }}>
+                🔑 Acceso <SortIcon field="acceso" />
+              </th>
+            )}
+            <th onClick={() => handleSort('categoria')} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, cursor: 'pointer', userSelect: 'none', color: '#475569', whiteSpace: 'nowrap' }}>
+              🏷️ Cat. <SortIcon field="categoria" />
             </th>
-            <th
-              onClick={() => handleSort('categoria')}
-              style={{
-                padding: '10px 16px',
-                textAlign: 'left',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: sortBy === 'categoria' ? '#4f46e5' : '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                width: '12%',
-                cursor: 'pointer',
-                userSelect: 'none',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={e => e.currentTarget.style.background = '#e2e8f0'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                Categoría {renderSortIcon('categoria')}
-              </div>
+            <th onClick={() => handleSort('lineas')} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, cursor: 'pointer', userSelect: 'none', color: '#475569', whiteSpace: 'nowrap', width: isMobile ? '60px' : '90px' }}>
+              📏 Líneas <SortIcon field="lineas" />
             </th>
-            <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: '18%' }}>Peso Visual</th>
-            <th
-              onClick={() => handleSort('lineas')}
-              style={{
-                padding: '10px 16px',
-                textAlign: 'right',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: sortBy === 'lineas' ? '#4f46e5' : '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                width: '6%',
-                cursor: 'pointer',
-                userSelect: 'none',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={e => e.currentTarget.style.background = '#e2e8f0'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                Líneas {renderSortIcon('lineas')}
-              </div>
+            <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>
+              ⚡ Acciones
             </th>
-            <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', width: isMobile ? '240px' : '32%', minWidth: isMobile ? '240px' : '570px' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {sortedDashboards.map((d, i) => {
-            const pct = Math.round((d.lines / maxLines) * 100);
-            const isEven = i % 2 === 0;
-            const barColor = pct > 60 ? '#ef4444' : pct > 30 ? '#f59e0b' : '#22c55e';
-            const cat = getCategory(d.lines);
-            const isCodeLoading = loadingCode[d.file];
-            const isResponsiveLoading = loadingResponsive[d.file];
-            const isExpanded = expandedCode[d.file] || expandedResponsive[d.file];
-            const isLoadingCurrent = expandedCode[d.file] ? isCodeLoading : isResponsiveLoading;
-            const analysis = analysisData[d.file];
-            const isMod = changesInfo?.modified?.includes(`src/app/dashboard/${d.file}`) || 
-                          changesInfo?.added?.includes(`src/app/dashboard/${d.file}`) || 
-                          changesInfo?.deleted?.includes(`src/app/dashboard/${d.file}`);
+          {sortedDashboards.map((d) => {
+            const tag = getCategory(d.lines);
+            const pct = (d.lines / maxLines) * 100;
+            const groupId = getDashboardGroup(d.path);
+            const groupDef = DASHBOARD_GROUPS.find(g => g.id === groupId) || DASHBOARD_GROUPS.find(g => g.id === 'otros')!;
+            const groupEmoji = groupDef.label.split(' ')[0] || '🧩';
+            const friendlyName = FRIENDLY_NAMES[d.path] || d.path;
+            const isFocused = focoFile === d.file;
 
-            const effectiveRefactoredAt = (restored && completedDates[d.file] && completedDates[d.file].refactoredAt) || d.refactoredAt;
-            const effectiveResponsiveAt = (restored && completedDates[d.file] && completedDates[d.file].responsiveAt) || d.responsiveAt;
+            const effectiveRefactoredAt = (restored && completedDates[d.file]?.refactoredAt) || d.refactoredAt;
+            const effectiveResponsiveAt = (restored && completedDates[d.file]?.responsiveAt) || d.responsiveAt;
+            const effectivePremiumAt = (restored && completedDates[d.file]?.premiumAt) || d.premiumAt;
 
-            // Estilo dinámico para Análisis de código
-            const codeBtnStyle: React.CSSProperties = {
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: (isCodeLoading || isResponsiveLoading) ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-              width: isMobile ? '100%' : '255px',
-              transition: 'all 0.2s',
-              background: '#fef2f2',
-              color: '#dc2626',
-              border: '1px solid #fca5a5'
-            };
-
-            if (isCodeLoading) {
-              codeBtnStyle.background = '#f1f5f9';
-              codeBtnStyle.color = '#64748b';
-              codeBtnStyle.border = '1px solid #cbd5e1';
-            } else if (effectiveRefactoredAt) {
-              if (isMod) {
-                codeBtnStyle.background = '#f0fdf4';
-                codeBtnStyle.color = '#16a34a';
-                codeBtnStyle.border = '1px solid #bbf7d0';
-              } else {
-                codeBtnStyle.background = '#15803d';
-                codeBtnStyle.color = '#ffffff';
-                codeBtnStyle.border = '1px solid #166534';
-              }
-            }
-
-            // Estilo dinámico para Análisis responsive
-            const respBtnStyle: React.CSSProperties = {
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: (isCodeLoading || isResponsiveLoading) ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-              width: isMobile ? '100%' : '235px',
-              transition: 'all 0.2s',
-              background: '#fef2f2',
-              color: '#dc2626',
-              border: '1px solid #fca5a5'
-            };
-
-            if (isResponsiveLoading) {
-              respBtnStyle.background = '#f1f5f9';
-              respBtnStyle.color = '#64748b';
-              respBtnStyle.border = '1px solid #cbd5e1';
-            } else if (effectiveResponsiveAt) {
-              if (isMod) {
-                respBtnStyle.background = '#f0fdf4';
-                respBtnStyle.color = '#16a34a';
-                respBtnStyle.border = '1px solid #bbf7d0';
-              } else {
-                respBtnStyle.background = '#15803d';
-                respBtnStyle.color = '#ffffff';
-                respBtnStyle.border = '1px solid #166534';
-              }
-            }
+            const allClean = !!effectiveRefactoredAt && !!effectiveResponsiveAt && !!effectivePremiumAt;
+            const anyDone = !!effectiveRefactoredAt || !!effectiveResponsiveAt || !!effectivePremiumAt;
+            const isLoading = loading[d.file];
+            const isExpanded = expanded[d.file];
 
             return (
-              <React.Fragment key={d.path}>
+              <React.Fragment key={d.file}>
                 <tr
                   id={`row-${d.file.replace(/\//g, '-')}`}
-                  onFocusCapture={() => setLastFocusedFile(d.file)}
-                  onClick={() => setLastFocusedFile(d.file)}
                   style={{
-                    background: focoFile === d.file ? '#e0e7ff' : (isEven ? 'white' : '#f8fafc'),
-                    outline: focoFile === d.file ? '2px solid #6366f1' : 'none',
-                    outlineOffset: '-2px',
-                    transition: 'all 0.5s ease-in-out'
-                  }}
-                  onMouseEnter={e => {
-                    if (focoFile !== d.file) e.currentTarget.style.background = '#eff6ff';
-                  }}
-                  onMouseLeave={e => {
-                    if (focoFile !== d.file) e.currentTarget.style.background = isEven ? 'white' : '#f8fafc';
+                    borderBottom: '1px solid #e2e8f0',
+                    transition: 'all 0.3s ease',
+                    background: isFocused ? '#fef3c7' : 'white',
+                    animation: isFocused ? 'pulse 1.5s ease-in-out 2' : 'none'
                   }}
                 >
-                  <td style={{ padding: '10px 8px', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', width: '50px' }}>{i + 1}</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span style={{ fontSize: '0.98rem', fontWeight: 800, color: '#1e293b', display: 'inline-block', marginBottom: '4px' }}>
-                      {FRIENDLY_NAMES[d.path] || 'Página'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    {d.path.startsWith('/dashboard/admin/') ? (
-                      <span style={{
-                        background: '#fee2e2',
-                        border: '1px solid #fca5a5',
-                        color: '#991b1b',
-                        padding: '3px 10px',
-                        borderRadius: '999px',
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        🛡️ Superadmin
+                  {/* Ruta */}
+                  <td style={{ padding: '8px', maxWidth: isMobile ? '140px' : '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        {groupEmoji}
                       </span>
-                    ) : (
-                      <span style={{
-                        background: '#f1f5f9',
-                        border: '1px solid #e2e8f0',
-                        color: '#475569',
-                        padding: '3px 10px',
-                        borderRadius: '999px',
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        👥 General
+                      <span title={d.path} style={{ fontWeight: 500 }}>
+                        {isMobile ? d.file.split('/').pop() : friendlyName}
                       </span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '5px',
-                      padding: '3px 10px', borderRadius: '999px',
-                      background: cat.bg, color: cat.color,
-                      fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap'
-                    }}>
-                      {cat.emoji} {cat.label}
-                    </span>
-                  </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '999px', height: '8px', overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: '999px', transition: 'width 0.4s ease' }} />
-                      </div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: barColor, minWidth: '32px', textAlign: 'right' }}>{pct}%</span>
+                    </div>
+                    {/* Indicadores de estado */}
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '3px' }}>
+                      <span title={effectiveRefactoredAt ? `Código: ${effectiveRefactoredAt}` : 'Código: pendiente'} style={{ fontSize: '0.6rem', padding: '0px 4px', borderRadius: '3px', background: effectiveRefactoredAt ? '#dcfce7' : '#fee2e2', color: effectiveRefactoredAt ? '#166534' : '#991b1b' }}>
+                        💻{effectiveRefactoredAt ? '✓' : '✗'}
+                      </span>
+                      <span title={effectiveResponsiveAt ? `Responsive: ${effectiveResponsiveAt}` : 'Responsive: pendiente'} style={{ fontSize: '0.6rem', padding: '0px 4px', borderRadius: '3px', background: effectiveResponsiveAt ? '#dcfce7' : '#fee2e2', color: effectiveResponsiveAt ? '#166534' : '#991b1b' }}>
+                        📱{effectiveResponsiveAt ? '✓' : '✗'}
+                      </span>
+                      <span title={effectivePremiumAt ? `Premium: ${effectivePremiumAt}` : 'Premium: pendiente'} style={{ fontSize: '0.6rem', padding: '0px 4px', borderRadius: '3px', background: effectivePremiumAt ? '#dcfce7' : '#fee2e2', color: effectivePremiumAt ? '#166534' : '#991b1b' }}>
+                        👑{effectivePremiumAt ? '✓' : '✗'}
+                      </span>
                     </div>
                   </td>
-                  <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: '0.88rem', fontWeight: 800, color: '#1e293b', fontFamily: 'monospace' }}>
-                    {d.lines.toLocaleString('es-ES')}
+
+                  {/* Acceso */}
+                  {!isMobile && (
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: d.path.startsWith('/dashboard/admin/') ? '#fef3c7' : '#e0f2fe', color: d.path.startsWith('/dashboard/admin/') ? '#92400e' : '#0369a1', fontWeight: 600 }}>
+                        {d.path.startsWith('/dashboard/admin/') ? '🛡️ Admin' : '👤 User'}
+                      </span>
+                    </td>
+                  )}
+
+                  {/* Categoría */}
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: tag.bg, color: tag.color, fontWeight: 700 }}>
+                      {tag.emoji} {tag.label}
+                    </span>
                   </td>
-                  <td style={{ padding: '8px 16px', textAlign: 'center', width: isMobile ? '240px' : '32%', minWidth: isMobile ? '240px' : '570px' }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      gap: '6px', 
-                      justifyContent: 'center', 
-                      flexWrap: 'wrap',
-                      flexDirection: isMobile ? 'column' : 'row',
-                      alignItems: isMobile ? 'stretch' : 'center'
-                    }}>
+
+                  {/* Líneas con barra */}
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                      <div style={{ width: isMobile ? '30px' : '50px', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: tag.color, borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155' }}>{d.lines.toLocaleString()}</span>
+                    </div>
+                  </td>
+
+                  {/* Acciones: botón único + ver */}
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
                       <button
-                        onClick={() => handleTriggerAnalysis(d.file, 'code')}
-                        disabled={isCodeLoading || isResponsiveLoading}
-                        style={codeBtnStyle}
+                        onClick={() => handleTriggerAnalysis(d.file)}
+                        disabled={isLoading}
+                        style={{
+                          background: allClean ? '#dcfce7' : anyDone ? '#fef3c7' : '#fee2e2',
+                          color: allClean ? '#166534' : anyDone ? '#92400e' : '#991b1b',
+                          border: `1px solid ${allClean ? '#86efac' : anyDone ? '#fcd34d' : '#fca5a5'}`,
+                          padding: isMobile ? '4px 8px' : '5px 12px',
+                          borderRadius: '8px',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: isLoading ? 'wait' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          opacity: isLoading ? 0.6 : 1,
+                          whiteSpace: 'nowrap'
+                        }}
                       >
-                        {isCodeLoading ? '⏳ Analizando...' : (
-                          effectiveRefactoredAt ? (
-                            isMod ? `🔍 Análisis de código (${effectiveRefactoredAt} ⚠️ Modif.)` : `🔍 Análisis de código (${effectiveRefactoredAt})`
-                          ) : '🔍 Análisis de código'
-                        )}
+                        {isLoading ? '⏳ Analizando...' : '🔬 Analizar'}
                       </button>
-                      <button
-                        onClick={() => handleTriggerAnalysis(d.file, 'responsive')}
-                        disabled={isCodeLoading || isResponsiveLoading}
-                        style={respBtnStyle}
-                      >
-                        {isResponsiveLoading ? '⏳ Analizando...' : (
-                          effectiveResponsiveAt ? (
-                            isMod ? (
-                              <span>
-                                📱 Análisis responsive (<span style={{ color: '#ef4444', fontWeight: 'bold' }}>{effectiveResponsiveAt}</span>)
-                              </span>
-                            ) : `📱 Análisis responsive (${effectiveResponsiveAt})`
-                          ) : '📱 Análisis responsive'
-                        )}
-                      </button>
-                      <a
-                        href={d.path}
+                      <span
                         className="ver-link"
-                        onClick={e => { e.preventDefault(); saveAndNavigate(d.path, d.file); }}
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '4px 9px', borderRadius: '6px', background: '#eff6ff', color: '#2563eb', fontSize: '0.72rem', fontWeight: 700, textDecoration: 'none', border: '1px solid #bfdbfe', whiteSpace: 'nowrap', cursor: 'pointer', width: isMobile ? '100%' : '60px' }}
-                      >🔗 Ver</a>
+                        tabIndex={0}
+                        onClick={() => saveAndNavigate(d.path, d.file)}
+                        style={{ cursor: 'pointer', fontSize: '0.78rem', color: '#6366f1', fontWeight: 600, textDecoration: 'underline', whiteSpace: 'nowrap' }}
+                      >
+                        👁️ Ver
+                      </span>
                     </div>
                   </td>
                 </tr>
+
+                {/* Panel expandible con los 3 análisis */}
                 {isExpanded && (
-                  <tr 
-                    style={{ background: '#f8fafc' }}
-                    onFocusCapture={() => setLastFocusedFile(d.file)}
-                    onClick={() => setLastFocusedFile(d.file)}
-                  >
-                    <td colSpan={7} style={{ padding: 0, background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                  <tr>
+                    <td colSpan={isMobile ? 4 : 5} style={{ padding: 0 }}>
                       <AnalisisRowDetails
-                        d={d}
-                        analysis={analysis}
-                        isLoadingCurrent={isLoadingCurrent}
-                        expandedCode={expandedCode}
-                        expandedResponsive={expandedResponsive}
+                        file={d.file}
+                        data={analysisData[d.file]}
+                        isLoading={isLoading}
                         isMobile={isMobile}
                       />
                     </td>

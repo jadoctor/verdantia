@@ -173,7 +173,7 @@ export async function DELETE(request: Request) {
     const userId = userIdRows[0]?.userId;
     if (userId) {
       const [activePhotos]: any = await pool.query(
-        "SELECT iddatosadjuntos, datosadjuntosesprincipal, datosadjuntosruta as ruta, datosadjuntosresumen as resumen FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = 'imagen' AND xdatosadjuntosidvariedades IS NULL ORDER BY datosadjuntosorden ASC, datosadjuntosfechacreacion DESC",
+        "SELECT iddatosadjuntos, datosadjuntosesprincipal, datosadjuntosruta as ruta, datosadjuntosresumen as resumen FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = 'imagen' AND xdatosadjuntosidvariedadesvegetales IS NULL ORDER BY datosadjuntosorden ASC, datosadjuntosfechacreacion DESC",
         [userId]
       );
       if (activePhotos.length > 0) {

@@ -135,7 +135,7 @@ export default function CultivoLogros({ cultivo, formData }: CultivoLogrosProps)
       </div>
 
       {/* Grid de logros */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '10px' }}>
         {logros.map(logro => (
           <div key={logro.id} style={{
             display: 'flex', alignItems: 'center', gap: '12px',

@@ -1,5 +1,6 @@
 import React, { Dispatch, SetStateAction } from 'react';
 import { Familia, FamiliaMin } from '../types';
+import PremiumCancelButton from '@/components/ui/PremiumCancelButton';
 
 interface AiModalProps {
   familia: Familia;
@@ -199,13 +200,7 @@ export default function AiModal({
                 ) : '🚀 Analizar'}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setShowAiModal(false)}
-              style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '2px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
-            >
-              Cancelar
-            </button>
+            <PremiumCancelButton onClick={() => setShowAiModal(false)} />
           </div>
         </div>
 

@@ -16,16 +16,12 @@ export default function AnalisisDashboardsPage() {
     sortDirection,
     maxLines,
     totalLines,
-    loadingCode,
-    loadingResponsive,
-    expandedCode,
-    expandedResponsive,
+    loading,
+    expanded,
     analysisData,
-    changesInfo,
     completedDates,
     restored,
     focoFile,
-    setLastFocusedFile,
     handleSort,
     handleSelectGroup,
     handleSelectFilter,
@@ -54,7 +50,6 @@ export default function AnalisisDashboardsPage() {
           isMobile={isMobile}
         />
 
-        {/* Animación local para el spinner de la cabecera degradada */}
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes spin-loader {
             0% { transform: rotate(0deg); }
@@ -62,7 +57,6 @@ export default function AnalisisDashboardsPage() {
           }
         `}} />
 
-        {/* Tabla */}
         <div style={{ 
           background: 'white', 
           borderRadius: '16px', 
@@ -71,29 +65,18 @@ export default function AnalisisDashboardsPage() {
           overflow: 'hidden',
           position: 'relative'
         }}>
-          {/* Overlay de carga sin flickering (Regla 7) */}
           {isFiltering && (
             <div style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              top: 0, left: 0, right: 0, bottom: 0,
               background: 'rgba(255, 255, 255, 0.65)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 20,
-              animation: 'fadeIn 0.2s ease-in-out'
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 20, animation: 'fadeIn 0.2s ease-in-out'
             }}>
               <span style={{ 
-                display: 'inline-block', 
-                width: '32px', 
-                height: '32px', 
-                border: '3px solid #e2e8f0', 
-                borderTop: '3px solid #6366f1', 
-                borderRadius: '50%', 
-                animation: 'spin-loader 0.8s linear infinite' 
+                display: 'inline-block', width: '32px', height: '32px', 
+                border: '3px solid #e2e8f0', borderTop: '3px solid #6366f1', 
+                borderRadius: '50%', animation: 'spin-loader 0.8s linear infinite' 
               }} />
             </div>
           )}
@@ -104,19 +87,16 @@ export default function AnalisisDashboardsPage() {
             sortDirection={sortDirection}
             handleSort={handleSort}
             maxLines={maxLines}
-            loadingCode={loadingCode}
-            loadingResponsive={loadingResponsive}
-            expandedCode={expandedCode}
-            expandedResponsive={expandedResponsive}
+            loading={loading}
+            expanded={expanded}
             analysisData={analysisData}
-            changesInfo={changesInfo}
             completedDates={completedDates}
             restored={restored}
             focoFile={focoFile}
-            setLastFocusedFile={setLastFocusedFile}
             handleTriggerAnalysis={handleTriggerAnalysis}
             saveAndNavigate={saveAndNavigate}
             isMobile={isMobile}
+            origin=""
           />
         </div>
       </div>
@@ -124,4 +104,4 @@ export default function AnalisisDashboardsPage() {
   );
 }
 
-// reload 13/06/2026 17:02:00
+// reload 28/06/2026 18:31:00

@@ -8,7 +8,7 @@ import UserPlantaMediaManager from '@/components/user/UserPlantaMediaManager';
 import IniciarCultivoModal from '@/components/user/IniciarCultivoModal';
 import { SeedWizardModal } from '@/components/SeedWizardModal';
 import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
-import '@/components/admin/EspecieForm.css';
+import '@/components/admin/EspecieVegetalForm.css';
 
 const TIPOS = ['hortaliza', 'fruta', 'aromatica', 'leguminosa', 'cereal', 'adventicia', 'otra'];
 const CICLOS = ['anual', 'bianual', 'perenne'];
@@ -118,7 +118,7 @@ export default function MiPlantaDetail() {
           }
         });
         if (p.variedadesautosuficiencia) userOverrides.variedadesautosuficiencia = p.variedadesautosuficiencia;
-        userOverrides.variedadesvisibilidadsino = p.variedadesvisibilidadsino !== undefined ? p.variedadesvisibilidadsino : 1;
+        userOverrides.variedadesvegetalesvisibilidadsino = p.variedadesvegetalesvisibilidadsino !== undefined ? p.variedadesvegetalesvisibilidadsino : 1;
         
         setFormData(userOverrides);
         setOriginalData({ ...userOverrides });
@@ -171,8 +171,8 @@ export default function MiPlantaDetail() {
         const data = await res.json();
         const targetPlanta = currentPlanta || planta;
         const filtered = (data.semillas || []).filter((s: any) => 
-          s.xsemillasidvariedades === Number(plantaId) ||
-          (targetPlanta && s.xsemillasidvariedades === targetPlanta.xvariedadesidvariedadorigen)
+          s.xsemillasidvariedadesvegetales === Number(plantaId) ||
+          (targetPlanta && s.xsemillasidvariedadesvegetales === targetPlanta.xvariedadesvegetalesidvariedadorigen)
         );
         setSemillas(filtered);
       }
@@ -476,7 +476,7 @@ export default function MiPlantaDetail() {
               {/* Nombre: si el usuario ha puesto uno (y no es vacío), mostrarlo; si no, componer desde especie + variedad gold */}
               {(planta._p_nombre && planta.nombre && planta.nombre.trim() !== '')
                 ? planta.nombre 
-                : `${planta.especiesnombre}${!planta.es_generica && planta.nombre_gold ? ` ${planta.nombre_gold}` : ''}`}
+                : `${planta.especiesvegetalesnombre}${!planta.es_generica && planta.nombre_gold ? ` ${planta.nombre_gold}` : ''}`}
               
               {isDirty && (
                 <span style={{ background: '#fef08a', color: '#854d0e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
@@ -497,8 +497,8 @@ export default function MiPlantaDetail() {
             </h1>
             <p style={{ margin: '4px 0 0', fontWeight: '500', fontStyle: 'italic', fontSize: '1.1rem', opacity: 0.9 }}>
               {(planta._p_nombre && planta.nombre && planta.nombre.trim() !== '')
-                ? `${planta.especiesnombre}${!planta.es_generica && planta.nombre_gold ? ` · ${planta.nombre_gold}` : ''}`
-                : planta.especiesnombre}
+                ? `${planta.especiesvegetalesnombre}${!planta.es_generica && planta.nombre_gold ? ` · ${planta.nombre_gold}` : ''}`
+                : planta.especiesvegetalesnombre}
             </p>
           </div>
         </div>
@@ -508,39 +508,39 @@ export default function MiPlantaDetail() {
       <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <div 
           onClick={() => {
-            const nextVal = formData.variedadesvisibilidadsino === 1 ? 0 : 1;
-            setFormData({ ...formData, variedadesvisibilidadsino: nextVal });
-            saveField('variedadesvisibilidadsino', nextVal);
+            const nextVal = formData.variedadesvegetalesvisibilidadsino === 1 ? 0 : 1;
+            setFormData({ ...formData, variedadesvegetalesvisibilidadsino: nextVal });
+            saveField('variedadesvegetalesvisibilidadsino', nextVal);
           }}
           style={{ 
             padding: '12px 16px', 
-            background: formData.variedadesvisibilidadsino === 1 ? '#f0fdf4' : '#f8fafc', 
-            border: `1px solid ${formData.variedadesvisibilidadsino === 1 ? '#10b981' : '#cbd5e1'}`, 
+            background: formData.variedadesvegetalesvisibilidadsino === 1 ? '#f0fdf4' : '#f8fafc', 
+            border: `1px solid ${formData.variedadesvegetalesvisibilidadsino === 1 ? '#10b981' : '#cbd5e1'}`, 
             borderRadius: '8px', 
-            color: formData.variedadesvisibilidadsino === 1 ? '#065f46' : '#64748b', 
+            color: formData.variedadesvegetalesvisibilidadsino === 1 ? '#065f46' : '#64748b', 
             fontWeight: 600, 
             display: 'flex', 
             alignItems: 'center', 
             gap: '12px', 
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            boxShadow: formData.variedadesvisibilidadsino === 1 ? '0 2px 4px rgba(16,185,129,0.05)' : 'none',
+            boxShadow: formData.variedadesvegetalesvisibilidadsino === 1 ? '0 2px 4px rgba(16,185,129,0.05)' : 'none',
             flex: '1 1 min-content'
           }}
         >
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: '24px', height: '24px', borderRadius: '4px',
-            background: formData.variedadesvisibilidadsino === 1 ? '#10b981' : '#cbd5e1',
+            background: formData.variedadesvegetalesvisibilidadsino === 1 ? '#10b981' : '#cbd5e1',
             color: 'white'
           }}>
-            {formData.variedadesvisibilidadsino === 1 ? (
+            {formData.variedadesvegetalesvisibilidadsino === 1 ? (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
             ) : (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             )}
           </div>
-          <span>{formData.variedadesvisibilidadsino === 1 ? 'Hortaliza Activa (Visible en tu huerto)' : 'Hortaliza Inactiva (Archivada)'}</span>
+          <span>{formData.variedadesvegetalesvisibilidadsino === 1 ? 'Hortaliza Activa (Visible en tu huerto)' : 'Hortaliza Inactiva (Archivada)'}</span>
         </div>
       </div>
 
@@ -775,7 +775,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesvegetalesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -784,7 +784,7 @@ export default function MiPlantaDetail() {
                         <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>Sync</div>
                         <div style={{ padding: '12px 16px' }}>Personalizado</div>
                       </div>
-                      <FieldCompare label="Nombre Personalizado" field="variedadesnombre" type="text" />
+                      <FieldCompare label="Nombre Personalizado" field="variedadesvegetalesnombre" type="text" />
                       <FieldCompare label="Color Fenotípico" field="variedadescolor" type="text" />
                       <FieldCompare label="Tamaño General" field="variedadestamano" options={[{ value: 'pequeno', label: 'Pequeño' }, { value: 'mediano', label: 'Mediano' }, { value: 'grande', label: 'Grande' }]} />
                       <FieldCompare label="Descripción y Notas" field="variedadesdescripcion" type="textarea" />
@@ -796,7 +796,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesvegetalesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -821,7 +821,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesvegetalesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -846,7 +846,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesvegetalesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -871,7 +871,7 @@ export default function MiPlantaDetail() {
                   <div>
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>💡</span>
-                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
+                      <span>Los valores se heredan automáticamente de <b>{planta.nombre_gold || planta.especiesvegetalesnombre}</b>. Si modificas un campo, quedará marcado con ✏️ y sobrescribirá el valor original.</span>
                     </div>
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
                       <div className="field-compare-header-grid">
@@ -1075,7 +1075,7 @@ export default function MiPlantaDetail() {
                     >
                       <div>
                         <h4 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#0f172a', fontWeight: 'bold' }}>
-                          Cultivo {c.cultivosnumerocoleccion ? `Nº ${c.cultivosnumerocoleccion}` : `Nº ${index + 1}`} de {c.especiesnombre} {c.variedad_nombre && c.variedad_nombre !== c.especiesnombre ? ` - ${c.variedad_nombre}` : ''}
+                          Cultivo {c.cultivosnumerocoleccion ? `Nº ${c.cultivosnumerocoleccion}` : `Nº ${index + 1}`} de {c.especiesvegetalesnombre} {c.variedad_nombre && c.variedad_nombre !== c.especiesvegetalesnombre ? ` - ${c.variedad_nombre}` : ''}
                         </h4>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
                           <strong>Origen:</strong> {c.cultivosorigen.replace('_', ' ')} • <strong>Método:</strong> {c.cultivosmetodo.replace('_', ' ')} • <strong>Cantidad:</strong> {c.cultivoscantidad}
@@ -1198,7 +1198,7 @@ export default function MiPlantaDetail() {
                             {s.foto ? (
                               <img src={getMediaUrl(s.foto)} alt={s.variedad_nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                             ) : (
-                              <SpeciesIcon icon={s.especiesicono || '🌱'} size="1.5rem" />
+                              <SpeciesIcon icon={s.especiesvegetalesicono || '🌱'} size="1.5rem" />
                             )}
                           </div>
                           <div>
@@ -1268,8 +1268,8 @@ export default function MiPlantaDetail() {
           isOpen={showCultivoModal}
           onClose={() => { setShowCultivoModal(false); loadCultivos(); }}
           plantaId={Number(plantaId)}
-          xvariedadesidvariedadorigen={planta.xvariedadesidvariedadorigen}
-          plantaNombre={planta.nombre || planta.especiesnombre || 'Planta'}
+          xvariedadesvegetalesidvariedadorigen={planta.xvariedadesvegetalesidvariedadorigen}
+          plantaNombre={planta.nombre || planta.especiesvegetalesnombre || 'Planta'}
           userEmail={userEmail!}
           calendarioSolar={{
             semillerodesde: planta.semillerodesde,

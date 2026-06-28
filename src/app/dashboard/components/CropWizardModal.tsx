@@ -83,8 +83,8 @@ export default function CropWizardModal({
             </h2>
             <p style={{ margin: '4px 0 0', fontSize: '0.85rem', opacity: 0.9 }}>
               {cropWizardStep === 1 && 'Paso 1 de 4: Elige la especie/hortaliza'}
-              {cropWizardStep === 2 && `Paso 2 de 4: Elige la variedad de ${selectedCropEspecie?.especiesnombre}`}
-              {cropWizardStep === 3 && `Paso 3 de 4: Método y Origen para ${selectedCropVariedad?.variedadesnombre}`}
+              {cropWizardStep === 2 && `Paso 2 de 4: Elige la variedad de ${selectedCropEspecie?.especiesvegetalesnombre}`}
+              {cropWizardStep === 3 && `Paso 3 de 4: Método y Origen para ${selectedCropVariedad?.variedadesvegetalesnombre}`}
               {cropWizardStep === 4 && `Paso 4 de 4: Configuración final del cultivo`}
               {cropWizardStep === 5 && '¡Cultivo iniciado con éxito!'}
             </p>
@@ -129,11 +129,11 @@ export default function CropWizardModal({
                 onFocus={e => e.target.style.borderColor = '#10b981'}
                 onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: '14px' }}>
                 {cropWizardEspecies
-                  .filter(esp => !cropSearchTerm || esp.especiesnombre.toLowerCase().includes(cropSearchTerm.toLowerCase()))
+                  .filter(esp => !cropSearchTerm || esp.especiesvegetalesnombre.toLowerCase().includes(cropSearchTerm.toLowerCase()))
                   .map(esp => (
-                    <button key={esp.idespecies} onClick={() => selectCropEspecie(esp)} style={{
+                    <button key={esp.idespeciesvegetales} onClick={() => selectCropEspecie(esp)} style={{
                       background: 'white', border: '2px solid #e2e8f0', borderRadius: '16px',
                       padding: '16px', cursor: 'pointer', textAlign: 'center',
                       transition: 'all 0.2s', display: 'flex', flexDirection: 'column', gap: '8px',
@@ -147,9 +147,9 @@ export default function CropWizardModal({
                           <img src={getMediaUrl(esp.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                         </div>
                       ) : (
-                        <SpeciesIcon icon={esp.especiesicono || '🌱'} size="2.2rem" />
+                        <SpeciesIcon icon={esp.especiesvegetalesicono || '🌱'} size="2.2rem" />
                       )}
-                      <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesnombre}</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{esp.especiesvegetalesnombre}</span>
                     </button>
                   ))}
               </div>
@@ -164,32 +164,32 @@ export default function CropWizardModal({
                 ← Volver a especies
               </button>
               <h3 style={{ margin: '0 0 16px', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <SpeciesIcon icon={selectedCropEspecie.especiesicono} size="1.2rem" /> {selectedCropEspecie.especiesnombre} — Elige la variedad
+                <SpeciesIcon icon={selectedCropEspecie.especiesvegetalesicono} size="1.2rem" /> {selectedCropEspecie.especiesvegetalesnombre} — Elige la variedad
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: '14px' }}>
                 {cropWizardVariedades.map(v => {
-                  const stockInfo = getSemillaStock(v.idvariedades);
+                  const stockInfo = getSemillaStock(v.idvariedadesvegetales);
                   return (
-                    <button key={v.idvariedades} onClick={() => selectCropVariedad(v)}
+                    <button key={v.idvariedadesvegetales} onClick={() => selectCropVariedad(v)}
                       style={{
-                        background: selectedCropVariedad?.idvariedades === v.idvariedades ? '#f0fdf4' : 'white',
-                        border: `2px solid ${selectedCropVariedad?.idvariedades === v.idvariedades ? '#10b981' : '#e2e8f0'}`,
+                        background: selectedCropVariedad?.idvariedadesvegetales === v.idvariedadesvegetales ? '#f0fdf4' : 'white',
+                        border: `2px solid ${selectedCropVariedad?.idvariedadesvegetales === v.idvariedadesvegetales ? '#10b981' : '#e2e8f0'}`,
                         borderRadius: '16px', padding: '16px', cursor: 'pointer',
                         textAlign: 'left', transition: 'all 0.2s',
                         display: 'flex', flexDirection: 'column', gap: '6px'
                       }}
                       onMouseOver={e => e.currentTarget.style.borderColor = '#10b981'}
-                      onMouseOut={e => { if (selectedCropVariedad?.idvariedades !== v.idvariedades) e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                      onMouseOut={e => { if (selectedCropVariedad?.idvariedadesvegetales !== v.idvariedadesvegetales) e.currentTarget.style.borderColor = '#e2e8f0'; }}
                     >
-                      {v.variedadesesgenerica === 1 && <span style={{ fontSize: '0.65rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, alignSelf: 'flex-start' }}>🏅 Común / Gold</span>}
+                      {v.variedadesvegetalesesgenerica === 1 && <span style={{ fontSize: '0.65rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, alignSelf: 'flex-start' }}>🏅 Común / Gold</span>}
                       {v.foto ? (
                         <div style={{ width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}>
                           <img src={getMediaUrl(v.foto)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                         </div>
                       ) : (
-                        <SpeciesIcon icon={v.variedadesicono || selectedCropEspecie.especiesicono || '🌱'} size="1.8rem" />
+                        <SpeciesIcon icon={v.variedadesvegetalesicono || selectedCropEspecie.especiesvegetalesicono || '🌱'} size="1.8rem" />
                       )}
-                      <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesnombre}</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b' }}>{v.variedadesvegetalesnombre}</span>
                       
                       {stockInfo ? (
                         <div style={{
@@ -244,7 +244,7 @@ export default function CropWizardModal({
                   <div>
                     <div style={{ fontSize: '0.75rem', color: '#0f766e', fontWeight: 800, textTransform: 'uppercase' }}>Variedad de Cultivo</div>
                     <h4 style={{ margin: 0, color: '#115e59', fontSize: '1.1rem', fontWeight: 900 }}>
-                      {selectedCropEspecie?.especiesnombre} ({selectedCropVariedad.variedadesnombre})
+                      {selectedCropEspecie?.especiesvegetalesnombre} ({selectedCropVariedad.variedadesvegetalesnombre})
                     </h4>
                   </div>
                 </div>
@@ -478,7 +478,7 @@ export default function CropWizardModal({
                           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>Origen de la planta / semilla</label>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {[
-                              ...(getSemillaStock(selectedCropVariedad.idvariedades) !== null ? [{
+                              ...(getSemillaStock(selectedCropVariedad.idvariedadesvegetales) !== null ? [{
                                 id: 'semilla_inventario',
                                 label: '🤲 Usar de mi Banco digital',
                                 desc: 'Descontar semillas de un lote que ya tienes registrado.'
@@ -623,7 +623,7 @@ export default function CropWizardModal({
                                 </button>
                               </div>
                               {(() => {
-                                const s = getSemillaStock(selectedCropVariedad.idvariedades)?.seedsList.find((item: any) => item.idsemillas === cropFormData.xcultivosidsemillas);
+                                const s = getSemillaStock(selectedCropVariedad.idvariedadesvegetales)?.seedsList.find((item: any) => item.idsemillas === cropFormData.xcultivosidsemillas);
                                 if (!s) return null;
                                 return (
                                   <div style={{
@@ -663,7 +663,7 @@ export default function CropWizardModal({
                             <div>
                               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>Selecciona el lote de Semillas a usar</label>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {getSemillaStock(selectedCropVariedad.idvariedades)?.seedsList.map((s: any) => {
+                                {getSemillaStock(selectedCropVariedad.idvariedadesvegetales)?.seedsList.map((s: any) => {
                                   return (
                                     <button
                                       key={s.idsemillas}
@@ -759,13 +759,13 @@ export default function CropWizardModal({
                               ⚖️ Calcular semillas por peso (Gramos)
                             </span>
                             
-                            {selectedCropEspecie?.especiespeso1000semillas && Number(selectedCropEspecie.especiespeso1000semillas) > 0 ? (
+                            {selectedCropEspecie?.especiespeso1000semillas && Number(selectedCropEspecie.especiesvegetalespeso1000semillas) > 0 ? (
                               <div>
                                 <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
-                                  Esta especie tiene un peso estándar registrado de <strong>{selectedCropEspecie.especiespeso1000semillas}g</strong> por cada 1.000 semillas.
+                                  Esta especie tiene un peso estándar registrado de <strong>{selectedCropEspecie.especiesvegetalespeso1000semillas}g</strong> por cada 1.000 semillas.
                                   <br />
                                   <span style={{ color: '#0d9488', fontWeight: 700 }}>
-                                    Equivalencia: ≈ {Math.round(1000 / Number(selectedCropEspecie.especiespeso1000semillas))} semillas por gramo.
+                                    Equivalencia: ≈ {Math.round(1000 / Number(selectedCropEspecie.especiesvegetalespeso1000semillas))} semillas por gramo.
                                   </span>
                                 </p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1001,7 +1001,7 @@ export default function CropWizardModal({
               <div style={{ fontSize: '4.5rem', marginBottom: '16px' }}>🎉</div>
               <h3 style={{ color: '#065f46', margin: '0 0 8px', fontSize: '1.4rem', fontWeight: 900 }}>¡Cultivo Registrado con Éxito!</h3>
               <p style={{ color: '#64748b', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
-                Tu cultivo de <strong>{selectedCropVariedad?.variedadesnombre}</strong> ya está activo. El progreso de logros se actualizará al instante.
+                Tu cultivo de <strong>{selectedCropVariedad?.variedadesvegetalesnombre}</strong> ya está activo. El progreso de logros se actualizará al instante.
               </p>
             </div>
           )}

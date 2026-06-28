@@ -172,7 +172,7 @@ export default function StatsGrid({
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0, width: '100%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', minWidth: 0 }}>
-                      <div style={{ flexShrink: 0, display: 'inline-flex' }}><SpeciesIcon icon={c.especiesicono || '🌱'} size="1rem" /></div>
+                      <div style={{ flexShrink: 0, display: 'inline-flex' }}><SpeciesIcon icon={c.especiesvegetalesicono || '🌱'} size="1rem" /></div>
                       <span style={{ fontWeight: 800, color: '#065f46', background: '#d1fae5', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Nº {c.cultivosnumerocoleccion || c.idcultivos}</span>
                       <span style={{ 
                         fontWeight: 700, 
@@ -183,7 +183,7 @@ export default function StatsGrid({
                         minWidth: 0,
                         flex: 1
                       }}>
-                        {c.especiesnombre} <span style={{ fontWeight: 'normal', opacity: 0.85 }}>({c.variedad_nombre || 'Común'})</span>
+                        {c.especiesvegetalesnombre} <span style={{ fontWeight: 'normal', opacity: 0.85 }}>({c.variedad_nombre || 'Común'})</span>
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '26px', flexWrap: 'wrap' }}>
@@ -380,7 +380,7 @@ export default function StatsGrid({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, width: '100%' }}>
-                    <div style={{ flexShrink: 0, display: 'inline-flex' }}><SpeciesIcon icon={s.especiesicono || '🌰'} size="1rem" /></div>
+                    <div style={{ flexShrink: 0, display: 'inline-flex' }}><SpeciesIcon icon={s.especiesvegetalesicono || '🌰'} size="1rem" /></div>
                     <span style={{ fontWeight: 800, color: '#0f766e', background: '#ccfbf1', padding: '2px 6px', borderRadius: '6px', fontSize: '0.65rem', flexShrink: 0 }}>Semilla Nº {s.semillasnumerocoleccion || s.idsemillas}</span>
                     <span style={{ 
                       fontWeight: 700, 
@@ -391,7 +391,7 @@ export default function StatsGrid({
                       minWidth: 0,
                       flex: 1
                     }}>
-                      {s.especiesnombre} <span style={{ fontWeight: 'normal', opacity: 0.85 }}>({s.variedad_nombre || 'Común'})</span>
+                      {s.especiesvegetalesnombre} <span style={{ fontWeight: 'normal', opacity: 0.85 }}>({s.variedad_nombre || 'Común'})</span>
                     </span>
                   </div>
                   
@@ -523,7 +523,7 @@ export default function StatsGrid({
                         minWidth: 0,
                         flex: 1
                       }}>
-                        {s.especiesnombre} <span style={{ fontWeight: 'normal', opacity: 0.8 }}>({s.variedad_nombre || 'Común'})</span>
+                        {s.especiesvegetalesnombre} <span style={{ fontWeight: 'normal', opacity: 0.8 }}>({s.variedad_nombre || 'Común'})</span>
                       </span>
                     </div>
                     <span style={{ fontSize: '0.65rem', color: '#d97706', paddingLeft: '2px' }}>

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       SELECT 
         c.idcultivos,
         c.xcultivosidloteorigen,
-        c.xcultivosidvariedades,
+        c.xcultivosidvariedadesvegetales,
         c.xcultivosidsemillas,
         c.xcultivosidbancales,
         c.cultivosposicionx,
@@ -35,12 +35,12 @@ export async function GET(request: Request) {
         c.cultivoscantidad,
         c.cultivosubicacion,
         c.cultivosobservaciones,
-        COALESCE(NULLIF(vu.variedadesnombre, ''), vg.variedadesnombre) AS variedad_nombre,
-        e.especiesnombre,
-        e.especiesicono,
-        COALESCE(vu.variedadesmarcoplantas, vg.variedadesmarcoplantas, e.especiesmarcoplantas) AS especiesmarcoplantas,
-        COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesmarcofilas) AS especiesmarcofilas,
-        COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesmarcomargen) AS especiesmarcomargen,
+        COALESCE(NULLIF(vu.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS variedad_nombre,
+        e.especiesvegetalesnombre,
+        e.especiesvegetalesicono,
+        COALESCE(vu.variedadesmarcoplantas, vg.variedadesmarcoplantas, e.especiesvegetalesmarcoplantas) AS especiesmarcoplantas,
+        COALESCE(vu.variedadesmarcofilas, vg.variedadesmarcofilas, e.especiesvegetalesmarcofilas) AS especiesmarcofilas,
+        COALESCE(vu.variedadesmarcomargen, vg.variedadesmarcomargen, e.especiesvegetalesmarcomargen) AS especiesmarcomargen,
         -- Foto de la variedad o especie
         (SELECT COUNT(*) FROM datosadjuntos 
          WHERE xdatosadjuntosidcultivos = c.idcultivos AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1) AS fotos_propias_count,
@@ -49,23 +49,23 @@ export async function GET(request: Request) {
           (SELECT datosadjuntosruta FROM datosadjuntos 
            WHERE xdatosadjuntosidcultivos = c.idcultivos AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidvariedades = vu.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
+           WHERE xdatosadjuntosidvariedadesvegetales = vu.idvariedadesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidvariedades = vg.idvariedades AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
+           WHERE xdatosadjuntosidvariedadesvegetales = vg.idvariedadesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1),
           (SELECT datosadjuntosruta FROM datosadjuntos 
-           WHERE xdatosadjuntosidespecies = e.idespecies AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
+           WHERE xdatosadjuntosidespeciesvegetales = e.idespeciesvegetales AND datosadjuntostipo = 'imagen' AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1)
         ) AS foto
       FROM cultivos c
-      JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+      JOIN variedadesvegetales vu ON c.xcultivosidvariedadesvegetales = vu.idvariedadesvegetales
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
       WHERE c.xcultivosidusuarios = ? AND c.cultivosactivosino = 1
     `;
     
     const params: any[] = [user.id];
 
     if (variedadId) {
-      sql += ` AND (c.xcultivosidvariedades = ? OR c.xcultivosidvariedades = (SELECT xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ? LIMIT 1))`;
+      sql += ` AND (c.xcultivosidvariedadesvegetales = ? OR c.xcultivosidvariedadesvegetales = (SELECT xvariedadesvegetalesidvariedadorigen FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ? LIMIT 1))`;
       params.push(variedadId, variedadId, user.id);
     }
 
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
-      xcultivosidvariedades, 
+      xcultivosidvariedadesvegetales, 
       xcultivosidsemillas, 
       xcultivosidbancales,
       cultivosposicionx,
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
       xcultivosidloteorigen
     } = body;
 
-    if (!xcultivosidvariedades) {
+    if (!xcultivosidvariedadesvegetales) {
       return NextResponse.json({ error: 'La variedad es obligatoria' }, { status: 400 });
     }
 
@@ -195,22 +195,22 @@ export async function POST(request: Request) {
     // 1. Obtener datos del marco de plantación para esta variedad/especie
     const [specieRows]: any[] = await pool.query(`
       SELECT 
-        e.especiesnombre,
-        COALESCE(e.especiesmarcoplantas, 30) AS especiesmarcoplantas,
-        COALESCE(e.especiesmarcofilas, 30) AS especiesmarcofilas
-      FROM variedades vu
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
-      WHERE vu.idvariedades = ?
+        e.especiesvegetalesnombre,
+        COALESCE(e.especiesvegetalesmarcoplantas, 30) AS especiesmarcoplantas,
+        COALESCE(e.especiesvegetalesmarcofilas, 30) AS especiesmarcofilas
+      FROM variedadesvegetales vu
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
+      WHERE vu.idvariedadesvegetales = ?
       LIMIT 1
-    `, [xcultivosidvariedades]);
+    `, [xcultivosidvariedadesvegetales]);
 
     if (specieRows.length === 0) {
       return NextResponse.json({ error: 'Variedad o especie no encontrada en el catálogo.' }, { status: 400 });
     }
 
     const especie = specieRows[0];
-    const newCropArea = cantidad * (especie.especiesmarcoplantas / 100) * (especie.especiesmarcofilas / 100);
+    const newCropArea = cantidad * (especie.especiesvegetalesmarcoplantas / 100) * (especie.especiesvegetalesmarcofilas / 100);
 
     // 2. Obtener el límite del plan del usuario y calcular espacio total ocupado
     const suscripcionName = user.suscripcion || '';
@@ -223,12 +223,12 @@ export async function POST(request: Request) {
     const [activeCrops]: any[] = await pool.query(`
       SELECT 
         c.cultivoscantidad,
-        COALESCE(e.especiesmarcoplantas, 30) AS especiesmarcoplantas,
-        COALESCE(e.especiesmarcofilas, 30) AS especiesmarcofilas
+        COALESCE(e.especiesvegetalesmarcoplantas, 30) AS especiesmarcoplantas,
+        COALESCE(e.especiesvegetalesmarcofilas, 30) AS especiesmarcofilas
       FROM cultivos c
-      JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+      JOIN variedadesvegetales vu ON c.xcultivosidvariedadesvegetales = vu.idvariedadesvegetales
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
       WHERE c.xcultivosidusuarios = ? 
         AND c.cultivosactivosino = 1 
         AND c.cultivosestado NOT IN ('finalizado', 'perdido')
@@ -272,12 +272,12 @@ export async function POST(request: Request) {
       const [bedCrops]: any[] = await pool.query(`
         SELECT 
           c.cultivoscantidad,
-          COALESCE(e.especiesmarcoplantas, 30) AS especiesmarcoplantas,
-          COALESCE(e.especiesmarcofilas, 30) AS especiesmarcofilas
+          COALESCE(e.especiesvegetalesmarcoplantas, 30) AS especiesmarcoplantas,
+          COALESCE(e.especiesvegetalesmarcofilas, 30) AS especiesmarcofilas
         FROM cultivos c
-        JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
-        LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-        JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+        JOIN variedadesvegetales vu ON c.xcultivosidvariedadesvegetales = vu.idvariedadesvegetales
+        LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+        JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
         WHERE c.xcultivosidusuarios = ? 
           AND c.xcultivosidbancales = ? 
           AND c.cultivosactivosino = 1 
@@ -336,7 +336,7 @@ export async function POST(request: Request) {
       `INSERT INTO cultivos (
         xcultivosidloteorigen,
         xcultivosidusuarios, 
-        xcultivosidvariedades, 
+        xcultivosidvariedadesvegetales, 
         xcultivosidsemillas, 
         xcultivosidbancales,
         cultivosposicionx,
@@ -353,7 +353,7 @@ export async function POST(request: Request) {
       [
         xcultivosidloteorigen || null,
         user.id, 
-        xcultivosidvariedades, 
+        xcultivosidvariedadesvegetales, 
         xcultivosidsemillas || null,
         finalBancalId,
         posx,

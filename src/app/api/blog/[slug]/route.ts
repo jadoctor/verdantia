@@ -12,11 +12,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     const [rows] = await pool.query<any>(`
       SELECT 
         b.idblog, b.blogslug, b.blogtitulo, b.blogresumen, b.blogcontenido, b.blogimagen, b.blogfechapublicacion, 
-        u.usuariosnombre as autor, e.especiesnombre, v.variedadesnombre
+        u.usuariosnombre as autor, e.especiesvegetalesnombre, v.variedadesvegetalesnombre
       FROM blog b
       LEFT JOIN usuarios u ON b.xblogidusuarios = u.idusuarios
-      LEFT JOIN especies e ON b.xblogidespecies = e.idespecies
-      LEFT JOIN variedades v ON b.xblogidvariedades = v.idvariedades
+      LEFT JOIN especiesvegetales e ON b.xblogidespeciesvegetales = e.idespeciesvegetales
+      LEFT JOIN variedadesvegetales v ON b.xblogidvariedadesvegetales = v.idvariedadesvegetales
       WHERE b.blogslug = ? ${stateCondition}
     `, [resolvedParams.slug]);
 

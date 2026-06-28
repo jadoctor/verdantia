@@ -109,7 +109,7 @@ export default function IniciarCultivoModal({
   isOpen,
   onClose,
   plantaId,
-  xvariedadesidvariedadorigen,
+  xvariedadesvegetalesidvariedadorigen,
   plantaNombre,
   userEmail,
   calendarioSolar,
@@ -121,7 +121,7 @@ export default function IniciarCultivoModal({
   isOpen: boolean;
   onClose: () => void;
   plantaId: number;
-  xvariedadesidvariedadorigen?: number;
+  xvariedadesvegetalesidvariedadorigen?: number;
   plantaNombre: string;
   userEmail: string;
   calendarioSolar?: any;
@@ -290,7 +290,7 @@ export default function IniciarCultivoModal({
         .then(res => res.json())
         .then(data => {
           const seeds = (data.semillas || []).filter((s: any) => 
-            (Number(s.xsemillasidvariedades) === Number(plantaId) || Number(s.xsemillasidvariedades) === Number(xvariedadesidvariedadorigen)) && 
+            (Number(s.xsemillasidvariedadesvegetales) === Number(plantaId) || Number(s.xsemillasidvariedadesvegetales) === Number(xvariedadesvegetalesidvariedadorigen)) && 
             (s.semillasstockactual === null || s.semillasstockactual > 0) && 
             s.semillasactivosino !== 0
           );
@@ -309,7 +309,7 @@ export default function IniciarCultivoModal({
         })
         .catch(console.error);
     }
-  }, [isOpen, userEmail, plantaId, xvariedadesidvariedadorigen, initialSeedId]);
+  }, [isOpen, userEmail, plantaId, xvariedadesvegetalesidvariedadorigen, initialSeedId]);
 
   useEffect(() => {
     if (isOpen && userEmail) {
@@ -330,7 +330,7 @@ export default function IniciarCultivoModal({
       fetch(`/api/user/catalogo`, { headers: { 'x-user-email': userEmail } })
         .then(res => res.json())
         .then(data => {
-          const esp = (data.especies || []).find((e: any) => e.idespecies === plantaId);
+          const esp = (data.especies || []).find((e: any) => e.idespeciesvegetales === plantaId);
           if (esp) {
             setMarcoplantas(parseFloat(esp.especiesmarcoplantas) || 30);
             setMarcofilas(parseFloat(esp.especiesmarcofilas) || 30);
@@ -393,7 +393,7 @@ END:VCALENDAR`;
       // Si es una semilla nueva comprada, creamos primero la entrada en la tabla semillas
       if (finalData.origen === 'semilla_nueva') {
         const seedBody: any = {
-          xsemillasidvariedades: plantaId,
+          xsemillasidvariedadesvegetales: plantaId,
           semillasorigen: finalData.semillasorigen || 'sobre_comprado',
           semillasdonante: finalData.semillasdonante || null,
           semillaslugarcompra: finalData.semillaslugarcompra,
@@ -430,7 +430,7 @@ END:VCALENDAR`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({
-          xcultivosidvariedades: plantaId,
+          xcultivosidvariedadesvegetales: plantaId,
           xcultivosidsemillas: seedId,
           xcultivosidbancales: finalData.xcultivosidbancales ? parseInt(String(finalData.xcultivosidbancales)) : null,
           cultivosorigen: finalData.origen,

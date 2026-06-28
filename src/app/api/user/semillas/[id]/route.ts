@@ -71,7 +71,7 @@ export async function PUT(
   try {
     const body = await request.json();
     const {
-      xsemillasidvariedades,
+      xsemillasidvariedadesvegetales,
       semillasnumerocoleccion, semillasorigen, semillasmarca,
       semillasfechaorigen, semillasprecio, semillasfechacaducidad,
       semillaslote, semillasstockinicial, semillasstockactual, semillasunidadmedida, semillasobservaciones, semillascoleccion,
@@ -163,54 +163,54 @@ export async function PUT(
       finalCompartir = 0;
     }
 
-    let finalVariedadId = xsemillasidvariedades;
+    let finalVariedadId = xsemillasidvariedadesvegetales;
 
     if (body.customVarietyName && body.customVarietyName.trim() !== '') {
       const [espRows]: any = await pool.query(`
-        SELECT xvariedadesidespecies FROM variedades WHERE idvariedades = ? LIMIT 1
-      `, [xsemillasidvariedades]);
+        SELECT xvariedadesvegetalesidespeciesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? LIMIT 1
+      `, [xsemillasidvariedadesvegetales]);
       
-      const especieId = espRows.length > 0 ? espRows[0].xvariedadesidespecies : null;
+      const especieId = espRows.length > 0 ? espRows[0].xvariedadesvegetalesidespeciesvegetales : null;
 
       if (especieId) {
         const [varResult]: any = await pool.query(`
-          INSERT INTO variedades (
-            xvariedadesidespecies,
-            xvariedadesidusuarios,
-            xvariedadesidvariedadorigen,
-            variedadesnombre,
-            variedadesesgenerica
+          INSERT INTO variedadesvegetales (
+            xvariedadesvegetalesidespeciesvegetales,
+            xvariedadesvegetalesidusuarios,
+            xvariedadesvegetalesidvariedadorigen,
+            variedadesvegetalesnombre,
+            variedadesvegetalesesgenerica
           ) VALUES (?, ?, ?, ?, 0)
-        `, [especieId, user.id, xsemillasidvariedades, body.customVarietyName.trim()]);
+        `, [especieId, user.id, xsemillasidvariedadesvegetales, body.customVarietyName.trim()]);
         
         finalVariedadId = varResult.insertId;
 
-        // Asignar en variedadesusuarios si no existe
+        // Asignar en variedadesvegetalesusuarios si no existe
         const [userVarRows]: any = await pool.query(`
-          SELECT idvariedadesusuarios FROM variedadesusuarios 
-          WHERE Xvariedadesusuariosidusuarios = ? AND xvariedadesusuariosidvariedades = ?
+          SELECT idvariedadesvegetalesusuarios FROM variedadesvegetalesusuarios 
+          WHERE Xvariedadesvegetalesusuariosidusuarios = ? AND xvariedadesvegetalesusuariosidvariedadesvegetales = ?
         `, [user.id, finalVariedadId]);
 
         if (userVarRows.length === 0) {
           await pool.query(`
-            INSERT INTO variedadesusuarios (Xvariedadesusuariosidusuarios, xvariedadesusuariosidvariedades)
+            INSERT INTO variedadesvegetalesusuarios (Xvariedadesvegetalesusuariosidusuarios, xvariedadesvegetalesusuariosidvariedadesvegetales)
             VALUES (?, ?)
           `, [user.id, finalVariedadId]);
         }
 
         // Asignar en variedades (usuario) para Mis Plantas si no existe
         const [userOwnedVarCheck]: any = await pool.query(`
-          SELECT idvariedades FROM variedades 
-          WHERE xvariedadesidusuarios = ? AND xvariedadesidvariedadorigen = ?
+          SELECT idvariedadesvegetales FROM variedadesvegetales 
+          WHERE xvariedadesvegetalesidusuarios = ? AND xvariedadesvegetalesidvariedadorigen = ?
         `, [user.id, finalVariedadId]);
 
         if (userOwnedVarCheck.length === 0) {
           await pool.query(`
-            INSERT INTO variedades (
-              xvariedadesidespecies, 
-              xvariedadesidusuarios, 
-              xvariedadesidvariedadorigen, 
-              variedadesesgenerica
+            INSERT INTO variedadesvegetales (
+              xvariedadesvegetalesidespeciesvegetales, 
+              xvariedadesvegetalesidusuarios, 
+              xvariedadesvegetalesidvariedadorigen, 
+              variedadesvegetalesesgenerica
             ) VALUES (?, ?, ?, 0)
           `, [especieId, user.id, finalVariedadId]);
         }
@@ -219,7 +219,7 @@ export async function PUT(
 
     await pool.query(
       `UPDATE semillas SET 
-        xsemillasidvariedades = COALESCE(?, xsemillasidvariedades),
+        xsemillasidvariedadesvegetales = COALESCE(?, xsemillasidvariedadesvegetales),
         semillasnumerocoleccion = ?,
         semillasorigen = ?,
         semillasmarca = ?,
@@ -265,8 +265,8 @@ export async function PUT(
     return NextResponse.json({ 
       success: true, 
       message: 'Semilla actualizada correctamente',
-      newVariedadId: finalVariedadId !== xsemillasidvariedades ? finalVariedadId : null,
-      newVariedadNombre: finalVariedadId !== xsemillasidvariedades ? body.customVarietyName : null
+      newVariedadId: finalVariedadId !== xsemillasidvariedadesvegetales ? finalVariedadId : null,
+      newVariedadNombre: finalVariedadId !== xsemillasidvariedadesvegetales ? body.customVarietyName : null
     });
   } catch (error: any) {
     console.error('Error actualizando semilla:', error);

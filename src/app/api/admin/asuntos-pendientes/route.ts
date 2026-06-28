@@ -23,16 +23,16 @@ export async function GET(request: Request) {
           da.datosadjuntosruta AS ruta,
           da.datosadjuntosnombreoriginal AS nombreOriginal,
           da.datosadjuntospesobytes AS peso,
-          v.idvariedades AS variedadId,
-          COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre) AS variedadNombre,
-          e.especiesnombre AS especieNombre,
+          v.idvariedadesvegetales AS variedadId,
+          COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS variedadNombre,
+          e.especiesvegetalesnombre AS especieNombre,
           u.usuariosnombre AS usuarioNombre,
           u.usuariosemail AS usuarioEmail,
           u.idusuarios AS usuarioId,
           (SELECT da2.datosadjuntosruta 
            FROM datosadjuntos da2 
            WHERE da2.xdatosadjuntosidusuarios = u.idusuarios 
-             AND da2.xdatosadjuntosidvariedades IS NULL 
+             AND da2.xdatosadjuntosidvariedadesvegetales IS NULL 
              AND da2.xdatosadjuntosidcultivos IS NULL 
              AND da2.xdatosadjuntosidcultivosavisos IS NULL 
              AND da2.datosadjuntosvalidado = 1 
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
              AND da2.datosadjuntosactivo = 1 
            LIMIT 1) AS usuarioFotoPerfil,
           CASE 
-            WHEN da.xdatosadjuntosidvariedades IS NOT NULL THEN 'planta' 
+            WHEN da.xdatosadjuntosidvariedadesvegetales IS NOT NULL THEN 'planta' 
             WHEN da.xdatosadjuntosidcultivos IS NOT NULL THEN 'labor'
             ELSE 'perfil' 
           END AS fotoTipo,
@@ -49,9 +49,9 @@ export async function GET(request: Request) {
         FROM incidencias i
         JOIN datosadjuntos da ON i.incidenciasreferenciaid = da.iddatosadjuntos
         LEFT JOIN cultivos c ON da.xdatosadjuntosidcultivos = c.idcultivos
-        LEFT JOIN variedades v ON COALESCE(da.xdatosadjuntosidvariedades, c.xcultivosidvariedades) = v.idvariedades
-        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
-        LEFT JOIN especies e ON COALESCE(vg.xvariedadesidespecies, v.xvariedadesidespecies) = e.idespecies
+        LEFT JOIN variedadesvegetales v ON COALESCE(da.xdatosadjuntosidvariedadesvegetales, c.xcultivosidvariedadesvegetales) = v.idvariedadesvegetales
+        LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+        LEFT JOIN especiesvegetales e ON COALESCE(vg.xvariedadesvegetalesidespeciesvegetales, v.xvariedadesvegetalesidespeciesvegetales) = e.idespeciesvegetales
         LEFT JOIN usuarios u ON i.xincidenciasidusuarios = u.idusuarios
         WHERE i.incidenciastipo = 'foto_rechazada' 
           AND i.incidenciasestado = 'apelada'
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         (SELECT da2.datosadjuntosruta 
          FROM datosadjuntos da2 
          WHERE da2.xdatosadjuntosidusuarios = pendientes.usuarioId 
-           AND da2.xdatosadjuntosidvariedades IS NULL 
+           AND da2.xdatosadjuntosidvariedadesvegetales IS NULL 
            AND da2.xdatosadjuntosidcultivos IS NULL 
            AND da2.xdatosadjuntosidcultivosavisos IS NULL 
            AND da2.datosadjuntosvalidado = 1 
@@ -80,9 +80,9 @@ export async function GET(request: Request) {
           da.datosadjuntosfechacreacion AS fecha,
           da.datosadjuntospesobytes AS peso,
           da.datosadjuntosvalidado AS validado,
-          v.idvariedades AS variedadId,
-          COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre) AS variedadNombre,
-          e.especiesnombre AS especieNombre,
+          v.idvariedadesvegetales AS variedadId,
+          COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS variedadNombre,
+          e.especiesvegetalesnombre AS especieNombre,
           u.usuariosnombre AS usuarioNombre,
           u.usuariosemail AS usuarioEmail,
           u.idusuarios AS usuarioId,
@@ -94,14 +94,14 @@ export async function GET(request: Request) {
           NULL AS cultivoNumero,
           NULL AS cultivoFecha
         FROM datosadjuntos da
-        LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
-        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
-        LEFT JOIN especies e ON (vg.xvariedadesidespecies = e.idespecies OR v.xvariedadesidespecies = e.idespecies)
-        LEFT JOIN usuarios u ON v.xvariedadesidusuarios = u.idusuarios
+        LEFT JOIN variedadesvegetales v ON da.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
+        LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+        LEFT JOIN especiesvegetales e ON (vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR v.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales)
+        LEFT JOIN usuarios u ON v.xvariedadesvegetalesidusuarios = u.idusuarios
         WHERE da.datosadjuntosvalidado = 0 
           AND da.datosadjuntosactivo = 1
           AND da.datosadjuntostipo = 'imagen'
-          AND da.xdatosadjuntosidvariedades IS NOT NULL
+          AND da.xdatosadjuntosidvariedadesvegetales IS NOT NULL
 
         UNION ALL
 
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
           AND da.datosadjuntosactivo = 1
           AND da.datosadjuntostipo = 'imagen'
           AND da.xdatosadjuntosidusuarios IS NOT NULL
-          AND da.xdatosadjuntosidvariedades IS NULL
+          AND da.xdatosadjuntosidvariedadesvegetales IS NULL
           AND da.xdatosadjuntosidcultivos IS NULL
           AND da.xdatosadjuntosidcultivosavisos IS NULL
 
@@ -144,9 +144,9 @@ export async function GET(request: Request) {
           da.datosadjuntosfechacreacion AS fecha,
           da.datosadjuntospesobytes AS peso,
           da.datosadjuntosvalidado AS validado,
-          v.idvariedades AS variedadId,
-          COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre) AS variedadNombre,
-          e.especiesnombre AS especieNombre,
+          v.idvariedadesvegetales AS variedadId,
+          COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre) AS variedadNombre,
+          e.especiesvegetalesnombre AS especieNombre,
           u.usuariosnombre AS usuarioNombre,
           u.usuariosemail AS usuarioEmail,
           u.idusuarios AS usuarioId,
@@ -159,9 +159,9 @@ export async function GET(request: Request) {
           c.cultivosfechainicio AS cultivoFecha
         FROM datosadjuntos da
         JOIN cultivos c ON da.xdatosadjuntosidcultivos = c.idcultivos
-        LEFT JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades
-        LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades
-        LEFT JOIN especies e ON (vg.xvariedadesidespecies = e.idespecies OR v.xvariedadesidespecies = e.idespecies)
+        LEFT JOIN variedadesvegetales v ON c.xcultivosidvariedadesvegetales = v.idvariedadesvegetales
+        LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+        LEFT JOIN especiesvegetales e ON (vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR v.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales)
         JOIN usuarios u ON da.xdatosadjuntosidusuarios = u.idusuarios
         LEFT JOIN cultivosavisos ca ON da.xdatosadjuntosidcultivosavisos = ca.idcultivosavisos
         LEFT JOIN laborespauta lp ON ca.xcultivosavisosidlaborespauta = lp.idlaborespauta
@@ -184,33 +184,33 @@ export async function GET(request: Request) {
         SELECT 
           u.idusuarios AS usuarioId,
           (SELECT s.suscripcionesnombre FROM usuariossuscripciones us JOIN suscripciones s ON s.idsuscripciones = us.xusuariossuscripcionesidsuscripciones WHERE us.xusuariossuscripcionesidusuarios = u.idusuarios AND us.usuariossuscripcionesestado IN ('activa','degradacion_fase1','degradacion_fase2','degradacion_fase3') ORDER BY us.idusuariossuscripciones DESC LIMIT 1) AS suscripcion_nombre,
-          (SELECT COUNT(*) FROM variedades v WHERE v.xvariedadesidusuarios = u.idusuarios) AS variedades_asumidas,
+          (SELECT COUNT(*) FROM variedadesvegetales v WHERE v.xvariedadesvegetalesidusuarios = u.idusuarios) AS variedades_asumidas,
           (SELECT COUNT(*) FROM cultivos c WHERE c.xcultivosidusuarios = u.idusuarios AND c.cultivosfechafinalizacion IS NULL AND c.cultivosactivosino = 1) AS cultivos_activos,
           (SELECT COUNT(*) FROM cultivos c WHERE c.xcultivosidusuarios = u.idusuarios AND (c.cultivosfechafinalizacion IS NOT NULL OR c.cultivosactivosino = 0)) AS cultivos_inactivos,
-          (SELECT GROUP_CONCAT(CONCAT(COALESCE(e.especiesnombre, 'Especie sin definir'), ' (', COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre, 'Sin nombre'), ')') SEPARATOR ', ') FROM variedades v LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON COALESCE(vg.xvariedadesidespecies, v.xvariedadesidespecies) = e.idespecies WHERE v.xvariedadesidusuarios = u.idusuarios) AS variedades_nombres,
-          (SELECT GROUP_CONCAT(CONCAT(COALESCE(e.especiesnombre, 'Especie sin definir'), ' (', COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre, 'Sin nombre'), ')') SEPARATOR ', ') FROM cultivos c JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON COALESCE(vg.xvariedadesidespecies, v.xvariedadesidespecies) = e.idespecies WHERE c.xcultivosidusuarios = u.idusuarios AND c.cultivosfechafinalizacion IS NULL AND c.cultivosactivosino = 1) AS cultivos_activos_nombres,
-          (SELECT GROUP_CONCAT(CONCAT(COALESCE(e.especiesnombre, 'Especie sin definir'), ' (', COALESCE(NULLIF(v.variedadesnombre, ''), vg.variedadesnombre, 'Sin nombre'), ')') SEPARATOR ', ') FROM cultivos c JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades LEFT JOIN variedades vg ON v.xvariedadesidvariedadorigen = vg.idvariedades LEFT JOIN especies e ON COALESCE(vg.xvariedadesidespecies, v.xvariedadesidespecies) = e.idespecies WHERE c.xcultivosidusuarios = u.idusuarios AND (c.cultivosfechafinalizacion IS NOT NULL OR c.cultivosactivosino = 0)) AS cultivos_inactivos_nombres,
+          (SELECT GROUP_CONCAT(CONCAT(COALESCE(e.especiesvegetalesnombre, 'Especie sin definir'), ' (', COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre, 'Sin nombre'), ')') SEPARATOR ', ') FROM variedadesvegetales v LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales LEFT JOIN especiesvegetales e ON COALESCE(vg.xvariedadesvegetalesidespeciesvegetales, v.xvariedadesvegetalesidespeciesvegetales) = e.idespeciesvegetales WHERE v.xvariedadesvegetalesidusuarios = u.idusuarios) AS variedades_nombres,
+          (SELECT GROUP_CONCAT(CONCAT(COALESCE(e.especiesvegetalesnombre, 'Especie sin definir'), ' (', COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre, 'Sin nombre'), ')') SEPARATOR ', ') FROM cultivos c JOIN variedadesvegetales v ON c.xcultivosidvariedadesvegetales = v.idvariedadesvegetales LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales LEFT JOIN especiesvegetales e ON COALESCE(vg.xvariedadesvegetalesidespeciesvegetales, v.xvariedadesvegetalesidespeciesvegetales) = e.idespeciesvegetales WHERE c.xcultivosidusuarios = u.idusuarios AND c.cultivosfechafinalizacion IS NULL AND c.cultivosactivosino = 1) AS cultivos_activos_nombres,
+          (SELECT GROUP_CONCAT(CONCAT(COALESCE(e.especiesvegetalesnombre, 'Especie sin definir'), ' (', COALESCE(NULLIF(v.variedadesvegetalesnombre, ''), vg.variedadesvegetalesnombre, 'Sin nombre'), ')') SEPARATOR ', ') FROM cultivos c JOIN variedadesvegetales v ON c.xcultivosidvariedadesvegetales = v.idvariedadesvegetales LEFT JOIN variedadesvegetales vg ON v.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales LEFT JOIN especiesvegetales e ON COALESCE(vg.xvariedadesvegetalesidespeciesvegetales, v.xvariedadesvegetalesidespeciesvegetales) = e.idespeciesvegetales WHERE c.xcultivosidusuarios = u.idusuarios AND (c.cultivosfechafinalizacion IS NOT NULL OR c.cultivosactivosino = 0)) AS cultivos_inactivos_nombres,
           (SELECT COUNT(*) FROM datosadjuntos da 
-           LEFT JOIN variedades v2 ON da.xdatosadjuntosidvariedades = v2.idvariedades
+           LEFT JOIN variedadesvegetales v2 ON da.xdatosadjuntosidvariedadesvegetales = v2.idvariedadesvegetales
            LEFT JOIN cultivos c2 ON da.xdatosadjuntosidcultivos = c2.idcultivos
            WHERE (da.xdatosadjuntosidusuarios = u.idusuarios 
-              OR v2.xvariedadesidusuarios = u.idusuarios
+              OR v2.xvariedadesvegetalesidusuarios = u.idusuarios
               OR c2.xcultivosidusuarios = u.idusuarios)
              AND da.datosadjuntostipo = 'imagen') AS fotos_subidas,
           (SELECT COUNT(*) FROM datosadjuntos da 
-           LEFT JOIN variedades v3 ON da.xdatosadjuntosidvariedades = v3.idvariedades
+           LEFT JOIN variedadesvegetales v3 ON da.xdatosadjuntosidvariedadesvegetales = v3.idvariedadesvegetales
            LEFT JOIN cultivos c3 ON da.xdatosadjuntosidcultivos = c3.idcultivos
            WHERE (da.xdatosadjuntosidusuarios = u.idusuarios 
-              OR v3.xvariedadesidusuarios = u.idusuarios
+              OR v3.xvariedadesvegetalesidusuarios = u.idusuarios
               OR c3.xcultivosidusuarios = u.idusuarios)
              AND da.datosadjuntosresultadovalidacion = 'rechazado') AS fotos_rechazadas,
           (SELECT GROUP_CONCAT(DISTINCT i.incidenciasmotivo SEPARATOR ' | ') 
            FROM incidencias i 
            JOIN datosadjuntos da ON i.incidenciasreferenciaid = da.iddatosadjuntos 
-           LEFT JOIN variedades v4 ON da.xdatosadjuntosidvariedades = v4.idvariedades
+           LEFT JOIN variedadesvegetales v4 ON da.xdatosadjuntosidvariedadesvegetales = v4.idvariedadesvegetales
            LEFT JOIN cultivos c4 ON da.xdatosadjuntosidcultivos = c4.idcultivos
            WHERE (da.xdatosadjuntosidusuarios = u.idusuarios 
-              OR v4.xvariedadesidusuarios = u.idusuarios
+              OR v4.xvariedadesvegetalesidusuarios = u.idusuarios
               OR c4.xcultivosidusuarios = u.idusuarios)
              AND i.incidenciastipo = 'foto_rechazada' 
              AND i.incidenciasmotivo IS NOT NULL) AS motivos_rechazo
@@ -276,14 +276,14 @@ export async function PUT(request: Request) {
       SELECT
         da.datosadjuntosruta,
         da.datosadjuntosnombreoriginal,
-        da.xdatosadjuntosidvariedades AS variedadId,
+        da.xdatosadjuntosidvariedadesvegetales AS variedadId,
         da.xdatosadjuntosidusuarios AS ownerId,
-        v.xvariedadesidusuarios AS usuarioId,
+        v.xvariedadesvegetalesidusuarios AS usuarioId,
         u.usuariosemail AS usuarioEmail,
         u.idusuarios AS uid
       FROM datosadjuntos da
-      LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
-      LEFT JOIN usuarios u ON u.idusuarios = COALESCE(v.xvariedadesidusuarios, da.xdatosadjuntosidusuarios)
+      LEFT JOIN variedadesvegetales v ON da.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
+      LEFT JOIN usuarios u ON u.idusuarios = COALESCE(v.xvariedadesvegetalesidusuarios, da.xdatosadjuntosidusuarios)
       WHERE da.iddatosadjuntos = ?
     `, [photoId]);
 
@@ -361,9 +361,9 @@ export async function PUT(request: Request) {
       // Fallback para elegir nueva foto principal si es necesario
       if (foto) {
         if (foto.variedadId) {
-          const [check]: any = await pool.query('SELECT 1 FROM datosadjuntos WHERE xdatosadjuntosidvariedades = ? AND datosadjuntosesprincipal = 1 AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen"', [foto.variedadId]);
+          const [check]: any = await pool.query('SELECT 1 FROM datosadjuntos WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntosesprincipal = 1 AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen"', [foto.variedadId]);
           if (check.length === 0) {
-            await pool.query(`UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE xdatosadjuntosidvariedades = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen" ORDER BY datosadjuntosorden ASC LIMIT 1`, [foto.variedadId]);
+            await pool.query(`UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen" ORDER BY datosadjuntosorden ASC LIMIT 1`, [foto.variedadId]);
           }
         } else if (foto.ownerId) {
           const [check]: any = await pool.query('SELECT 1 FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntosesprincipal = 1 AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen"', [foto.ownerId]);
@@ -458,9 +458,9 @@ export async function PUT(request: Request) {
       // Fallback para elegir nueva foto principal si es necesario
       if (foto) {
         if (foto.variedadId) {
-          const [check]: any = await pool.query('SELECT 1 FROM datosadjuntos WHERE xdatosadjuntosidvariedades = ? AND datosadjuntosesprincipal = 1 AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen"', [foto.variedadId]);
+          const [check]: any = await pool.query('SELECT 1 FROM datosadjuntos WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntosesprincipal = 1 AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen"', [foto.variedadId]);
           if (check.length === 0) {
-            await pool.query(`UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE xdatosadjuntosidvariedades = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen" ORDER BY datosadjuntosorden ASC LIMIT 1`, [foto.variedadId]);
+            await pool.query(`UPDATE datosadjuntos SET datosadjuntosesprincipal = 1 WHERE xdatosadjuntosidvariedadesvegetales = ? AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen" ORDER BY datosadjuntosorden ASC LIMIT 1`, [foto.variedadId]);
           }
         } else if (foto.ownerId) {
           const [check]: any = await pool.query('SELECT 1 FROM datosadjuntos WHERE xdatosadjuntosidusuarios = ? AND datosadjuntosesprincipal = 1 AND datosadjuntosactivo = 1 AND datosadjuntostipo = "imagen"', [foto.ownerId]);

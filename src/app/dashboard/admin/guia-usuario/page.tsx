@@ -192,13 +192,13 @@ export default function GuiaUsuarioPage() {
               <li><strong>Sin Texto Explicativo:</strong> No se incluye texto tipo "Haz clic para cambiar" debajo de las miniaturas, ya que descentra visualmente la columna respecto al Hero. La interactividad se comunica exclusivamente mediante el efecto hover.</li>
             </ul>
           </li>
-          <li style={{ marginBottom: '8px' }}><strong>Sincronización (onMediaChange):</strong> El Hero Carousel consume el estado <code>photos</code> del componente padre (<code>VariedadForm</code>, <code>EspecieForm</code>). Cuando el componente hijo <code>VariedadMediaManager</code> realiza cualquier operación sobre las fotos (subida, eliminación, cambio de principal), debe invocar el callback <code>onMediaChange</code> para que el padre recargue sus fotos y el Hero se actualice automáticamente sin necesidad de recargar la página.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Sincronización (onMediaChange):</strong> El Hero Carousel consume el estado <code>photos</code> del componente padre (<code>VariedadVegetalForm</code>, <code>EspecieVegetalForm</code>). Cuando el componente hijo <code>VariedadVegetalMediaManager</code> realiza cualquier operación sobre las fotos (subida, eliminación, cambio de principal), debe invocar el callback <code>onMediaChange</code> para que el padre recargue sus fotos y el Hero se actualice automáticamente sin necesidad de recargar la página.</li>
           <li><strong>Estado Vacío (Empty State):</strong> Si no hay fotos, no se muestra el carrusel; se muestra el Grid tipo "Pinterest" (fondo rosa claro/vibrante, fotos de stock) de especies globales.</li>
         </ul>
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.2. La Galería y Editor (Pestañas "📷 Fotos" y "📄 PDFs")</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Toda gestión fotográfica y documental se divide en <strong>dos pestañas independientes</strong> dentro de la Ficha Técnica. Queda prohibido agruparlas bajo una única pestaña "Adjuntos". El componente reutilizable <code>VariedadMediaManager</code> acepta un prop <code>section</code> (<code>'photos'</code> | <code>'pdfs'</code> | <code>'all'</code>) para renderizar solo la sección correspondiente:
+          Toda gestión fotográfica y documental se divide en <strong>dos pestañas independientes</strong> dentro de la Ficha Técnica. Queda prohibido agruparlas bajo una única pestaña "Adjuntos". El componente reutilizable <code>VariedadVegetalMediaManager</code> acepta un prop <code>section</code> (<code>'photos'</code> | <code>'pdfs'</code> | <code>'all'</code>) para renderizar solo la sección correspondiente:
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
           <li style={{ marginBottom: '8px' }}><strong>Pestaña "📷 Fotos" (<code>section="photos"</code>):</strong> Contiene exclusivamente la galería de fotos con drag-and-drop, el generador de imágenes IA, los botones de acción (★, ✏️, ✕) y la zona de subida (Dropzone). Debe mostrar el contador de fotos permitidas por plan.</li>
@@ -206,7 +206,7 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>Límites por Plan (Validación Backend y UI):</strong> La zona de subida se bloquea dinámicamente según el plan (Básica=1, Avanzada=2, Profesional=3, Premium=4). Debe mostrar un contador visible (ej. <code>2 / 4 permitidas</code>) que pasa a rojo al llegar al límite.</li>
           <li style={{ marginBottom: '8px' }}><strong>Overlay de Penalización (Lock Overlay):</strong> Si un usuario tiene más fotos de las que su plan actual permite (por haber bajado de plan), las fotos sobrantes muestran un overlay semitransparente con un icono 🔒 "Excede límite". Estas fotos pierden el atributo <code>draggable</code> y esconden los botones de Editar y Favorito. Solo conservan el botón ✕ de borrado.</li>
           <li style={{ marginBottom: '8px' }}><strong>Botones de Acción (Iconografía Estándar):</strong> Estrella (★/☆ para portada), Lápiz (✏️ para editor) y Aspa (✕ para eliminar).</li>
-          <li style={{ marginBottom: '8px' }}><strong>Pre-carga en Segundo Plano (Evitar Retrasos):</strong> Para evitar que al entrar en la pestaña las fotos se muestren vacías durante un segundo antes de renderizarse (lo cual resulta poco visual), el componente gestor de archivos/imágenes (<code>VariedadMediaManager</code>) debe estar **siempre montado en el DOM** si el registro ya existe (con <code>variedadId</code> válido). El intercambio entre las pestañas de Fotos y PDFs debe realizarse controlando su visibilidad mediante CSS (<code>display: activeTab === 'fotos' ? 'grid' : 'none'</code>) en lugar de desmontar/renderizar condicionalmente con React. Si el registro es nuevo, se muestra un texto informativo indicando que se debe guardar el registro primero.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pre-carga en Segundo Plano (Evitar Retrasos):</strong> Para evitar que al entrar en la pestaña las fotos se muestren vacías durante un segundo antes de renderizarse (lo cual resulta poco visual), el componente gestor de archivos/imágenes (<code>VariedadVegetalMediaManager</code>) debe estar **siempre montado en el DOM** si el registro ya existe (con <code>variedadId</code> válido). El intercambio entre las pestañas de Fotos y PDFs debe realizarse controlando su visibilidad mediante CSS (<code>display: activeTab === 'fotos' ? 'grid' : 'none'</code>) en lugar de desmontar/renderizar condicionalmente con React. Si el registro es nuevo, se muestra un texto informativo indicando que se debe guardar el registro primero.</li>
           <li><strong>El Único Editor Visual Válido:</strong> Cualquier sección que permita re-encuadrar fotos debe usar la arquitectura estandarizada descrita a continuación.</li>
         </ul>
 
@@ -215,7 +215,7 @@ export default function GuiaUsuarioPage() {
           Para garantizar una consistencia absoluta, cualquier módulo que requiera manipular fotos debe implementar el editor estandarizado siguiendo estas especificaciones exactas:
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Dependencia CSS:</strong> Toda la estructura visual debe heredar las clases maestras de <code>EspecieForm.css</code> (<code>photo-editor-overlay</code>, <code>photo-editor-modal</code>, <code>photo-editor-header</code>, <code>photo-editor-body</code>, <code>photo-editor-footer</code>). Queda prohibido inventar modales ad-hoc con Tailwind.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Dependencia CSS:</strong> Toda la estructura visual debe heredar las clases maestras de <code>EspecieVegetalForm.css</code> (<code>photo-editor-overlay</code>, <code>photo-editor-modal</code>, <code>photo-editor-header</code>, <code>photo-editor-body</code>, <code>photo-editor-footer</code>). Queda prohibido inventar modales ad-hoc con Tailwind.</li>
           <li style={{ marginBottom: '8px' }}><strong>Estado y Variables Requeridas:</strong> El componente debe persistir y manipular un objeto JSON con estas cinco claves obligatorias:
             <ul>
               <li><code>profile_object_x</code> y <code>profile_object_y</code> (por defecto 50, ajustado mediante evento de arrastre <em>onMouseMove</em>).</li>
@@ -251,7 +251,7 @@ export default function GuiaUsuarioPage() {
 
         <h3 style={{ color: '#334155', marginTop: '30px', fontSize: '1.4rem' }}>4.4. Estándar Unificado de Subida de Fotos (Especies + Usuarios)</h3>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
-          Para evitar regresiones entre módulos y garantizar que la subida funcione tanto en local como en producción, se fija como norma oficial el patrón ya aplicado y validado en <code>EspecieForm.tsx</code> y <code>perfil/page.tsx</code>.
+          Para evitar regresiones entre módulos y garantizar que la subida funcione tanto en local como en producción, se fija como norma oficial el patrón ya aplicado y validado en <code>EspecieVegetalForm.tsx</code> y <code>perfil/page.tsx</code>.
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px' }}>
           <li style={{ marginBottom: '8px' }}><strong>Inicialización obligatoria de Firebase en Cliente:</strong> Todo componente <code>'use client'</code> que suba fotos debe cargar <code>@/lib/firebase/config</code> desde la cabecera del módulo (import estático), garantizando que <code>initializeApp()</code> ocurra antes de cualquier llamada a Storage.</li>
@@ -319,9 +319,9 @@ export default function GuiaUsuarioPage() {
           Para garantizar la consistencia visual y técnica en toda la plataforma, se han establecido dos rutas absolutas como el <strong>"Gold Standard" (Patrón Oro)</strong> de la arquitectura frontend. Todo nuevo módulo (Variedades, Plagas, Labores, etc.) debe calcar estos dos patrones:
         </p>
         <ul style={{ color: '#475569', lineHeight: 1.6, paddingLeft: '20px', marginBottom: '16px' }}>
-          <li style={{ marginBottom: '8px' }}><strong>Para Listados y Muestra de Datos:</strong> La ruta <code>/dashboard/admin/especies</code> es el estándar. Define cómo se deben estructurar las tablas, los filtros de búsqueda, el subheader de contexto global y la paginación.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Para Listados y Muestra de Datos:</strong> La ruta <code>/dashboard/admin/especiesvegetales</code> es el estándar. Define cómo se deben estructurar las tablas, los filtros de búsqueda, el subheader de contexto global y la paginación.</li>
           <li style={{ marginBottom: '8px' }}><strong>Ancho Completo de Pantalla:</strong> Todos los listados, cuadrículas y dashboards de visualización de datos de usuario u organización deben configurarse para ocupar el <code>100%</code> del ancho de la pantalla (usando <code>width: '100%'</code> sin restricciones limitantes de <code>maxWidth</code> ni centrado artificial), adaptándose plenamente al área del layout global.</li>
-          <li><strong>Para Edición e Inserción:</strong> La ruta <code>/dashboard/admin/especies/[id]</code> (por ejemplo <code>/dashboard/admin/especies/23</code> gestionado por <code>EspecieForm.tsx</code>) es el estándar definitivo de formularios.</li>
+          <li><strong>Para Edición e Inserción:</strong> La ruta <code>/dashboard/admin/especiesvegetales/[id]</code> (por ejemplo <code>/dashboard/admin/especiesvegetales/23</code> gestionado por <code>EspecieVegetalForm.tsx</code>) es el estándar definitivo de formularios.</li>
         </ul>
         <p style={{ color: '#475569', lineHeight: 1.6 }}>
           Reglas inquebrantables del patrón de edición:
@@ -331,7 +331,7 @@ export default function GuiaUsuarioPage() {
           <li style={{ marginBottom: '8px' }}><strong>Cuadrículas de Edición en Línea (Inline Editable Grids):</strong> Las listas de elementos relacionados no utilizan modales adicionales ni páginas externas para su edición. Se rigen por un formato de "cuadrícula compacta" donde cada celda o fila tiene inputs directos y selectores visibles, incorporando auto-guardado automático (<i>onBlur</i> o <i>onChange</i>) al perder el foco o modificar la opción.</li>
           <li style={{ marginBottom: '8px' }}><strong>Botones Escondidos (Smart Actions):</strong> Cualquier botón de acción global (Guardar Cambios) debe permanecer oculto hasta que se detecten modificaciones no persistidas (<code>isDirty === true</code>), previniendo saturación visual y peticiones API vacías.</li>
           <li style={{ marginBottom: '8px' }}><strong>El Editor de Fotos Estándar:</strong> Todos los modales de edición de fotografía en el proyecto (Especies, Labores, etc.) deben seguir estrictamente el patrón de Especies. Esto incluye: soporte drag-to-pan, controles de Zoom, Brillo, Contraste, Estilos IA (Filtros), un campo de Texto Alternativo SEO (Alt Tag) guardado en el JSON de resumen, y botones de Auto-Mejora y Reset.</li>
-          <li style={{ marginBottom: '8px' }}><strong>Pestañas Separadas de Fotos y PDFs:</strong> Queda <strong>prohibido</strong> agrupar fotos y PDFs bajo una única pestaña "Adjuntos". Deben existir siempre como <strong>dos pestañas independientes</strong>: <code>📷 Fotos</code> y <code>📄 PDFs</code>. Ambas pestañas instancian el componente reutilizable <code>VariedadMediaManager</code> con el prop <code>section</code> correspondiente (<code>"photos"</code> o <code>"pdfs"</code>), y ambas deben pasar el callback <code>onMediaChange</code> para sincronizar el Hero Carousel del formulario padre cuando se suban, eliminen o reordenen fotos.</li>
+          <li style={{ marginBottom: '8px' }}><strong>Pestañas Separadas de Fotos y PDFs:</strong> Queda <strong>prohibido</strong> agrupar fotos y PDFs bajo una única pestaña "Adjuntos". Deben existir siempre como <strong>dos pestañas independientes</strong>: <code>📷 Fotos</code> y <code>📄 PDFs</code>. Ambas pestañas instancian el componente reutilizable <code>VariedadVegetalMediaManager</code> con el prop <code>section</code> correspondiente (<code>"photos"</code> o <code>"pdfs"</code>), y ambas deben pasar el callback <code>onMediaChange</code> para sincronizar el Hero Carousel del formulario padre cuando se suban, eliminen o reordenen fotos.</li>
           <li style={{ marginBottom: '8px' }}><strong>Pre-carga en Segundo Plano para Todas las Pestañas (UX Fluido):</strong> Para evitar pantallas en blanco, spinners de carga tardíos o saltos visuales al alternar entre pestañas en los editores de administración, <strong>está estrictamente prohibido desmontar condicionalmente los componentes de las pestañas utilizando operadores lógicos en React</strong> (ej. <code>{'{'}activeTab === 'x' &amp;&amp; &lt;Componente /&gt;{'}'}</code>). En su lugar, todos los paneles de pestañas se deben mantener montados en el DOM permanentemente, controlando su visibilidad de forma inmediata mediante propiedades CSS de ocultación (ej. <code>style={'{'}{'{'} display: activeTab === 'x' ? 'grid' : 'none' {'}'}{'}'}</code> o <code>'block'</code>). Esto permite pre-cargar los datos del servidor en segundo plano al montar la página, logrando transiciones instantáneas y una fluidez óptima para el usuario.</li>
         </ul>
 
@@ -914,23 +914,23 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/especies/[id]/usuarios-vinculados/</code>: Creado y configurado.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/especiesvegetales/[id]/usuarios-vinculados/</code>: Creado y configurado.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/admin/mantenimiento/</code>: Creado y configurado.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/ai/proponer-variedades/</code>: Creado y configurado.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/api/ai/variedad-assistant/</code>: Creado y configurado.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/app/dashboard/admin/ajustes/mantenimiento/</code>: Creado y configurado.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[NUEVO]</strong> <code>src/components/PlantWizardModal.tsx</code>: Creado y configurado.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/especies/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/especies/route.ts</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/variedades/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/variedades/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/especiesvegetales/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/especiesvegetales/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/variedadesvegetales/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/admin/variedadesvegetales/route.ts</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/ai/generate-image/route.ts</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/catalogo/[especieId]/variedades/route.ts</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/catalogo/route.ts</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/plantas/[id]/route.ts</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/plantas/route.ts</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/api/user/semillas/route.ts</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/especies/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/especiesvegetales/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/admin/guia-usuario/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/layout.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/mis-plantas/[id]/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
@@ -938,12 +938,12 @@ export default function GuiaUsuarioPage() {
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/app/dashboard/semillas/page.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/SeedWizardModal.tsx</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/EspecieForm.css</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/EspecieVariedadesTab.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/EspecieVegetalForm.css</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/EspecieVegetalVariedadesTab.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/SharedMediaUploader.tsx</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadForm.tsx</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadMediaManager.tsx</code>: Actualizado con mejoras y correcciones.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadesList.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadVegetalForm.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadVegetalMediaManager.tsx</code>: Actualizado con mejoras y correcciones.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/admin/VariedadesVegetalesList.tsx</code>: Actualizado con mejoras y correcciones.</li>
                   <li style={{ marginBottom: '8px' }}><strong>[MODIFICADO]</strong> <code>src/components/user/IniciarCultivoModal.tsx</code>: Actualizado con mejoras y correcciones.</li>
                 </ul>
               </div>
@@ -967,8 +967,8 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><strong>src/app/api/user/plantas/[id]/route.ts:</strong> Modificado el método `DELETE` para interceptar si la variedad a eliminar tiene semillas activas asociadas. Si las tiene, o si se indica el parámetro `?inactivate=true`, realiza un soft-delete actualizando `variedadesvisibilidadsino = 0` en lugar de borrarla físicamente.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>src/app/api/user/plantas/route.ts:</strong> Filtrado el listado para excluir plantas inactivadas (`variedadesvisibilidadsino = 0`) y añadido el campo `cultivos_count` a la lista de semillas JSON (`semillas_lista`).</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/api/user/plantas/[id]/route.ts:</strong> Modificado el método `DELETE` para interceptar si la variedad a eliminar tiene semillas activas asociadas. Si las tiene, o si se indica el parámetro `?inactivate=true`, realiza un soft-delete actualizando `variedadesvegetalesvisibilidadsino = 0` en lugar de borrarla físicamente.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>src/app/api/user/plantas/route.ts:</strong> Filtrado el listado para excluir plantas inactivadas (`variedadesvegetalesvisibilidadsino = 0`) y añadido el campo `cultivos_count` a la lista de semillas JSON (`semillas_lista`).</li>
                   <li style={{ marginBottom: '8px' }}><strong>src/app/dashboard/mis-plantas/page.tsx:</strong> Rediseñado el encabezado de las tarjetas del huerto para mostrar de manera premium los botones de acción (`💤` inactivar y `🗑️` eliminar) con bordes de color y fondos blancos adaptativos. Se integró el modal unificado de semillas `SeedWizardModal` en esta página con preselección automática de especie y variedad al hacer clic en `+ Añadir Semilla`.</li>
                   <li style={{ marginBottom: '8px' }}><strong>src/components/SeedWizardModal.tsx:</strong> Adaptado el componente unificado para aceptar `initialEspecieId` y `initialVariedadId`, permitiendo auto-seleccionar y saltar directamente al Paso 3 en flujos de adquisición asistidos.</li>
                 </ul>
@@ -1020,7 +1020,7 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><strong>Extirpación del Método:</strong> Se eliminó la columna <code>laborespautametodo</code> de la tabla <code>laborespauta</code>. El asistente IA ya no usa este parámetro y se han limpiado los filtros en <code>EspecieForm.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Extirpación del Método:</strong> Se eliminó la columna <code>laborespautametodo</code> de la tabla <code>laborespauta</code>. El asistente IA ya no usa este parámetro y se han limpiado los filtros en <code>EspecieVegetalForm.tsx</code>.</li>
                   <li style={{ marginBottom: '8px' }}><strong>Migración de la lógica al Catálogo Maestro:</strong> Se crearon las columnas <code>laboresaplicaconvencional</code>, <code>laboresaplicaminimo</code> y <code>laboresaplicanolaboreo</code> en la tabla maestra <code>labores</code>.</li>
                   <li style={{ marginBottom: '8px' }}><strong>Refinamiento de Prompts (IA):</strong> Se actualizó <code>api/ai/pautas/route.ts</code> para prohibir explícitamente fases vagas como "general" o "todo el ciclo", forzando una cronología estricta.</li>
                   <li style={{ marginBottom: '8px' }}><strong>Nuevas labores avanzadas:</strong> Se añadieron 8 labores específicas agronómicas (Tarping, Deshierbe térmico, Escarificado, etc.) con sus debidas restricciones (ej. Laboreo profundo restringido en No-till).</li>
@@ -1300,8 +1300,8 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Refactorización de <code>EspecieForm.tsx</code> y <code>LaborForm.tsx</code> para forzar al cliente (navegador) a subir el binario crudo (FormData limit bypass) a <code>uploads/temp/</code> en Firebase Storage.</li>
-                  <li>Las APIs <code>/api/admin/especies/[id]/photos</code> y <code>/api/admin/labores/[id]/photos</code> fueron reescritas para aceptar únicamente un JSON con el path del archivo temporal. El servidor lo descarga nativamente desde Google Cloud, lo procesa con Sharp/Gemini/Blurhash, lo almacena, y destruye el temporal.</li>
+                  <li style={{ marginBottom: '8px' }}>Refactorización de <code>EspecieVegetalForm.tsx</code> y <code>LaborForm.tsx</code> para forzar al cliente (navegador) a subir el binario crudo (FormData limit bypass) a <code>uploads/temp/</code> en Firebase Storage.</li>
+                  <li>Las APIs <code>/api/admin/especiesvegetales/[id]/photos</code> y <code>/api/admin/labores/[id]/photos</code> fueron reescritas para aceptar únicamente un JSON con el path del archivo temporal. El servidor lo descarga nativamente desde Google Cloud, lo procesa con Sharp/Gemini/Blurhash, lo almacena, y destruye el temporal.</li>
                 </ul>
               </div>
 
@@ -1319,7 +1319,7 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Al realizar la inyección global del atributo <code>crossOrigin</code> para el COEP, se introdujo un error tipográfico en <code>EspecieForm.tsx</code> que rompía el componente y simulaba un "falso fallo de subida" al intentar renderizar la galería dinámicamente tras la respuesta de la API.</li>
+                  <li style={{ marginBottom: '8px' }}>Al realizar la inyección global del atributo <code>crossOrigin</code> para el COEP, se introdujo un error tipográfico en <code>EspecieVegetalForm.tsx</code> que rompía el componente y simulaba un "falso fallo de subida" al intentar renderizar la galería dinámicamente tras la respuesta de la API.</li>
                   <li style={{ marginBottom: '8px' }}><strong>Causa raíz del 403 en Storage:</strong> Verdantia usa NextAuth con <code>signInWithCustomToken</code> para autenticarse en Firebase, pero el token de Firebase Web SDK caduca cada hora. Las fotos de usuario funcionaban porque su token nunca expiraba en la misma sesión; sin embargo, en el panel de administración de Especies (una sesión más larga), el token ya había caducado, provocando que el SDK de Storage rechazara el archivo con un Error 403 silencioso.</li>
                 </ul>
               </div>
@@ -1327,7 +1327,7 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Se reparó el cierre de la etiqueta <code>&lt;img /&gt;</code> en la línea 1195 de <code>EspecieForm.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Se reparó el cierre de la etiqueta <code>&lt;img /&gt;</code> en la línea 1195 de <code>EspecieVegetalForm.tsx</code>.</li>
                   <li><strong>Se amplió <code>storage.rules</code></strong> para permitir escritura pública en la carpeta temporal <code>uploads/temp/</code>. Esta carpeta actúa como zona de transit: el cliente sube el binario sin necesidad de token, el servidor la procesa y destruye el archivo temporal de forma inmediata. El resto de carpetas siguen requiriendo autenticación.</li>
                 </ul>
               </div>
@@ -1340,7 +1340,7 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}>En producción (Cloud Function Firebase), la subida de fotos en Especies fallaba con <code>The default Firebase app does not exist</code>. En local funcionaba. Las fotos de usuario (perfil) no tenían este error.</li>
-                  <li><strong>Causa raíz:</strong> En <code>EspecieForm.tsx</code>, el módulo <code>firebase/storage</code> se importaba <em>antes</em> que <code>@/lib/firebase/config</code>. En local los módulos ya están cacheados, pero en producción cada Cloud Function arranca en frío. Al importar <code>firebase/storage</code> primero, ese módulo intenta referenciar la app por defecto que aún no existe porque <code>initializeApp()</code> (dentro de <code>config.ts</code>) no había corrido todavía.</li>
+                  <li><strong>Causa raíz:</strong> En <code>EspecieVegetalForm.tsx</code>, el módulo <code>firebase/storage</code> se importaba <em>antes</em> que <code>@/lib/firebase/config</code>. En local los módulos ya están cacheados, pero en producción cada Cloud Function arranca en frío. Al importar <code>firebase/storage</code> primero, ese módulo intenta referenciar la app por defecto que aún no existe porque <code>initializeApp()</code> (dentro de <code>config.ts</code>) no había corrido todavía.</li>
                 </ul>
               </div>
 
@@ -1348,7 +1348,7 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}><strong>SIEMPRE importar <code>@/lib/firebase/config</code> antes de <code>firebase/storage</code></strong>. Este orden garantiza que <code>initializeApp()</code> corre primero en cualquier entorno.</li>
-                  <li>Corrección aplicada en <code>EspecieForm.tsx</code> para que coincida con el patrón ya funcional de <code>perfil/page.tsx</code>.</li>
+                  <li>Corrección aplicada en <code>EspecieVegetalForm.tsx</code> para que coincida con el patrón ya funcional de <code>perfil/page.tsx</code>.</li>
                 </ul>
               </div>
             </li>
@@ -1359,14 +1359,14 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}><code>perfil/page.tsx</code> tiene <code>import {'{'} auth {'}'} from &apos;@/lib/firebase/config&apos;</code> como import <strong>estático en el top del archivo</strong>. Esto garantiza que <code>initializeApp()</code> se ejecuta en el momento en que el módulo se carga en el navegador, antes de cualquier interacción del usuario.</li>
-                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code> y <code>LaborForm.tsx</code> solo tenían imports dinámicos de <code>firebase/config</code> dentro de los handlers. En producción (Cloud Function), el bundler no garantizaba la ejecución de <code>initializeApp()</code> en tiempo de carga, provocando el error <em>"The default Firebase app does not exist"</em>.</li>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieVegetalForm.tsx</code> y <code>LaborForm.tsx</code> solo tenían imports dinámicos de <code>firebase/config</code> dentro de los handlers. En producción (Cloud Function), el bundler no garantizaba la ejecución de <code>initializeApp()</code> en tiempo de carga, provocando el error <em>"The default Firebase app does not exist"</em>.</li>
                 </ul>
               </div>
 
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Regla de oro para futuros módulos</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><strong>Todo componente &apos;use client&apos; que use Firebase Storage DEBE tener</strong> <code>import {'{'} storage {'}'} from &apos;@/lib/firebase/config&apos;</code> como import estático en la cabecera del archivo. Esta regla aplica a <code>EspecieForm.tsx</code>, <code>LaborForm.tsx</code> y cualquier futuro formulario administrativo.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Todo componente &apos;use client&apos; que use Firebase Storage DEBE tener</strong> <code>import {'{'} storage {'}'} from &apos;@/lib/firebase/config&apos;</code> como import estático en la cabecera del archivo. Esta regla aplica a <code>EspecieVegetalForm.tsx</code>, <code>LaborForm.tsx</code> y cualquier futuro formulario administrativo.</li>
                   <li>Los imports dinámicos de <code>firebase/storage</code> dentro de handlers siguen siendo correctos para optimizar el bundle size.</li>
                 </ul>
               </div>
@@ -1377,7 +1377,7 @@ export default function GuiaUsuarioPage() {
               
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Se re-verificó línea por línea el comportamiento de subida de fotos entre <code>perfil/page.tsx</code> y los componentes administrativos (<code>EspecieForm.tsx</code>, <code>LaborForm.tsx</code>).</li>
+                  <li style={{ marginBottom: '8px' }}>Se re-verificó línea por línea el comportamiento de subida de fotos entre <code>perfil/page.tsx</code> y los componentes administrativos (<code>EspecieVegetalForm.tsx</code>, <code>LaborForm.tsx</code>).</li>
                   <li>Ambos flujos utilizan ahora un <strong>import estático de Firebase</strong> en la cabecera (<code>auth</code> en perfil, <code>storage</code> en especies) para asegurar que <code>initializeApp()</code> se ejecute al instante.</li>
                   <li>Ambos utilizan un <strong>import dinámico de <code>firebase/storage</code></strong> a la hora de subir el archivo para aligerar la carga, garantizando una equivalencia del 100% en su ejecución tanto en local como en producción.</li>
                 </ul>
@@ -1506,7 +1506,7 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code>: Reescrita <code>uploadAiImage</code> (Firebase client → temp → API con <code>rawStoragePath</code>).</li>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieVegetalForm.tsx</code>: Reescrita <code>uploadAiImage</code> (Firebase client → temp → API con <code>rawStoragePath</code>).</li>
                   <li style={{ marginBottom: '8px' }}><code>admin.ts</code>: Eliminada caché <code>cachedAdminSdk</code>.</li>
                   <li style={{ marginBottom: '8px' }}>Todos los binarios a <code>eval("require(...)")</code>. mysql2 a <code>import type</code>.</li>
                   <li><code>AGENTS.md</code>: Protocolo de despliegue con mandato "SUBE A PRODUCCION".</li>
@@ -1636,7 +1636,7 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}><code>proponer-sinonimos/route.ts</code>: Prompt reescrito con regla fundamental anti-repetición, mapeo idioma→país obligatorio, instrucciones del usuario dinámicas desde textarea, filtros server-side contra duplicados y nombres iguales al principal.</li>
-                  <li style={{ marginBottom: '8px' }}><code>EspecieForm.tsx</code>: Nuevo dashboard de configuración IA con radio buttons (General/Cooficiales/Europea) que auto-rellenan un textarea editable. Botones de acción en header con ⏳ giratorio + contador de segundos. Modal de resultados en dos columnas (Ya incorporados / Disponibles). Auto-guardado en BD al incorporar y al eliminar sinónimos.</li>
+                  <li style={{ marginBottom: '8px' }}><code>EspecieVegetalForm.tsx</code>: Nuevo dashboard de configuración IA con radio buttons (General/Cooficiales/Europea) que auto-rellenan un textarea editable. Botones de acción en header con ⏳ giratorio + contador de segundos. Modal de resultados en dos columnas (Ya incorporados / Disponibles). Auto-guardado en BD al incorporar y al eliminar sinónimos.</li>
                   <li style={{ marginBottom: '8px' }}><code>sinonimos/route.ts</code>: Check anti-duplicados server-side antes de INSERT (mismo nombre + mismo país = skip silencioso).</li>
                   <li>Base de datos: Añadidos 15 países nuevos (Francia, Italia, Portugal, Brasil, Alemania, China, Japón, Guinea Ecuatorial, Reino Unido, Canadá, Australia, India, Filipinas, Marruecos, Corea del Sur) con sus códigos ISO.</li>
                 </ul>
@@ -1665,8 +1665,8 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}><strong>Base de datos y API:</strong> Añadido el campo <code>especiesdiashastarecoleccion</code> en la tabla <code>especies</code> y actualizado en las rutas POST y PUT del CRUD.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>Refactorización UI:</strong> Reestructurada la pestaña de Fisiología en <code>EspecieForm.tsx</code> con un bloque de <strong>Cronología Modular</strong> separando claramente Bloque 1 (DDS) y Bloque 2 (DDT). Reordenados campos como <em>Tipo de Siembra</em> al top de la pestaña y creados bloques visuales para requisitos térmicos.</li>
-                  <li style={{ marginBottom: '8px' }}><strong>Actualización IA:</strong> Modificado <code>api/ai/especie-assistant/route.ts</code> para exigir el nuevo campo a Gemini en base a días post-trasplante o post-siembra. Añadido el campo al mapeo de asimilación del frontend en <code>EspecieForm.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Refactorización UI:</strong> Reestructurada la pestaña de Fisiología en <code>EspecieVegetalForm.tsx</code> con un bloque de <strong>Cronología Modular</strong> separando claramente Bloque 1 (DDS) y Bloque 2 (DDT). Reordenados campos como <em>Tipo de Siembra</em> al top de la pestaña y creados bloques visuales para requisitos térmicos.</li>
+                  <li style={{ marginBottom: '8px' }}><strong>Actualización IA:</strong> Modificado <code>api/ai/especie-assistant/route.ts</code> para exigir el nuevo campo a Gemini en base a días post-trasplante o post-siembra. Añadido el campo al mapeo de asimilación del frontend en <code>EspecieVegetalForm.tsx</code>.</li>
                   <li><strong>Prompt de Pautas:</strong> Endurecido el prompt en <code>api/ai/pautas/route.ts</code> para forzar respuestas basadas únicamente en hitos calculables matemáticamente, prohibiendo fases no referenciables como "plantula".</li>
                 </ul>
               </div>
@@ -1683,7 +1683,7 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>El botón "Añadir" del buscador IA de PDFs fallaba silenciosamente en Variedades porque intentaba insertar los documentos usando el ID de la variedad en el endpoint de Especies (<code>/api/admin/especies/[id]/pdfs/link</code>).</li>
+                  <li style={{ marginBottom: '8px' }}>El botón "Añadir" del buscador IA de PDFs fallaba silenciosamente en Variedades porque intentaba insertar los documentos usando el ID de la variedad en el endpoint de Especies (<code>/api/admin/especiesvegetales/[id]/pdfs/link</code>).</li>
                   <li style={{ marginBottom: '8px' }}>El modal de "Editar Metadatos del PDF" en Variedades no cumplía con el "Gold Standard" visual: era de una sola columna, carecía de botón para regenerar la portada IA, y rompía con la coherencia visual del panel.</li>
                   <li style={{ marginBottom: '8px' }}>Al cerrar el buscador de PDFs IA a mitad de búsqueda, la petición consumía recursos en segundo plano sin cancelarse.</li>
                 </ul>
@@ -1691,8 +1691,8 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '16px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>B. Modificaciones realizadas</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Creación de un nuevo endpoint backend dedicado: <code>src/app/api/admin/variedades/[id]/pdfs/link/route.ts</code> garantizando la inserción correcta en la columna <code>xdatosadjuntosidvariedades</code>.</li>
-                  <li style={{ marginBottom: '8px' }}>Refactorización masiva del modal <code>editingPdf</code> en <code>VariedadMediaManager.tsx</code> aplicando el Patrón Oro de dos columnas (Izquierda: Visualizador y Generador IA de Portadas. Derecha: Título, Resumen, y Apuntes Estudiante).</li>
+                  <li style={{ marginBottom: '8px' }}>Creación de un nuevo endpoint backend dedicado: <code>src/app/api/admin/variedadesvegetales/[id]/pdfs/link/route.ts</code> garantizando la inserción correcta en la columna <code>xdatosadjuntosidvariedadesvegetales</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Refactorización masiva del modal <code>editingPdf</code> en <code>VariedadVegetalMediaManager.tsx</code> aplicando el Patrón Oro de dos columnas (Izquierda: Visualizador y Generador IA de Portadas. Derecha: Título, Resumen, y Apuntes Estudiante).</li>
                   <li style={{ marginBottom: '8px' }}>Sustitución de iconos de aspa (X) por botones de "Cancelar" explícitos y restrictivos que bloquean cierres accidentales al hacer click fuera del modal.</li>
                   <li>Implementación de <code>AbortController</code> ligado al botón "Cancelar" para destruir conexiones fetch huérfanas hacia la IA de Gemini si el usuario abandona la espera.</li>
                 </ul>
@@ -1711,7 +1711,7 @@ export default function GuiaUsuarioPage() {
               <h5 style={{ color: '#166534', marginTop: '12px', marginBottom: '8px', fontSize: '1.1rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '4px' }}>A. Problemas detectados</h5>
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  <li style={{ marginBottom: '8px' }}>Fragmentación de la interfaz en <code>EspecieForm.tsx</code>. Los módulos de "Pautas de Labores" y "Variedades" estaban renderizados fuera del sistema de pestañas centralizado.</li>
+                  <li style={{ marginBottom: '8px' }}>Fragmentación de la interfaz en <code>EspecieVegetalForm.tsx</code>. Los módulos de "Pautas de Labores" y "Variedades" estaban renderizados fuera del sistema de pestañas centralizado.</li>
                   <li style={{ marginBottom: '8px' }}>Inestabilidad en el DOM y redundancias visuales causadas por bloques de código duplicados al final del archivo.</li>
                   <li>Inconsistencia en el flujo de auto-guardado para los módulos externos de administración.</li>
                 </ul>
@@ -1720,7 +1720,7 @@ export default function GuiaUsuarioPage() {
               <div style={{ background: '#ffffff', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li style={{ marginBottom: '8px' }}>Migración de la lógica de <strong>Variedades</strong> y <strong>Pautas de Labores</strong> al sistema de pestañas condicional unificado.</li>
-                  <li style={{ marginBottom: '8px' }}>Eliminación quirúrgica de las secciones colapsables redundantes al final del archivo <code>EspecieForm.tsx</code>.</li>
+                  <li style={{ marginBottom: '8px' }}>Eliminación quirúrgica de las secciones colapsables redundantes al final del archivo <code>EspecieVegetalForm.tsx</code>.</li>
                   <li style={{ marginBottom: '8px' }}>Sincronización del estado <code>isDirty</code> y triggers de auto-guardado para los nuevos módulos integrados.</li>
                   <li>Refactorización de la estructura JSX para garantizar estabilidad en el renderizado y eliminar errores de anidamiento.</li>
                 </ul>
@@ -2104,7 +2104,7 @@ export default function GuiaUsuarioPage() {
         <div style={{ background: '#fefce8', borderLeft: '4px solid #eab308', padding: '16px', borderRadius: '0 8px 8px 0', marginTop: '16px' }}>
           <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[02/05/2026 - 13:08] — PROPUESTA EN CURSO</h4>
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
-            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El prompt actual de la IA no está restringido a devolver valores exactos que coincidan con los nuevos enumerados del formulario. Además, la lógica de asimilación en el frontend (<code>EspecieForm.tsx</code>) necesita expandirse para mapear y aplicar correctamente estos nuevos atributos.</li>
+            <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> El prompt actual de la IA no está restringido a devolver valores exactos que coincidan con los nuevos enumerados del formulario. Además, la lógica de asimilación en el frontend (<code>EspecieVegetalForm.tsx</code>) necesita expandirse para mapear y aplicar correctamente estos nuevos atributos.</li>
             <li style={{ marginBottom: '4px' }}><strong>Solución propuesta:</strong> 1) Actualizar el prompt en el backend para forzar compatibilidad con los selectores de la interfaz. 2) Ampliar la lógica de comparación y asimilación en el frontend para incluir los nuevos campos. 3) Mantener los cambios en entorno local hasta confirmar estabilidad.</li>
             <li><strong>Resultado:</strong> 🟡 EN DESARROLLO. Trabajando en la implementación local.</li>
           </ul>
@@ -2203,7 +2203,7 @@ export default function GuiaUsuarioPage() {
           <h4 style={{ color: '#854d0e', marginTop: 0, marginBottom: '8px', fontSize: '1rem' }}>[29/04/2026 - 16:38]</h4>
           <ul style={{ color: '#713f12', margin: 0, paddingLeft: '20px', lineHeight: 1.5 }}>
             <li style={{ marginBottom: '4px' }}><strong>Análisis real:</strong> Al enviar la petición a Imagen 4.0, se enviaba <code>tipoEntidad: 'especie'</code>. Esto forzaba a la IA a rechazar cualquier texto y exigir una foto hiperrealista botánica, lo que entraba en conflicto directo con el concepto de "Portada de documento".</li>
-            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se creó una directiva en <code>api/ai/generate-image/route.ts</code> para <code>tipoEntidad: 'documento'</code> y se actualizó <code>EspecieForm.tsx</code> para enviarla, pidiendo una "Ilustración digital de estilo editorial y académico".</li>
+            <li style={{ marginBottom: '4px' }}><strong>Solución aplicada:</strong> Se creó una directiva en <code>api/ai/generate-image/route.ts</code> para <code>tipoEntidad: 'documento'</code> y se actualizó <code>EspecieVegetalForm.tsx</code> para enviarla, pidiendo una "Ilustración digital de estilo editorial y académico".</li>
             <li><strong>Resultado:</strong> 🔴 FRACASO. La imagen se generaba pero no se mostraba.</li>
           </ul>
         </div>
@@ -2639,27 +2639,27 @@ export default function GuiaUsuarioPage() {
         <ul style={{ color: '#475569', lineHeight: 1.8, paddingLeft: '20px' }}>
           <li style={{ marginBottom: '8px' }}>
             <strong>Variedades específicas:</strong> Existencia de variedades creadas para esa especie (distintas a la variedad genérica automática).
-            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM variedades WHERE xvariedadesidespecies = ? AND variedadesesgenerica = 0</code></small>
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM variedadesvegetales WHERE xvariedadesvegetalesidespeciesvegetales = ? AND variedadesvegetalesesgenerica = 0</code></small>
           </li>
           <li style={{ marginBottom: '8px' }}>
             <strong>Semillas de usuarios:</strong> Existencia de cualquier semilla en inventarios de usuarios asociada a la variedad genérica o variedades específicas de la especie.
-            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM semillas s JOIN variedades v ON s.xsemillasidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ?</code></small>
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM semillas s JOIN variedadesvegetales v ON s.xsemillasidvariedadesvegetales = v.idvariedadesvegetales WHERE v.xvariedadesvegetalesidespeciesvegetales = ?</code></small>
           </li>
           <li style={{ marginBottom: '8px' }}>
             <strong>Cultivos de usuarios:</strong> Existencia de cultivos activos o históricos en huertos de usuarios vinculados a las variedades de la especie.
-            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM cultivos c JOIN variedades v ON c.xcultivosidvariedades = v.idvariedades WHERE v.xvariedadesidespecies = ?</code></small>
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM cultivos c JOIN variedadesvegetales v ON c.xcultivosidvariedadesvegetales = v.idvariedadesvegetales WHERE v.xvariedadesvegetalesidespeciesvegetales = ?</code></small>
           </li>
           <li style={{ marginBottom: '8px' }}>
             <strong>Asociaciones con usuarios:</strong> 
             <ul>
-              <li>Que la especie pertenezca a un usuario concreto (especie privada). <small style={{ color: '#64748b' }}>(<code>xespeciesidusuarios IS NOT NULL</code>)</small></li>
+              <li>Que la especie pertenezca a un usuario concreto (especie privada). <small style={{ color: '#64748b' }}>(<code>xespeciesvegetalesidusuarios IS NOT NULL</code>)</small></li>
               <li>Que la especie esté personalizada por usuarios en la tabla <code>especiesusuarios</code>.</li>
-              <li>Que alguna variedad de la especie esté personalizada por usuarios en la tabla <code>variedadesusuarios</code>.</li>
+              <li>Que alguna variedad de la especie esté personalizada por usuarios en la tabla <code>variedadesvegetalesusuarios</code>.</li>
             </ul>
           </li>
           <li style={{ marginBottom: '8px' }}>
             <strong>Relaciones con plagas:</strong> Existencia de plagas asociadas a la especie en la tabla de cruce <code>especiesplagas</code>.
-            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM especiesplagas WHERE xespeciesplagasidespecies = ?</code></small>
+            <br /><small style={{ color: '#64748b' }}>Consulta: <code>SELECT 1 FROM especiesplagas WHERE xespeciesvegetalesplagasidespeciesvegetales = ?</code></small>
           </li>
           <li style={{ marginBottom: '8px' }}>
             <strong>Asociaciones botánicas:</strong> Existencia de la especie como origen o destino en relaciones benéficas (<code>asociacionesbeneficiosas</code>) o perjudiciales (<code>asociacionesperjudiciales</code>).
@@ -2674,7 +2674,7 @@ export default function GuiaUsuarioPage() {
           <p style={{ color: '#78350f', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
             El sistema ejecuta un soft-delete modificando la visibilidad del registro principal a <code>0</code>:
             <br />
-            <code>UPDATE especies SET especiesvisibilidadsino = 0 WHERE idespecies = ?</code>
+            <code>UPDATE especiesvegetales SET especiesvegetalesvisibilidadsino = 0 WHERE idespeciesvegetales = ?</code>
             <br />
             La especie se oculta de las vistas del catálogo general de usuarios, pero se mantiene en la base de datos para no corromper la integridad referencial de los cultivos, semillas y diarios existentes.
           </p>

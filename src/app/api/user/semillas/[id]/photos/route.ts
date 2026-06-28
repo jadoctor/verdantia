@@ -17,9 +17,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     // Check if user owns this seed and get related variety/species
     const [ownerCheck]: any = await pool.query(
-      `SELECT s.idsemillas, s.xsemillasidvariedades, v.xvariedadesidespecies as xsemillasidespecies
+      `SELECT s.idsemillas, s.xsemillasidvariedadesvegetales, v.xvariedadesvegetalesidespeciesvegetales as xsemillasidespeciesvegetales
        FROM semillas s
-       LEFT JOIN variedades v ON v.idvariedades = s.xsemillasidvariedades
+       LEFT JOIN variedadesvegetales v ON v.idvariedadesvegetales = s.xsemillasidvariedadesvegetales
        WHERE s.idsemillas = ? AND s.xsemillasidusuarios = ?`,
       [semillaId, user.id]
     );
@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Semilla no encontrada o no te pertenece' }, { status: 404 });
     }
 
-    const { xsemillasidespecies, xsemillasidvariedades } = ownerCheck[0];
+    const { xsemillasidespeciesvegetales, xsemillasidvariedadesvegetales } = ownerCheck[0];
 
     // For seeds, we might want to show photos attached directly to the seed (xdatosadjuntosidsemillas)
     // and maybe fallback to the variety/species? The user said "same behavior as global species"
@@ -39,13 +39,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Get inherited info for varieties
     let idgold = null;
-    if (xsemillasidvariedades) {
+    if (xsemillasidvariedadesvegetales) {
       const [varInfo]: any = await pool.query(
-        `SELECT xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ?`,
-        [xsemillasidvariedades]
+        `SELECT xvariedadesvegetalesidvariedadorigen FROM variedadesvegetales WHERE idvariedadesvegetales = ?`,
+        [xsemillasidvariedadesvegetales]
       );
       if (varInfo.length > 0) {
-        idgold = varInfo[0].xvariedadesidvariedadorigen;
+        idgold = varInfo[0].xvariedadesvegetalesidvariedadorigen;
       }
     }
 
@@ -60,13 +60,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
               inc.incidenciasmotivo as motivoRechazo,
               CASE 
                 WHEN da.xdatosadjuntosidsemillas = ? THEN 'usuario'
-                WHEN da.xdatosadjuntosidvariedades = ? THEN 'variedad'
-                WHEN da.xdatosadjuntosidvariedades = ? THEN 'gold'
-                WHEN da.xdatosadjuntosidespecies = ? THEN 'especie'
+                WHEN da.xdatosadjuntosidvariedadesvegetales = ? THEN 'variedad'
+                WHEN da.xdatosadjuntosidvariedadesvegetales = ? THEN 'gold'
+                WHEN da.xdatosadjuntosidespeciesvegetales = ? THEN 'especie'
               END AS origen
        FROM datosadjuntos da
        LEFT JOIN incidencias inc ON inc.incidenciasreferenciaid = da.iddatosadjuntos AND inc.incidenciastipo IN ('foto_rechazada', 'foto_sancionada')
-       WHERE (da.xdatosadjuntosidsemillas = ? OR (da.xdatosadjuntosidvariedades = ? AND da.xdatosadjuntosidvariedades IS NOT NULL) OR (da.xdatosadjuntosidvariedades = ? AND da.xdatosadjuntosidvariedades IS NOT NULL) OR da.xdatosadjuntosidespecies = ?) 
+       WHERE (da.xdatosadjuntosidsemillas = ? OR (da.xdatosadjuntosidvariedadesvegetales = ? AND da.xdatosadjuntosidvariedadesvegetales IS NOT NULL) OR (da.xdatosadjuntosidvariedadesvegetales = ? AND da.xdatosadjuntosidvariedadesvegetales IS NOT NULL) OR da.xdatosadjuntosidespeciesvegetales = ?) 
        AND da.datosadjuntosfechaeliminacion IS NULL
        AND (
          (da.datosadjuntostipo = 'imagen' AND (da.datosadjuntosactivo = 1 OR da.datosadjuntosresultadovalidacion = 'rechazado'))
@@ -78,8 +78,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
          CASE origen WHEN 'usuario' THEN 1 WHEN 'variedad' THEN 2 WHEN 'gold' THEN 3 ELSE 4 END ASC,
          da.datosadjuntosesprincipal DESC, 
          da.datosadjuntosorden ASC`,
-      [semillaId, xsemillasidvariedades, idgold, xsemillasidespecies,
-       semillaId, xsemillasidvariedades, idgold, xsemillasidespecies,
+      [semillaId, xsemillasidvariedadesvegetales, idgold, xsemillasidespeciesvegetales,
+       semillaId, xsemillasidvariedadesvegetales, idgold, xsemillasidespeciesvegetales,
        semillaId]
     );
 

@@ -28,8 +28,8 @@ export async function POST(request: Request) {
     let mimeType = file.type || 'image/jpeg';
     
     const isProfilePhoto = oldAdjunto.xdatosadjuntosidusuarios && 
-      !oldAdjunto.xdatosadjuntosidespecies && 
-      !oldAdjunto.xdatosadjuntosidvariedades && 
+      !oldAdjunto.xdatosadjuntosidespeciesvegetales && 
+      !oldAdjunto.xdatosadjuntosidvariedadesvegetales && 
       !oldAdjunto.xdatosadjuntosidplagas && 
       !oldAdjunto.xdatosadjuntosidlabores &&
       !oldAdjunto.xdatosadjuntosidplantaciones;
@@ -69,12 +69,12 @@ export async function POST(request: Request) {
     let entityWhere = '';
     let entityId = null;
     if (isProfilePhoto) {
-      entityWhere = 'xdatosadjuntosidusuarios = ? AND xdatosadjuntosidespecies IS NULL AND xdatosadjuntosidvariedades IS NULL AND xdatosadjuntosidplagas IS NULL';
+      entityWhere = 'xdatosadjuntosidusuarios = ? AND xdatosadjuntosidespeciesvegetales IS NULL AND xdatosadjuntosidvariedadesvegetales IS NULL AND xdatosadjuntosidplagas IS NULL';
       entityId = oldAdjunto.xdatosadjuntosidusuarios;
-    } else if (oldAdjunto.xdatosadjuntosidespecies) {
-      entityWhere = 'xdatosadjuntosidespecies = ?'; entityId = oldAdjunto.xdatosadjuntosidespecies;
-    } else if (oldAdjunto.xdatosadjuntosidvariedades) {
-      entityWhere = 'xdatosadjuntosidvariedades = ?'; entityId = oldAdjunto.xdatosadjuntosidvariedades;
+    } else if (oldAdjunto.xdatosadjuntosidespeciesvegetales) {
+      entityWhere = 'xdatosadjuntosidespeciesvegetales = ?'; entityId = oldAdjunto.xdatosadjuntosidespeciesvegetales;
+    } else if (oldAdjunto.xdatosadjuntosidvariedadesvegetales) {
+      entityWhere = 'xdatosadjuntosidvariedadesvegetales = ?'; entityId = oldAdjunto.xdatosadjuntosidvariedadesvegetales;
     } else if (oldAdjunto.xdatosadjuntosidplagas) {
       entityWhere = 'xdatosadjuntosidplagas = ?'; entityId = oldAdjunto.xdatosadjuntosidplagas;
     } else if (oldAdjunto.xdatosadjuntosidlabores) {
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       INSERT INTO datosadjuntos (
         datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal, datosadjuntosruta, 
         datosadjuntospesobytes, datosadjuntosactivo, datosadjuntosresumen,
-        xdatosadjuntosidespecies, xdatosadjuntosidvariedades, xdatosadjuntosidplagas,
+        xdatosadjuntosidespeciesvegetales, xdatosadjuntosidvariedadesvegetales, xdatosadjuntosidplagas,
         xdatosadjuntosidlabores, xdatosadjuntosidusuarios, xdatosadjuntosidplantaciones,
         xdatosadjuntosidsemillas, xdatosadjuntosidrecolecciones,
         datosadjuntosesprincipal, datosadjuntosorden, datosadjuntosvalidado, datosadjuntosresultadovalidacion
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     `, [
       mimeType, file.name, newPath,
       processedBuffer.length, jsonResumen,
-      oldAdjunto.xdatosadjuntosidespecies, oldAdjunto.xdatosadjuntosidvariedades, oldAdjunto.xdatosadjuntosidplagas,
+      oldAdjunto.xdatosadjuntosidespeciesvegetales, oldAdjunto.xdatosadjuntosidvariedadesvegetales, oldAdjunto.xdatosadjuntosidplagas,
       oldAdjunto.xdatosadjuntosidlabores, oldAdjunto.xdatosadjuntosidusuarios, 
       oldAdjunto.xdatosadjuntosidplantaciones, oldAdjunto.xdatosadjuntosidsemillas, oldAdjunto.xdatosadjuntosidrecolecciones,
       isPrincipal, oldAdjunto.datosadjuntosorden

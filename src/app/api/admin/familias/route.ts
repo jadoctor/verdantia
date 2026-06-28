@@ -5,9 +5,9 @@ import pool from '@/lib/db';
 export async function GET() {
   try {
     const [familias]: any[] = await pool.query(`
-      SELECT f.*, COUNT(e.idespecies) as total_especies
+      SELECT f.*, COUNT(e.idespeciesvegetales) as total_especies
       FROM familias f
-      LEFT JOIN especies e ON e.xespeciesidfamilias = f.idfamilias AND e.especiesvisibilidadsino = 1
+      LEFT JOIN especiesvegetales e ON e.xespeciesvegetalesidfamilias = f.idfamilias AND e.especiesvegetalesvisibilidadsino = 1
       GROUP BY f.idfamilias
       ORDER BY f.familiasnombre ASC
     `);

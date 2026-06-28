@@ -51,7 +51,7 @@ export default function TabDatosGenerales({
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
         <div>
           <label style={labelStyle}>Nombre de la Familia *</label>
           <input type="text" value={familia.familiasnombre || ''} onChange={e => handleChange('familiasnombre', e.target.value)}
@@ -122,20 +122,20 @@ export default function TabDatosGenerales({
                 </thead>
                 <tbody>
                   {especies.map((esp, idx) => (
-                    <tr key={esp.idespecies} style={{ background: idx % 2 === 0 ? 'white' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '10px 16px', fontSize: '1.3rem' }}>{esp.especiesicono || '🌱'}</td>
-                      <td style={{ padding: '10px 16px', fontWeight: 600 }}>{esp.especiesnombre}</td>
+                    <tr key={esp.idespeciesvegetales} style={{ background: idx % 2 === 0 ? 'white' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px 16px', fontSize: '1.3rem' }}>{esp.especiesvegetalesicono || '🌱'}</td>
+                      <td style={{ padding: '10px 16px', fontWeight: 600 }}>{esp.especiesvegetalesnombre}</td>
                       <td style={{ padding: '10px 16px', textAlign: 'center' }}>
                         <span style={{
                           padding: '3px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600,
-                          background: esp.especiesvisibilidadsino === 1 ? '#d1fae5' : '#fee2e2',
-                          color: esp.especiesvisibilidadsino === 1 ? '#065f46' : '#991b1b',
+                          background: esp.especiesvegetalesvisibilidadsino === 1 ? '#d1fae5' : '#fee2e2',
+                          color: esp.especiesvegetalesvisibilidadsino === 1 ? '#065f46' : '#991b1b',
                         }}>
-                          {esp.especiesvisibilidadsino === 1 ? 'Visible' : 'Oculta'}
+                          {esp.especiesvegetalesvisibilidadsino === 1 ? 'Visible' : 'Oculta'}
                         </span>
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                        <button onClick={() => router.push(`/dashboard/admin/especies/${esp.idespecies}`)}
+                        <button onClick={() => router.push(`/dashboard/admin/especiesvegetales/${esp.idespeciesvegetales}`)}
                           style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
                           onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
                           onMouseOut={(e) => e.currentTarget.style.background = 'white'}

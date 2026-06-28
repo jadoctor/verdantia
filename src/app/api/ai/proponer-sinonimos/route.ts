@@ -54,8 +54,8 @@ REGLAS ESTRICTAS:
 2. Cada objeto debe tener exactamente esta estructura:
    {
      "especiessinonimosnombre": "El sinónimo aquí (DEBE ser diferente a ${especieNombre})",
-     "xespeciessinonimosididiomas": <ID del idioma>,
-     "xespeciessinonimosidpaises": <ID del país>,
+     "xespeciesvegetalessinonimosididiomas": <ID del idioma>,
+     "xespeciesvegetalessinonimosidpaises": <ID del país>,
      "especiessinonimosnotas": "Breve nota"
    }
 3. VALENCIANO: Toda referencia a catalán/valenciano/balear DEBE usar el idioma "Valenciano". Prohibido usar "Catalán".
@@ -79,8 +79,8 @@ REGLAS ESTRICTAS:
 
 Ejemplo de respuesta:
 [
-  { "especiessinonimosnombre": "Palta", "xespeciessinonimosididiomas": 1, "xespeciessinonimosidpaises": 3, "especiessinonimosnotas": "Argentina, Uruguay y Perú" },
-  { "especiessinonimosnombre": "Alvocat", "xespeciessinonimosididiomas": 2, "xespeciessinonimosidpaises": 1, "especiessinonimosnotas": "Valenciano" }
+  { "especiessinonimosnombre": "Palta", "xespeciesvegetalessinonimosididiomas": 1, "xespeciesvegetalessinonimosidpaises": 3, "especiessinonimosnotas": "Argentina, Uruguay y Perú" },
+  { "especiessinonimosnombre": "Alvocat", "xespeciesvegetalessinonimosididiomas": 2, "xespeciesvegetalessinonimosidpaises": 1, "especiessinonimosnotas": "Valenciano" }
 ]
 `;
 
@@ -132,11 +132,11 @@ Ejemplo de respuesta:
 
     sinonimos = sinonimos.map((s: any) => ({
       ...s,
-      xespeciessinonimosidpaises: validPaisIds.has(Number(s.xespeciessinonimosidpaises))
-        ? Number(s.xespeciessinonimosidpaises)
+      xespeciesvegetalessinonimosidpaises: validPaisIds.has(Number(s.xespeciesvegetalessinonimosidpaises))
+        ? Number(s.xespeciesvegetalessinonimosidpaises)
         : ID_INTERNACIONAL,
-      xespeciessinonimosididiomas: validIdiomaIds.has(Number(s.xespeciessinonimosididiomas))
-        ? Number(s.xespeciessinonimosididiomas)
+      xespeciesvegetalessinonimosididiomas: validIdiomaIds.has(Number(s.xespeciesvegetalessinonimosididiomas))
+        ? Number(s.xespeciesvegetalessinonimosididiomas)
         : ID_ESPANOL
     }));
 

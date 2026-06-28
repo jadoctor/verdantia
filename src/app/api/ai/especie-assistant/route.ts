@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   // }
 
   try {
-    const { nombre, customPrompt, selectedTabs, consumidores } = await request.json();
+    const { nombre, customPrompt, selectedTabs, animales } = await request.json();
 
     if (!nombre) {
       return NextResponse.json({ error: 'Falta el nombre de la especie' }, { status: 400 });
@@ -34,12 +34,12 @@ export async function POST(request: Request) {
     const [familiasRows]: any = await pool.query("SELECT idfamilias, familiasnombre FROM familias");
     const familiasStr = familiasRows.map((f: any) => `- ID ${f.idfamilias}: ${f.familiasnombre}`).join('\n');
 
-    let consumidoresList = "";
-    if (consumidores && Array.isArray(consumidores) && consumidores.length > 0) {
-      consumidoresList = consumidores.map((c: any) => `${c.id}:${c.nombre}`).join(', ');
+    let animalesList = "";
+    if (animales && Array.isArray(animales) && animales.length > 0) {
+      animalesList = animales.map((c: any) => `${c.id}:${c.nombre}`).join(', ');
     } else {
-      const [consumidoresRows]: any = await pool.query('SELECT idconsumidores, consumidoresnombre FROM consumidores WHERE consumidoresactivo = 1');
-      consumidoresList = consumidoresRows.map((c: any) => `${c.idconsumidores}:${c.consumidoresnombre}`).join(', ');
+      const [animalesRows]: any = await pool.query('SELECT idespeciesanimales, especiesanimalesnombre FROM especiesanimales WHERE especiesanimalesactivo = 1');
+      animalesList = animalesRows.map((c: any) => `${c.idespeciesanimales}:${c.especiesanimalesnombre}`).join(', ');
     }
 
     const tabs = selectedTabs || ['taxonomia', 'cultivo', 'fases', 'biodinamica', 'asociaciones', 'textos', 'consumos', 'pautas'];
@@ -47,19 +47,19 @@ export async function POST(request: Request) {
     const promptFields: string[] = [];
 
     if (tabs.includes('consumos')) {
-      promptFields.push(`- usos_consumo (array de objetos. Para CADA uno de los consumidores listados, debes evaluar de forma individual e independiente cada parte relevante de la planta. Si hay partes que son aptas y partes que son tóxicas o que requieren moderación, debes generar un objeto separado para cada una de las partes de la planta evaluadas para ese consumidor. Formato de cada objeto: {"idconsumidor": <ID>, "nombre": "<Nombre>", "parte": "<parte_de_la_planta>", "apto": "<apto / con_moderacion / no_apto>", "notas": "<Explicación breve>"}.
+      promptFields.push(`- usos_consumo (array de objetos. Para CADA uno de los animales listados, debes evaluar de forma individual e independiente cada parte relevante de la planta. Si hay partes que son aptas y partes que son tóxicas o que requieren moderación, debes generar un objeto separado para cada una de las partes de la planta evaluadas para ese animal. Formato de cada objeto: {"idespeciesanimales": <ID>, "nombre": "<Nombre>", "parte": "<parte_de_la_planta>", "apto": "<apto / con_moderacion / no_apto>", "notas": "<Explicación breve>"}.
   * El campo "parte" debe ser estrictamente uno de los siguientes strings: "Hojas", "Frutos", "Raíz", "Tallo", "Flores", "Semillas", "Toda la planta".
   * El campo "apto" debe ser estrictamente uno de los siguientes strings: "apto", "con_moderacion", "no_apto".)`);
     }
 
     if (tabs.includes('taxonomia')) {
-      promptFields.push(`- especiesnombrecientifico (string, ej: Solanum lycopersicum)
-- xespeciesidfamilias (entero o null, elige obligatoriamente el ID de una de estas familias si pertenece a ella, si no encaja con ninguna pon null. Lista de familias disponibles:\\n\${familiasStr})
+      promptFields.push(`- especiesvegetalesnombrecientifico (string, ej: Solanum lycopersicum)
+- xespeciesvegetalesidfamilias (entero o null, elige obligatoriamente el ID de una de estas familias si pertenece a ella, si no encaja con ninguna pon null. Lista de familias disponibles:\\n\${familiasStr})
 - especiestipo (array de strings, elige entre: hortaliza, fruta, aromatica, leguminosa, cereal, adventicia)
 - especiesciclo (array de strings, elige entre: anual, bianual, perenne)
 - especiescolor (string, color fenotípico base, ej: Rojo)
 - especiestamano (string, elige entre: pequeno, mediano, grande)
-- especiesicono (string con un único emoji representativo de la especie, ej: 🍅 o 🥕 o 🥦 o 🍓)
+- especiesvegetalesicono (string con un único emoji representativo de la especie, ej: 🍅 o 🥕 o 🥦 o 🍓)
 - especiesporteplanta (string, elige entre: rastrero, arbusto, mata, trepador, erecto — Describe la forma de crecimiento natural de la planta)`);
     }
 
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       promptFields.push(`- especiesviabilidadsemilla (entero aproximado en años, ej: 4)
 - especiespeso1000semillas (numero, usa punto decimal solo si es necesario, sin ceros extra, ej: 1.5 o 5)
 - especieshistoria (string, una breve historia de 2 párrafos sobre su origen)
-- especiesdescripcion (string, consejos breves de cultivo)
+- especiesvegetalesdescripcion (string, consejos breves de cultivo)
 - especiesfuentesinformacion (string, IMPORTANTE: Proporciona SOLO 2 URLs absolutas, reales y comprobables. 1) La página de Wikipedia de la especie usando el nombre científico (ej: https://es.wikipedia.org/wiki/Solanum_lycopersicum). 2) La URL oficial de Wikipedia sobre Agricultura Biodinámica para justificar el calendario lunar: https://es.wikipedia.org/wiki/Agricultura_biodin%C3%A1mica )
 - especiesautosuficiencia (entero, plantas estimadas por persona al año para consumo COMPLETO en fresco, es decir, cubrir el 100% de la demanda anual)
 - especiesautosuficienciaparcial (entero, plantas estimadas por persona para un consumo PARCIAL/básico, aproximadamente un 30-40% de la demanda, solo para complementar la compra)
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
     }
 
     if (tabs.includes('consumos')) {
-      prompt += "\nAdemás, debes evaluar la comestibilidad y toxicidad de esta planta para los siguientes consumidores activos en nuestra granja:\n[" + consumidoresList + "]\n";
+      prompt += "\nAdemás, debes evaluar la comestibilidad y toxicidad de esta planta para los siguientes animales activos en nuestra granja:\n[" + animalesList + "]\n";
     }
 
     prompt += "\nLas claves esperadas en el JSON son:\n" + promptFields.join('\n') + "\n\nRecuerda: SOLO JSON válido, nada de formato adicional.";

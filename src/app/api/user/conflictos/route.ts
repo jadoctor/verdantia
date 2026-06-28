@@ -21,7 +21,7 @@ export async function GET(request: Request) {
          da.iddatosadjuntos as id,
          da.datosadjuntosruta as ruta,
          da.datosadjuntosnombreoriginal as nombreOriginal,
-         da.xdatosadjuntosidvariedades as variedadId,
+         da.xdatosadjuntosidvariedadesvegetales as variedadId,
          da.xdatosadjuntosidusuarios as ownerId,
          da.datosadjuntosfechacreacion as fechaSubida,
          i.idincidencias as incidenciaId,
@@ -29,16 +29,16 @@ export async function GET(request: Request) {
          i.incidenciasestado as estadoIncidencia,
          i.incidenciasnotas as notasIncidencia,
          i.incidenciasfechacreacion as fechaRechazo,
-         v.variedadesnombre as variedadNombre,
-         e.especiesnombre as especieNombre
+         v.variedadesvegetalesnombre as variedadNombre,
+         e.especiesvegetalesnombre as especieNombre
        FROM datosadjuntos da
        LEFT JOIN incidencias i ON i.incidenciasreferenciaid = da.iddatosadjuntos AND i.incidenciasreferenciatipo = 'datosadjuntos' AND i.incidenciastipo = 'foto_rechazada'
-       LEFT JOIN variedades v ON v.idvariedades = da.xdatosadjuntosidvariedades
-       LEFT JOIN especies e ON e.idespecies = v.xvariedadesidespecies
+       LEFT JOIN variedadesvegetales v ON v.idvariedadesvegetales = da.xdatosadjuntosidvariedadesvegetales
+       LEFT JOIN especiesvegetales e ON e.idespeciesvegetales = v.xvariedadesvegetalesidespeciesvegetales
        WHERE da.datosadjuntosresultadovalidacion = 'rechazado'
          AND da.datosadjuntosfechaeliminacion IS NULL
          AND (i.incidenciasestado IS NULL OR i.incidenciasestado != 'apelada')
-         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesidusuarios = ?)
+         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesvegetalesidusuarios = ?)
        ORDER BY da.datosadjuntosfechacreacion DESC`,
       [user.id, user.id]
     );
@@ -67,9 +67,9 @@ export async function DELETE(request: Request) {
     const [check]: any = await pool.query(
       `SELECT da.iddatosadjuntos 
        FROM datosadjuntos da
-       LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
+       LEFT JOIN variedadesvegetales v ON da.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
        WHERE da.iddatosadjuntos = ? 
-         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesidusuarios = ?)`,
+         AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesvegetalesidusuarios = ?)`,
       [photoId, user.id, user.id]
     );
 
@@ -84,7 +84,7 @@ export async function DELETE(request: Request) {
     );
 
     // Si es variedad, recalculamos principal
-    const [varRows]: any = await pool.query('SELECT xdatosadjuntosidvariedades as vId FROM datosadjuntos WHERE iddatosadjuntos = ?', [photoId]);
+    const [varRows]: any = await pool.query('SELECT xdatosadjuntosidvariedadesvegetales as vId FROM datosadjuntos WHERE iddatosadjuntos = ?', [photoId]);
     if (varRows[0]?.vId) {
       await fetch(new URL(`/api/user/plantas/${varRows[0].vId}/photos`, request.url), { method: 'GET' }).catch(() => {});
     }
@@ -112,10 +112,10 @@ export async function PUT(request: Request) {
       SELECT i.idincidencias 
       FROM incidencias i
       JOIN datosadjuntos da ON i.incidenciasreferenciaid = da.iddatosadjuntos
-      LEFT JOIN variedades v ON da.xdatosadjuntosidvariedades = v.idvariedades
+      LEFT JOIN variedadesvegetales v ON da.xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales
       WHERE i.idincidencias = ? 
         AND i.incidenciasreferenciatipo = 'datosadjuntos'
-        AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesidusuarios = ?)
+        AND (da.xdatosadjuntosidusuarios = ? OR v.xvariedadesvegetalesidusuarios = ?)
     `, [incidenciaId, user.id, user.id]);
 
     if (check.length === 0) {

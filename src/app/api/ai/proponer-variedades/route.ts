@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const existingText = existingVariedades && existingVariedades.length > 0 
-      ? `\nVARIEDADES YA EXISTENTES (No las propongas de nuevo ni repitas su nombre):\n${existingVariedades.map((v: any) => `- ${v.variedadesnombre}`).join('\n')}`
+      ? `\nVARIEDADES YA EXISTENTES (No las propongas de nuevo ni repitas su nombre):\n${existingVariedades.map((v: any) => `- ${v.variedadesvegetalesnombre}`).join('\n')}`
       : '';
 
     const extraText = extraInstructions ? `\nINSTRUCCIONES DEL USUARIO (PRIORIDAD ALTA):\n${extraInstructions}` : '';
@@ -47,7 +47,7 @@ REGLAS ESTRICTAS:
 1. Responde ÚNICAMENTE con un array JSON. Nada más. No uses markdown wrapping como \`\`\`json ... \`\`\`. Solo el texto plano JSON.
 2. Cada objeto debe tener exactamente esta estructura:
    {
-     "variedadesnombre": "Nombre de la variedad (ej. 'Cherry Negro', 'Raf', 'Kumato' para Tomate)",
+     "variedadesvegetalesnombre": "Nombre de la variedad (ej. 'Cherry Negro', 'Raf', 'Kumato' para Tomate)",
      "variedadestamano": "pequeno" | "mediano" | "grande" (solo uno de estos tres valores en minúsculas y sin eñes ni acentos),
      "variedadesdiasgerminacion": <número entero estimado de días de germinación, ej. 7>,
      "variedadescolor": "Color característico de la variedad (ej. 'Rojo', 'Amarillo', 'Negro', 'Verde')",
@@ -96,22 +96,22 @@ REGLAS ESTRICTAS:
 
     // Sanitización y validaciones básicas
     variedades = variedades.map((v: any) => {
-      let tam = (v.variedadestamano || 'mediano').toLowerCase().trim();
+      let tam = (v.variedadesvegetalestamano || 'mediano').toLowerCase().trim();
       if (tam.includes('peque') || tam === 'pequeno') tam = 'pequeno';
       else if (tam.includes('grand')) tam = 'grande';
       else tam = 'mediano';
 
       return {
-        variedadesnombre: String(v.variedadesnombre || '').trim(),
+        variedadesvegetalesnombre: String(v.variedadesvegetalesnombre || '').trim(),
         variedadestamano: tam,
-        variedadesdiasgerminacion: Number(v.variedadesdiasgerminacion) || null,
-        variedadescolor: String(v.variedadescolor || '').trim(),
-        variedadesdescripcion: String(v.variedadesdescripcion || '').trim()
+        variedadesdiasgerminacion: Number(v.variedadesvegetalesdiasgerminacion) || null,
+        variedadescolor: String(v.variedadesvegetalescolor || '').trim(),
+        variedadesdescripcion: String(v.variedadesvegetalesdescripcion || '').trim()
       };
     });
 
     // Filtro anti-duplicados y vacíos
-    variedades = variedades.filter((v: any) => v.variedadesnombre.length > 0);
+    variedades = variedades.filter((v: any) => v.variedadesvegetalesnombre.length > 0);
 
     return NextResponse.json({ success: true, variedades });
   } catch (error: any) {

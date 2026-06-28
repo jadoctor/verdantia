@@ -77,7 +77,7 @@ export function ComunicacionesTab({ avisosData }: ComunicacionesTabProps) {
                       {isTareasDelHuerto && isActivo && (
                         <div style={{ borderTop: '1px solid #f1f5f9', padding: '16px', background: '#f8fafc' }}>
                           <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>Desmarca las labores que NO te interesan (Opt-Out):</p>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 180px), 1fr))', gap: '12px' }}>
                             {avisosConfig.labores.map((labor: any) => {
                               const laborActiva = avisosConfig.userLaboresPrefs[labor.idlabores] !== 0;
                               return (

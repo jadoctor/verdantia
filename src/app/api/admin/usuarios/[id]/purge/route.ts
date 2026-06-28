@@ -42,8 +42,8 @@ export async function DELETE(
       { table: 'siembras', fk: 'xsiembrasidusuarios' },
       { table: 'semillas', fk: 'xsemillasidusuarios' },
       { table: 'laborespauta', fk: 'xlaborespautaidusuarios' },
-      { table: 'variedades', fk: 'xvariedadesidusuarios' },
-      { table: 'especies', fk: 'xespeciesidusuarios' },
+      { table: 'variedades', fk: 'xvariedadesvegetalesidusuarios' },
+      { table: 'especies', fk: 'xespeciesvegetalesidusuarios' },
       { table: 'blogposts', fk: 'xblogpostsidusuarios' },
     ];
 

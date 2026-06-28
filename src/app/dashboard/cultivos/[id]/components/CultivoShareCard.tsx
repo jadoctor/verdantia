@@ -59,7 +59,7 @@ export default function CultivoShareCard({ cultivo, formData }: CultivoShareCard
       link.click();
     } catch (e) {
       // Fallback: copiar al portapapeles como texto
-      const text = `🌱 Mi Cultivo #${cultivo.cultivosnumerocoleccion || cultivo.idcultivos}\n${cultivo.especiesnombre} - ${cultivo.variedad_nombre}\n${estadoLabels[formData.cultivosestado] || formData.cultivosestado}\nDía ${diasTranscurridos}${durTotal > 0 ? ` de ~${durTotal}` : ''}\n\n— Verdantia 🌿`;
+      const text = `🌱 Mi Cultivo #${cultivo.cultivosnumerocoleccion || cultivo.idcultivos}\n${cultivo.especiesvegetalesnombre} - ${cultivo.variedad_nombre}\n${estadoLabels[formData.cultivosestado] || formData.cultivosestado}\nDía ${diasTranscurridos}${durTotal > 0 ? ` de ~${durTotal}` : ''}\n\n— Verdantia 🌿`;
       try {
         await navigator.clipboard.writeText(text);
         alert('Tarjeta copiada como texto al portapapeles');
@@ -115,8 +115,8 @@ export default function CultivoShareCard({ cultivo, formData }: CultivoShareCard
               {/* Info */}
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '4px' }}>CULTIVO Nº {cultivo.cultivosnumerocoleccion || cultivo.idcultivos}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{cultivo.especiesnombre}</div>
-                {cultivo.variedad_nombre !== cultivo.especiesnombre && (
+                <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{cultivo.especiesvegetalesnombre}</div>
+                {cultivo.variedad_nombre !== cultivo.especiesvegetalesnombre && (
                   <div style={{ fontSize: '1rem', opacity: 0.8 }}>{cultivo.variedad_nombre}</div>
                 )}
               </div>

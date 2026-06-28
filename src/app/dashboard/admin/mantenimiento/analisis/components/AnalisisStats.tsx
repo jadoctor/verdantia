@@ -11,7 +11,7 @@ export function AnalisisStats({ totalDashboards, totalLines, maxLines, isMobile 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
       gap: '16px'
     }}>
       <div style={{ background: 'linear-gradient(135deg, #4f46e5, #818cf8)', borderRadius: '14px', padding: isMobile ? '16px' : '20px 24px', color: 'white' }}>

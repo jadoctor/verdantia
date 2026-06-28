@@ -15,19 +15,19 @@ export async function GET(request: Request) {
     const [cultivos]: any = await pool.query(`
       SELECT 
         c.idcultivos,
-        c.xcultivosidvariedades,
+        c.xcultivosidvariedadesvegetales,
         c.cultivosestado,
         c.cultivosfechainicio,
         c.cultivoscantidad,
         c.cultivosubicacion,
         c.cultivosnumerocoleccion,
-        COALESCE(vu.variedadesnombre, vg.variedadesnombre) AS variedad_nombre,
-        e.especiesnombre,
-        e.especiesicono
+        COALESCE(vu.variedadesvegetalesnombre, vg.variedadesvegetalesnombre) AS variedad_nombre,
+        e.especiesvegetalesnombre,
+        e.especiesvegetalesicono
       FROM cultivos c
-      JOIN variedades vu ON c.xcultivosidvariedades = vu.idvariedades
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+      JOIN variedadesvegetales vu ON c.xcultivosidvariedadesvegetales = vu.idvariedadesvegetales
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
       WHERE c.xcultivosidusuarios = ? 
         AND c.cultivosactivosino = 1 
         AND c.cultivosestado NOT IN ('finalizado', 'perdido')
@@ -59,12 +59,12 @@ export async function GET(request: Request) {
           AND pu.xlaborespautaidusuarios = ?
           AND pu.xlaborespautafase = pg.laborespautafase
         JOIN labores l ON pg.xlaborespautaidlabores = l.idlabores
-        WHERE pg.xlaborespautaidvariedades = (
+        WHERE pg.xlaborespautaidvariedadesvegetales = (
             -- Buscar la pauta en la variedad origen (Gold)
-            SELECT xvariedadesidvariedadorigen FROM variedades WHERE idvariedades = ?
+            SELECT xvariedadesvegetalesidvariedadorigen FROM variedadesvegetales WHERE idvariedadesvegetales = ?
           )
           AND pg.laborespautafase = ?
-      `, [user.id, cultivo.xcultivosidvariedades, cultivo.cultivosestado]);
+      `, [user.id, cultivo.xcultivosidvariedadesvegetales, cultivo.cultivosestado]);
 
       // 2.2 Por cada labor activa en esta fase, calcular si toca hoy
       for (const pauta of pautas) {
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
           pendingTasks.push({
             idcultivo: cultivo.idcultivos,
             idlabor: pauta.idlabores,
-            cultivoNombre: `${cultivo.especiesicono} ${cultivo.variedad_nombre}`,
+            cultivoNombre: `${cultivo.especiesvegetalesicono} ${cultivo.variedad_nombre}`,
             cultivoUbicacion: cultivo.cultivosubicacion,
             cultivoLote: cultivo.cultivosnumerocoleccion ? `#${cultivo.cultivosnumerocoleccion}` : null,
             laborNombre: pauta.laboresnombre,

@@ -79,7 +79,7 @@ export default function CheckModal({ familia, showCheckModal, setShowCheckModal 
             {Object.entries(grouped).map(([groupName, groupFields]) => (
               <div key={groupName}>
                 <h3 style={{ fontSize: '1.05rem', color: '#334155', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', marginBottom: '16px' }}>{groupName}</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px' }}>
                   {groupFields.map(field => (
                     <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: field.valid ? '#f0fdf4' : '#fff7ed', padding: '12px 16px', borderRadius: '8px', border: `1px solid ${field.valid ? '#bbf7d0' : '#ffedd5'}` }}>
                       <span style={{ fontSize: '1.2rem' }}>{field.valid ? '✅' : '❌'}</span>

@@ -22,8 +22,8 @@ export interface FamiliaMin {
 }
 
 export interface Especie {
-  idespecies: number;
-  especiesnombre: string;
-  especiesicono: string;
-  especiesvisibilidadsino: number;
+  idespeciesvegetales: number;
+  especiesvegetalesnombre: string;
+  especiesvegetalesicono: string;
+  especiesvegetalesvisibilidadsino: number;
 }

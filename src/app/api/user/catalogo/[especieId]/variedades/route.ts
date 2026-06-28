@@ -16,22 +16,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ espe
 
     // Variedades globales y del usuario de esta especie
     const [variedades] = await pool.query(`
-      SELECT v.idvariedades, v.variedadesnombre, v.variedadesdescripcion, v.variedadesicono,
-             v.variedadescolor, v.variedadestamano, v.variedadesesgenerica, v.variedadesdificultad,
-             v.xvariedadesidusuarios,
+      SELECT v.idvariedadesvegetales, v.variedadesvegetalesnombre, v.variedadesvegetalesdescripcion, v.variedadesvegetalesicono,
+             v.variedadesvegetalescolor, v.variedadesvegetalestamano, v.variedadesvegetalesesgenerica, v.variedadesvegetalesdificultad,
+             v.xvariedadesvegetalesidusuarios,
              (SELECT datosadjuntosruta FROM datosadjuntos 
-              WHERE xdatosadjuntosidvariedades = v.idvariedades AND datosadjuntostipo = 'imagen' 
+              WHERE xdatosadjuntosidvariedadesvegetales = v.idvariedadesvegetales AND datosadjuntostipo = 'imagen' 
               AND datosadjuntosactivo = 1 ORDER BY datosadjuntosesprincipal DESC LIMIT 1) as foto
-      FROM variedades v
-      WHERE v.xvariedadesidespecies = ? 
-        AND (v.xvariedadesidusuarios IS NULL OR v.xvariedadesidusuarios = ?)
-        AND v.variedadesvisibilidadsino = 1
-      ORDER BY v.variedadesesgenerica DESC, v.variedadesnombre
+      FROM variedadesvegetales v
+      WHERE v.xvariedadesvegetalesidespeciesvegetales = ? 
+        AND (v.xvariedadesvegetalesidusuarios IS NULL OR v.xvariedadesvegetalesidusuarios = ?)
+        AND v.variedadesvegetalesvisibilidadsino = 1
+      ORDER BY v.variedadesvegetalesesgenerica DESC, v.variedadesvegetalesnombre
     `, [especieId, user.id]);
 
     // También traer el nombre de la especie para contexto
     const [especieRows]: any = await pool.query(
-      `SELECT especiesnombre, especiesicono FROM especies WHERE idespecies = ?`, [especieId]
+      `SELECT especiesvegetalesnombre, especiesvegetalesicono FROM especiesvegetales WHERE idespeciesvegetales = ?`, [especieId]
     );
 
     return NextResponse.json({ 

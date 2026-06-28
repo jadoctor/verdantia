@@ -35,7 +35,7 @@ ${customPrompt ? `\nINSTRUCCIONES ADICIONALES DEL USUARIO:\n${customPrompt}\n` :
 IMPORTANTE: Los datos deben ser ESPECÍFICOS de esta variedad, no genéricos de la especie. Si la variedad tiene características distintas a la especie base (ej. tamaño más pequeño, maduración más rápida, etc.), refleja esas diferencias.
 
 Las claves esperadas en el JSON son:
-- variedadesnombrecientifico (string, ej: Solanum lycopersicum var. cerasiforme)
+- variedadesvegetalesnombrecientifico (string, ej: Solanum lycopersicum var. cerasiforme)
 - variedadesfamilia (string, ej: Solanaceae)
 - variedadestipo (array de strings, elige entre: hortaliza, fruta, aromatica, leguminosa, cereal)
 - variedadesciclo (array de strings, elige entre: anual, bianual, perenne)

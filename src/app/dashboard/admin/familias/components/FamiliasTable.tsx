@@ -1,4 +1,6 @@
 import React from 'react';
+
+import PremiumEditButton from '@/components/ui/PremiumEditButton';
 import { FamiliaList } from '../types';
 
 interface FamiliasTableProps {
@@ -173,25 +175,7 @@ export function FamiliasTable({
                 {/* Acciones */}
                 <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => handleEdit(f.idfamilias)} title="Editar"
-                      style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: '#374151' }}>
-                      ✏️ Editar
-                    </button>
-                    {f.familiasactivosino === 1 ? (
-                      <button onClick={() => handleToggleActive(f.idfamilias, 1)} title="Inhabilitar"
-                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fbbf24', background: '#fef3c7', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: '#92400e' }}>
-                        ⏸️
-                      </button>
-                    ) : (
-                      <button onClick={() => handleToggleActive(f.idfamilias, 0)} title="Reactivar"
-                        style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #34d399', background: '#d1fae5', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: '#065f46' }}>
-                        ▶️
-                      </button>
-                    )}
-                    <button onClick={() => handleHardDelete(f.idfamilias, f.familiasnombre)} title="Eliminar"
-                      style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fee2e2', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: '#991b1b' }}>
-                      🗑️
-                    </button>
+                    <PremiumEditButton onClick={() => handleEdit(f.idfamilias)} />
                   </div>
                 </td>
               </tr>

@@ -86,7 +86,7 @@ export default function LaBibliaPage() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
             <BibliaEditorPanel
               rulesContent={rulesContent}
               originalRulesContent={originalRulesContent}

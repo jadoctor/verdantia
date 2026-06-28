@@ -9,15 +9,15 @@ export async function GET(request: Request) {
     const [rows] = await pool.query(`
       SELECT 
         s.idsemillas,
-        s.xsemillasidvariedades,
-        vu.variedadesnombre as vu_nombre,
-        vu.xvariedadesidvariedadorigen,
-        vg.variedadesnombre as vg_nombre,
-        e.especiesnombre
+        s.xsemillasidvariedadesvegetales,
+        vu.variedadesvegetalesnombre as vu_nombre,
+        vu.xvariedadesvegetalesidvariedadorigen,
+        vg.variedadesvegetalesnombre as vg_nombre,
+        e.especiesvegetalesnombre
       FROM semillas s
-      LEFT JOIN variedades vu ON s.xsemillasidvariedades = vu.idvariedades
-      LEFT JOIN variedades vg ON vu.xvariedadesidvariedadorigen = vg.idvariedades
-      LEFT JOIN especies e ON vg.xvariedadesidespecies = e.idespecies OR vu.xvariedadesidespecies = e.idespecies
+      LEFT JOIN variedadesvegetales vu ON s.xsemillasidvariedadesvegetales = vu.idvariedadesvegetales
+      LEFT JOIN variedadesvegetales vg ON vu.xvariedadesvegetalesidvariedadorigen = vg.idvariedadesvegetales
+      LEFT JOIN especiesvegetales e ON vg.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales OR vu.xvariedadesvegetalesidespeciesvegetales = e.idespeciesvegetales
       ORDER BY s.idsemillas DESC
       LIMIT 5
     `);

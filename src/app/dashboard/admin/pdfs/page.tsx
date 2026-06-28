@@ -41,22 +41,36 @@ export default function PdfsDashboard() {
   const [pdfUrlStatus, setPdfUrlStatus] = useState<Record<string, boolean | null>>({});
 
   const checkPdfUrls = async (pdfList: GlobalPdf[]) => {
-    const urls = pdfList.map(p => getMediaUrl(p.ruta)).filter(Boolean);
-    if (urls.length === 0) return;
+    const cachedStr = sessionStorage.getItem('pdfs_url_status');
+    const cached = cachedStr ? JSON.parse(cachedStr) : {};
+
+    const urlsToCheck = pdfList
+      .filter(p => cached[p.ruta] === undefined)
+      .map(p => getMediaUrl(p.ruta))
+      .filter(Boolean);
+
+    if (urlsToCheck.length === 0) {
+      setPdfUrlStatus(cached);
+      return;
+    }
+
     try {
       const res = await fetch('/api/admin/check-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls })
+        body: JSON.stringify({ urls: urlsToCheck })
       });
       if (res.ok) {
         const data = await res.json();
-        const newStatus: Record<string, boolean> = {};
+        const newStatus: Record<string, boolean> = { ...cached };
         pdfList.forEach(p => {
           const resolved = getMediaUrl(p.ruta);
-          newStatus[p.ruta] = data.results[resolved] === true;
+          if (data.results[resolved] !== undefined) {
+            newStatus[p.ruta] = data.results[resolved] === true;
+          }
         });
-        setPdfUrlStatus(prev => ({ ...prev, ...newStatus }));
+        sessionStorage.setItem('pdfs_url_status', JSON.stringify(newStatus));
+        setPdfUrlStatus(newStatus);
       }
     } catch (e) {
       console.error('Error checking PDF URLs:', e);
@@ -447,16 +461,35 @@ export default function PdfsDashboard() {
                   <td style={{ padding: '16px 4px 16px 0', width: '40px', textAlign: 'center', verticalAlign: 'middle' }}>
                     <button
                       onClick={() => {
-                        sessionStorage.setItem('pdfs_scroll', window.scrollY.toString());
-                        sessionStorage.setItem('pdfs_last_edited_id', pdf.id.toString());
-                        router.push(`/dashboard/admin/pdfs/${pdf.id}`);
+                        if (pdf.urlContext) {
+                          sessionStorage.setItem('pdfs_scroll', window.scrollY.toString());
+                          sessionStorage.setItem('pdfs_last_edited_id', pdf.id.toString());
+                          const editUrl = pdf.urlContext.includes('?') 
+                            ? `${pdf.urlContext}&from=pdfs&editPdf=${pdf.id}` 
+                            : `${pdf.urlContext}?from=pdfs&editPdf=${pdf.id}`;
+                          router.push(editUrl);
+                        }
                       }}
-                      style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', width: '36px', height: '36px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', opacity: 1 }}
-                      title="Ir al Origen (Editar)"
+                      disabled={!pdf.urlContext}
+                      style={{ 
+                        background: 'white', 
+                        border: '1px solid #cbd5e1', 
+                        color: '#475569', 
+                        width: '36px', 
+                        height: '36px', 
+                        borderRadius: '8px', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        cursor: pdf.urlContext ? 'pointer' : 'not-allowed', 
+                        transition: 'all 0.2s', 
+                        opacity: pdf.urlContext ? 1 : 0.5 
+                      }}
+                      title="Ir al Origen"
                       onMouseOver={e => { if (pdf.urlContext) { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; } }}
                       onMouseOut={e => { if (pdf.urlContext) { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#475569'; } }}
                     >
-                      ✏️
+                      ↗️
                     </button>
                   </td>
 
@@ -485,16 +518,10 @@ export default function PdfsDashboard() {
                       {/* EDITAR (Gris/Blanco) */}
                       <button
                         onClick={() => {
-                          if (pdf.urlContext) {
-                            sessionStorage.setItem('pdfs_scroll', window.scrollY.toString());
-                            sessionStorage.setItem('pdfs_last_edited_id', pdf.id.toString());
-                            const editUrl = pdf.urlContext.includes('?') 
-                              ? `${pdf.urlContext}&from=pdfs&editPdf=${pdf.id}` 
-                              : `${pdf.urlContext}?from=pdfs&editPdf=${pdf.id}`;
-                            router.push(editUrl);
-                          }
+                          sessionStorage.setItem('pdfs_scroll', window.scrollY.toString());
+                          sessionStorage.setItem('pdfs_last_edited_id', pdf.id.toString());
+                          router.push(`/dashboard/admin/pdfs/${pdf.id}`);
                         }}
-                        disabled={!pdf.urlContext}
                         style={{ 
                           background: 'white', 
                           border: '1px solid #cbd5e1', 
@@ -505,15 +532,15 @@ export default function PdfsDashboard() {
                           display: 'inline-flex', 
                           alignItems: 'center', 
                           justifyContent: 'center', 
-                          cursor: pdf.urlContext ? 'pointer' : 'not-allowed', 
+                          cursor: 'pointer', 
                           transition: 'all 0.2s', 
-                          opacity: pdf.urlContext ? 1 : 0.5,
+                          opacity: 1,
                           fontSize: '0.85rem',
                           fontWeight: 'bold'
                         }}
                         title="Editar"
-                        onMouseOver={e => { if (pdf.urlContext) { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; } }}
-                        onMouseOut={e => { if (pdf.urlContext) { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#475569'; } }}
+                        onMouseOver={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#475569'; }}
                       >
                         Editar
                       </button>

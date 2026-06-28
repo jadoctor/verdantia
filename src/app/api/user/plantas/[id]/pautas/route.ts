@@ -16,16 +16,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Verificar propiedad y obtener especieId
     const [ownerCheck]: any = await pool.query(
-      `SELECT vu.idvariedades, vu.xvariedadesidespecies 
-       FROM variedades vu
-       WHERE vu.idvariedades = ? AND vu.xvariedadesidusuarios = ?`,
+      `SELECT vu.idvariedadesvegetales, vu.xvariedadesvegetalesidespeciesvegetales 
+       FROM variedadesvegetales vu
+       WHERE vu.idvariedadesvegetales = ? AND vu.xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
     if (ownerCheck.length === 0) {
       return NextResponse.json({ error: 'Planta no encontrada' }, { status: 404 });
     }
 
-    const especieId = ownerCheck[0].xvariedadesidespecies;
+    const especieId = ownerCheck[0].xvariedadesvegetalesidespeciesvegetales;
 
     // Pautas de la especie (base) + LEFT JOIN con overrides del usuario
     const [pautas] = await pool.query(`
@@ -51,8 +51,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         ON pu.xlaborespautaidlabores = pe.xlaborespautaidlabores
         AND pu.laborespautafase = pe.laborespautafase
         AND pu.xlaborespautaidusuarios = ?
-        AND pu.xlaborespautaidvariedades = ?
-      WHERE pe.xlaborespautaidespecies = ? 
+        AND pu.xlaborespautaidvariedadesvegetales = ?
+      WHERE pe.xlaborespautaidespeciesvegetales = ? 
         AND pe.xlaborespautaidusuarios IS NULL
       ORDER BY pe.xlaborespautaidlabores, 
                CASE pe.laborespautafase 
@@ -85,10 +85,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       FROM laborespauta pu
       JOIN labores l ON pu.xlaborespautaidlabores = l.idlabores
       WHERE pu.xlaborespautaidusuarios = ?
-        AND pu.xlaborespautaidvariedades = ?
+        AND pu.xlaborespautaidvariedadesvegetales = ?
         AND NOT EXISTS (
           SELECT 1 FROM laborespauta pe2
-          WHERE pe2.xlaborespautaidespecies = ?
+          WHERE pe2.xlaborespautaidespeciesvegetales = ?
             AND pe2.xlaborespautaidusuarios IS NULL
             AND pe2.xlaborespautaidlabores = pu.xlaborespautaidlabores
             AND pe2.laborespautafase = pu.laborespautafase
@@ -124,7 +124,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Verificar propiedad
     const [ownerCheck]: any = await pool.query(
-      `SELECT idvariedades, xvariedadesidespecies FROM variedades WHERE idvariedades = ? AND xvariedadesidusuarios = ?`,
+      `SELECT idvariedadesvegetales, xvariedadesvegetalesidespeciesvegetales FROM variedadesvegetales WHERE idvariedadesvegetales = ? AND xvariedadesvegetalesidusuarios = ?`,
       [plantaId, user.id]
     );
     if (ownerCheck.length === 0) {
@@ -134,7 +134,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // ¿Ya existe un override del usuario para esta labor+fase+planta?
     const [existing]: any = await pool.query(
       `SELECT idlaborespauta FROM laborespauta 
-       WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedades = ? 
+       WHERE xlaborespautaidusuarios = ? AND xlaborespautaidvariedadesvegetales = ? 
        AND xlaborespautaidlabores = ? AND laborespautafase = ?`,
       [user.id, plantaId, xlaborespautaidlabores, laborespautafase]
     );
@@ -156,12 +156,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       // INSERT nuevo override
       await pool.query(
         `INSERT INTO laborespauta (
-          xlaborespautaidusuarios, xlaborespautaidvariedades, xlaborespautaidespecies,
+          xlaborespautaidusuarios, xlaborespautaidvariedadesvegetales, xlaborespautaidespeciesvegetales,
           xlaborespautaidlabores, laborespautafase, 
           laborespautafrecuenciadias, laborespautanotasia, laborespautaactivosino
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          user.id, plantaId, ownerCheck[0].xvariedadesidespecies,
+          user.id, plantaId, ownerCheck[0].xvariedadesvegetalesidespeciesvegetales,
           xlaborespautaidlabores, laborespautafase,
           laborespautafrecuenciadias ?? null,
           laborespautanotasia || null,

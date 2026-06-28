@@ -110,7 +110,7 @@ export function UserCard({
                     <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       📋 {laborName} <span style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', color: '#475569' }}>{photos.length} fotos</span>
                     </h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
                       {photos.map((p: any) => (
                         <FotoCard key={p.id} foto={p} tab={tab} processing={processing}
                           onValidar={onValidar} onRechazar={onRechazar}

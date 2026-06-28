@@ -38,8 +38,8 @@ export async function PATCH(request: Request) {
         // No existe, creamos un clon inactivo
         await pool.query(`
           INSERT INTO laborespauta (
-            xlaborespautaidvariedades,
-            xlaborespautaidespecies,
+            xlaborespautaidvariedadesvegetales,
+            xlaborespautaidespeciesvegetales,
             xlaborespautaidusuarios,
             xlaborespautaidlabores,
             laborespautafase,

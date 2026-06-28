@@ -6,7 +6,7 @@ import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes } from 'firebase/storage';
 import ConsentimientoFotoModal from '@/components/user/ConsentimientoFotoModal';
 import CultivoTimelapse from './CultivoTimelapse';
-import '@/components/admin/EspecieForm.css';
+import '@/components/admin/EspecieVegetalForm.css';
 
 interface UserCultivoMediaManagerProps {
   cultivoId: string;
@@ -288,7 +288,7 @@ export default function UserCultivoMediaManager({ cultivoId, userEmail, onMediaC
       </div>
 
       {/* Galería con inline dropzone */}
-      <div className="gallery" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
+      <div className="gallery" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 140px), 1fr))', gap: '16px' }}>
         {photos.map(photo => {
           let meta: any = {};
           try { meta = JSON.parse(photo.resumen || '{}'); } catch(e){}

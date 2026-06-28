@@ -8,8 +8,8 @@ import { useAfeccion } from './hooks/useAfeccion';
 import { useAfeccionPhotos } from './hooks/useAfeccionPhotos';
 import AfeccionHero from './components/AfeccionHero';
 import AfeccionTratamientosTab from './components/AfeccionTratamientosTab';
-import VariedadMediaManager from '@/components/admin/VariedadMediaManager';
-import '@/components/admin/EspecieForm.css';
+import VariedadVegetalMediaManager from '@/components/admin/VariedadVegetalMediaManager';
+import '@/components/admin/EspecieVegetalForm.css';
 
 export default function EditarAfeccionPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
@@ -273,7 +273,7 @@ export default function EditarAfeccionPage({ params }: { params: Promise<{ id: s
               Guarda un nombre para la afección primero antes de poder subir fotos.
             </div>
           ) : (
-            <VariedadMediaManager 
+            <VariedadVegetalMediaManager 
               variedadId={resolvedParams.id} 
               userEmail={userEmail || ''} 
               variedadNombre={formData.afeccionesnombre}
@@ -293,7 +293,7 @@ export default function EditarAfeccionPage({ params }: { params: Promise<{ id: s
               Guarda un nombre para la afección primero antes de poder subir documentos.
             </div>
           ) : (
-            <VariedadMediaManager 
+            <VariedadVegetalMediaManager 
               variedadId={resolvedParams.id} 
               userEmail={userEmail || ''} 
               variedadNombre={formData.afeccionesnombre}

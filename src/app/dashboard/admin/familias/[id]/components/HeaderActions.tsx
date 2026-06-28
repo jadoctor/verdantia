@@ -1,6 +1,7 @@
 import React, { Dispatch, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { Familia } from '../types';
+import PremiumBackButton from '@/components/ui/PremiumBackButton';
 
 interface HeaderActionsProps {
   familia: Familia;
@@ -16,14 +17,8 @@ export default function HeaderActions({ familia, saveStatus, setShowCheckModal, 
     <>
       {/* ═══ Navegación Jerárquica Superior (Regla 8) ═══ */}
       <div style={{ display: 'flex', gap: '8px', padding: isMobile ? '12px 14px' : '12px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-        <button onClick={() => router.push('/dashboard')}
-          style={{ flex: isMobile ? 1 : 'none', padding: '8px 14px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' }}>
-          🏠 Volver al Inicio
-        </button>
-        <button onClick={() => router.push('/dashboard/admin/familias')}
-          style={{ flex: isMobile ? 1 : 'none', padding: '8px 14px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' }}>
-          🔙 Volver a Familias
-        </button>
+        <PremiumBackButton onClick={() => router.push('/dashboard')} text="🏠 Volver al Inicio" />
+        <PremiumBackButton onClick={() => router.push('/dashboard/admin/familias')} text="🔙 Volver a Familias" />
       </div>
 
       {/* ═══ Subheader Contextual + Autoguardado (Regla 8) ═══ */}

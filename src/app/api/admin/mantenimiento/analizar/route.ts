@@ -14,6 +14,121 @@ async function authenticateSuperadmin(request: Request) {
   return user;
 }
 
+function analyzePremium(content: string, relPath: string) {
+  const diagnostics: string[] = [];
+  let score = 100;
+
+  // 1. Descubrimiento dinámico de componentes Premium
+  const premiumDir = path.join(process.cwd(), 'src', 'components', 'ui');
+  let premiumComponents: string[] = [];
+  try {
+    premiumComponents = fs.readdirSync(premiumDir)
+      .filter(f => f.startsWith('Premium') && f.endsWith('.tsx'))
+      .map(f => f.replace('.tsx', ''));
+  } catch { /* no-op */ }
+
+  const usedPremium = premiumComponents.filter(c => content.includes(c));
+  const missingPremium = premiumComponents.filter(c => !content.includes(c));
+
+  // 2. Determinar tipo de página
+  const isEditPage = relPath.includes('[id]') || relPath.includes('nueva') || relPath.includes('nuevo');
+
+  // 3. Reglas obligatorias del Encabezado Premium (Regla 7)
+  if (!content.includes('PremiumSubheader')) {
+    diagnostics.push('🏗️ Falta `PremiumSubheader`: El dashboard no utiliza el componente de Encabezado Premium obligatorio (Regla 7). Se debe reemplazar cualquier header inline por `<PremiumSubheader>`.');
+    score -= 20;
+  }
+
+  if (!content.includes('PremiumBackButton')) {
+    const hasRawNav = /['"]🏠 Volver|['"]🔙 Volver|Volver al Inicio/.test(content);
+    if (hasRawNav) {
+      diagnostics.push('🔙 Botones de navegación raw: Se detectaron botones "Volver" sin usar `PremiumBackButton`. Reemplazarlos por el componente Premium.');
+    } else {
+      diagnostics.push('🔙 Falta `PremiumBackButton`: No se encontró navegación de retorno. Añadir al menos "🏠 Volver al Inicio".');
+    }
+    score -= 10;
+  }
+
+  if (!content.includes('PremiumDevInsights')) {
+    diagnostics.push('📊 Falta `PremiumDevInsights`: El analizador de código es obligatorio bajo la línea divisoria del Encabezado Premium (Regla 7).');
+    score -= 15;
+  }
+
+  // 4. Reglas específicas de LISTADO
+  if (!isEditPage) {
+    if (!content.includes('PremiumAddButton')) {
+      const hasRawAdd = /[➕+]\s*Nuev[oa]|Crear\s+/.test(content);
+      if (hasRawAdd) {
+        diagnostics.push('➕ Botón "Añadir" raw: Se detectó un botón de creación sin usar `PremiumAddButton`. Reemplazarlo por el componente Premium (Regla 25).');
+        score -= 10;
+      }
+    }
+    if (!content.includes('PremiumFilterTabs')) {
+      const hasFilters = /setFilter|activeFilter|setActiveFilter|filterTipo/.test(content);
+      if (hasFilters) {
+        diagnostics.push('🏷️ Filtros sin `PremiumFilterTabs`: Se detectaron filtros implementados con botones raw. Usar `PremiumFilterTabs` para consistencia visual.');
+        score -= 10;
+      }
+    }
+    if (content.includes('PremiumSubheader') && content.includes('subtitle=')) {
+      diagnostics.push('🚫 Subtítulo prohibido en listado: Los dashboards de listado NO deben tener subtítulos descriptivos (Regla 7).');
+      score -= 10;
+    }
+  }
+
+  // 5. Reglas específicas de EDICIÓN (Regla 8)
+  if (isEditPage) {
+    if (!content.includes('PremiumDeleteButton')) {
+      diagnostics.push('🗑️ Falta `PremiumDeleteButton`: Las páginas de edición deben incluir el botón de eliminación Premium (Regla 8).');
+      score -= 10;
+    }
+    if (content.includes('PremiumSubheader') && !content.includes('subtitle=')) {
+      diagnostics.push('📝 Falta `subtitle` en PremiumSubheader: Las páginas de edición requieren subtítulo contextual (ej. "✏️ Editar ... · ID del Registro: ...") según Regla 8.');
+      score -= 10;
+    }
+    if (content.includes('saveStatus') && !content.includes('Guardando') && !content.includes('⏳')) {
+      diagnostics.push('💾 Falta indicador de autoguardado: Las páginas de edición deben mostrar "⏳ Guardando..." / "✅ Guardado" en el bloque de acciones (Regla 8).');
+      score -= 10;
+    }
+  }
+
+  // 6. Reglas de estilo comunes
+  if (content.includes('PremiumSubheader') && !content.includes('gradient=')) {
+    diagnostics.push('🎨 Falta `gradient` explícito: El PremiumSubheader debe tener un degradado pertinente al módulo (Regla 7).');
+    score -= 5;
+  }
+
+  // 7. Patrones prohibidos en el header
+  const hasBadgeInJSX = />\s*🛡️\s*Superadministrador\s*</.test(content) || /badge.*[Ss]uperadmin|[Ss]uperadmin.*badge/.test(content);
+  if (hasBadgeInJSX) {
+    diagnostics.push('🚫 Badge de rol prohibido: Se detectó una etiqueta visual de "Superadministrador" en el encabezado. Prohibido por Regla 7.');
+    score -= 10;
+  }
+
+  score = Math.max(0, score);
+
+  // 8. Generar prompt para el agente
+  let improvementsForAgent = '';
+  if (diagnostics.length > 0 && score < 100) {
+    improvementsForAgent = `Antigravity, aplica los criterios del Encabezado Premium (Reglas 7/8/23 de la Biblia) al dashboard en 'src/app/dashboard/${relPath}'. Corrige los siguientes hallazgos:\n`;
+    diagnostics.forEach((diag, i) => {
+      improvementsForAgent += `${i + 1}. ${diag.replace(/^[^\w\s]*\s*/, '')}\n`;
+    });
+    improvementsForAgent += `\nComponentes Premium disponibles: ${premiumComponents.join(', ')}.\nYa usados: ${usedPremium.length > 0 ? usedPremium.join(', ') : 'Ninguno'}.\nNo usados: ${missingPremium.length > 0 ? missingPremium.join(', ') : 'Todos en uso'}.`;
+  } else {
+    improvementsForAgent = `Antigravity, el dashboard en 'src/app/dashboard/${relPath}' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: ${score}%.`;
+  }
+
+  return {
+    score,
+    usedPremium,
+    missingPremium,
+    availablePremium: premiumComponents,
+    diagnostics: diagnostics.length > 0 ? diagnostics : ['✅ El dashboard cumple con todos los criterios del Encabezado Premium.'],
+    improvementsForAgent
+  };
+}
+
 function analyzeResponsiveness(content: string, relPath: string) {
   const diagnostics: string[] = [];
   let score = 100;
@@ -182,7 +297,20 @@ export async function GET(request: Request) {
       plan.push('✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes.');
     }
 
-    const responsiveness = analyzeResponsiveness(content, relPath);
+    let expandedContent = content;
+    const importRegex = /import\s+(?:{[^}]+}|\w+)\s+from\s+['"](\.\/[^'"]+)['"]/g;
+    let match;
+    while ((match = importRegex.exec(content)) !== null) {
+      try {
+        const compPath = path.join(path.dirname(fullPath), match[1] + '.tsx');
+        if (fs.existsSync(compPath)) {
+          expandedContent += '\n' + fs.readFileSync(compPath, 'utf8');
+        }
+      } catch (e) {}
+    }
+
+    const responsiveness = analyzeResponsiveness(expandedContent, relPath);
+    const premium = analyzePremium(expandedContent, relPath);
 
     return NextResponse.json({
       file: relPath,
@@ -200,7 +328,8 @@ export async function GET(request: Request) {
         todos: todoCount,
       },
       plan,
-      responsiveness
+      responsiveness,
+      premium
     });
   } catch (error: any) {
     console.error('Error al analizar archivo:', error);

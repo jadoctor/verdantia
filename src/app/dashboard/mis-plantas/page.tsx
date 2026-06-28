@@ -13,15 +13,15 @@ import { SeedWizardModal } from '@/components/SeedWizardModal';
 import { PlantWizardModal } from '@/components/PlantWizardModal';
 
 interface Planta {
-  idvariedades: number;
-  xvariedadesidvariedadorigen?: number;
-  xvariedadesidespecies?: number;
+  idvariedadesvegetales: number;
+  xvariedadesvegetalesidvariedadorigen?: number;
+  xvariedadesvegetalesidespeciesvegetales?: number;
   nombre: string;
   descripcion: string;
   icono: string;
   dificultad: string;
-  especiesnombre: string;
-  especiesicono: string;
+  especiesvegetalesnombre: string;
+  especiesvegetalesicono: string;
   nombre_gold: string;
   es_generica: number;
   foto: string | null;
@@ -30,30 +30,30 @@ interface Planta {
   semillas_lista?: any;
   semillas_count?: number;
   semillas_colecciones?: string | null;
-  variedadesvisibilidadsino?: number;
+  variedadesvegetalesvisibilidadsino?: number;
   origen_visibilidad?: number;
 }
 
 interface CatalogoEspecie {
-  idespecies: number;
-  especiesnombre: string;
-  especiesnombrecientifico: string;
+  idespeciesvegetales: number;
+  especiesvegetalesnombre: string;
+  especiesvegetalesnombrecientifico: string;
   familiasnombre?: string;
   familiasemoji?: string;
   especiestipo: string;
-  especiesicono: string;
-  especiesdescripcion: string;
+  especiesvegetalesicono: string;
+  especiesvegetalesdescripcion: string;
   especiesdificultad: string;
   foto: string | null;
   total_variedades: number;
 }
 
 interface CatalogoVariedad {
-  idvariedades: number;
-  variedadesnombre: string;
+  idvariedadesvegetales: number;
+  variedadesvegetalesnombre: string;
   variedadesdescripcion: string;
   variedadesicono: string;
-  variedadesesgenerica: number;
+  variedadesvegetalesesgenerica: number;
   variedadesdificultad: string;
   foto: string | null;
 }
@@ -97,7 +97,7 @@ export default function MisPlantasPage() {
     const searchLower = filterSearch.toLowerCase().trim();
     if (searchLower) {
       const matchNombre = p.nombre && p.nombre.toLowerCase().includes(searchLower);
-      const matchEspecie = p.especiesnombre && p.especiesnombre.toLowerCase().includes(searchLower);
+      const matchEspecie = p.especiesvegetalesnombre && p.especiesvegetalesnombre.toLowerCase().includes(searchLower);
       const matchNombreGold = p.nombre_gold && p.nombre_gold.toLowerCase().includes(searchLower);
       if (!matchNombre && !matchEspecie && !matchNombreGold) {
         return false;
@@ -105,7 +105,7 @@ export default function MisPlantasPage() {
     }
 
     // 2. Active/Inactive base filter
-    const isActive = Number(p.variedadesvisibilidadsino ?? 1) !== 0;
+    const isActive = Number(p.variedadesvegetalesvisibilidadsino ?? 1) !== 0;
     if (selectedFilter === 'inactivas') {
       if (isActive) return false;
     } else if (selectedFilter === 'all') {
@@ -189,7 +189,7 @@ export default function MisPlantasPage() {
   };
 
   const deletePlanta = async (id: number, forceInactivate?: boolean) => {
-    const p = plantas.find(item => item.idvariedades === id);
+    const p = plantas.find(item => item.idvariedadesvegetales === id);
     const hasSeeds = p && (p.semillas_count || 0) > 0;
     const isInactivating = hasSeeds || forceInactivate;
     const confirmMessage = isInactivating 
@@ -223,7 +223,7 @@ export default function MisPlantasPage() {
           'x-user-email': userEmail!
         },
         body: JSON.stringify({
-          variedadesvisibilidadsino: 1
+          variedadesvegetalesvisibilidadsino: 1
         })
       });
       if (res.ok) {
@@ -516,15 +516,15 @@ export default function MisPlantasPage() {
       {/* Grid de plantas agrupado por especies */}
       {plantas.length > 0 && filteredPlantas.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-          {Array.from(new Set(filteredPlantas.map(p => p.especiesnombre))).sort().map(especieNombre => {
-            const plantasDeEspecie = filteredPlantas.filter(p => p.especiesnombre === especieNombre);
-            const especieIcono = plantasDeEspecie[0].especiesicono || '🌱';
+          {Array.from(new Set(filteredPlantas.map(p => p.especiesvegetalesnombre))).sort().map(especieNombre => {
+            const plantasDeEspecie = filteredPlantas.filter(p => p.especiesvegetalesnombre === especieNombre);
+            const especieIcono = plantasDeEspecie[0].especiesvegetalesicono || '🌱';
             return (
               <div key={especieNombre}>
                 <h2 style={{ fontSize: '1.4rem', color: '#166534', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #bbf7d0', paddingBottom: '8px' }}>
                   <SpeciesIcon icon={especieIcono} size="1.8rem" /> {especieNombre}
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
                   {plantasDeEspecie.map(p => {
                     let cultivos: any[] = [];
                     try {
@@ -534,7 +534,7 @@ export default function MisPlantasPage() {
                     const hasCultivos = cultivos.length > 0;
 
                     return (
-                    <div key={p.idvariedades} style={{
+                    <div key={p.idvariedadesvegetales} style={{
                       background: 'var(--bg-card)', borderRadius: '16px',
                       border: '1px solid var(--border-color)', overflow: 'hidden',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'all 0.2s',
@@ -542,16 +542,16 @@ export default function MisPlantasPage() {
                     }}
                       onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
                       onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
-                      onClick={() => router.push(`/dashboard/mis-plantas/${p.idvariedades}`)}
+                      onClick={() => router.push(`/dashboard/mis-plantas/${p.idvariedadesvegetales}`)}
                     >
                       {/* Header de la tarjeta */}
                       <div style={{ padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                           <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>
-                            {p.especiesnombre}
+                            {p.especiesvegetalesnombre}
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {Number(p.variedadesvisibilidadsino ?? 1) === 0 && (
+                            {Number(p.variedadesvegetalesvisibilidadsino ?? 1) === 0 && (
                               <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                 💤 Inactiva
                               </span>
@@ -563,7 +563,7 @@ export default function MisPlantasPage() {
                             )}
                             {/* Botón Editar explícito */}
                             <button
-                              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/mis-plantas/${p.idvariedades}`); }}
+                              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/mis-plantas/${p.idvariedadesvegetales}`); }}
                               title="Editar esta variedad"
                               style={{
                                 background: 'white', border: '1px solid #cbd5e1', color: '#475569',
@@ -836,12 +836,12 @@ export default function MisPlantasPage() {
                       )}
 
                       {/* Delete / Inactivate / Reactivate buttons */}
-                      {Number(p.variedadesvisibilidadsino ?? 1) === 0 ? (
+                      {Number(p.variedadesvegetalesvisibilidadsino ?? 1) === 0 ? (
                         <>
                           {/* Reactivate button (🔋): shown for inactive plants */}
                           <button
-                            onClick={(e) => { e.stopPropagation(); reactivatePlanta(p.idvariedades); }}
-                            disabled={deleting === p.idvariedades}
+                            onClick={(e) => { e.stopPropagation(); reactivatePlanta(p.idvariedadesvegetales); }}
+                            disabled={deleting === p.idvariedadesvegetales}
                             style={{
                               position: 'absolute', top: 8,
                               right: (p.semillas_count || 0) === 0 ? 48 : 8,
@@ -862,8 +862,8 @@ export default function MisPlantasPage() {
                           {/* Delete button (🗑️): only shown if it has no seeds */}
                           {(p.semillas_count || 0) === 0 && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedades, false); }}
-                              disabled={deleting === p.idvariedades}
+                              onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedadesvegetales, false); }}
+                              disabled={deleting === p.idvariedadesvegetales}
                               style={{
                                 position: 'absolute', top: 8, right: 8,
                                 background: '#ffffff', color: '#ef4444', border: '1px solid #fca5a5',
@@ -885,8 +885,8 @@ export default function MisPlantasPage() {
                         <>
                           {/* Inactivate button (💤): always shown if no active crops */}
                           <button
-                            onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedades, true); }}
-                            disabled={deleting === p.idvariedades}
+                            onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedadesvegetales, true); }}
+                            disabled={deleting === p.idvariedadesvegetales}
                             style={{
                               position: 'absolute', top: 8,
                               right: (p.semillas_count || 0) === 0 ? 48 : 8,
@@ -907,8 +907,8 @@ export default function MisPlantasPage() {
                           {/* Delete button (🗑️): only shown if it has no seeds */}
                           {(p.semillas_count || 0) === 0 && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedades, false); }}
-                              disabled={deleting === p.idvariedades}
+                              onClick={(e) => { e.stopPropagation(); deletePlanta(p.idvariedadesvegetales, false); }}
+                              disabled={deleting === p.idvariedadesvegetales}
                               style={{
                                 position: 'absolute', top: 8, right: 8,
                                 background: '#ffffff', color: '#ef4444', border: '1px solid #fca5a5',
@@ -1008,10 +1008,10 @@ export default function MisPlantasPage() {
             setModalNuevoCultivoSeedId(undefined);
             loadPlantas(); // Recargar por si se añadió el cultivo
           }}
-          plantaId={modalNuevoCultivoPlanta.idvariedades}
-          xvariedadesidvariedadorigen={modalNuevoCultivoPlanta.xvariedadesidvariedadorigen}
+          plantaId={modalNuevoCultivoPlanta.idvariedadesvegetales}
+          xvariedadesvegetalesidvariedadorigen={modalNuevoCultivoPlanta.xvariedadesvegetalesidvariedadorigen}
           initialSeedId={modalNuevoCultivoSeedId}
-          plantaNombre={modalNuevoCultivoPlanta.nombre || modalNuevoCultivoPlanta.especiesnombre || 'Planta'}
+          plantaNombre={modalNuevoCultivoPlanta.nombre || modalNuevoCultivoPlanta.especiesvegetalesnombre || 'Planta'}
           calendarioSolar={
             (modalNuevoCultivoPlanta as any).semillerodesde !== undefined 
               ? {
@@ -1044,8 +1044,8 @@ export default function MisPlantasPage() {
             setModalNuevoSemillaPlanta(null);
             loadPlantas();
           }}
-          initialEspecieId={modalNuevoSemillaPlanta.xvariedadesidespecies}
-          initialVariedadId={modalNuevoSemillaPlanta.xvariedadesidvariedadorigen}
+          initialEspecieId={modalNuevoSemillaPlanta.xvariedadesvegetalesidespeciesvegetales}
+          initialVariedadId={modalNuevoSemillaPlanta.xvariedadesvegetalesidvariedadorigen}
         />
       )}
     </div>
