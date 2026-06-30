@@ -9,7 +9,7 @@ import { UserCard } from './components/UserCard';
 import { ModalRechazo } from './components/ModalRechazo';
 import { ModalRecurso } from './components/ModalRecurso';
 import { LightboxOverlay } from './components/LightboxOverlay';
-import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 import { getMediaUrl } from '@/lib/media-url';
 
 export default function AsuntosPendientesPage() {

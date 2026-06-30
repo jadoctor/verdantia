@@ -7,7 +7,7 @@ import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import DownloadApuntesButton from './DownloadApuntesButton';
-import PhotoEditorModal from './PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 import './EspecieVegetalForm.css';
 interface LaborFormProps {
   laborId: string | null;

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
-import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 import '@/components/admin/EspecieVegetalForm.css';
 
 interface InlineLaborPhotosProps {

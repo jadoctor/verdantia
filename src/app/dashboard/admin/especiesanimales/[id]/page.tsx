@@ -12,7 +12,7 @@ import PremiumCancelButton from '@/components/ui/PremiumCancelButton';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes } from 'firebase/storage';
 import { Blurhash } from 'react-blurhash';
-import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 
 const STYLE_FILTERS: Record<string, string> = {
   none: 'none',

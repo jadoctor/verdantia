@@ -5,7 +5,7 @@ import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes } from 'firebase/storage';
 import ConsentimientoFotoModal from '@/components/user/ConsentimientoFotoModal';
-import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 import '@/components/admin/EspecieVegetalForm.css';
 
 interface UserSemillaMediaManagerProps {

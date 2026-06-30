@@ -7,7 +7,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
 import '@/components/admin/EspecieVegetalForm.css';
-import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 
 export default function ContenedorForm({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();

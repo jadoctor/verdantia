@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getMediaUrl } from '@/lib/media-url';
 import '@/components/admin/EspecieVegetalForm.css';
-import PhotoEditorModal from '@/components/admin/PhotoEditorModal';
+import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
 
 const STYLE_FILTERS: Record<string, string> = {
   '': 'none',

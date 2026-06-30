@@ -5,7 +5,7 @@ import { getMediaUrl } from '@/lib/media-url';
 interface PhotoEditorModalWrapperProps {
   editingPhoto: any;
   setEditingPhoto: (photo: any) => void;
-  savePhotoEdits: (metadata: any) => Promise<void>;
+  savePhotoEdits: (metadata: any) => Promise<any>;
   deletePhoto?: () => void;
   photoEditorSaveStatus: 'idle' | 'saving' | 'saved' | 'no-changes' | undefined;
   onRecreateAi?: () => void;
