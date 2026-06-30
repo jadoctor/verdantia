@@ -79,6 +79,18 @@ function PerfilContent() {
         onBackToInicio={() => router.push('/dashboard')}
       />
 
+      {/* ── Estado Global en Primer Lugar (Regla 8) ── */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', padding: '16px 24px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Estado de Cuenta:</span>
+          {profileData.profile.estadoCuenta === 'activa' || profileData.profile.estadoCuenta === 'activo' ? (
+            <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800 }}>✅ ACTIVA</span>
+          ) : (
+            <span style={{ background: '#fef9c3', color: '#854d0e', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800 }}>⚠️ {profileData.profile.estadoCuenta?.toUpperCase() || 'PENDIENTE'}</span>
+          )}
+        </div>
+      </div>
+
       <ProfileHeroGallery
         profileData={profileData}
         photosData={photosData}
@@ -152,3 +164,19 @@ export default function PerfilPage() {
     </Suspense>
   );
 }
+
+
+// refresh trigger
+// refresh trigger
+// refresh trigger
+// refresh trigger
+// refresh trigger
+// refresh trigger
+// refresh trigger 2
+// refresh trigger 3
+// refresh trigger 4
+// refresh trigger 5
+// refresh trigger 6
+// refresh trigger 7
+// refresh trigger 8
+// refresh trigger 9

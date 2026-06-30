@@ -8,6 +8,7 @@ import PremiumBackButton from '@/components/ui/PremiumBackButton';
 import PremiumSubheader from '@/components/ui/PremiumSubheader';
 import PremiumDevInsights from '@/components/ui/PremiumDevInsights';
 import PremiumDeleteButton from '@/components/ui/PremiumDeleteButton';
+import PremiumHeroCarousel from '@/components/ui/PremiumHeroCarousel';
 import { useTratamientoEdit } from './hooks/useTratamientoEdit';
 import { TratamientoDetallesTab } from './components/TratamientoDetallesTab';
 import { TratamientoMediaTabs } from './components/TratamientoMediaTabs';
@@ -23,9 +24,9 @@ export default function EditarTratamientoPage({ params }: { params: Promise<{ id
     showAiModal, setShowAiModal, mediaRefreshTrigger, triggerMediaRefresh,
     deleteConfirm, setDeleteConfirm,
     formData, setFormData, loading, saveStatus, plantasParteCatalog,
-    photos, refreshPhotos,
+    photos, refreshPhotos, activeFotoId, handleSetPrimaryPhoto, handleReorderPhoto,
     handleChange, handleMultiSelectChange, handleParteToggle,
-    handleDelete, handleSetPrimaryPhoto, autoSave
+    handleDelete, autoSave
   } = useTratamientoEdit(resolvedParams.id);
 
   if (!authReady || loading) {
@@ -55,21 +56,10 @@ export default function EditarTratamientoPage({ params }: { params: Promise<{ id
       {/* Encabezado Premium Contextual */}
       <PremiumSubheader
         title={<>🧪 {resolvedParams.id === 'nuevo' ? 'Nuevo Tratamiento' : formData.tratamientosnombre || 'Edición de Tratamiento'}</>}
-        subtitle={<>✏️ Editar Tratamiento · ID del Registro: {resolvedParams.id}</>}
         gradient="linear-gradient(135deg, #0f766e, #3b82f6)"
         isMobile={isMobile}
         actions={
           <>
-            {saveStatus === 'saving' && (
-              <span style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                ⏳ Guardando...
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                ✅ Guardado
-              </span>
-            )}
             {resolvedParams.id !== 'nuevo' && (
               <PremiumDeleteButton onClick={() => setDeleteConfirm(true)} />
             )}
@@ -95,7 +85,17 @@ export default function EditarTratamientoPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Hero Carousel */}
-      <TratamientoHero photos={photos} onSetPrimary={handleSetPrimaryPhoto} />
+      <PremiumHeroCarousel
+        photos={photos}
+        activePhotoId={activeFotoId}
+        onSetPrimary={(id) => {
+          handleSetPrimaryPhoto(Number(id));
+        }}
+        onReorder={(dragId, dropId) => {
+          handleReorderPhoto(dragId, dropId);
+        }}
+        fallbackAlt={formData.tratamientosnombre || 'Tratamiento'}
+      />
 
       {/* Ficha de Tratamiento Colapsable */}
       <TratamientoFicha
@@ -127,4 +127,4 @@ export default function EditarTratamientoPage({ params }: { params: Promise<{ id
     </div>
   );
 }
-// reload 28/06/2026 16:47:00
+// reload 29/06/2026 16:25:00

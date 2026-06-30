@@ -270,6 +270,7 @@ export function useProfilePhotos(profile: UserProfile | null, showToast: (msg: s
         ...photos.filter(p => p.id !== photoId).map(p => ({ ...p, esPrincipal: false }))
       ];
       setPhotos(newPhotos);
+      setActiveFotoId(photoId); // <-- IMPORTANT: Ensure UI switches to the new main photo
     }
 
     try {
@@ -298,6 +299,21 @@ export function useProfilePhotos(profile: UserProfile | null, showToast: (msg: s
       showToast('❌ Error de conexión al guardar foto preferida');
       setPhotos(previousPhotos);
     }
+  };
+
+  const handleReorder = (dragId: number | string, dropId: number | string) => {
+    setPhotos(prevPhotos => {
+      const newPhotos = [...prevPhotos];
+      const dragIdx = newPhotos.findIndex(p => p.id === dragId);
+      const dropIdx = newPhotos.findIndex(p => p.id === dropId);
+      if (dragIdx === -1 || dropIdx === -1) return prevPhotos;
+      
+      const [dragged] = newPhotos.splice(dragIdx, 1);
+      newPhotos.splice(dropIdx, 0, dragged);
+      
+      // If we just reordered thumbnails, we might want to also ensure the active/hero stays active
+      return newPhotos;
+    });
   };
 
   const deletePhoto = async (photoId: number) => {
@@ -531,6 +547,7 @@ export function useProfilePhotos(profile: UserProfile | null, showToast: (msg: s
     handleDrop,
     handlePhotoDragStart,
     handlePhotoDragOver,
-    handlePhotoDrop
+    handlePhotoDrop,
+    handleReorder
   };
 }

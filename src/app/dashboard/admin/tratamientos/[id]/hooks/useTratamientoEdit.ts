@@ -31,6 +31,7 @@ export function useTratamientoEdit(id: string) {
   const [showAiModal, setShowAiModal] = useState(false);
   const [mediaRefreshTrigger, setMediaRefreshTrigger] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [activeFotoId, setActiveFotoId] = useState<number | string | null>(null);
 
   const [formData, setFormData] = useState<any>(defaultFormData);
   const [initialData, setInitialData] = useState<any>(defaultFormData);
@@ -63,6 +64,21 @@ export function useTratamientoEdit(id: string) {
     });
     return () => unsubscribe();
   }, [router]);
+
+  // Active foto tracking
+  useEffect(() => {
+    if (photos.length > 0 && !activeFotoId) {
+      const portada = photos.find(p => {
+        try {
+          const res = JSON.parse(p.resumen || '{}');
+          return res.profile_style?.isPortada || p.esPrincipal === 1;
+        } catch { return p.esPrincipal === 1; }
+      });
+      setActiveFotoId(portada ? portada.id : photos[0].id);
+    } else if (photos.length === 0 && activeFotoId) {
+      setActiveFotoId(null);
+    }
+  }, [photos, activeFotoId]);
 
   // Initial data load
   useEffect(() => {
@@ -204,6 +220,18 @@ export function useTratamientoEdit(id: string) {
     if (!userEmail || id === 'nuevo') return;
     try {
       await tratamientoEditApi.setPrimaryPhoto(id, photoId, userEmail);
+      setActiveFotoId(photoId);
+      refreshPhotos();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReorderPhoto = async (dragId: number | string, dropId: number | string) => {
+    if (!userEmail || id === 'nuevo') return;
+    try {
+      await tratamientoEditApi.setPrimaryPhoto(id, Number(dragId), userEmail);
+      setActiveFotoId(dragId);
       refreshPhotos();
     } catch (e) {
       console.error(e);
@@ -236,11 +264,14 @@ export function useTratamientoEdit(id: string) {
     plantasParteCatalog,
     photos,
     refreshPhotos,
+    activeFotoId,
+    setActiveFotoId,
     handleChange,
     handleMultiSelectChange,
     handleParteToggle,
     handleDelete,
     handleSetPrimaryPhoto,
+    handleReorderPhoto,
     autoSave
   };
 }

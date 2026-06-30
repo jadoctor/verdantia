@@ -43,7 +43,7 @@ export async function GET(request: Request) {
         DATE_ADD(m.chatmensajesfechacreacion, INTERVAL 2 HOUR) AS fecha,
         m.xchatmensajesidusuarios AS usuario_id,
         u.usuariosnombre AS usuario_nombre,
-        u.usuariospoblacion AS usuario_poblacion,
+        COALESCE(p.poblacionesnombre, d.direccionespoblacion) AS usuario_poblacion,
         u.usuariosicono AS usuario_avatar,
         (
           SELECT datosadjuntosruta
@@ -73,6 +73,8 @@ export async function GET(request: Request) {
         IF(m.xchatmensajesidusuarios = ?, 1, 0) AS is_mine
       FROM chatmensajes m
       LEFT JOIN usuarios u ON m.xchatmensajesidusuarios = u.idusuarios
+      LEFT JOIN direcciones d ON d.xdireccionesidusuarios = u.idusuarios AND d.direccionestipo = 'personal' AND d.direccionesesprincipal = 1
+      LEFT JOIN poblaciones p ON d.xdireccionesidpoblaciones = p.idpoblaciones
       LEFT JOIN usuarioslogros ul ON u.idusuarios = ul.xusuarioslogrosidusuarios AND ul.usuarioslogrosfechafin IS NULL
       LEFT JOIN logros r ON ul.xusuarioslogrosidlogros = r.idlogros
       WHERE m.xchatmensajesidchatconversaciones = ? AND m.chatmensajeseliminadosino = 0

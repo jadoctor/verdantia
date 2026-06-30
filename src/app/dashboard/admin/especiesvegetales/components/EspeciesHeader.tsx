@@ -2,8 +2,11 @@ import React from 'react';
 import PremiumAddButton from '@/components/ui/PremiumAddButton';
 import PremiumDevInsights from '@/components/ui/PremiumDevInsights';
 import PremiumSubheader from '@/components/ui/PremiumSubheader';
-import PremiumFilterTabs, { FilterOption } from '@/components/ui/PremiumFilterTabs';
+import PremiumFilterTabs from '@/components/ui/PremiumFilterTabs';
 import PremiumBackButton from '@/components/ui/PremiumBackButton';
+import PremiumDropdownFilter from '@/components/ui/PremiumDropdownFilter';
+import PremiumSegmentedFilter from '@/components/ui/PremiumSegmentedFilter';
+
 interface EspeciesHeaderProps {
   filterTipo: string;
   setFilterTipo: (t: string) => void;
@@ -71,67 +74,33 @@ export default function EspeciesHeader({
             isMobile={isMobile}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', minWidth: isMobile ? '60px' : 'auto' }}>Familia:</span>
-            <select
-              value={filterFamilia}
-              onChange={(e) => setFilterFamilia(e.target.value)}
-              style={{
-                width: isMobile ? '100%' : 'auto',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.3)',
-                background: 'rgba(255,255,255,0.1)',
-                color: 'white',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="" style={{ color: 'black' }}>🌱 Todas las familias</option>
-              {uniqueFamilias.map(f => (
-                <option key={f.id} value={f.id} style={{ color: 'black' }}>
-                  {f.emoji} {f.nombre} ({f.count})
-                </option>
-              ))}
-            </select>
-          </div>
+          <PremiumDropdownFilter
+            label="Familia:"
+            placeholder="🌱 Todas las familias"
+            options={[
+              { value: '', label: 'Todas las familias', emoji: '🌱' },
+              ...uniqueFamilias.map(f => ({
+                value: f.id,
+                label: f.nombre,
+                emoji: f.emoji,
+                count: f.count
+              }))
+            ]}
+            value={filterFamilia}
+            onChange={setFilterFamilia}
+            isMobile={isMobile}
+          />
 
-          {/* Filtro Activo/Inactivo */}
-          <div style={{ display: 'inline-flex', background: 'rgba(255, 255, 255, 0.15)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.25)', gap: '4px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
-            {(['activas', 'inactivas', 'todas'] as const).map((opt) => {
-              const isActive = filter === opt;
-              const labels = {
-                activas: `🟢 Activas (${countsStatus.activas || 0})`,
-                inactivas: `🔴 Inactivas (${countsStatus.inactivas || 0})`,
-                todas: `👁️ Todas (${countsStatus.todas || 0})`
-              };
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setFilter(opt)}
-                  style={{
-                    flex: isMobile ? 1 : 'none',
-                    padding: isMobile ? '8px 4px' : '6px 14px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: isActive ? 'white' : 'transparent',
-                    color: isActive ? '#0f766e' : 'white',
-                    fontWeight: 'bold',
-                    fontSize: isMobile ? '0.8rem' : '0.85rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    textAlign: 'center'
-                  }}
-                >
-                  {labels[opt]}
-                </button>
-              );
-            })}
-          </div>
+          <PremiumSegmentedFilter
+            options={[
+              { value: 'activas', label: '🟢 Activas', count: countsStatus.activas },
+              { value: 'inactivas', label: '🔴 Inactivas', count: countsStatus.inactivas },
+              { value: 'todas', label: '👁️ Todas', count: countsStatus.todas }
+            ]}
+            value={filter}
+            onChange={setFilter}
+            isMobile={isMobile}
+          />
         </div>
       </PremiumSubheader>
     </>

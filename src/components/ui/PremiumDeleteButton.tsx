@@ -8,21 +8,23 @@ interface PremiumDeleteButtonProps {
   isMobile?: boolean;
 }
 
-export default function PremiumDeleteButton({ onClick, text = '🗑️ Eliminar Registro', isMobile = false }: PremiumDeleteButtonProps) {
+export default function PremiumDeleteButton({ onClick, text = 'Eliminar', isMobile = false }: PremiumDeleteButtonProps) {
   return (
     <button 
       onClick={onClick}
       style={{
-        padding: '10px 20px', 
-        borderRadius: '12px', 
+        height: '36px',
+        padding: '0 16px', 
+        borderRadius: '8px', 
         background: 'rgba(255, 255, 255, 0.95)', 
         color: '#dc2626',
         border: '1px solid rgba(255, 255, 255, 0.4)',
         backdropFilter: 'blur(10px)',
         cursor: 'pointer', 
         fontWeight: '800', 
-        fontSize: '0.9rem',
+        fontSize: '0.85rem',
         letterSpacing: '0.03em',
+        whiteSpace: 'nowrap',
         boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.15)', 
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
         display: 'flex',

@@ -16,7 +16,9 @@ export default function AnalisisDashboardsPage() {
     sortDirection,
     maxLines,
     totalLines,
+    largestDashboardFile,
     loading,
+    lastAnalyzedAt,
     expanded,
     analysisData,
     completedDates,
@@ -47,6 +49,7 @@ export default function AnalisisDashboardsPage() {
           totalDashboards={sortedDashboards.length}
           totalLines={totalLines}
           maxLines={maxLines}
+          largestDashboardFile={largestDashboardFile}
           isMobile={isMobile}
         />
 
@@ -88,6 +91,7 @@ export default function AnalisisDashboardsPage() {
             handleSort={handleSort}
             maxLines={maxLines}
             loading={loading}
+            lastAnalyzedAt={lastAnalyzedAt}
             expanded={expanded}
             analysisData={analysisData}
             completedDates={completedDates}
@@ -104,4 +108,4 @@ export default function AnalisisDashboardsPage() {
   );
 }
 
-// reload 28/06/2026 18:31:00
+// reload 2026-06-29 23:56:40

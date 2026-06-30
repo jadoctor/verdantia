@@ -3,9 +3,7 @@
 /* ═══════════════════════════════════════════ */
 
 .perfil-page {
-  max-width: 1200px;
   width: 100%;
-  margin: 0 auto;
   padding: 0 16px;
   box-sizing: border-box;
 }
@@ -211,8 +209,8 @@
   background: white;
   border-radius: 16px;
   width: 90vw;
-  max-width: 900px;
-  max-height: 85vh;
+  max-width: 480px;
+  max-height: 90vh;
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
   display: flex;
@@ -222,7 +220,7 @@
 .photo-editor-header {
   background: var(--storm-primary);
   color: white;
-  padding: 16px 24px;
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -230,7 +228,7 @@
 
 .photo-editor-header h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
 }
 
 .photo-editor-header-actions {
@@ -238,52 +236,47 @@
   gap: 8px;
 }
 
-.photo-editor-header-actions .btn-ghost {
-  color: rgba(255,255,255,0.8);
-  border-color: rgba(255,255,255,0.25);
-}
-
-.photo-editor-header-actions .btn-ghost:hover {
-  color: white;
-  background: rgba(255,255,255,0.1);
-}
-
 .photo-editor-body {
   display: flex;
+  flex-direction: column;
   flex: 1;
-  overflow: hidden;
-  max-height: 70vh;
+  overflow-y: auto;
+  padding: 20px;
+  gap: 20px;
 }
 
 /* Preview */
-.photo-editor-preview {
-  flex: 1;
-  background: #0f172a;
+.photo-editor-preview-container {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.photo-editor-preview {
   position: relative;
   overflow: hidden;
+  border-radius: 12px;
+  background: #0f172a;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 240px;
+  height: 320px;
 }
 
 .photo-editor-preview > img {
-  width: 90%;
-  max-width: 400px;
-  aspect-ratio: 3/4;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
 /* Rejilla Foto Carnet (3:4) */
 .photo-editor-grid-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 400px;
-  aspect-ratio: 3/4;
-  border: 2px dashed rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
   pointer-events: none;
   z-index: 2;
 }
@@ -315,20 +308,15 @@
   left: 66.66%;
 }
 
-
-
-
-
-/* Panel lateral */
-.photo-editor-panel {
-  width: 260px;
-  background: white;
-  padding: 24px;
-  border-left: 1px solid #e2e8f0;
+/* Controles */
+.photo-editor-controls {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .editor-control label {
@@ -355,18 +343,6 @@
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
-}
-
-@media (max-width: 768px) {
-  .photo-editor-body {
-    flex-direction: column;
-  }
-  .photo-editor-panel {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #e2e8f0;
-    max-height: 40vh;
-  }
 }
 
 /* ── Labels ── */
@@ -1107,40 +1083,42 @@ details[open] > summary::before {
 .profile-tabs-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  border-bottom: 2px solid #e2e8f0;
-  margin-bottom: 28px;
-  padding-bottom: 8px;
+  gap: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
   width: 100%;
-  box-sizing: border-box;
 }
 
 /* Tab buttons */
 .profile-tab-btn {
-  flex-grow: 1;
-  text-align: center;
-  padding: 12px 20px;
-  border-radius: 14px;
+  padding: 8px 18px;
+  border-radius: 999px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #475569;
-  font-weight: 700;
-  font-size: 0.92rem;
+  font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .profile-tab-btn:hover {
-  background-color: #f1f5f9;
+  background: #ffffff;
   color: #0f766e;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .profile-tab-btn.is-active {
-  border-color: transparent;
-  background: linear-gradient(135deg, #0f766e, #0d9488);
-  color: white;
-  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.25);
+  background: #ffffff;
+  color: #0f766e;
+  border-color: #0f766e;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
+  font-weight: 700;
 }
 
 /* Responsiveness */
@@ -1169,25 +1147,12 @@ details[open] > summary::before {
   }
   
   .profile-tabs-nav {
-    gap: 8px;
+    gap: 6px;
+    padding-bottom: 12px;
   }
   
   .profile-tab-btn {
-    padding: 10px 14px;
-    font-size: 0.85rem;
-    border-radius: 10px;
-  }
-}
-
-@media (max-width: 576px) {
-  .profile-tab-btn {
-    width: calc(50% - 4px); /* Two buttons per row for tight viewports */
-    flex-grow: 1;
-  }
-}
-
-@media (max-width: 380px) {
-  .profile-tab-btn {
-    width: 100%; /* Single column on tiny screens */
+    padding: 6px 12px;
+    font-size: 0.8rem;
   }
 }

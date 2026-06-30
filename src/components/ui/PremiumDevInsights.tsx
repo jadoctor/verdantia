@@ -18,6 +18,7 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
   const [analyzing, setAnalyzing] = useState(false);
   const [hasUnanalyzedChanges, setHasUnanalyzedChanges] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const autoReanalyzedRef = useRef(false);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -36,6 +37,40 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
     }
   }, [userEmail, modulePath]);
 
+  const normalizeMetrics = (rawMetrics: any) => {
+    if (!rawMetrics) return null;
+    const raw = rawMetrics.raw || rawMetrics;
+    const codeScore =
+      typeof rawMetrics.codeScore === 'number'
+        ? rawMetrics.codeScore
+        : typeof raw?.code?.score === 'number'
+          ? raw.code.score
+          : rawMetrics.codeClean
+            ? 100
+            : 0;
+    const responsiveScore =
+      typeof rawMetrics.responsiveScore === 'number'
+        ? rawMetrics.responsiveScore
+        : typeof raw?.responsiveness?.score === 'number'
+          ? raw.responsiveness.score
+          : 0;
+    const premiumScore =
+      typeof rawMetrics.premiumScore === 'number'
+        ? rawMetrics.premiumScore
+        : typeof raw?.premium?.score === 'number'
+          ? raw.premium.score
+          : 0;
+
+    return {
+      ...rawMetrics,
+      raw,
+      codeScore,
+      responsiveScore,
+      premiumScore,
+      codeClean: codeScore === 100
+    };
+  };
+
   const loadCachedMetrics = async () => {
     if (!userEmail) return;
     setLoading(true);
@@ -45,8 +80,23 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
       });
       const data = await res.json();
       if (data.success && data.metrics) {
-        setMetrics(data.metrics);
-        setHasUnanalyzedChanges(data.hasUnanalyzedChanges || false);
+        setMetrics(normalizeMetrics(data.metrics));
+        const unanalyzed = data.hasUnanalyzedChanges || false;
+        setHasUnanalyzedChanges(unanalyzed);
+        
+        // Si hay cambios no analizados, lanzar el reanalisis automatico en segundo plano
+        if (unanalyzed && !autoReanalyzedRef.current) {
+          autoReanalyzedRef.current = true;
+          setTimeout(() => {
+            handleReanalyze();
+          }, 150);
+        }
+      } else if (!data.metrics && !autoReanalyzedRef.current) {
+        // Si no hay métricas, analizar por primera vez automaticamente
+        autoReanalyzedRef.current = true;
+        setTimeout(() => {
+          handleReanalyze();
+        }, 150);
       }
     } catch (err) {
       console.error('Error loading metrics', err);
@@ -69,9 +119,13 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
       // 2. Extraer métricas clave
       const totalLines = analysisData.plan ? analysisData.totalLines || 0 : (analysisData.lines || 0);
       const responsiveScore = analysisData.responsiveness ? analysisData.responsiveness.score : 0;
+      const codeScore = analysisData.code ? analysisData.code.score : (analysisData.plan ? (analysisData.plan.every((p: string) => p.startsWith('✅')) ? 100 : 0) : 0);
+      const premiumScore = analysisData.premium ? analysisData.premium.score : 0;
       const newMetrics = {
         lines: totalLines,
+        codeScore,
         responsiveScore: responsiveScore,
+        premiumScore,
         codeClean: analysisData.plan ? analysisData.plan.every((p: string) => p.startsWith('✅')) : false,
         raw: analysisData
       };
@@ -91,7 +145,7 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
       const saveData = await resSave.json();
       
       if (saveData.success) {
-        setMetrics(saveData.metrics);
+        setMetrics(normalizeMetrics(saveData.metrics));
         setHasUnanalyzedChanges(false);
       }
     } catch (err) {
@@ -119,7 +173,7 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
       `}</style>
       <button
         className={hasUnanalyzedChanges ? 'dev-insights-outdated' : ''}
-        onClick={() => setIsOpen(true)}
+        onClick={(e) => { setIsOpen(true); handleReanalyze(e); }}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -147,9 +201,9 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
         
         {metrics ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '8px', paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.3)' }}>
-            <span title="Código" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>💻{metrics.codeClean ? '🟢' : '🟡'}</span>
-            <span title="Responsive" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>📱{metrics.responsiveScore >= 80 ? '🟢' : (metrics.responsiveScore >= 50 ? '🟡' : '🔴')}</span>
-            <span title="Premium" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>👑{metrics.raw?.premium?.score >= 80 ? '🟢' : (metrics.raw?.premium?.score >= 50 ? '🟡' : '🔴')}</span>
+            <span title={`Código: ${metrics.codeScore ?? 0}%`} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>💻 {metrics.codeScore ?? 0}%</span>
+            <span title={`Responsive: ${metrics.responsiveScore ?? 0}%`} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>📱 {metrics.responsiveScore ?? 0}%</span>
+            <span title={`Premium: ${metrics.premiumScore ?? 0}%`} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>👑 {metrics.premiumScore ?? 0}%</span>
             {hasUnanalyzedChanges && <span style={{ position: 'relative', top: '-4px', fontSize: '0.6rem', marginLeft: '4px' }}>⚠️</span>}
           </div>
         ) : (
@@ -162,28 +216,48 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
           <PremiumModalHeader
             title={<>🛠️ Dashboard de Mantenimiento <span style={{ fontSize: '0.8rem', opacity: 0.8, marginLeft: '8px' }}>({modulePath})</span></>}
             gradient="linear-gradient(135deg, #0f172a, #1e293b)"
-            onClose={() => setIsOpen(false)}
             actions={
-              <button
-                onClick={handleReanalyze}
-                disabled={analyzing}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: analyzing ? '#475569' : '#0284c7',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '0.85rem',
-                  cursor: analyzing ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {analyzing ? '⏳ Analizando...' : '🔄 Re-analizar'}
-              </button>
+              <>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ✖ Cancelar
+                </button>
+                <button
+                  onClick={handleReanalyze}
+                  disabled={analyzing}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: analyzing ? '#475569' : '#0284c7',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    cursor: analyzing ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {analyzing ? '⏳ Analizando...' : '🔄 Re-analizar'}
+                </button>
+              </>
             }
           />
           
@@ -207,3 +281,5 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
     </>
   );
 }
+
+// refresh trigger

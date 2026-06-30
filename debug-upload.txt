@@ -1,0 +1,12 @@
+POST /photos called at 2026-06-30T19:18:33.975Z.
+Body: {"rawStoragePath":"uploads/temp/temp-ai-1782847111179-Tomatesrojosmaduroscontierrayrocosobremaderarsticadehuerto.webp","especieNombre":"Tomate","replacePhotoId":276}
+replacePhotoId: 276
+---
+POST /photos called at 2026-06-30T19:19:23.677Z.
+Body: {"rawStoragePath":"uploads/temp/temp-ai-1782847161558-Tomatesrojosmaduroscongotasdeaguasobremaderaenuninvernaderosoleado.webp","especieNombre":"Tomate","replacePhotoId":276}
+replacePhotoId: 276
+---
+POST /photos called at 2026-06-30T19:22:21.084Z.
+Body: {"rawStoragePath":"uploads/temp/temp-ai-1782847339301-Tomatesrojosmadurossobremesademaderacontierrayhuertosoleado.webp","especieNombre":"Tomate","replacePhotoId":276}
+replacePhotoId: 276
+---

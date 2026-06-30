@@ -31,7 +31,7 @@ function analyzePremium(content: string, relPath: string) {
   const missingPremium = premiumComponents.filter(c => !content.includes(c));
 
   // 2. Determinar tipo de página
-  const isEditPage = relPath.includes('[id]') || relPath.includes('nueva') || relPath.includes('nuevo');
+  const isEditPage = relPath.includes('[id]') || relPath.includes('nueva') || relPath.includes('nuevo') || relPath.includes('Form');
 
   // 3. Reglas obligatorias del Encabezado Premium (Regla 7)
   if (!content.includes('PremiumSubheader')) {
@@ -70,9 +70,26 @@ function analyzePremium(content: string, relPath: string) {
         score -= 10;
       }
     }
-    if (content.includes('PremiumSubheader') && content.includes('subtitle=')) {
-      diagnostics.push('🚫 Subtítulo prohibido en listado: Los dashboards de listado NO deben tener subtítulos descriptivos (Regla 7).');
+    if (!content.includes('PremiumLoadingOverlay')) {
+      diagnostics.push('🌀 Falta `PremiumLoadingOverlay`: Toda tabla o listado dinámico en carga debe utilizar el componente de overlay y spinner Premium unificado para evitar flickering (Regla 7).');
       score -= 10;
+    }
+    if (!content.includes('PremiumSegmentedFilter')) {
+      diagnostics.push('🏷️ Falta `PremiumSegmentedFilter`: Los selectores de estado exclusivo deben utilizar el componente de filtro segmentado Premium para consistencia visual (Regla 7).');
+      score -= 10;
+    }
+    if (!content.includes('PremiumDropdownFilter')) {
+      diagnostics.push('🌐 Falta `PremiumDropdownFilter`: Los selectores de filtro secundario deben utilizar el componente dropdown Premium para evitar selects nativos del navegador (Regla 7).');
+      score -= 10;
+    }
+    const linesArray = content.split('\n');
+    const subheaderIdx = linesArray.findIndex(l => l.includes('<PremiumSubheader'));
+    if (subheaderIdx !== -1) {
+      const headerLines = linesArray.slice(subheaderIdx, subheaderIdx + 40).join('\n');
+      if (headerLines.includes('subtitle=')) {
+        diagnostics.push('🚫 Subtítulo prohibido en listado: Los dashboards de listado NO deben tener subtítulos descriptivos (Regla 7).');
+        score -= 10;
+      }
     }
   }
 
@@ -82,13 +99,31 @@ function analyzePremium(content: string, relPath: string) {
       diagnostics.push('🗑️ Falta `PremiumDeleteButton`: Las páginas de edición deben incluir el botón de eliminación Premium (Regla 8).');
       score -= 10;
     }
-    if (content.includes('PremiumSubheader') && !content.includes('subtitle=')) {
-      diagnostics.push('📝 Falta `subtitle` en PremiumSubheader: Las páginas de edición requieren subtítulo contextual (ej. "✏️ Editar ... · ID del Registro: ...") según Regla 8.');
-      score -= 10;
+    if (content.includes('Editor') && !content.includes('PremiumUndoButton')) {
+      diagnostics.push('↺ Falta `PremiumUndoButton`: Los modales o páginas de edición con opciones revertibles deben usar el botón de deshacer Premium (Regla 9).');
+      score -= 5;
     }
-    if (content.includes('saveStatus') && !content.includes('Guardando') && !content.includes('⏳')) {
-      diagnostics.push('💾 Falta indicador de autoguardado: Las páginas de edición deben mostrar "⏳ Guardando..." / "✅ Guardado" en el bloque de acciones (Regla 8).');
-      score -= 10;
+    // Comprobaciones localizadas solo dentro del bloque del PremiumSubheader
+    const linesArray = content.split('\n');
+    const subheaderIdx = linesArray.findIndex(l => l.includes('<PremiumSubheader'));
+    if (subheaderIdx !== -1) {
+      const headerLines = linesArray.slice(subheaderIdx, subheaderIdx + 40).join('\n');
+      
+      if (headerLines.includes('subtitle=')) {
+        diagnostics.push('🚫 Subtítulo prohibido: Las páginas de edición NO deben tener subtítulos descriptivos debajo del título principal (Regla 8).');
+        score -= 15;
+      }
+      
+      if (headerLines.includes('Guardando') || headerLines.includes('⏳ Guardando')) {
+        diagnostics.push('🚫 Indicadores prohibidos: El bloque de acciones del Subheader debe estar completamente limpio. Queda PROHIBIDO incluir textos redundantes como "⏳ Guardando..." (Regla 8).');
+        score -= 15;
+      }
+    }
+    
+    // Auto-detección de galerías antiguas vs PremiumHeroCarousel
+    if (!content.includes('PremiumHeroCarousel') && (content.includes('MediaManager') || content.includes('gallery') || content.includes('Dropzone'))) {
+      diagnostics.push('📸 Falta `PremiumHeroCarousel`: Se detectó gestión de fotografías (MediaManager/Dropzone), pero no se está instanciando el componente maestro unificado obligatorio (Regla 9).');
+      score -= 15;
     }
   }
 
@@ -133,8 +168,8 @@ function analyzeResponsiveness(content: string, relPath: string) {
   const diagnostics: string[] = [];
   let score = 100;
 
-  // 1. Fixed pixel widths/minWidths/maxWidths >= 400px
-  const fixedWidthRegex = /(?:width|minWidth|maxWidth)\s*:\s*(?:['"](\d+)px['"]|(\d+))/g;
+  // 1. Fixed pixel widths/minWidths >= 400px (Ignoramos maxWidth porque es una práctica responsiva válida)
+  const fixedWidthRegex = /(?<!max-)(?:width|minWidth)\s*:\s*(?:['"](\d+)px['"]|(\d+))/g;
   let match;
   const largeWidths: number[] = [];
   while ((match = fixedWidthRegex.exec(content)) !== null) {
@@ -167,8 +202,10 @@ function analyzeResponsiveness(content: string, relPath: string) {
   let hasRigidMinMax = false;
   while ((gridMatch = gridRegex.exec(content)) !== null) {
     const gridVal = gridMatch[1];
-    if ((gridVal.includes('repeat') && /\d+/.test(gridVal) && !gridVal.includes('auto-fit') && !gridVal.includes('auto-fill')) ||
-        (gridVal.split(/\s+/).length > 2 && !gridVal.includes('auto-fit') && !gridVal.includes('auto-fill'))) {
+    // Detección de grids rígidos sin flex-wrap/auto-fit
+    const isDataGrid = gridVal.includes('repeat(12') || gridVal.includes('80px 180px 1fr 1fr');
+    if (!isDataGrid && ((gridVal.includes('repeat') && /\d+/.test(gridVal) && !gridVal.includes('auto-fit') && !gridVal.includes('auto-fill')) ||
+        (gridVal.split(/\s+/).length > 2 && !gridVal.includes('auto-fit') && !gridVal.includes('auto-fill')))) {
       hasFixedGrid = true;
     }
     // Detección de minmax() rígido sin min(100%, ...)
@@ -244,10 +281,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Parámetro path requerido' }, { status: 400 });
   }
 
-  // Safety: only allow files inside src/app/dashboard
+  // Safety: only allow files inside src/app/dashboard or src/components
   const safePath = relPath.replace(/\.\./g, '').replace(/\\/g, '/');
-  const fullPath = path.join(process.cwd(), 'src', 'app', 'dashboard', safePath);
-
+  let fullPath = path.join(process.cwd(), 'src', 'app', 'dashboard', safePath);
+  if (safePath.startsWith('components/')) {
+    fullPath = path.join(process.cwd(), 'src', safePath);
+  }
   if (!fs.existsSync(fullPath)) {
     return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 });
   }
@@ -293,16 +332,30 @@ export async function GET(request: Request) {
     if (useMemoCount === 0 && totalLines > 1000) {
       plan.push(`⚡ Considerar añadir useMemo/useCallback en cálculos costosos para evitar re-renders innecesarios dado el tamaño del componente.`);
     }
+
+    // Calcular score de código (100 = limpio, menor = más refactorizaciones necesarias)
+    const codeScore = Math.max(0, 100 - plan.length * 12);
+    const isCodeClean = plan.length === 0;
+
     if (plan.length === 0) {
       plan.push('✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes.');
     }
 
+    const codeImprovements = isCodeClean
+      ? `Antigravity, el análisis estático no detectó refactorizaciones urgentes en '${relPath}'. Realiza una inspección general en busca de micro-mejoras (nombres de variables, eliminación de imports no usados, simplificación de condicionales).`
+      : `Antigravity, ejecuta el plan de refactorización del archivo '${relPath}'. Analiza el código, extrae los custom hooks necesarios, los componentes reutilizables y los servicios de API. Hazlo de forma segura, paso a paso, sin romper la funcionalidad existente del dashboard.`;
+
     let expandedContent = content;
-    const importRegex = /import\s+(?:{[^}]+}|\w+)\s+from\s+['"](\.\/[^'"]+)['"]/g;
+    const importRegex = /import\s+(?:{[^}]+}|\w+)\s+from\s+['"]((?:\.\/|@\/)[^'"]+)['"]/g;
     let match;
     while ((match = importRegex.exec(content)) !== null) {
       try {
-        const compPath = path.join(path.dirname(fullPath), match[1] + '.tsx');
+        let compPath = '';
+        if (match[1].startsWith('@/')) {
+          compPath = path.join(process.cwd(), 'src', match[1].substring(2) + '.tsx');
+        } else {
+          compPath = path.join(path.dirname(fullPath), match[1] + '.tsx');
+        }
         if (fs.existsSync(compPath)) {
           expandedContent += '\n' + fs.readFileSync(compPath, 'utf8');
         }
@@ -327,6 +380,12 @@ export async function GET(request: Request) {
         commentedLines,
         todos: todoCount,
       },
+      code: {
+        score: codeScore,
+        isClean: isCodeClean,
+        diagnostics: plan.map((p, i) => `${i + 1}. ${p}`),
+        improvementsForAgent: codeImprovements
+      },
       plan,
       responsiveness,
       premium
@@ -336,3 +395,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Error al analizar el archivo' }, { status: 500 });
   }
 }
+
+// refresh trigger 1
+// refresh trigger 2

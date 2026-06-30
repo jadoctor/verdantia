@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Hot reload for centering buttons
 import React from 'react';
 
 interface PremiumModalHeaderProps {
@@ -19,21 +19,23 @@ export default function PremiumModalHeader({
       background: gradient,
       padding: '20px 24px',
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: title ? 'space-between' : 'center',
       alignItems: 'center',
       gap: '12px',
       flexShrink: 0
     }}>
-      <h2 style={{
-        color: 'white',
-        margin: 0,
-        fontSize: '1.2rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        {title}
-      </h2>
+      {title && (
+        <h2 style={{
+          color: 'white',
+          margin: 0,
+          fontSize: '1.2rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          {title}
+        </h2>
+      )}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {actions}
         

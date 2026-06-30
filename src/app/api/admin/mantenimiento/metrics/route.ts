@@ -46,7 +46,28 @@ export async function GET(request: Request) {
   const modulePath = searchParams.get('path'); // e.g. "admin/especies/page.tsx"
 
   if (!modulePath) {
-    return NextResponse.json({ error: 'Falta parámetro path' }, { status: 400 });
+    const allMetrics = readMetrics();
+    const unanalyzedFiles: string[] = [];
+    
+    Object.keys(allMetrics).forEach((fileKey) => {
+      const metric = allMetrics[fileKey];
+      if (metric && metric.last_updated) {
+        const safePath = fileKey.replace(/\.\./g, '').replace(/\\/g, '/');
+        let fullPath = path.join(process.cwd(), 'src', 'app', 'dashboard', safePath);
+        if (safePath.startsWith('components/')) {
+          fullPath = path.join(process.cwd(), 'src', safePath);
+        }
+        if (fs.existsSync(fullPath)) {
+          const stats = fs.statSync(fullPath);
+          const lastModified = new Date(stats.mtime).getTime();
+          const lastAnalyzed = new Date(metric.last_updated).getTime();
+          if (lastModified > lastAnalyzed) {
+            unanalyzedFiles.push(fileKey);
+          }
+        }
+      }
+    });
+    return NextResponse.json({ success: true, metrics: allMetrics, unanalyzedFiles });
   }
 
   const allMetrics = readMetrics();

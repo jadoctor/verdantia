@@ -1,5 +1,10 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase/config';
+import { signOut } from 'firebase/auth';
 import { useProfileData } from '../hooks/useProfileData';
+import PremiumSubheader from '@/components/ui/PremiumSubheader';
+import PremiumDevInsights from '@/components/ui/PremiumDevInsights';
 
 interface ProfileHeaderProps {
   profileData: ReturnType<typeof useProfileData>;
@@ -7,12 +12,24 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ profileData, onBackToInicio }: ProfileHeaderProps) {
-  const { profile, nombre, apellidos, nombreUsuario } = profileData;
+  const router = useRouter();
+  const { profile, nombre, apellidos, nombreUsuario, saving } = profileData;
   if (!profile) return null;
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/login');
+    } catch (e) {
+      console.error('Error al cerrar sesión', e);
+    }
+  };
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   return (
     <>
-      {/* ── Navegación (Estándar de Especies) ── */}
+      {/* ── Navegación Hierárquica Superior ── */}
       <div style={{ marginBottom: '16px', padding: '0 4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button
           type="button"
@@ -36,47 +53,52 @@ export function ProfileHeader({ profileData, onBackToInicio }: ProfileHeaderProp
         </button>
       </div>
 
-      {/* ── Subheader Integrado (Estándar de Especies) ── */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #0f766e, #10b981)',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          marginBottom: '24px',
-          color: 'white',
-          boxShadow: '0 4px 15px rgba(15, 118, 110, 0.15)'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {nombre || 'Mi Perfil'} {apellidos || ''}
-            </h1>
-            <p style={{ margin: '6px 0 0', opacity: 0.9, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>@{nombreUsuario || 'usuario'}</span>
-              <span>·</span>
-              <span>{profile.email}</span>
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <span
+      {/* ── Encabezado Premium Contextual ── */}
+      <PremiumSubheader
+        title={
+          <>
+            {profile.icono && !profile.icono.startsWith('mdi-') ? profile.icono : '👤'} {nombre || 'Mi Perfil'} {apellidos || ''}
+          </>
+        }
+        isMobile={isMobile}
+        actions={
+          <>
+            <button
+              onClick={handleLogout}
               style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontWeight: 750,
-                fontSize: '0.78rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
+                background: 'rgba(255, 255, 255, 0.95)',
+                color: '#dc2626',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '8px 16px',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.15)';
+                e.currentTarget.style.background = '#ffffff';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
               }}
             >
-              👑 {profile.suscripcion || 'Gratuito'}
-            </span>
-          </div>
-        </div>
-      </div>
+              🚪 Cerrar Sesión
+            </button>
+          </>
+        }
+      >
+        <PremiumDevInsights modulePath="dashboard/perfil/page.tsx" />
+      </PremiumSubheader>
     </>
   );
 }

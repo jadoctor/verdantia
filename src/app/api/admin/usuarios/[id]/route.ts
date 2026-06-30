@@ -32,9 +32,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
            AND xdatosadjuntosidvariedadesvegetales IS NULL
          ORDER BY datosadjuntosesprincipal DESC, datosadjuntosorden ASC, datosadjuntosfechacreacion DESC 
          LIMIT 1) AS fotoPrincipal,
-        u.usuarioscodigopostal AS codigoPostal,
-        u.usuariospoblacion AS poblacion,
-        u.usuariospais AS pais,
+        COALESCE(p.poblacionescodigopostal, d.direccionescodigopostal) AS codigoPostal,
+        COALESCE(p.poblacionesnombre, d.direccionespoblacion) AS poblacion,
+        COALESCE(pa.paisesnombre, d.direccionespais) AS pais,
         u.usuariosfechadenacimiento AS fechaNacimiento,
         u.usuariosfechacreacion AS fechaRegistro,
         u.usuariosconsentimientofoto AS consentimientoFoto,
@@ -47,6 +47,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
        FROM usuarios u
        LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
        LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
+       LEFT JOIN direcciones d ON d.xdireccionesidusuarios = u.idusuarios AND d.direccionestipo = 'personal' AND d.direccionesesprincipal = 1
+       LEFT JOIN poblaciones p ON d.xdireccionesidpoblaciones = p.idpoblaciones
+       LEFT JOIN provincias pr ON p.xpoblacionesidprovincias = pr.idprovincias
+       LEFT JOIN paises pa ON pr.xprovinciasidpaises = pa.idpaises
        WHERE u.idusuarios = ?
        LIMIT 1`,
       [id]

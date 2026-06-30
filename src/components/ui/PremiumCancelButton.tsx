@@ -21,19 +21,21 @@ export default function PremiumCancelButton({
       onClick={onClick}
       disabled={disabled}
       style={{ 
-        padding: '8px 16px', 
+        height: '36px',
+        padding: '0 16px', 
         background: '#ffffff', 
         border: '1px solid #e2e8f0', 
         borderRadius: '8px', 
         color: '#475569', 
         fontWeight: '600', 
         cursor: disabled ? 'not-allowed' : 'pointer', 
-        fontSize: '0.9rem',
+        fontSize: '0.85rem',
         opacity: disabled ? 0.6 : 1,
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
+        whiteSpace: 'nowrap',
         ...style
       }}
       onMouseOver={evt => {

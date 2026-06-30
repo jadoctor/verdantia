@@ -47,8 +47,16 @@ export function DatosPersonalesTab({ profileData }: DatosPersonalesTabProps) {
     autoSaveField,
     autoSaveMultiple,
     handleSexoChange,
-    handleVerifyEmail
+    handleVerifyEmail,
+    nif,
+    setNif,
+    razonSocial,
+    setRazonSocial,
+    tipoContribuyente,
+    setTipoContribuyente
   } = profileData;
+
+  const [collapsedFiscal, setCollapsedFiscal] = useState(true);
 
   if (!profile) return null;
 
@@ -663,6 +671,79 @@ export function DatosPersonalesTab({ profileData }: DatosPersonalesTabProps) {
                       placeholder="+34 600 000 000" />
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── DATOS FISCALES Y FACTURACIÓN ── */}
+        <div className="fiscal-zone" style={{ marginTop: '16px' }}>
+          <div className="optional-zone-header" onClick={() => setCollapsedFiscal(!collapsedFiscal)} style={{ cursor: 'pointer', userSelect: 'none', background: '#f8fafc', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0' }}>
+            <span style={{ fontWeight: 600, color: '#334155' }}>💼 Datos Fiscales y de Facturación</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <small style={{ color: '#475569', opacity: 0.8, fontSize: '0.8rem', fontWeight: 600 }}>{collapsedFiscal ? 'Mostrar' : 'Ocultar'}</small>
+              <svg 
+                style={{ 
+                  transform: collapsedFiscal ? 'rotate(-90deg)' : 'rotate(0deg)', 
+                  transition: 'transform 0.25s ease',
+                  width: '16px',
+                  height: '16px',
+                  color: '#475569'
+                }}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+
+          {!collapsedFiscal && (
+            <div style={{ animation: 'fadeIn 0.25s ease-out', padding: '16px 0' }}>
+              <div className="form-grid">
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label htmlFor="tipo_contribuyente" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span>Tipo de Cuenta Fiscal</span>
+                  </label>
+                  <select id="tipo_contribuyente" className="form-input" value={tipoContribuyente}
+                    onChange={e => {
+                      setTipoContribuyente(e.target.value);
+                      autoSaveField('tipoContribuyente', e.target.value);
+                      if (e.target.value === 'particular') {
+                        setRazonSocial('');
+                        autoSaveField('razonSocial', '');
+                      }
+                    }}>
+                    <option value="particular">Particular</option>
+                    <option value="autonomo">Autónomo</option>
+                    <option value="empresa">Empresa</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="nif" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span>NIF / CIF / NIE</span>
+                  </label>
+                  <input id="nif" type="text" className="form-input" value={nif}
+                    onChange={e => setNif(e.target.value)} 
+                    onBlur={() => autoSaveField('nif', nif)}
+                    placeholder="Documento de identidad" />
+                </div>
+
+                {tipoContribuyente !== 'particular' && (
+                  <div className="form-group">
+                    <label htmlFor="razon_social" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span>Razón Social</span>
+                      <span className={`required-badge ${razonSocial.trim() ? 'filled' : 'pending'}`}>{razonSocial.trim() ? '✓' : 'Requerido'}</span>
+                    </label>
+                    <input id="razon_social" type="text" className="form-input" value={razonSocial}
+                      onChange={e => setRazonSocial(e.target.value)} 
+                      onBlur={() => razonSocial.trim() && autoSaveField('razonSocial', razonSocial)}
+                      placeholder="Nombre de la empresa o profesional" style={{ borderLeft: `3px solid ${razonSocial.trim() ? '#10b981' : '#f59e0b'}` }} />
+                  </div>
+                )}
               </div>
             </div>
           )}

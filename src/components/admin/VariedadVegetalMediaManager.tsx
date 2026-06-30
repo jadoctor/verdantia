@@ -1,10 +1,10 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Hot reload for delete button
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import PhotoEditorModal from './PhotoEditorModal';
+import PremiumPhotoEditor from '@/components/ui/PremiumPhotoEditor';
 
 interface VariedadVegetalMediaManagerProps {
   variedadId: string;
@@ -1216,13 +1216,19 @@ JSON de salida obligatorio:
       )}
 
       {/* EDITOR DE FOTOS MODAL (Refactorizado Regla 13 DRY) */}
-      <PhotoEditorModal
+      <PremiumPhotoEditor
         isOpen={!!editingPhoto}
         onClose={() => setEditingPhoto(null)}
         photoUrl={editingPhoto ? getMediaUrl(editingPhoto.ruta) : ''}
-        fileName={editingPhoto?.ruta ? editingPhoto.ruta.split('/').pop() : ''}
+        fileName={editingPhoto?.nombreOriginal || (editingPhoto?.ruta ? editingPhoto.ruta.split('/').pop() : '')}
         initialMetadata={editingPhoto?.resumen ? JSON.parse(editingPhoto.resumen) : null}
         onSave={savePhotoEdits}
+        onDelete={() => {
+          if (editingPhoto) {
+            handleDelete(editingPhoto.id, 'photos');
+            setEditingPhoto(null);
+          }
+        }}
         saveStatus={photoEditorSaveStatus}
       />
     </>

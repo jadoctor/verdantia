@@ -21,6 +21,9 @@ export interface UserProfile {
   esPrueba?: boolean;
   fechaCaducidadSuscripcion?: string | null;
   passkeysCount?: number;
+  nif?: string | null;
+  razonSocial?: string | null;
+  tipoContribuyente?: string;
 }
 
 export function useProfileData() {
@@ -50,6 +53,9 @@ export function useProfileData() {
   const [pasillo, setPasillo] = useState(0.50);
   const [collapsedMandatory, setCollapsedMandatory] = useState(false);
   const [collapsedOptional, setCollapsedOptional] = useState(false);
+  const [nif, setNif] = useState('');
+  const [razonSocial, setRazonSocial] = useState('');
+  const [tipoContribuyente, setTipoContribuyente] = useState('particular');
 
   // Autocomplete states
   const [cpSuggestions, setCpSuggestions] = useState<{cp: string; ciudad: string}[]>([]);
@@ -325,6 +331,9 @@ export function useProfileData() {
         setCamaCultivoBilateral(parseFloat(data.profile.camaCultivoBilateral) || 1.20);
         setCamaCultivoUnilateral(parseFloat(data.profile.camaCultivoUnilateral) || 0.75);
         setPasillo(parseFloat(data.profile.pasillo) || 0.50);
+        setNif(data.profile.nif || '');
+        setRazonSocial(data.profile.razonSocial || '');
+        setTipoContribuyente(data.profile.tipoContribuyente || 'particular');
 
         if (p.id && p.suscripcion && p.suscripcion.toLowerCase() !== 'gratuito') {
           perfilApi.checkPlanDegradation(p.id).then(result => {
@@ -384,6 +393,12 @@ export function useProfileData() {
     setCamaCultivoUnilateral,
     pasillo,
     setPasillo,
+    nif,
+    setNif,
+    razonSocial,
+    setRazonSocial,
+    tipoContribuyente,
+    setTipoContribuyente,
     collapsedMandatory,
     setCollapsedMandatory,
     collapsedOptional,

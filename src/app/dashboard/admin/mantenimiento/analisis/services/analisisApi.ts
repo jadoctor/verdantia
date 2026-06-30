@@ -2,9 +2,11 @@ export interface DashboardItem {
   lines: number;
   path: string;
   file: string;
+  analyzeFile?: string; // archivo real a analizar (ej. componente externo) si differe del file principal
   refactoredAt: string | null;
   responsiveAt: string | null;
   premiumAt: string | null;
+  componentLines?: number;
 }
 
 export const FRIENDLY_NAMES: Record<string, string> = {
@@ -121,7 +123,7 @@ export const dashboards: DashboardItem[] = [
   { lines: 150, path: '/dashboard/perfil', file: 'perfil/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026', premiumAt: null },
   { lines: 2009, path: '/dashboard/admin/usuarios/[id]', file: 'admin/usuarios/[id]/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 1295, path: '/dashboard/mis-plantas/[id]', file: 'mis-plantas/[id]/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
-  { lines: 1261, path: '/dashboard/admin/contenedores/[id]', file: 'admin/tareas/contenedores/[id]/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
+  { lines: 1261, path: '/dashboard/admin/contenedores/[id]', file: 'admin/contenedores/[id]/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 1215, path: '/dashboard/semillas/[id]', file: 'semillas/[id]/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 1066, path: '/dashboard/admin/blog', file: 'admin/blog/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 1035, path: '/dashboard/mis-plantas', file: 'mis-plantas/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
@@ -144,7 +146,7 @@ export const dashboards: DashboardItem[] = [
   { lines: 279, path: '/dashboard/admin/fases', file: 'admin/fases/page.tsx', refactoredAt: null, responsiveAt: '13/06/2026', premiumAt: null },
   { lines: 260, path: '/dashboard/admin/asuntos-realizados', file: 'admin/asuntos-realizados/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 257, path: '/dashboard/meteo', file: 'meteo/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
-  { lines: 213, path: '/dashboard/admin/contenedores', file: 'admin/tareas/contenedores/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
+  { lines: 213, path: '/dashboard/admin/contenedores', file: 'admin/contenedores/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 22, path: '/dashboard/admin/labores', file: 'admin/labores/page.tsx', refactoredAt: '15/06/2026', responsiveAt: '15/06/2026', premiumAt: null },
   { lines: 169, path: '/dashboard/admin/asuntos-pendientes', file: 'admin/asuntos-pendientes/page.tsx', refactoredAt: '11/06/2026', responsiveAt: null, premiumAt: null },
   { lines: 156, path: '/dashboard/admin/variedadesvegetales', file: 'admin/variedades/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
@@ -152,11 +154,9 @@ export const dashboards: DashboardItem[] = [
   { lines: 136, path: '/dashboard', file: 'page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026', premiumAt: null },
   { lines: 135, path: '/dashboard/admin/ajustes/paises', file: 'admin/ajustes/paises/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 60, path: '/dashboard/demo-rangos', file: 'demo-rangos/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
-  { lines: 47, path: '/dashboard/admin/especiesvegetales', file: 'admin/especies/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026', premiumAt: null },
+  { lines: 47, path: '/dashboard/admin/especiesvegetales', file: 'admin/especiesvegetales/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026', premiumAt: null },
   { lines: 32, path: '/dashboard/admin/labores/[id]', file: 'admin/labores/[id]/page.tsx', refactoredAt: null, responsiveAt: '15/06/2026', premiumAt: null },
-  { lines: 28, path: '/dashboard/admin/especiesvegetales/[id]', file: 'admin/especies/[id]/page.tsx', refactoredAt: '13/06/2026', responsiveAt: '13/06/2026', premiumAt: null },
-  { lines: 28, path: '/dashboard/admin/especiesvegetales/nueva', file: 'admin/especies/nueva/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
-  { lines: 27, path: '/dashboard/admin/labores/nueva', file: 'admin/labores/nueva/page.tsx', refactoredAt: null, responsiveAt: '15/06/2026', premiumAt: null },
+  { lines: 46, path: '/dashboard/admin/especiesvegetales/[id]', file: 'admin/especiesvegetales/[id]/page.tsx', analyzeFile: 'components/admin/EspecieVegetalForm.tsx', componentLines: 117, refactoredAt: '29/06/2026', responsiveAt: '29/06/2026', premiumAt: '29/06/2026' },
   { lines: 25, path: '/dashboard/admin/meteo', file: 'admin/meteo/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 25, path: '/dashboard/admin/chat', file: 'admin/chat/page.tsx', refactoredAt: null, responsiveAt: null, premiumAt: null },
   { lines: 169, path: '/dashboard/admin/tratamientos/[id]', file: 'admin/tratamientos/[id]/page.tsx', refactoredAt: '28/06/2026', responsiveAt: null, premiumAt: null },
@@ -167,6 +167,14 @@ export const dashboards: DashboardItem[] = [
 ];
 
 export const analisisApi = {
+  async getSavedMetrics(email: string) {
+    const res = await fetch(`/api/admin/mantenimiento/metrics?t=${Date.now()}`, {
+      headers: { 'x-user-email': email }
+    });
+    if (!res.ok) throw new Error('Error fetching saved metrics');
+    return res.json();
+  },
+
   async getChangesPreview(email: string) {
     const res = await fetch(`/api/admin/mantenimiento/backup?t=${Date.now()}`, {
       headers: { 'x-user-email': email }
@@ -175,11 +183,21 @@ export const analisisApi = {
     return res.json();
   },
 
-  async runAnalysis(file: string, email: string) {
-    const res = await fetch(`/api/admin/mantenimiento/analizar?path=${encodeURIComponent(file)}&t=${Date.now()}`, {
+  async runAnalysis(file: string, email: string, analyzeFile?: string) {
+    const target = analyzeFile || file;
+    const res = await fetch(`/api/admin/mantenimiento/analizar?path=${encodeURIComponent(target)}&t=${Date.now()}`, {
       headers: { 'x-user-email': email }
     });
-    if (!res.ok) throw new Error('Error performing analysis');
+    if (!res.ok) {
+      let backendMsg = '';
+      try {
+        const errData = await res.json();
+        backendMsg = errData.error ? ` (código ${res.status}: ${errData.error})` : ` (código ${res.status})`;
+      } catch {
+        backendMsg = ` (código ${res.status})`;
+      }
+      throw new Error(`Error al analizar${backendMsg}`);
+    }
     return res.json();
   }
 };

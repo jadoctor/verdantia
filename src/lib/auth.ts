@@ -32,6 +32,9 @@ export interface UserProfile {
   pasillo: number;
   passkeysCount?: number;
   fotosRechazadasCount?: number;
+  nif?: string | null;
+  razonSocial?: string | null;
+  tipoContribuyente?: string;
 }
 
 /**
@@ -42,29 +45,36 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
   try {
     const [rows] = await pool.query(
       `SELECT 
-        idusuarios, 
-        usuariosnombre, 
-        usuariosapellidos, 
-        usuariosemail, 
-        usuariosroles, 
-        usuariosicono, 
-        usuarioscodigopostal, 
-        usuariospoblacion, 
-        usuariosestadocuenta,
-        usuariosnombreusuario,
-        usuariospais,
-        usuariosfechadenacimiento,
-        usuariossexo,
-        usuariosdomicilio,
-        usuariostelefono,
-        usuarioszonaclimatica,
-        usuariostipocalendario,
-        usuariostipolaboreo,
-        usuarioscamacultivobilateral,
-        usuarioscamacultivounilateral,
-        usuariospasillo
-       FROM usuarios  
-       WHERE usuariosemail = ? 
+        u.idusuarios, 
+        u.usuariosnombre, 
+        u.usuariosapellidos, 
+        u.usuariosemail, 
+        u.usuariosroles, 
+        u.usuariosicono, 
+        u.usuariosestadocuenta,
+        u.usuariosnombreusuario,
+        u.usuariosfechadenacimiento,
+        u.usuariossexo,
+        u.usuariostelefono,
+        u.usuarioszonaclimatica,
+        u.usuariostipocalendario,
+        u.usuariostipolaboreo,
+        u.usuarioscamacultivobilateral,
+        u.usuarioscamacultivounilateral,
+        u.usuariospasillo,
+        u.usuariosnif,
+        u.usuariosrazonsocial,
+        u.usuariostipocontribuyente,
+        d.direccionesdomicilio AS usuariosdomicilio,
+        COALESCE(p.poblacionescodigopostal, d.direccionescodigopostal) AS usuarioscodigopostal,
+        COALESCE(p.poblacionesnombre, d.direccionespoblacion) AS usuariospoblacion,
+        COALESCE(pa.paisesnombre, d.direccionespais) AS usuariospais
+       FROM usuarios u
+       LEFT JOIN direcciones d ON d.xdireccionesidusuarios = u.idusuarios AND d.direccionestipo = 'personal' AND d.direccionesesprincipal = 1
+       LEFT JOIN poblaciones p ON d.xdireccionesidpoblaciones = p.idpoblaciones
+       LEFT JOIN provincias pr ON p.xpoblacionesidprovincias = pr.idprovincias
+       LEFT JOIN paises pa ON pr.xprovinciasidpaises = pa.idpaises
+       WHERE u.usuariosemail = ? 
        LIMIT 1`,
       [email]
     );
@@ -208,10 +218,30 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
       pasillo: user.usuariospasillo != null ? parseFloat(user.usuariospasillo) : 0.50,
       passkeysCount: passkeysCount,
       fotosRechazadasCount: fotosRechazadasCount,
+      nif: user.usuariosnif || null,
+      razonSocial: user.usuariosrazonsocial || null,
+      tipoContribuyente: user.usuariostipocontribuyente || 'particular',
     };
   } catch (error) {
     console.error('[Auth] Error buscando usuario por email:', error);
     return null;
+  }
+}
+
+/**
+ * Comprobación ligera de superadmin: solo 1 query. Usar en route handlers frecuentes.
+ */
+export async function checkIsSuperadmin(email: string): Promise<boolean> {
+  if (!email) return false;
+  try {
+    const [rows] = await pool.query(
+      'SELECT usuariosroles FROM usuarios WHERE usuariosemail = ? LIMIT 1',
+      [email]
+    );
+    const results = rows as any[];
+    return results.length > 0 && (results[0].usuariosroles || '').includes('superadministrador');
+  } catch {
+    return false;
   }
 }
 

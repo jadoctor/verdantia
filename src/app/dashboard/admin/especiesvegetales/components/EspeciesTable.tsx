@@ -4,6 +4,7 @@ import PremiumTableHeader from '@/components/ui/PremiumTableHeader';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { Blurhash } from 'react-blurhash';
 import { getMediaUrl } from '@/lib/media-url';
+import PremiumLoadingOverlay from '@/components/ui/PremiumLoadingOverlay';
 
 interface EspeciesTableProps {
   especies: any[];
@@ -44,38 +45,7 @@ export default function EspeciesTable({
 
   return (
     <div style={{ position: 'relative', minHeight: '200px', width: '100%' }}>
-      {/* Carga sin Flickering (Overlay) - Regla 7 */}
-      {loading && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(255, 255, 255, 0.65)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-          borderRadius: '12px',
-          backdropFilter: 'blur(1px)'
-        }}>
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes spin-loader {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}} />
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              border: '3px solid #cbd5e1',
-              borderTop: '3px solid #0f766e',
-              borderRadius: '50%',
-              animation: 'spin-loader 0.8s linear infinite'
-            }} />
-            <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 'bold' }}>Cargando especies...</span>
-          </div>
-        </div>
-      )}
+      <PremiumLoadingOverlay isLoading={loading} message="Cargando especies..." />
 
       {especies.length === 0 && !loading ? (
         <p style={{ color: '#64748b', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', width: '100%' }}>

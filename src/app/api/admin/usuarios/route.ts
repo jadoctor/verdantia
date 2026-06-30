@@ -67,12 +67,16 @@ export async function GET(req: NextRequest) {
          LIMIT 1) AS fotoValidada,
         u.usuariosfechacreacion AS fechaRegistro,
         u.usuariosfechadenacimiento AS fechaNacimiento,
-        u.usuariospais AS pais,
-        u.usuariospoblacion AS poblacion,
+        COALESCE(pa.paisesnombre, d.direccionespais) AS pais,
+        COALESCE(p.poblacionesnombre, d.direccionespoblacion) AS poblacion,
         u.usuariosconsentimientofoto AS consentimientoFoto
        FROM usuarios u
        LEFT JOIN usuariossuscripciones us ON u.idusuarios = us.xusuariossuscripcionesidusuarios AND us.usuariossuscripcionesestado = 'activa'
        LEFT JOIN suscripciones s ON us.xusuariossuscripcionesidsuscripciones = s.idsuscripciones
+       LEFT JOIN direcciones d ON d.xdireccionesidusuarios = u.idusuarios AND d.direccionestipo = 'personal' AND d.direccionesesprincipal = 1
+       LEFT JOIN poblaciones p ON d.xdireccionesidpoblaciones = p.idpoblaciones
+       LEFT JOIN provincias pr ON p.xpoblacionesidprovincias = pr.idprovincias
+       LEFT JOIN paises pa ON pr.xprovinciasidpaises = pa.idpaises
        ${where}
        ORDER BY u.usuariosfechacreacion DESC
        LIMIT ? OFFSET ?`,

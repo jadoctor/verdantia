@@ -57,45 +57,51 @@ export function PhotoEditorModal({ photosData }: PhotoEditorModalProps) {
           </div>
         </div>
         <div className="photo-editor-body">
-          {/* Preview */}
-          <div 
-            className="photo-editor-preview"
-            onMouseDown={onEditorMouseDown}
-            onTouchStart={onEditorTouchStart}
-            onTouchMove={onEditorTouchMove}
-            style={{ cursor: editorZoom > 100 ? 'grab' : 'default' }}
-          >
-            <img
-              src={getMediaUrl(editingPhoto.ruta)}
-              alt="Preview"
-              crossOrigin="anonymous"
-              draggable={false}
-              style={{
-                objectPosition: `${editorX}% ${editorY}%`,
-                transformOrigin: `${editorX}% ${editorY}%`,
-                transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
-                filter: `${STYLE_FILTERS[editorStyle] === 'none' ? '' : (STYLE_FILTERS[editorStyle] || '')} brightness(${editorBrightness}%) contrast(${editorContrast}%)`.trim(),
-                pointerEvents: 'none'
-              }}
-            />
-            
-            {/* Rejilla de Foto Carnet (3:4) superpuesta */}
-            <div className="photo-editor-grid-overlay">
-              <div className="grid-line horizontal"></div>
-              <div className="grid-line horizontal bottom"></div>
-              <div className="grid-line vertical"></div>
-              <div className="grid-line vertical right"></div>
-            </div>
-
+          {/* 1. File Name (SEO Priority) */}
+          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+            Archivo: {editingPhoto.ruta.split('/').pop() || 'foto.jpg'}
           </div>
 
-          {/* Panel lateral */}
-          <div className="photo-editor-panel">
+          {/* 2. Preview Centered */}
+          <div className="photo-editor-preview-container">
+            <div 
+              className="photo-editor-preview"
+              onMouseDown={onEditorMouseDown}
+              onTouchStart={onEditorTouchStart}
+              onTouchMove={onEditorTouchMove}
+              style={{ cursor: editorZoom > 100 ? 'grab' : 'default' }}
+            >
+              <img
+                src={getMediaUrl(editingPhoto.ruta)}
+                alt={editingPhoto.resumen?.alt || "Preview"}
+                crossOrigin="anonymous"
+                draggable={false}
+                style={{
+                  objectPosition: `${editorX}% ${editorY}%`,
+                  transformOrigin: `${editorX}% ${editorY}%`,
+                  transform: editorZoom > 100 ? `scale(${editorZoom / 100})` : undefined,
+                  filter: `${STYLE_FILTERS[editorStyle] === 'none' ? '' : (STYLE_FILTERS[editorStyle] || '')} brightness(${editorBrightness}%) contrast(${editorContrast}%)`.trim(),
+                  pointerEvents: 'none'
+                }}
+              />
+              
+              <div className="photo-editor-grid-overlay">
+                <div className="grid-line horizontal"></div>
+                <div className="grid-line horizontal bottom"></div>
+                <div className="grid-line vertical"></div>
+                <div className="grid-line vertical right"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Controls (Stacked) */}
+          <div className="photo-editor-controls">
             <div className="editor-control">
-              <p className="text-sm text-gray-500 mb-4" style={{ fontStyle: 'italic' }}>
-                <small>💡 Arrastra la foto con el ratón para moverla.</small>
+              <p className="text-sm text-gray-500 mb-4" style={{ fontStyle: 'italic', textAlign: 'center' }}>
+                <small>💡 Arrastra la foto con el ratón para encuadrarla.</small>
               </p>
             </div>
+            
             <div className="editor-control">
               <label>Zoom — {editorZoom}%</label>
               <input type="range" min="100" max="300" value={editorZoom}
@@ -142,8 +148,27 @@ export function PhotoEditorModal({ photosData }: PhotoEditorModalProps) {
               </select>
             </div>
 
-            <div style={{ marginTop: 'auto' }}>
-              <button type="button" className="btn-danger" style={{ width: '100%' }}
+            <div className="editor-control" style={{ marginTop: '8px' }}>
+              <label>Alt Text (SEO)</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Ej. Retrato del usuario en el huerto"
+                value={editingPhoto.resumen?.alt || ''}
+                onChange={(e) => {
+                  setEditingPhoto({
+                    ...editingPhoto,
+                    resumen: { ...editingPhoto.resumen, alt: e.target.value }
+                  });
+                }}
+              />
+              <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                Describe la imagen para mejorar el posicionamiento.
+              </small>
+            </div>
+
+            <div style={{ marginTop: '16px' }}>
+              <button type="button" className="btn-danger" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', background: '#fee2e2', color: '#991b1b', fontWeight: 'bold' }}
                 onClick={() => { deletePhoto(editingPhoto.id).then(() => setEditingPhoto(null)); }}>
                 🗑️ Eliminar Fotografía
               </button>

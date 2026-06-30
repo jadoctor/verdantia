@@ -1,62 +1,49 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-// Cache the data in memory
-let cachedData: [string, string][] | null = null;
-
-function loadData(): [string, string][] {
-  if (cachedData) return cachedData;
-  const filePath = path.join(process.cwd(), 'src/data/cp_es.json');
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  cachedData = JSON.parse(raw);
-  return cachedData!;
-}
+import pool from '@/lib/db';
 
 /**
  * GET /api/location/search?q=texto&type=cp|ciudad
  * Búsqueda bidireccional: por código postal o por nombre de ciudad.
- * Devuelve máximo 10 resultados.
+ * Devuelve máximo 5 resultados desde la base de datos MySQL.
  */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const q = (searchParams.get('q') || '').trim().toLowerCase();
-  const type = searchParams.get('type') || 'cp'; // 'cp' o 'ciudad'
+  try {
+    const { searchParams } = new URL(request.url);
+    const q = (searchParams.get('q') || '').trim();
+    const type = searchParams.get('type') || 'cp'; // 'cp' o 'ciudad'
 
-  if (q.length === 0) {
-    // Return first 5 entries as initial suggestions
-    const data = loadData();
-    const initial = data.slice(0, 5).map(([cp, ciudad]) => ({ cp, ciudad }));
-    return NextResponse.json({ results: initial });
-  }
+    if (q.length === 0) {
+      // Return first 5 entries as initial suggestions
+      const [rows]: any = await pool.query(
+        `SELECT poblacionescodigopostal as cp, poblacionesnombre as ciudad 
+         FROM poblaciones 
+         LIMIT 5`
+      );
+      return NextResponse.json({ results: rows });
+    }
 
-  const data = loadData();
-  const results: { cp: string; ciudad: string }[] = [];
-  const seen = new Set<string>();
-
-  for (const [cp, ciudad] of data) {
-    if (results.length >= 5) break;
+    let query = '';
+    let params: any[] = [];
 
     if (type === 'cp') {
-      // Buscar por código postal
-      if (cp.startsWith(q)) {
-        const key = `${cp}-${ciudad}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          results.push({ cp, ciudad });
-        }
-      }
+      query = `SELECT poblacionescodigopostal as cp, poblacionesnombre as ciudad 
+               FROM poblaciones 
+               WHERE poblacionescodigopostal LIKE ? 
+               LIMIT 5`;
+      params = [`${q}%`];
     } else {
-      // Buscar por nombre de ciudad
-      if (ciudad.toLowerCase().includes(q)) {
-        const key = `${cp}-${ciudad}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          results.push({ cp, ciudad });
-        }
-      }
+      query = `SELECT poblacionescodigopostal as cp, poblacionesnombre as ciudad 
+               FROM poblaciones 
+               WHERE poblacionesnombre LIKE ? 
+               LIMIT 5`;
+      params = [`%${q}%`];
     }
-  }
 
-  return NextResponse.json({ results });
+    const [rows]: any = await pool.query(query, params);
+    return NextResponse.json({ results: rows });
+
+  } catch (error: any) {
+    console.error('[Location Search API] Error:', error);
+    return NextResponse.json({ error: 'Error interno del servidor', results: [] }, { status: 500 });
+  }
 }

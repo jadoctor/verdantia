@@ -42,3 +42,5 @@ export default function EditarEspeciePage({ params }: { params: Promise<{ id: st
     </div>
   );
 }
+
+// refresh trigger

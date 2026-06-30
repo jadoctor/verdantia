@@ -60,7 +60,7 @@ export function FotosTab({ profileData, photosData }: FotosTabProps) {
             )}
           </span>
         </label>
-        <div className={`photo-gallery-grid ${dragOver ? 'drag-over' : ''}`}>
+        <div className={`photo-gallery-grid gallery ${dragOver ? 'drag-over' : ''}`}>
           {photos.map((photo, i) => {
             let meta: { profile_object_x: number; profile_object_y: number; profile_object_zoom: number; profile_style: string; profile_brightness?: number; profile_contrast?: number } = { profile_object_x: 50, profile_object_y: 38, profile_object_zoom: 100, profile_style: '' };
             try { meta = { ...meta, ...JSON.parse(photo.resumen || '{}') }; } catch {}
@@ -164,34 +164,29 @@ export function FotosTab({ profileData, photosData }: FotosTabProps) {
           {/* Zona de Drop / Subir */}
           {photos.length < maxPhotos && (
             <div
-              className="photo-add-card"
+              className={`custom-file-upload drop-zone inline-drop-zone ${dragOver ? 'drag-over' : ''}`}
               onDragOver={handleDragOver}
               onDragEnter={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', textAlign: 'center' }}
             >
               {uploading ? (
                 <div className="upload-progress">
-                  <div className="loading-spinner" style={{ width: '24px', height: '24px' }}></div>
-                  <span>Subiendo...</span>
+                  <div className="loading-spinner" style={{ width: '24px', height: '24px', margin: '0 auto' }}></div>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', display: 'block' }}>Subiendo...</span>
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                      onClick={() => fileInputRef.current?.click()}
-                    >📁 Galería</button>
-                    <button
-                      type="button"
-                      style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(14, 165, 233, 0.3)' }}
-                      onClick={() => cameraInputRef.current?.click()}
-                    >📷 Cámara</button>
+                  <div style={{ fontSize: '1.8rem', color: dragOver ? '#0f766e' : '#94a3b8', transition: 'color 0.2s' }}>
+                    {dragOver ? '📥' : '📤'}
                   </div>
-                  <small className="drop-hint">
-                    {dragOver ? '¡Suelta aquí!' : 'También puedes soltar una imagen'}
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: dragOver ? '#0f766e' : '#475569' }}>
+                    {dragOver ? 'Suelta la foto aquí' : 'Haz clic o arrastra'}
+                  </div>
+                  <small style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                    JPG, PNG, WebP
                   </small>
                 </>
               )}

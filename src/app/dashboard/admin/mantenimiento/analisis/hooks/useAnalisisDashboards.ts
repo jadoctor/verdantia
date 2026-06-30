@@ -4,12 +4,15 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { analisisApi, dashboards, getDashboardGroup, FRIENDLY_NAMES } from '../services/analisisApi';
 
 export function useAnalisisDashboards() {
+  const ANALYSIS_CACHE_KEY = 'analisis_cached_results';
+  const getAnalysisKey = (file: string, analyzeFile?: string) => analyzeFile || file;
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [origin, setOrigin] = useState('http://localhost:3000');
   const [changesInfo, setChangesInfo] = useState<any>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
   const [analysisData, setAnalysisData] = useState<Record<string, any>>({});
+  const [lastAnalyzedAt, setLastAnalyzedAt] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [completedDates, setCompletedDates] = useState<Record<string, { refactoredAt: string | null; responsiveAt: string | null; premiumAt: string | null }>>({});
@@ -47,11 +50,72 @@ export function useAnalisisDashboards() {
     }
   };
 
+  const hydrateFromBackendMetrics = async (email: string) => {
+    try {
+      const response = await analisisApi.getSavedMetrics(email);
+      const allMetrics = response?.metrics || {};
+      if (!allMetrics || typeof allMetrics !== 'object') return;
+
+      const restoredData: Record<string, any> = {};
+      const restoredDates: Record<string, string | null> = {};
+      const restoredCompleted: Record<string, { refactoredAt: string | null; responsiveAt: string | null; premiumAt: string | null }> = {};
+
+      dashboards.forEach((dashboard) => {
+        const analysisKey = getAnalysisKey(dashboard.file, dashboard.analyzeFile);
+        const metric = allMetrics[analysisKey];
+        if (!metric) return;
+
+        if (metric.raw) {
+          restoredData[analysisKey] = metric.raw;
+        }
+
+        const isoDate = metric.last_updated || null;
+        if (isoDate) {
+          const dateObj = new Date(isoDate);
+          const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+          const formattedDateTime = `${formattedDate} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+          restoredDates[analysisKey] = formattedDateTime;
+          restoredCompleted[analysisKey] = {
+            refactoredAt: typeof metric.codeScore === 'number' && metric.codeScore === 100 ? formattedDate : null,
+            responsiveAt: typeof metric.responsiveScore === 'number' && metric.responsiveScore === 100 ? formattedDate : null,
+            premiumAt: typeof metric.premiumScore === 'number' && metric.premiumScore === 100 ? formattedDate : null
+          };
+        }
+      });
+
+      if (Object.keys(restoredData).length > 0) {
+        setAnalysisData(prev => ({ ...prev, ...restoredData }));
+      }
+      if (Object.keys(restoredDates).length > 0) {
+        setLastAnalyzedAt(prev => ({ ...prev, ...restoredDates }));
+      }
+      if (Object.keys(restoredCompleted).length > 0) {
+        setCompletedDates(prev => ({ ...prev, ...restoredCompleted }));
+      }
+
+      // Analizar automáticamente en segundo plano los archivos modificados
+      const unanalyzed = response?.unanalyzedFiles || [];
+      if (unanalyzed.length > 0) {
+        unanalyzed.forEach((fileKey: string) => {
+          const matched = dashboards.find(d => getAnalysisKey(d.file, d.analyzeFile) === fileKey);
+          if (matched) {
+            setTimeout(() => {
+              loadAnalysis(matched.file, email, matched.analyzeFile);
+            }, 200);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error hydrating backend metrics:', err);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.email) {
         setUserEmail(user.email);
         loadChangesPreview(user.email);
+        hydrateFromBackendMetrics(user.email);
       } else {
         setUserEmail(null);
       }
@@ -59,13 +123,14 @@ export function useAnalisisDashboards() {
     return () => unsubscribe();
   }, []);
 
-  const loadAnalysis = async (file: string, email: string) => {
-    setAnalysisData(prev => ({ ...prev, [file]: null }));
-    setLoading(prev => ({ ...prev, [file]: true }));
+  const loadAnalysis = async (file: string, email: string, analyzeFile?: string) => {
+    const analysisKey = getAnalysisKey(file, analyzeFile);
+    setAnalysisData(prev => ({ ...prev, [analysisKey]: null }));
+    setLoading(prev => ({ ...prev, [analysisKey]: true }));
 
     try {
-      const data = await analisisApi.runAnalysis(file, email);
-      setAnalysisData(prev => ({ ...prev, [file]: data }));
+      const data = await analisisApi.runAnalysis(file, email, analyzeFile);
+      setAnalysisData(prev => ({ ...prev, [analysisKey]: data }));
 
       const isCodeClean = data.plan && data.plan.every((p: string) => p.startsWith('✅'));
       const isResponsiveClean = data.responsiveness && data.responsiveness.score === 100;
@@ -73,23 +138,54 @@ export function useAnalisisDashboards() {
 
       const now = new Date();
       const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+      const formattedDateTime = `${formattedDate} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
       setCompletedDates(prev => ({
         ...prev,
-        [file]: {
+        [analysisKey]: {
           refactoredAt: isCodeClean ? formattedDate : null,
           responsiveAt: isResponsiveClean ? formattedDate : null,
           premiumAt: isPremiumClean ? formattedDate : null
         }
       }));
+      setLastAnalyzedAt(prev => ({ ...prev, [analysisKey]: formattedDateTime }));
+
+      const codeScore = data.code ? data.code.score : (data.plan ? (data.plan.every((p: string) => p.startsWith('✅')) ? 100 : 0) : 0);
+      const responsiveScore = data.responsiveness ? data.responsiveness.score : 0;
+      const premiumScore = data.premium ? data.premium.score : 0;
+
+      try {
+        await fetch('/api/admin/mantenimiento/metrics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': email
+          },
+          body: JSON.stringify({
+            modulePath: analysisKey,
+            metrics: {
+              lines: data.totalLines || 0,
+              codeScore,
+              responsiveScore,
+              premiumScore,
+              codeClean: codeScore === 100,
+              raw: data
+            }
+          })
+        });
+      } catch (saveErr) {
+        console.error('Error saving backend metrics:', saveErr);
+      }
 
       // Construir comando combinado para el portapapeles
       const matched = dashboards.find(d => d.file === file);
       const dashPath = matched ? matched.path : '';
+      const dashAnalyzeFile = matched?.analyzeFile;
       const parts: string[] = [];
 
       if (!isCodeClean) {
-        parts.push(`--- 💻 REFACTORIZACIÓN DE CÓDIGO ---\nAntigravity, ejecuta el plan de refactorización del archivo src/app/dashboard/${file}. Analiza el código, extrae los custom hooks necesarios, los componentes reutilizables y los servicios de API. Hazlo de forma segura, paso a paso, sin romper la funcionalidad existente del dashboard en ${dashPath}.`);
+        const targetPath = dashAnalyzeFile ? dashAnalyzeFile : `src/app/dashboard/${file}`;
+        parts.push(`--- 💻 REFACTORIZACIÓN DE CÓDIGO ---\nAntigravity, ejecuta el plan de refactorización del archivo ${targetPath}. Analiza el código, extrae los custom hooks necesarios, los componentes reutilizables y los servicios de API. Hazlo de forma segura, paso a paso, sin romper la funcionalidad existente del dashboard en ${dashPath}.`);
       }
 
       if (!isResponsiveClean && data.responsiveness?.improvementsForAgent) {
@@ -101,23 +197,24 @@ export function useAnalisisDashboards() {
       }
 
       if (parts.length > 0) {
-        const combined = parts.join('\n\n') + `\n\nAl finalizar, cuenta las líneas resultantes de src/app/dashboard/${file} y actualiza su entrada en el array dashboards en src/app/dashboard/admin/mantenimiento/analisis/services/analisisApi.ts con el nuevo número de líneas y la fecha de hoy en los campos correspondientes (refactoredAt, responsiveAt, premiumAt) para que se muestre actualizado al instante.`;
+        const targetFile = dashAnalyzeFile ? dashAnalyzeFile : `src/app/dashboard/${file}`;
+        const combined = parts.join('\n\n') + `\n\nAl finalizar, cuenta las líneas resultantes de ${targetFile} y actualiza su entrada en el array dashboards en src/app/dashboard/admin/mantenimiento/analisis/services/analisisApi.ts con el nuevo número de líneas y la fecha de hoy en los campos correspondientes (refactoredAt, responsiveAt, premiumAt) para que se muestre actualizado al instante.`;
         navigator.clipboard.writeText(combined)
           .then(() => console.log('📋 Comando combinado (Código + Responsive + Premium) copiado al portapapeles.'))
           .catch(err => console.error('Error copying:', err));
       }
     } catch (err) {
       console.error('Error running analysis:', err);
+      setAnalysisData(prev => ({ ...prev, [analysisKey]: { error: true, message: String(err) } }));
     } finally {
-      setLoading(prev => ({ ...prev, [file]: false }));
+      setLoading(prev => ({ ...prev, [analysisKey]: false }));
     }
   };
 
-  const handleTriggerAnalysis = async (file: string) => {
+  const handleTriggerAnalysis = async (file: string, analyzeFile?: string) => {
     if (!userEmail) return;
     setLastFocusedFile(file);
-    setExpanded(prev => ({ ...prev, [file]: true }));
-    loadAnalysis(file, userEmail);
+    loadAnalysis(file, userEmail, analyzeFile);
   };
 
   const saveAndNavigate = (path: string, file: string) => {
@@ -164,6 +261,7 @@ export function useAnalisisDashboards() {
     const savedSortBy = sessionStorage.getItem('analisis_sort_by');
     const savedSortDirection = sessionStorage.getItem('analisis_sort_direction');
     const savedCompletedDates = localStorage.getItem('analisis_completed_dates');
+    const savedAnalysisCache = localStorage.getItem(ANALYSIS_CACHE_KEY);
 
     if (savedFilter) setActiveFilter(savedFilter);
     if (savedGroupFilter) setActiveGroupFilter(savedGroupFilter);
@@ -176,6 +274,22 @@ export function useAnalisisDashboards() {
         setCompletedDates(JSON.parse(savedCompletedDates));
       } catch (e) {
         console.error('Error parsing completed dates:', e);
+      }
+    }
+
+    if (savedAnalysisCache) {
+      try {
+        const parsed = JSON.parse(savedAnalysisCache) as Record<string, { data: any; lastAnalyzedAt: string | null }>;
+        const restoredData: Record<string, any> = {};
+        const restoredDates: Record<string, string | null> = {};
+        Object.entries(parsed).forEach(([file, value]) => {
+          restoredData[file] = value.data;
+          restoredDates[file] = value.lastAnalyzedAt;
+        });
+        setAnalysisData(restoredData);
+        setLastAnalyzedAt(restoredDates);
+      } catch (e) {
+        console.error('Error parsing analysis cache:', e);
       }
     }
 
@@ -225,6 +339,20 @@ export function useAnalisisDashboards() {
       localStorage.setItem('analisis_completed_dates', JSON.stringify(completedDates));
     }
   }, [completedDates, restored]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !restored) return;
+    const cache: Record<string, { data: any; lastAnalyzedAt: string | null }> = {};
+    Object.keys(analysisData).forEach((file) => {
+      if (analysisData[file]) {
+        cache[file] = {
+          data: analysisData[file],
+          lastAnalyzedAt: lastAnalyzedAt[file] || null
+        };
+      }
+    });
+    localStorage.setItem(ANALYSIS_CACHE_KEY, JSON.stringify(cache));
+  }, [analysisData, lastAnalyzedAt, restored]);
 
   // Cargar análisis para filas expandidas restauradas
   useEffect(() => {
@@ -287,20 +415,31 @@ export function useAnalisisDashboards() {
     }
   };
 
-  const maxLines = Math.max(...dashboards.map(d => d.lines));
-  const totalLines = dashboards.reduce((sum, d) => sum + d.lines, 0);
-
+  const getEffectiveLines = (d: typeof dashboards[0]) => {
+    const analysisKey = getAnalysisKey(d.file, d.analyzeFile);
+    const data = analysisData[analysisKey];
+    if (data) {
+      if (typeof data.totalLines === 'number') return data.totalLines;
+      if (typeof data.lines === 'number') return data.lines;
+    }
+    return (d.componentLines || 0) + d.lines;
+  };
   const filteredDashboards = dashboards.filter(d => {
-    const effectiveRefactoredAt = (restored && completedDates[d.file] && completedDates[d.file].refactoredAt) || d.refactoredAt;
-    const effectiveResponsiveAt = (restored && completedDates[d.file] && completedDates[d.file].responsiveAt) || d.responsiveAt;
-    const effectivePremiumAt = (restored && completedDates[d.file] && completedDates[d.file].premiumAt) || d.premiumAt;
+    const analysisKey = getAnalysisKey(d.file, d.analyzeFile);
+    const fallbackRefactoredAt = d.analyzeFile ? null : d.refactoredAt;
+    const fallbackResponsiveAt = d.analyzeFile ? null : d.responsiveAt;
+    const fallbackPremiumAt = d.analyzeFile ? null : d.premiumAt;
+    const effectiveRefactoredAt = (restored && completedDates[analysisKey] && completedDates[analysisKey].refactoredAt) || fallbackRefactoredAt;
+    const effectiveResponsiveAt = (restored && completedDates[analysisKey] && completedDates[analysisKey].responsiveAt) || fallbackResponsiveAt;
+    const effectivePremiumAt = (restored && completedDates[analysisKey] && completedDates[analysisKey].premiumAt) || fallbackPremiumAt;
 
     if (activeFilter === 'superadmin' && !d.path.startsWith('/dashboard/admin/')) return false;
     if (activeFilter === 'general' && d.path.startsWith('/dashboard/admin/')) return false;
-    if (activeFilter === 'monolito' && d.lines <= 1000) return false;
-    if (activeFilter === 'complejo' && (d.lines <= 500 || d.lines > 1000)) return false;
-    if (activeFilter === 'estandar' && (d.lines <= 200 || d.lines > 500)) return false;
-    if (activeFilter === 'ligero_stub' && d.lines > 200) return false;
+    const effLines = getEffectiveLines(d);
+    if (activeFilter === 'monolito' && effLines <= 1000) return false;
+    if (activeFilter === 'complejo' && (effLines <= 500 || effLines > 1000)) return false;
+    if (activeFilter === 'estandar' && (effLines <= 200 || effLines > 500)) return false;
+    if (activeFilter === 'ligero_stub' && effLines > 200) return false;
     if (activeFilter === 'revisado_si' && !effectiveRefactoredAt) return false;
     if (activeFilter === 'revisado_no' && effectiveRefactoredAt) return false;
     if (activeFilter === 'responsive_si' && !effectiveResponsiveAt) return false;
@@ -327,17 +466,31 @@ export function useAnalisisDashboards() {
       valA = a.path.startsWith('/dashboard/admin/') ? 1 : 0;
       valB = b.path.startsWith('/dashboard/admin/') ? 1 : 0;
     } else if (sortBy === 'categoria') {
-      valA = a.lines;
-      valB = b.lines;
+      valA = getEffectiveLines(a);
+      valB = getEffectiveLines(b);
     } else {
-      valA = a.lines;
-      valB = b.lines;
+      valA = getEffectiveLines(a);
+      valB = getEffectiveLines(b);
     }
 
     if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
     if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
+
+  const totalLines = filteredDashboards.reduce((sum, d) => sum + getEffectiveLines(d), 0);
+  const maxLines = filteredDashboards.length > 0 ? Math.max(...filteredDashboards.map(getEffectiveLines), 1) : 1;
+
+  const getLargestDashboard = () => {
+    if (filteredDashboards.length === 0) return null;
+    return filteredDashboards.reduce((max, d) => {
+      return getEffectiveLines(d) > getEffectiveLines(max) ? d : max;
+    }, filteredDashboards[0]);
+  };
+  const largestDashboard = getLargestDashboard();
+  const largestDashboardFile = largestDashboard 
+    ? (FRIENDLY_NAMES[largestDashboard.path] || largestDashboard.file).replace(/^[\p{Emoji_Presentation}\p{Emoji}\u200d\uFE0F\s]+/gu, '') 
+    : 'Ninguno';
 
   return {
     userEmail,
@@ -347,6 +500,7 @@ export function useAnalisisDashboards() {
     loadingPreview,
     analysisData,
     loading,
+    lastAnalyzedAt,
     expanded,
     completedDates,
     activeFilter,
@@ -360,12 +514,14 @@ export function useAnalisisDashboards() {
     sortDirection,
     maxLines,
     totalLines,
+    largestDashboardFile,
     sortedDashboards,
     handleSort,
     handleSelectGroup,
     handleSelectFilter,
     handleReloadAndSaveState,
     handleTriggerAnalysis,
+    handleCloseAnalysis: (file: string) => setExpanded(prev => ({ ...prev, [file]: false })),
     saveAndNavigate
   };
 }

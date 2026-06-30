@@ -3,7 +3,6 @@ import React from 'react';
 
 interface PremiumSubheaderProps {
   title: React.ReactNode;
-  subtitle?: React.ReactNode;
   gradient?: string;
   actions?: React.ReactNode;
   children?: React.ReactNode;
@@ -12,7 +11,6 @@ interface PremiumSubheaderProps {
 
 export default function PremiumSubheader({
   title,
-  subtitle,
   gradient = 'linear-gradient(135deg, #0f766e, #10b981)',
   actions,
   children,
@@ -48,11 +46,6 @@ export default function PremiumSubheader({
           }}>
             {title}
           </h1>
-          {subtitle && (
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', opacity: 0.9 }}>
-              {subtitle}
-            </p>
-          )}
         </div>
 
         {/* Right Block: Actions */}

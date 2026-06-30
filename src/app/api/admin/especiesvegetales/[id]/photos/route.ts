@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import { getUserByEmail } from '@/lib/auth';
+import { checkIsSuperadmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,14 +41,14 @@ type UploadPhotoRequestBody = {
   rawStoragePath?: unknown;
   storagePath?: unknown;
   especieNombre?: unknown;
+  replacePhotoId?: unknown;
 };
 
 async function authenticateSuperadmin(request: Request) {
   const email = request.headers.get('x-user-email');
   if (!email) return null;
-  const user = await getUserByEmail(email);
-  if (!user || !user.roles?.includes('superadministrador')) return null;
-  return user;
+  const ok = await checkIsSuperadmin(email);
+  return ok ? { email } : null;
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -91,6 +91,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const rawStoragePath = normalizeIncomingStoragePath(body.rawStoragePath) || legacyStoragePath;
     const reqEspecieNombre =
       typeof body.especieNombre === 'string' ? body.especieNombre : '';
+    const replacePhotoId = body.replacePhotoId ? Number(body.replacePhotoId) : null;
+    
+    try {
+      require('fs').appendFileSync('C:/Users/jaill/Documents/VERDANTIA/debug-upload.txt', `POST /photos called at ${new Date().toISOString()}.\nBody: ${JSON.stringify(body)}\nreplacePhotoId: ${replacePhotoId}\n---\n`);
+    } catch(e) {}
 
     if (!rawStoragePath) {
       return NextResponse.json({ error: 'Ruta de archivo requerida' }, { status: 400 });
@@ -297,18 +302,46 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const fileName = rawStoragePath.split('/').pop() || 'uploaded.jpg';
     const fileType = 'image/' + ext.replace('.', '');
 
-    const [result] = await pool.query(
-      `INSERT INTO datosadjuntos (
-        datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
-        datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
-        datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespeciesvegetales,
-        datosadjuntospesobytes, datosadjuntosresumen
-      ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
-      [
-        fileType, fileName, storagePath, esPrimera,
-        total + 1, idespeciesvegetales, fileSize, initialResumen
-      ]
-    );
+    let newPhotoId;
+    let returnedEsPrimera = esPrimera;
+
+    if (replacePhotoId) {
+      const [existingRows] = await pool.query(
+        "SELECT datosadjuntosesprincipal, datosadjuntosorden FROM datosadjuntos WHERE iddatosadjuntos = ? AND xdatosadjuntosidespeciesvegetales = ?",
+        [replacePhotoId, idespeciesvegetales]
+      );
+      if ((existingRows as any[]).length > 0) {
+        const existing = (existingRows as any[])[0];
+        returnedEsPrimera = existing.datosadjuntosesprincipal;
+        
+        await pool.query(
+          `UPDATE datosadjuntos SET 
+            datosadjuntosmime = ?, datosadjuntosnombreoriginal = ?,
+            datosadjuntosruta = ?, datosadjuntospesobytes = ?, datosadjuntosresumen = ?
+          WHERE iddatosadjuntos = ?`,
+          [
+            fileType, fileName, storagePath, fileSize, initialResumen, replacePhotoId
+          ]
+        );
+        newPhotoId = replacePhotoId;
+      }
+    }
+
+    if (!newPhotoId) {
+      const [result] = await pool.query(
+        `INSERT INTO datosadjuntos (
+          datosadjuntostipo, datosadjuntosmime, datosadjuntosnombreoriginal,
+          datosadjuntosruta, datosadjuntosesprincipal, datosadjuntosorden,
+          datosadjuntosactivo, datosadjuntosfechacreacion, xdatosadjuntosidespeciesvegetales,
+          datosadjuntospesobytes, datosadjuntosresumen
+        ) VALUES ('imagen', ?, ?, ?, ?, ?, 1, NOW(), ?, ?, ?)`,
+        [
+          fileType, fileName, storagePath, esPrimera,
+          total + 1, idespeciesvegetales, fileSize, initialResumen
+        ]
+      );
+      newPhotoId = (result as any).insertId;
+    }
 
     if (rawStoragePath.startsWith('uploads/temp/')) {
       await fileRef.delete().catch(() => {});
@@ -317,9 +350,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({
       success: true,
       photo: {
-        id: (result as any).insertId,
+        id: newPhotoId,
         ruta: storagePath,
-        esPrincipal: esPrimera,
+        esPrincipal: returnedEsPrimera,
         nombreOriginal: fileName,
         resumen: initialResumen
       }
@@ -337,7 +370,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const photoId = searchParams.get('id');
+  const photoId = searchParams.get('photoId') || searchParams.get('id');
 
   if (!photoId) return NextResponse.json({ error: 'id requerido' }, { status: 400 });
 
