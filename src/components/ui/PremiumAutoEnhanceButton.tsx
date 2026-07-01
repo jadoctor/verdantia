@@ -10,7 +10,7 @@ interface PremiumAutoEnhanceButtonProps {
 
 export default function PremiumAutoEnhanceButton({ 
   onClick, 
-  text = '🪄 Auto Ajuste', 
+  text = 'Auto Ajuste', 
   disabled = false 
 }: PremiumAutoEnhanceButtonProps) {
   return (
@@ -22,35 +22,34 @@ export default function PremiumAutoEnhanceButton({
         height: '36px',
         padding: '0 16px',
         borderRadius: '8px',
-        background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', // Blue magic theme
+        background: 'linear-gradient(135deg, #d946ef, #c026d3)',
         color: '#ffffff',
-        border: '1px solid rgba(255, 255, 255, 0.4)',
-        backdropFilter: 'blur(10px)',
+        border: 'none',
         cursor: disabled ? 'not-allowed' : 'pointer',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '8px',
-        fontSize: '0.85rem',
+        fontSize: '0.9rem',
         fontWeight: 600,
         letterSpacing: '0.3px',
         whiteSpace: 'nowrap',
-        boxShadow: '0 4px 14px 0 rgba(14, 165, 233, 0.3)',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         opacity: disabled ? 0.6 : 1,
       }}
       onMouseOver={(e) => {
         if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 6px 20px 0 rgba(14, 165, 233, 0.4)';
-          e.currentTarget.style.background = 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 12px rgba(217, 70, 239, 0.3)';
+          e.currentTarget.style.filter = 'brightness(1.05)';
         }
       }}
       onMouseOut={(e) => {
         if (!disabled) {
-          e.currentTarget.style.transform = 'translateY(0) scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(14, 165, 233, 0.3)';
-          e.currentTarget.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+          e.currentTarget.style.filter = 'brightness(1)';
         }
       }}
       onMouseDown={(e) => {

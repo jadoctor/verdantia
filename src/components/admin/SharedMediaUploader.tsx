@@ -6,6 +6,7 @@ import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import DownloadApuntesButton from './DownloadApuntesButton';
+import PremiumVisibilityToggle from '@/components/ui/PremiumVisibilityToggle';
 import './EspecieVegetalForm.css';
 
 interface SharedMediaUploaderProps {
@@ -1846,18 +1847,12 @@ export default function SharedMediaUploader({ entityId, entityType, userEmail }:
       </div>
 
       {/* ── Status Bar ── */}
-      <div style={{ background: formData.especiesvegetalesvisibilidadsino ? '#ecfdf5' : '#f1f5f9', borderRadius: '12px', padding: '16px 24px', marginBottom: '24px', border: `1px solid ${formData.especiesvegetalesvisibilidadsino ? '#10b981' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', transition: 'all 0.3s' }}>
-        <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', color: '#334155', margin: 0, fontSize: '1.1rem' }}>
-          <input 
-            type="checkbox" 
-            name="especiesvegetalesvisibilidadsino" 
-            checked={!!formData.especiesvegetalesvisibilidadsino} 
-            onChange={handleChange} 
-            style={{ width: '22px', height: '22px', accentColor: '#10b981' }}
-          /> 
-          Especie con Visibilidad Global (Pública)
-        </label>
-      </div>
+      <PremiumVisibilityToggle 
+        name="especiesvegetalesvisibilidadsino"
+        label="Especie con Visibilidad Global (Pública)"
+        checked={!!formData.especiesvegetalesvisibilidadsino}
+        onChange={handleChange}
+      />
 
       {/* HERO GALLERY HEADER */}
       <div style={{

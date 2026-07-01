@@ -10,7 +10,7 @@ interface PremiumBackButtonProps {
 
 export default function PremiumBackButton({ 
   onClick, 
-  text = '🏠 Volver al Inicio', 
+  text = 'Volver al Inicio', 
   style 
 }: PremiumBackButtonProps) {
   return (
@@ -18,32 +18,31 @@ export default function PremiumBackButton({
       type="button"
       onClick={onClick}
       style={{ 
-        background: '#ffffff', 
-        border: '1px solid #cbd5e1', 
-        color: '#475569', 
-        padding: '6px 14px', 
-        borderRadius: '8px', 
+        height: '36px',
+        padding: '0 16px', 
+        background: 'linear-gradient(135deg, #6366f1, #4f46e5)', 
+        border: 'none', 
+        color: 'white', 
+        borderRadius: '8px',
         cursor: 'pointer', 
-        fontWeight: '600', 
-        fontSize: '0.85rem', 
+        fontWeight: 600, 
+        fontSize: '0.9rem', 
         display: 'inline-flex', 
         alignItems: 'center', 
         gap: '6px',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         ...style
       }}
       onMouseOver={evt => {
-        evt.currentTarget.style.background = '#f1f5f9';
-        evt.currentTarget.style.borderColor = '#94a3b8';
-        evt.currentTarget.style.color = '#334155';
-        evt.currentTarget.style.transform = 'translateX(-2px)';
+        evt.currentTarget.style.transform = 'translateY(-2px)';
+        evt.currentTarget.style.boxShadow = '0 6px 12px rgba(99, 102, 241, 0.3)';
+        evt.currentTarget.style.filter = 'brightness(1.1)';
       }}
       onMouseOut={evt => {
-        evt.currentTarget.style.background = '#ffffff';
-        evt.currentTarget.style.borderColor = '#cbd5e1';
-        evt.currentTarget.style.color = '#475569';
-        evt.currentTarget.style.transform = 'translateX(0)';
+        evt.currentTarget.style.transform = 'translateY(0)';
+        evt.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        evt.currentTarget.style.filter = 'brightness(1)';
       }}
     >
       {text}

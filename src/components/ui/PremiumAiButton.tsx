@@ -13,8 +13,8 @@ interface PremiumAiButtonProps {
 
 export default function PremiumAiButton({ 
   onClick, 
-  text = '✨ Asistente IA', 
-  loadingText = '⏳ Analizando...',
+  text = 'Asistente IA', 
+  loadingText = 'Analizando...',
   isLoading = false,
   disabled = false,
   style 
@@ -27,14 +27,15 @@ export default function PremiumAiButton({
       onClick={onClick}
       disabled={isButtonDisabled}
       style={{ 
-        padding: '10px 20px', 
-        background: isButtonDisabled ? 'linear-gradient(135deg, #64748b, #475569)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
-        border: isButtonDisabled ? '1px solid #475569' : '1px solid rgba(255,255,255,0.2)',
-        borderRadius: '12px', 
+        padding: '0 16px', 
+        height: '36px',
+        background: isButtonDisabled ? '#cbd5e1' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)', 
+        border: 'none',
+        borderRadius: '8px', 
         color: 'white', 
-        fontWeight: 'bold', 
+        fontWeight: '600', 
         cursor: isButtonDisabled ? 'not-allowed' : 'pointer', 
-        fontSize: '0.95rem',
+        fontSize: '0.9rem',
         boxShadow: isButtonDisabled ? 'none' : '0 4px 14px rgba(139, 92, 246, 0.3)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'inline-flex',

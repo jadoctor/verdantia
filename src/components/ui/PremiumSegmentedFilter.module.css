@@ -1,0 +1,76 @@
+.container {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  gap: 4px;
+  width: auto;
+  justify-content: flex-start;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.segmentButton {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.segmentButton.selected {
+  background: white;
+  color: #0f766e;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+.segmentButton.unselected {
+  background: transparent;
+  color: white;
+  box-shadow: none;
+}
+
+.countBadge {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 2px;
+  font-weight: 600;
+}
+
+.segmentButton.selected .countBadge {
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.segmentButton.unselected .countBadge {
+  background: rgba(255,255,255,0.2);
+}
+
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .segmentButton {
+    flex: 1;
+    padding: 6px 2px;
+    font-size: 0.75rem;
+    gap: 2px;
+  }
+  .countBadge {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    margin-left: 2px;
+  }
+}

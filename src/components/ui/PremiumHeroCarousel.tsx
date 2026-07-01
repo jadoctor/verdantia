@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
+import styles from './PremiumHeroCarousel.module.css';
 
 export interface HeroPhoto {
   id: number | string;
@@ -68,28 +69,16 @@ export default function PremiumHeroCarousel({
   const vibrantColor = activeStyles.vibrantColor;
 
   return (
-    <div style={{
-      marginBottom: '28px',
-      borderRadius: '16px',
-      border: '1px solid #e2e8f0',
-      background: vibrantColor ? `linear-gradient(135deg, #f8fafc 0%, ${vibrantColor}18 60%, ${vibrantColor}30 100%)` : '#f8fafc',
-      transition: 'background 0.6s ease',
-      overflow: 'hidden'
-    }}>
-      <div style={{ display: 'flex', gap: 0 }}>
+    <div 
+      className={styles.container}
+      style={{
+        background: vibrantColor ? `linear-gradient(135deg, transparent 0%, ${vibrantColor}10 60%, ${vibrantColor}20 100%)` : 'transparent'
+      }}
+    >
+      <div className={styles.flexContainer}>
         {/* Hero photo (Strictly 3:4, No texts) */}
         <div 
-          className="profile-hero-main" 
-          style={{ 
-            width: '180px', 
-            height: '220px', 
-            flexShrink: 0, 
-            position: 'relative',
-            overflow: 'hidden',
-            border: draggedOverPhotoId === 'HERO' ? '4px dashed #10b981' : 'none',
-            opacity: draggedOverPhotoId === 'HERO' ? 0.8 : 1,
-            transition: 'all 0.2s ease'
-          }}
+          className={`${styles.heroMain} ${draggedOverPhotoId === 'HERO' ? styles.dragOver : ''}`}
           onDragEnter={(e) => { e.preventDefault(); if (draggedPhotoId !== null) setDraggedOverPhotoId('HERO'); }}
           onDragOver={(e) => { e.preventDefault(); }}
           onDragLeave={() => { if (draggedOverPhotoId === 'HERO') setDraggedOverPhotoId(null); }}
@@ -107,17 +96,12 @@ export default function PremiumHeroCarousel({
               key={activePhoto.id}
               src={getMediaUrl(activePhoto.ruta)}
               alt={fallbackAlt}
+              className={styles.heroImg}
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
                 objectPosition: activeStyles.objectPosition,
                 transformOrigin: activeStyles.transformOrigin,
                 transform: activeStyles.zoom,
-                filter: activeStyles.filter,
-                transition: 'opacity 0.3s ease',
-                display: 'block',
-                pointerEvents: 'none' // Prevent img from interfering with drag events
+                filter: activeStyles.filter
               }}
               crossOrigin="anonymous"
             />
@@ -126,14 +110,14 @@ export default function PremiumHeroCarousel({
 
         {/* Right strip: only photos NOT currently shown as hero, vertically stacked */}
         {thumbPhotos.length > 0 && (
-          <div className="profile-hero-thumbnails" style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '0 8px', height: '220px', justifyContent: 'center' }}>
+          <div className={styles.thumbnails}>
             {thumbPhotos.map(p => {
-              const styles = getPhotoStyles(p);
+              const stylesP = getPhotoStyles(p);
               return (
                 <div
                   key={p.id}
                   onClick={() => onSetPrimary(p.id)}
-                  className={`profile-hero-thumb`}
+                  className={`${styles.thumbItem} ${draggedPhotoId === p.id ? styles.dragging : ''} ${draggedOverPhotoId === p.id ? styles.dragOver : ''}`}
                   draggable
                   onDragStart={() => setDraggedPhotoId(p.id)}
                   onDragEnter={() => draggedPhotoId !== null && setDraggedOverPhotoId(p.id)}
@@ -147,45 +131,17 @@ export default function PremiumHeroCarousel({
                     setDraggedPhotoId(null);
                     setDraggedOverPhotoId(null);
                   }}
-                  style={{
-                    width: '60px',
-                    height: '70px',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    cursor: 'grab',
-                    flexShrink: 0,
-                    border: draggedOverPhotoId === p.id ? '2px dashed #10b981' : '2px solid rgba(0,0,0,0.08)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                    opacity: draggedPhotoId === p.id ? 0.5 : 1,
-                    transform: draggedOverPhotoId === p.id ? 'scale(1.05)' : 'scale(1)',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={e => { 
-                    if (draggedPhotoId === null) {
-                      e.currentTarget.style.transform = 'scale(1.1)'; 
-                      e.currentTarget.style.borderColor = '#8b5cf6';
-                    }
-                  }}
-                  onMouseLeave={e => { 
-                    if (draggedPhotoId === null) {
-                      e.currentTarget.style.transform = 'scale(1)'; 
-                      e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
-                    }
-                  }}
                 >
                   <img
                     src={getMediaUrl(p.ruta)}
                     draggable={false}
                     alt=""
+                    className={styles.thumbImg}
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: styles.objectPosition,
-                      transformOrigin: styles.transformOrigin,
-                      transform: styles.zoom,
-                      filter: styles.filter,
-                      display: 'block'
+                      objectPosition: stylesP.objectPosition,
+                      transformOrigin: stylesP.transformOrigin,
+                      transform: stylesP.zoom,
+                      filter: stylesP.filter
                     }}
                     crossOrigin="anonymous"
                   />

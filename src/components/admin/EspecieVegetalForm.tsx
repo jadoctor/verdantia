@@ -4,6 +4,8 @@ import React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PremiumSubheader from '@/components/ui/PremiumSubheader';
 import PremiumDeleteButton from '@/components/ui/PremiumDeleteButton';
+import PremiumUndoButton from '@/components/ui/PremiumUndoButton';
+import PremiumSaveButton from '@/components/ui/PremiumSaveButton';
 import PremiumDevInsights from '@/components/ui/PremiumDevInsights';
 import PremiumHeroCarousel from '@/components/ui/PremiumHeroCarousel';
 import { useEspecieVegetalForm } from './hooks/EspecieVegetal/useEspecieVegetalForm';
@@ -33,17 +35,27 @@ export default function EspecieVegetalForm({ especieId, userEmail }: EspecieVege
 
       {/* ── Encabezado Premium Contextual (PremiumSubheader) ── */}
       <PremiumSubheader
-        title={<>{s.formData.especiesvegetalesicono || '🌿'} {s.formData.especiesvegetalesnombre || 'Nueva Especie'}</>}
+        title={
+          <>
+            {s.formData.especiesvegetalesicono || '🌿'} {s.formData.especiesvegetalesnombre || 'Nueva Especie'}
+            {s.formData.especiesvegetalesnombrecientifico ? (
+              <span style={{ fontWeight: 'normal', opacity: 0.9, marginLeft: '8px', fontSize: '0.9em' }}>
+                ({s.formData.especiesvegetalesnombrecientifico})
+              </span>
+            ) : null}
+          </>
+        }
         gradient="linear-gradient(135deg, #0f766e, #10b981)"
         actions={
           <>
             {s.isDirty && s.saveStatus === 'idle' && (
-              <button 
-                onClick={(e) => s.handleSubmit(e as unknown as React.FormEvent)} 
-                style={{ background: '#fef08a', color: '#854d0e', border: 'none', padding: '6px 14px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.1)' }}
-              >
-                💾 Guardar Cambios
-              </button>
+              <>
+                <PremiumUndoButton onClick={() => s.setFormData(s.initialData)} text="Deshacer" />
+                <PremiumSaveButton 
+                  onClick={() => s.handleSubmit(undefined as unknown as React.FormEvent)} 
+                  text="Guardar Cambios" 
+                />
+              </>
             )}
             {especieId && (
               <PremiumDeleteButton onClick={() => s.setDeleteConfirm({ type: 'especie', id: especieId, url: '' })} />

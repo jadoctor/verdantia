@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LucideIcon, Trash2, Edit3, Plus, Search, ChevronRight, Ruler, Layers, Sparkles, AlertCircle } from 'lucide-react';
+import PremiumExitButton from '@/components/ui/PremiumExitButton';
+import PremiumCancelButton from '@/components/ui/PremiumCancelButton';
+import PremiumConfirmButton from '@/components/ui/PremiumConfirmButton';
+import PremiumEditButton from '@/components/ui/PremiumEditButton';
+import PremiumDeleteButton from '@/components/ui/PremiumDeleteButton';
+import PremiumSaveButton from '@/components/ui/PremiumSaveButton';
+import PremiumNextButton from '@/components/ui/PremiumNextButton';
 
 interface BancalesSettingsProps {
   profile: any;
@@ -424,19 +431,11 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
                 🔍 {formNombre || 'Bancal en Diseño'}
               </h3>
             </div>
-            <button 
+            <PremiumExitButton 
               onClick={() => setShowZoomModal(false)}
-              style={{
-                background: '#f1f5f9', border: 'none', color: '#64748b',
-                width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', fontWeight: 'bold', transition: 'background 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-              onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
-            >
-              ×
-            </button>
+              text="Cerrar"
+              style={{ width: '32px', height: '32px' }}
+            />
           </div>
 
           {/* SVG Canvas (Zoomed 400x400) */}
@@ -575,20 +574,11 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
           </div>
 
           {/* Action button */}
-          <button
+          <PremiumCancelButton
             onClick={() => setShowZoomModal(false)}
-            style={{
-              background: '#0f766e', color: 'white', border: 'none',
-              padding: '10px 24px', borderRadius: '10px', cursor: 'pointer',
-              fontWeight: 600, fontSize: '0.9rem', width: '100%',
-              textAlign: 'center', transition: 'background 0.2s',
-              boxShadow: '0 2px 4px rgba(15, 118, 110, 0.2)'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#0d5a54'}
-            onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
-          >
-            Cerrar Vista Detallada
-          </button>
+            text="Cerrar Vista Detallada"
+            style={{ width: '100%', padding: '10px 24px', fontSize: '0.9rem' }}
+          />
         </div>
 
         <style>{`
@@ -643,20 +633,10 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
           </p>
         </div>
         {!isEditing && bancales.length < 4 && (
-          <button
+          <PremiumConfirmButton
             onClick={handleAddNew}
-            style={{
-              background: '#0f766e', color: 'white', border: 'none',
-              padding: '10px 16px', borderRadius: '10px', cursor: 'pointer',
-              fontWeight: 600, fontSize: '0.875rem', display: 'inline-flex',
-              alignItems: 'center', gap: '8px', transition: 'background 0.2s',
-              boxShadow: '0 2px 4px rgba(15, 118, 110, 0.2)'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#0d5a54'}
-            onMouseLeave={e => e.currentTarget.style.background = '#0f766e'}
-          >
-            <Plus size={16} /> Añadir Bancal
-          </button>
+            text="Añadir Bancal"
+          />
         )}
       </div>
 
@@ -708,16 +688,10 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
               <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', maxWidth: '400px', marginLeft: 'auto', marginRight: 'auto' }}>
                 Actualmente estás usando el <strong>Bancal Estándar Virtual</strong> por defecto. Define tus bancales físicos para poder planificar a escala.
               </p>
-              <button
+              <PremiumConfirmButton
                 onClick={handleAddNew}
-                style={{
-                  background: '#0f766e', color: 'white', border: 'none',
-                  padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
-                  fontWeight: 600, fontSize: '0.85rem'
-                }}
-              >
-                + Diseñar mi primer Bancal
-              </button>
+                text="Diseñar mi primer Bancal"
+              />
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
@@ -764,48 +738,24 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
                           </h4>
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
+                          <PremiumNextButton
                             onClick={() => router.push(`/dashboard/bancales/${bancal.idbancales}`)}
-                            style={{
-                              background: '#e0f2fe', border: 'none', color: '#0369a1',
-                              width: '28px', height: '28px', borderRadius: '6px',
-                              cursor: 'pointer', display: 'flex', alignItems: 'center',
-                              justifyContent: 'center', transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#bae6fd'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#e0f2fe'}
                             title="Lienzo Planificador / Diseñador Visual"
-                          >
-                            <Ruler size={14} />
-                          </button>
-                          <button
+                            text="📏"
+                            style={{ width: '28px', height: '28px', padding: 0 }}
+                          />
+                          <PremiumEditButton
                             onClick={() => handleEdit(bancal)}
-                            style={{
-                              background: '#f1f5f9', border: 'none', color: '#475569',
-                              width: '28px', height: '28px', borderRadius: '6px',
-                              cursor: 'pointer', display: 'flex', alignItems: 'center',
-                              justifyContent: 'center', transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
                             title="Editar Bancal"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button
+                            text="✏️"
+                            style={{ width: '28px', height: '28px', padding: 0 }}
+                          />
+                          <PremiumDeleteButton
                             onClick={() => handleDelete(bancal.idbancales)}
-                            style={{
-                              background: '#fef2f2', border: 'none', color: '#dc2626',
-                              width: '28px', height: '28px', borderRadius: '6px',
-                              cursor: 'pointer', display: 'flex', alignItems: 'center',
-                              justifyContent: 'center', transition: 'background 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}
                             title="Eliminar Bancal"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                            text="🗑️"
+                            style={{ width: '28px', height: '28px', padding: 0 }}
+                          />
                         </div>
                       </div>
 
@@ -1054,19 +1004,11 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
                     placeholder="Recinto (Ej. 1)"
                     style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #bae6fd', fontSize: '0.75rem' }}
                   />
-                  <button
-                    type="button"
+                  <PremiumConfirmButton
                     onClick={handleQuerySigpac}
                     disabled={sigpacSearching}
-                    style={{
-                      background: '#0284c7', color: 'white', border: 'none',
-                      borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', gap: '4px'
-                    }}
-                  >
-                    <Search size={12} /> {sigpacSearching ? 'Buscando...' : 'Buscar SIGPAC'}
-                  </button>
+                    text={sigpacSearching ? 'Buscando...' : 'Buscar SIGPAC'}
+                  />
                 </div>
 
                 {formSuperficie && (
@@ -1099,28 +1041,14 @@ export default function BancalesSettings({ profile, showToast }: BancalesSetting
             display: 'flex', justifyContent: 'flex-end', gap: '10px',
             marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px'
           }}>
-            <button
-              type="button"
+            <PremiumCancelButton
               onClick={() => setIsEditing(false)}
-              style={{
-                background: '#e2e8f0', color: '#475569', border: 'none',
-                padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
-                fontWeight: 600, fontSize: '0.875rem'
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
+              text="Cancelar"
+            />
+            <PremiumSaveButton
               disabled={saving}
-              style={{
-                background: '#0f766e', color: 'white', border: 'none',
-                padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
-                fontWeight: 600, fontSize: '0.875rem'
-              }}
-            >
-              {saving ? 'Guardando...' : 'Guardar Bancal'}
-            </button>
+              text={saving ? 'Guardando...' : 'Guardar Bancal'}
+            />
           </div>
         </form>
       )}

@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import PremiumModal from './PremiumModal';
 import PremiumModalHeader from './PremiumModalHeader';
 import { AnalisisRowDetails } from '@/app/dashboard/admin/mantenimiento/analisis/components/AnalisisRowDetails';
+import PremiumReanalyzeButton from '@/components/ui/PremiumReanalyzeButton';
 
 interface PremiumDevInsightsProps {
   modulePath: string; // e.g. "admin/especies/page.tsx"
@@ -215,7 +216,7 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
         <PremiumModal isOpen={isOpen} onClose={() => setIsOpen(false)} maxWidth="900px">
           <PremiumModalHeader
             title={<>🛠️ Dashboard de Mantenimiento <span style={{ fontSize: '0.8rem', opacity: 0.8, marginLeft: '8px' }}>({modulePath})</span></>}
-            gradient="linear-gradient(135deg, #0f172a, #1e293b)"
+            gradient="linear-gradient(135deg, #0284c7, #3b82f6)"
             actions={
               <>
                 <button
@@ -237,26 +238,7 @@ export default function PremiumDevInsights({ modulePath }: PremiumDevInsightsPro
                 >
                   ✖ Cancelar
                 </button>
-                <button
-                  onClick={handleReanalyze}
-                  disabled={analyzing}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: analyzing ? '#475569' : '#0284c7',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    cursor: analyzing ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {analyzing ? '⏳ Analizando...' : '🔄 Re-analizar'}
-                </button>
+                <PremiumReanalyzeButton onClick={handleReanalyze} isAnalyzing={analyzing} />
               </>
             }
           />

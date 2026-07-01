@@ -1,5 +1,8 @@
 import React from 'react';
 import PremiumFormTabs from '@/components/ui/PremiumFormTabs';
+import PremiumAiButton from '@/components/ui/PremiumAiButton';
+import PremiumAutoEnhanceButton from '@/components/ui/PremiumAutoEnhanceButton';
+import PremiumCheckButton from '@/components/ui/PremiumCheckButton';
 import DetallesTab from './DetallesTab';
 import CultivoTab from './CultivoTab';
 import TaxonomiaTab from './TaxonomiaTab';
@@ -47,12 +50,14 @@ export default function EspecieFormTabsSection({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px'
           }}
         >
-          <span>
-            Ficha de Especie
+          <span style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', flex: 1, minWidth: 0 }}>
+            <span>Ficha de Especie</span>
             {!s.isEspecieOpen && s.formData.especiesvegetalesnombre && (
-              <span style={{ color: '#475569', marginLeft: '10px', fontWeight: 'normal' }}>
+              <span style={{ color: '#475569', fontWeight: 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 — {s.formData.especiesvegetalesnombre}{' '}
                 {s.formData.especiesvegetalesnombrecientifico
                   ? `(${s.formData.especiesvegetalesnombrecientifico})`
@@ -60,7 +65,7 @@ export default function EspecieFormTabsSection({
               </span>
             )}
           </span>
-          <span>{s.isEspecieOpen ? '▲' : '▼'}</span>
+          <span style={{ flexShrink: 0 }}>{s.isEspecieOpen ? '▲' : '▼'}</span>
         </div>
 
         {s.isEspecieOpen && (
@@ -73,68 +78,39 @@ export default function EspecieFormTabsSection({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-start',
+                flexWrap: 'wrap',
                 gap: '16px',
               }}
             >
-              <button
-                type="button"
+              <PremiumAiButton 
                 onClick={s.callAI}
-                className="btn-ai"
-                disabled={s.aiLoading}
-                style={{
-                  margin: 0,
-                  background: s.aiLoading
-                    ? 'linear-gradient(135deg, #475569, #1e293b)'
-                    : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  boxShadow: s.aiLoading ? 'none' : '0 4px 12px rgba(139, 92, 246, 0.3)',
-                  cursor: s.aiLoading ? 'not-allowed' : 'pointer',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {s.aiLoading ? `⏳ Analizando... ${s.aiSeconds}s` : '✨ Asistente IA'}
-              </button>
+                isLoading={s.aiLoading}
+                loadingText={`⏳ Analizando... ${s.aiSeconds}s`}
+              />
               {especieId && (
-                <button
-                  type="button"
+                <PremiumCheckButton 
                   onClick={s.handleCheckSpecies}
-                  className="btn-ai"
-                  disabled={s.checking}
-                  style={{
-                    margin: 0,
-                    background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(2,132,199,0.2)',
-                  }}
-                >
-                  {s.checking ? 'Chequeando...' : '🔍 Chekeo'}
-                </button>
+                  isLoading={s.checking}
+                  loadingText="Chequeando..."
+                  text="Chekeo"
+                />
               )}
             </div>
 
             <PremiumFormTabs
               tabs={[
-                { id: 'taxonomia', label: '🧬 Identificación', hasNotification: !!s.aiConfigTabs['taxonomia'] },
-                { id: 'cultivo', label: '🌱 Requisitos y Suelo', hasNotification: !!s.aiConfigTabs['cultivo'] },
-                { id: 'fases', label: '⏳ Cronología y Calendarios', hasNotification: !!s.aiConfigTabs['fases'] },
-                { id: 'biodinamica', label: '🌙 Luna y Biodinámica', hasNotification: !!s.aiConfigTabs['biodinamica'] },
-                { id: 'asociaciones', label: '🤝 Ecosistema', hasNotification: !!s.aiConfigTabs['asociaciones'] },
-                { id: 'textos', label: '📝 Textos y Autosuficiencia', hasNotification: !!s.aiConfigTabs['textos'] },
-                { id: 'alimentacion', label: '🐄 Alimentación Animal', hasNotification: !!s.aiConfigTabs['alimentacion'] },
-                { id: 'variedades', label: '🌱 Variedades', hasNotification: !!s.aiConfigTabs['variedades'] },
-                { id: 'pautas', label: '📋 Labores', hasNotification: !!s.aiConfigTabs['pautas'] },
-                { id: 'photos', label: '📷 Fotos', hasNotification: !!s.aiConfigTabs['photos'] },
-                { id: 'pdfs', label: '📄 PDFs', hasNotification: !!s.aiConfigTabs['pdfs'] },
-                { id: 'blogs', label: '📰 Blogs', hasNotification: !!s.aiConfigTabs['blogs'] },
+                { id: 'taxonomia', label: '🧬 Identificación' },
+                { id: 'cultivo', label: '🌱 Requisitos y Suelo' },
+                { id: 'fases', label: '⏳ Cronología y Calendarios' },
+                { id: 'biodinamica', label: '🌙 Luna y Biodinámica' },
+                { id: 'asociaciones', label: '🤝 Ecosistema' },
+                { id: 'textos', label: '📝 Textos y Autosuficiencia' },
+                { id: 'alimentacion', label: '🐄 Alimentación Animal' },
+                { id: 'variedades', label: '🌱 Variedades' },
+                { id: 'pautas', label: '📋 Labores' },
+                { id: 'photos', label: '📷 Fotos' },
+                { id: 'pdfs', label: '📄 PDFs' },
+                { id: 'blogs', label: '📰 Blogs' },
               ]}
               activeTab={s.activeTab}
               onTabChange={s.setActiveTab}

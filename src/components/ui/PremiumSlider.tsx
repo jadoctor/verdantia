@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
 
+import styles from './PremiumSlider.module.css';
+
 interface PremiumSliderProps {
   label: string;
   icon?: React.ReactNode;
@@ -28,12 +30,12 @@ export default function PremiumSlider({
   const percentage = ((value - min) / (max - min)) * 100;
   
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', ...style }}>
-      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div className={styles.container} style={style}>
+      <label className={styles.header}>
+        <span className={styles.labelWrapper}>
           {icon} {label}
         </span>
-        <span style={{ color: '#0f766e', fontWeight: 'bold' }}>
+        <span className={styles.valueDisplay}>
           {formatValue(value)}
         </span>
       </label>
@@ -45,52 +47,11 @@ export default function PremiumSlider({
         step={step}
         value={value} 
         onChange={(e) => onChange(Number(e.target.value))} 
+        className={styles.sliderInput}
         style={{
-          WebkitAppearance: 'none',
-          width: '100%',
-          height: '6px',
-          background: `linear-gradient(90deg, #0f766e ${percentage}%, #e2e8f0 ${percentage}%)`,
-          borderRadius: '4px',
-          outline: 'none',
-          cursor: 'pointer',
-          // Note: using custom css for the thumb requires styled-components or global css, 
-          // but we can inline standard properties. The thumb style will fallback to browser default if not customized via CSS class.
+          background: `linear-gradient(90deg, #0f766e ${percentage}%, #e2e8f0 ${percentage}%)`
         }}
       />
-      <style>{`
-        input[type=range]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 2px solid #0f766e;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          transition: transform 0.1s;
-        }
-        input[type=range]::-webkit-slider-thumb:hover {
-          transform: scale(1.15);
-        }
-        input[type=range]::-webkit-slider-thumb:active {
-          transform: scale(0.95);
-          background: #f0fdf4;
-        }
-        input[type=range]::-moz-range-thumb {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 2px solid #0f766e;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          transition: transform 0.1s;
-        }
-        input[type=range]::-moz-range-thumb:hover {
-          transform: scale(1.15);
-        }
-      `}</style>
     </div>
   );
 }

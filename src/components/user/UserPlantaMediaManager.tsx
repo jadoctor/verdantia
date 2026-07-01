@@ -5,6 +5,13 @@ import { getMediaUrl } from '@/lib/media-url';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes } from 'firebase/storage';
 import ConsentimientoFotoModal from '@/components/user/ConsentimientoFotoModal';
+import PremiumExitButton from '@/components/ui/PremiumExitButton';
+import PremiumCheckButton from '@/components/ui/PremiumCheckButton';
+import PremiumEditButton from '@/components/ui/PremiumEditButton';
+import PremiumDeleteButton from '@/components/ui/PremiumDeleteButton';
+import PremiumUploadButton from '@/components/ui/PremiumUploadButton';
+import PremiumSaveButton from '@/components/ui/PremiumSaveButton';
+import PremiumCancelButton from '@/components/ui/PremiumCancelButton';
 
 interface UserPlantaMediaManagerProps {
   plantaId: string;
@@ -298,18 +305,16 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcio
                   <span style={{ fontSize: '0.6rem', color: '#b91c1c', textAlign: 'center', lineHeight: 1.3 }}>
                     Contenido no permitido
                   </span>
-                  <button
-                    type="button"
+                  <PremiumExitButton
                     onClick={() => handleDelete(p.id)}
                     style={{
-                      marginTop: '4px', background: '#991b1b', color: 'white',
-                      border: 'none', borderRadius: '6px', padding: '4px 8px',
-                      fontSize: '0.6rem', cursor: 'pointer', fontWeight: 700
+                      marginTop: '4px',
+                      padding: '0 8px',
+                      fontSize: '0.7rem',
+                      height: '24px'
                     }}
-                    title="Eliminar este aviso"
-                  >
-                    Entendido ✕
-                  </button>
+                    text="Entendido ✕"
+                  />
                 </div>
               );
             }
@@ -392,33 +397,24 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcio
                 {isUser && (
                   <div className="photo-actions" style={{ zIndex: 20 }}>
                     {!isLocked && p.resultadoValidacion !== 'rechazado' && (
-                      <button 
-                        type="button"
-                        className={`photo-action-btn btn-photo-primary ${isPrimary ? 'is-active' : ''}`}
+                      <PremiumCheckButton 
                         onClick={() => setPrimaryPhoto(p.id)} 
-                        title={isPrimary ? 'Foto de portada de tu hortaliza' : 'Marcar como portada'}
-                      >
-                        {isPrimary ? '★' : '☆'}
-                      </button>
+                        text={isPrimary ? '★' : '☆'}
+                        style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }}
+                      />
                     )}
                     {!isLocked && p.resultadoValidacion !== 'rechazado' && (
-                      <button 
-                        type="button"
-                        className="photo-action-btn btn-photo-edit"
+                      <PremiumEditButton 
                         onClick={() => openPhotoEditor(p)}
-                        title="Encuadrar foto"
-                      >
-                        ✏️
-                      </button>
+                        text="✏️"
+                        style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }}
+                      />
                     )}
-                    <button 
-                      type="button"
-                      className="photo-action-btn btn-photo-delete"
+                    <PremiumDeleteButton 
                       onClick={() => handleDelete(p.id)}
-                      title="Eliminar"
-                    >
-                      ✕
-                    </button>
+                      text="✕"
+                      style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }}
+                    />
                   </div>
                 )}
                 {!isUser && (
@@ -452,14 +448,10 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcio
               ) : (
                 <div className="drop-zone-content">
                   <div className="drop-zone-buttons" style={{ flexDirection: 'column' }}>
-                    <button
-                      type="button"
+                    <PremiumUploadButton
                       onClick={handleClickAddPhoto}
-                      className="btn-upload primary"
-                      style={{ padding: '8px', fontSize: '0.8rem', background: '#10b981', border: 'none', cursor: 'pointer' }}
-                    >
-                      <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📸</span> Añadir
-                    </button>
+                      text="📸 Añadir"
+                    />
                   </div>
                 </div>
               )}
@@ -491,7 +483,7 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcio
           <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Encuadrar Foto</h3>
-              <button onClick={() => setEditingPhoto(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
+              <PremiumExitButton onClick={() => setEditingPhoto(null)} text="✕" style={{ padding: '0 8px', height: '28px', fontSize: '0.9rem' }} />
             </div>
             <div style={{ padding: '20px' }}>
               <div style={{ width: '100%', height: '200px', background: '#f1f5f9', borderRadius: '8px', overflow: 'hidden', position: 'relative', marginBottom: '20px' }}>
@@ -529,10 +521,12 @@ export default function UserPlantaMediaManager({ plantaId, userEmail, suscripcio
             </div>
             
             <div style={{ padding: '16px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button onClick={() => setEditingPhoto(null)} style={{ padding: '8px 16px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={savePhotoEdits} disabled={photoEditorSaveStatus === 'saving'} style={{ padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: '8px', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {photoEditorSaveStatus === 'saving' ? 'Guardando...' : photoEditorSaveStatus === 'saved' ? '✓ Guardado' : 'Guardar'}
-              </button>
+              <PremiumCancelButton onClick={() => setEditingPhoto(null)} text="Cancelar" />
+              <PremiumSaveButton 
+                onClick={savePhotoEdits} 
+                disabled={photoEditorSaveStatus === 'saving'} 
+                text={photoEditorSaveStatus === 'saving' ? 'Guardando...' : photoEditorSaveStatus === 'saved' ? '✓ Guardado' : 'Guardar'} 
+              />
             </div>
           </div>
         </div>

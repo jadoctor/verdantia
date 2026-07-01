@@ -2,47 +2,27 @@
 
 import React from 'react';
 
+import styles from './PremiumDeleteButton.module.css';
+
 interface PremiumDeleteButtonProps {
   onClick: () => void;
+  onConfirm?: () => void;
   text?: string;
+  /** @deprecated isMobile is handled 100% via CSS Modules */
   isMobile?: boolean;
+  style?: React.CSSProperties;
+  title?: string;
+  disabled?: boolean;
 }
 
-export default function PremiumDeleteButton({ onClick, text = 'Eliminar', isMobile = false }: PremiumDeleteButtonProps) {
+export default function PremiumDeleteButton({ onClick, onConfirm, text = 'Eliminar', isMobile, style, title, disabled = false }: PremiumDeleteButtonProps) {
   return (
     <button 
       onClick={onClick}
-      style={{
-        height: '36px',
-        padding: '0 16px', 
-        borderRadius: '8px', 
-        background: 'rgba(255, 255, 255, 0.95)', 
-        color: '#dc2626',
-        border: '1px solid rgba(255, 255, 255, 0.4)',
-        backdropFilter: 'blur(10px)',
-        cursor: 'pointer', 
-        fontWeight: '800', 
-        fontSize: '0.85rem',
-        letterSpacing: '0.03em',
-        whiteSpace: 'nowrap',
-        boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.15)', 
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-        display: 'flex',
-        alignItems: 'center', 
-        gap: '8px', 
-        width: isMobile ? '100%' : 'auto', 
-        justifyContent: 'center'
-      }}
-      onMouseOver={e => {
-        e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-        e.currentTarget.style.boxShadow = '0 6px 20px rgba(220, 38, 38, 0.3)';
-        e.currentTarget.style.background = '#ffffff';
-      }}
-      onMouseOut={e => {
-        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-        e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(0, 0, 0, 0.15)';
-        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-      }}
+      disabled={disabled}
+      className={styles.button}
+      style={style}
+      title={title}
     >
       {text}
     </button>

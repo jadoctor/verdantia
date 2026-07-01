@@ -2,6 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { getMediaUrl } from '@/lib/media-url';
+import PremiumDeleteButton from '@/components/ui/PremiumDeleteButton';
+import PremiumUploadButton from '@/components/ui/PremiumUploadButton';
+import PremiumConfirmButton from '@/components/ui/PremiumConfirmButton';
+import PremiumCancelButton from '@/components/ui/PremiumCancelButton';
+import PremiumEditButton from '@/components/ui/PremiumEditButton';
 
 interface Conflicto {
   id: number;
@@ -350,19 +355,12 @@ export default function ConflictosDashboard({
                               ❌ {tieneAlegacion ? 'Vía de apelación agotada.' : 'Resolución definitiva.'} La foto debe ser eliminada.
                             </span>
                             <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '500px', flexDirection: window.innerWidth < 600 ? 'column' : 'row' }}>
-                              <button
+                              <PremiumDeleteButton
                                 onClick={() => handleEliminar(c.id)}
                                 disabled={deletingId === c.id || replacingId === c.id}
-                                style={{
-                                  background: '#dc2626', color: 'white', border: 'none', padding: '12px 24px',
-                                  borderRadius: '8px', fontWeight: 700, cursor: (deletingId === c.id || replacingId === c.id) ? 'not-allowed' : 'pointer',
-                                  flex: 1, fontSize: '1rem',
-                                  boxShadow: '0 4px 6px -1px rgba(220, 38, 38, 0.3)',
-                                  opacity: (deletingId === c.id || replacingId === c.id) ? 0.7 : 1
-                                }}
-                              >
-                                {deletingId === c.id ? '⏳ Eliminando...' : '🗑️ ELIMINAR FOTO'}
-                              </button>
+                                text={deletingId === c.id ? '⏳ Eliminando...' : '🗑️ ELIMINAR FOTO'}
+                                style={{ flex: 1, fontSize: '1rem', padding: '12px 24px' }}
+                              />
 
                               <label style={{ flex: 1 }}>
                                 <input 
@@ -375,16 +373,14 @@ export default function ConflictosDashboard({
                                       handleReemplazarFoto(c.id, e.target.files[0]);
                                     }
                                   }}
+                                  id={`reemplazo-file-${c.id}`}
                                 />
-                                <div style={{
-                                  background: '#10b981', color: 'white', padding: '12px 24px',
-                                  borderRadius: '8px', fontWeight: 700, cursor: (deletingId === c.id || replacingId === c.id) ? 'not-allowed' : 'pointer',
-                                  textAlign: 'center', fontSize: '1rem',
-                                  boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)',
-                                  opacity: (deletingId === c.id || replacingId === c.id) ? 0.7 : 1
-                                }}>
-                                  {replacingId === c.id ? '⏳ Subiendo...' : '📸 SUBIR REEMPLAZO'}
-                                </div>
+                                <PremiumUploadButton
+                                  onClick={(e) => { e.preventDefault(); document.getElementById(`reemplazo-file-${c.id}`)?.click(); }}
+                                  disabled={deletingId === c.id || replacingId === c.id}
+                                  text={replacingId === c.id ? '⏳ Subiendo...' : '📸 SUBIR REEMPLAZO'}
+                                  style={{ padding: '12px 24px', fontSize: '1rem', flex: 1, display: 'block', width: '100%' }}
+                                />
                               </label>
                             </div>
                           </div>
@@ -405,24 +401,18 @@ export default function ConflictosDashboard({
                           style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #94a3b8', minHeight: '80px', marginBottom: '8px', fontFamily: 'inherit' }}
                         />
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={() => handleRecurrir(c.incidenciaId, c.id)} style={{ flex: 1, background: '#3b82f6', color: 'white', border: 'none', padding: '8px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>Enviar Recurso</button>
-                          <button onClick={() => { setAppealingId(null); setMotivoRecurso(''); }} style={{ flex: 1, background: '#e2e8f0', color: '#334155', border: 'none', padding: '8px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+                          <PremiumConfirmButton onClick={() => handleRecurrir(c.incidenciaId, c.id)} text="Enviar Recurso" style={{ flex: 1 }} />
+                          <PremiumCancelButton onClick={() => { setAppealingId(null); setMotivoRecurso(''); }} text="Cancelar" style={{ flex: 1 }} />
                         </div>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <button
+                        <PremiumDeleteButton
                           onClick={() => handleEliminar(c.id)}
                           disabled={deletingId === c.id || replacingId === c.id}
-                          style={{
-                            background: '#ef4444', color: 'white', border: 'none', padding: '10px 20px',
-                            borderRadius: '8px', fontWeight: 700, cursor: (deletingId === c.id || replacingId === c.id) ? 'not-allowed' : 'pointer',
-                            flex: 1, minWidth: '150px', transition: 'all 0.2s',
-                            opacity: (deletingId === c.id || replacingId === c.id) ? 0.7 : 1
-                          }}
-                        >
-                          {deletingId === c.id ? '⏳ Eliminando...' : '🗑️ Eliminar foto'}
-                        </button>
+                          text={deletingId === c.id ? '⏳ Eliminando...' : '🗑️ Eliminar foto'}
+                          style={{ flex: 1, minWidth: '150px' }}
+                        />
 
                         <label style={{ flex: 1, minWidth: '150px' }}>
                           <input 
@@ -435,28 +425,22 @@ export default function ConflictosDashboard({
                                 handleReemplazarFoto(c.id, e.target.files[0]);
                               }
                             }}
+                            id={`reemplazar2-file-${c.id}`}
                           />
-                          <div style={{
-                            background: '#10b981', color: 'white', padding: '10px 20px',
-                            borderRadius: '8px', fontWeight: 700, cursor: (deletingId === c.id || replacingId === c.id) ? 'not-allowed' : 'pointer',
-                            textAlign: 'center', transition: 'all 0.2s',
-                            opacity: (deletingId === c.id || replacingId === c.id) ? 0.7 : 1
-                          }}>
-                            {replacingId === c.id ? '⏳ Subiendo...' : '📸 Reemplazar foto'}
-                          </div>
+                          <PremiumUploadButton
+                            onClick={(e) => { e.preventDefault(); document.getElementById(`reemplazar2-file-${c.id}`)?.click(); }}
+                            disabled={deletingId === c.id || replacingId === c.id}
+                            text={replacingId === c.id ? '⏳ Subiendo...' : '📸 Reemplazar foto'}
+                            style={{ flex: 1, display: 'block', width: '100%' }}
+                          />
                         </label>
                         
-                        <button
+                        <PremiumEditButton
                           onClick={() => setAppealingId(c.id)}
                           disabled={deletingId === c.id || replacingId === c.id}
-                          style={{
-                            background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', padding: '10px 20px',
-                            borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
-                            flex: 1, minWidth: '150px', transition: 'all 0.2s'
-                          }}
-                        >
-                          ⚖️ Recurrir decisión
-                        </button>
+                          text="⚖️ Recurrir decisión"
+                          style={{ flex: 1, minWidth: '150px' }}
+                        />
                       </div>
                     )
                   )}

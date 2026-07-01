@@ -11,6 +11,7 @@ interface PremiumTableHeaderProps {
   onSort?: (key: string) => void;
   label: React.ReactNode;
   style?: React.CSSProperties;
+  className?: string;
   sortable?: boolean;
 }
 
@@ -20,6 +21,7 @@ export default function PremiumTableHeader({
   onSort,
   label,
   style,
+  className,
   sortable = true
 }: PremiumTableHeaderProps) {
   const isSorted = sortable && currentSortConfig?.key === sortKey;
@@ -34,6 +36,7 @@ export default function PremiumTableHeader({
   return (
     <th 
       onClick={handleSort}
+      className={className}
       style={{
         padding: '12px',
         cursor: sortable ? 'pointer' : 'default',

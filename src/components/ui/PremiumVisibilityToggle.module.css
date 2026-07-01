@@ -1,0 +1,56 @@
+.container {
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  transition: all 0.3s;
+}
+
+.container.active {
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+}
+
+.container.inactive {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+}
+
+.label {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  color: #334155;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.checkbox {
+  width: 22px;
+  height: 22px;
+  accent-color: #10b981;
+}
+
+@container (max-width: 600px) {
+  .container {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+  .label {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+  .label {
+    font-size: 1rem;
+  }
+}

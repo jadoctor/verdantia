@@ -6,6 +6,11 @@ import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes } from 'firebase/storage';
 import ConsentimientoFotoModal from '@/components/user/ConsentimientoFotoModal';
 import PhotoEditorModal from '@/components/ui/PremiumPhotoEditor';
+import PremiumExitButton from '@/components/ui/PremiumExitButton';
+import PremiumCheckButton from '@/components/ui/PremiumCheckButton';
+import PremiumEditButton from '@/components/ui/PremiumEditButton';
+import PremiumDeleteButton from '@/components/ui/PremiumDeleteButton';
+import PremiumUploadButton from '@/components/ui/PremiumUploadButton';
 import '@/components/admin/EspecieVegetalForm.css';
 
 interface UserSemillaMediaManagerProps {
@@ -287,18 +292,16 @@ export default function UserSemillaMediaManager({ semillaId, userEmail, suscripc
                   <span style={{ fontSize: '0.6rem', color: '#b91c1c', textAlign: 'center', lineHeight: 1.3 }}>
                     Contenido no permitido
                   </span>
-                  <button
-                    type="button"
+                  <PremiumExitButton
                     onClick={() => handleDelete(p.id)}
                     style={{
-                      marginTop: '4px', background: '#991b1b', color: 'white',
-                      border: 'none', borderRadius: '6px', padding: '4px 8px',
-                      fontSize: '0.6rem', cursor: 'pointer', fontWeight: 700
+                      marginTop: '4px',
+                      padding: '0 8px',
+                      fontSize: '0.7rem',
+                      height: '24px'
                     }}
-                    title="Eliminar este aviso"
-                  >
-                    Entendido ✕
-                  </button>
+                    text="Entendido ✕"
+                  />
                 </div>
               );
             }
@@ -382,33 +385,24 @@ export default function UserSemillaMediaManager({ semillaId, userEmail, suscripc
                 {isUser && (
                   <div className="photo-actions" style={{ zIndex: 20 }}>
                     {!isLocked && p.resultadoValidacion !== 'rechazado' && (
-                      <button
-                        type="button"
-                        className={`photo-action-btn btn-photo-primary ${isPrimary ? 'is-active' : ''}`}
+                      <PremiumCheckButton
                         onClick={() => setPrimaryPhoto(p.id)}
-                        title={isPrimary ? 'Foto de portada de tu hortaliza' : 'Marcar como portada'}
-                      >
-                        {isPrimary ? '★' : '☆'}
-                      </button>
+                        text={isPrimary ? '★' : '☆'}
+                        style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }}
+                      />
                     )}
                     {!isLocked && p.resultadoValidacion !== 'rechazado' && (
-                      <button
-                        type="button"
-                        className="photo-action-btn btn-photo-edit"
+                      <PremiumEditButton
                         onClick={() => openPhotoEditor(p)}
-                        title="Encuadrar foto"
-                      >
-                        ✏️
-                      </button>
+                        text="✏️"
+                        style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }}
+                      />
                     )}
-                    <button
-                      type="button"
-                      className="photo-action-btn btn-photo-delete"
+                    <PremiumDeleteButton
                       onClick={() => handleDelete(p.id)}
-                      title="Eliminar"
-                    >
-                      ✕
-                    </button>
+                      text="✕"
+                      style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }}
+                    />
                   </div>
                 )}
                 {!isUser && (
@@ -442,10 +436,11 @@ export default function UserSemillaMediaManager({ semillaId, userEmail, suscripc
                 </div>
               ) : (
                 <div className="drop-zone-content">
-                  <div className="drop-zone-buttons" style={{ flexDirection: 'column' }}>
-                    <button type="button" onClick={handleClickAddPhoto} className="btn-upload primary" style={{ padding: '8px', fontSize: '0.8rem' }}>
-                      <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📁</span> Galería
-                    </button>
+                  <div className="drop-zone-buttons" style={{ flexDirection: 'column', gap: '8px' }}>
+                    <PremiumUploadButton 
+                      onClick={handleClickAddPhoto} 
+                      text="📁 Galería" 
+                    />
                     <label htmlFor="upload-camera-semilla" className="btn-upload secondary mobile-only" style={{ padding: '8px', fontSize: '0.8rem' }}>
                       <span className="icon" style={{ fontSize: '1.2rem', marginBottom: '4px', display: 'block' }}>📷</span> Cámara
                     </label>

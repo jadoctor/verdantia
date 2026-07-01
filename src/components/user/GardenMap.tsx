@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { Ruler, Sparkles, MapPin, Layers, Calendar, Info } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media-url';
 import { SpeciesIcon } from '@/components/ui/SpeciesIcon';
+import PremiumNextButton from '@/components/ui/PremiumNextButton';
 
 interface GardenMapProps {
   misCultivos: any[];
@@ -357,28 +358,12 @@ export default function GardenMap({ misCultivos, profile }: GardenMapProps) {
 
                 {/* Visual Planner Link Overlay */}
                 {!bancal.isVirtual && (
-                  <button
-                    onClick={() => router.push(`/dashboard/bancales/${bancal.idbancales}`)}
-                    style={{
-                      position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
-                      background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(4px)',
-                      color: 'white', border: '1px solid rgba(255,255,255,0.15)',
-                      padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem',
-                      fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      gap: '6px', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                      zIndex: 20
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = '#10b981';
-                      e.currentTarget.style.borderColor = '#10b981';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                    }}
-                  >
-                    <span>📐</span> Planificar en Lienzo
-                  </button>
+                  <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
+                    <PremiumNextButton
+                      onClick={() => router.push(`/dashboard/bancales/${bancal.idbancales}`)}
+                      text="📐 Planificar en Lienzo"
+                    />
+                  </div>
                 )}
 
                 {/* Empty State Bed */}

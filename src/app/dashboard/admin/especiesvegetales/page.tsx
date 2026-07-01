@@ -3,6 +3,7 @@ import React from 'react';
 import { useEspeciesAdmin } from './hooks/useEspeciesAdmin';
 import EspeciesHeader from './components/EspeciesHeader';
 import EspeciesTable from './components/EspeciesTable';
+import styles from './EspeciesPage.module.css';
 
 export default function EspeciesAdminPage() {
   const {
@@ -22,13 +23,12 @@ export default function EspeciesAdminPage() {
     handleEdit,
     handleDelete,
     handleReactivate,
-    isMobile,
     sortConfig,
     handleSort
   } = useEspeciesAdmin();
 
   return (
-    <div className="dashboard-content" style={{ padding: isMobile ? '12px 8px' : '20px', width: '100%' }}>
+    <div className={`dashboard-content ${styles.dashboardContent}`}>
       <EspeciesHeader
         filterTipo={filterTipo}
         setFilterTipo={setFilterTipo}
@@ -41,7 +41,6 @@ export default function EspeciesAdminPage() {
         uniqueFamilias={uniqueFamilias}
         onNewEspecie={() => handleEdit(null)}
         onGoHome={() => router.push('/dashboard')}
-        isMobile={isMobile}
       />
       <EspeciesTable
         especies={especies}
@@ -50,7 +49,6 @@ export default function EspeciesAdminPage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onReactivate={handleReactivate}
-        isMobile={isMobile}
         sortConfig={sortConfig}
         onSort={handleSort}
       />

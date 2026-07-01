@@ -1,0 +1,43 @@
+.container {
+  container-type: inline-size;
+  /* El contenedor puede extenderse al 100% o auto dependiendo del padre, 
+     pero para los botones normalmente son inline-block o flex items. */
+}
+
+.addButton {
+  padding: 0 16px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: auto;
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
+  filter: brightness(1.05);
+}
+
+/* 
+Usamos media query para el botón si no está envuelto en un @container padre 
+o podríamos usar @container si el botón se envuelve en .container.
+Para mayor robustez (al usarse en modales, subheaders), si el espacio es muy pequeño,
+hacemos que el botón se expanda al 100%. 
+*/
+@media (max-width: 600px) {
+  .addButton {
+    width: 100%;
+  }
+}

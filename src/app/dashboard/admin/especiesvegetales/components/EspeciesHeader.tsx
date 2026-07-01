@@ -19,6 +19,7 @@ interface EspeciesHeaderProps {
   uniqueFamilias: any[];
   onNewEspecie: () => void;
   onGoHome: () => void;
+  /** @deprecated isMobile is handled 100% via CSS Modules */
   isMobile?: boolean;
 }
 
@@ -33,11 +34,11 @@ export default function EspeciesHeader({
   countsStatus,
   uniqueFamilias,
   onNewEspecie,
-  onGoHome,
-  isMobile = false
+  onGoHome
 }: EspeciesHeaderProps) {
   return (
     <>
+      {/* Forzar refresco Turbopack */}
       <div style={{ marginBottom: '16px' }}>
         <PremiumBackButton onClick={onGoHome} text="🏠 Volver al Inicio" />
       </div>
@@ -45,9 +46,8 @@ export default function EspeciesHeader({
       <PremiumSubheader
         title="🌍 Gestión de Especies Vegetales"
         gradient="linear-gradient(135deg, #0f766e, #10b981)"
-        isMobile={isMobile}
         actions={
-          <PremiumAddButton onClick={onNewEspecie} text="➕ Nueva Especie" isMobile={isMobile} />
+          <PremiumAddButton onClick={onNewEspecie} text="➕ Nueva Especie" />
         }
       >
         {/* Insights encima de los tags */}
@@ -55,8 +55,14 @@ export default function EspeciesHeader({
           <PremiumDevInsights modulePath="admin/especiesvegetales/page.tsx" />
         </div>
 
-        {/* Tags de filtros */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '24px' }}>
+        {/* Tags de filtros - 100% fluido mediante gap y wrap */}
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          justifyContent: 'flex-start', 
+          alignItems: 'center', 
+          gap: '16px' 
+        }}>
           
           <PremiumFilterTabs
             options={[
@@ -66,12 +72,10 @@ export default function EspeciesHeader({
               { value: 'aromatica', label: '🌿 Aromáticas' },
               { value: 'leguminosa', label: '🫘 Leguminosas' },
               { value: 'cereal', label: '🌾 Cereales' },
-              { value: 'adventicia', label: '🌿 Adventicias' },
-              { value: 'otra', label: '🌼 Otras' }
+              { value: 'adventicia', label: '🌿 Adventicias' }
             ].map(t => ({ ...t, count: counts[t.value] || 0 }))}
             activeFilter={filterTipo}
             onSelect={setFilterTipo}
-            isMobile={isMobile}
           />
 
           <PremiumDropdownFilter
@@ -88,7 +92,6 @@ export default function EspeciesHeader({
             ]}
             value={filterFamilia}
             onChange={setFilterFamilia}
-            isMobile={isMobile}
           />
 
           <PremiumSegmentedFilter
@@ -99,7 +102,6 @@ export default function EspeciesHeader({
             ]}
             value={filter}
             onChange={setFilter}
-            isMobile={isMobile}
           />
         </div>
       </PremiumSubheader>

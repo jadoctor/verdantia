@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PremiumExitButton from '@/components/ui/PremiumExitButton';
+import PremiumNextButton from '@/components/ui/PremiumNextButton';
+import PremiumBackButton from '@/components/ui/PremiumBackButton';
+import PremiumConfirmButton from '@/components/ui/PremiumConfirmButton';
 
 const StepCard = ({ icon, title, desc, onClick, children, rightContent, outOfSeason, inSeason }: { icon?: string, title: string, desc?: string, onClick?: () => void, children?: React.ReactNode, rightContent?: React.ReactNode, outOfSeason?: boolean, inSeason?: boolean }) => {
   let bgColor = 'white';
@@ -520,7 +524,7 @@ END:VCALENDAR`;
             <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#0f172a' }}>🌱 Iniciar Cultivo</h2>
             <p style={{ margin: '4px 0 0', color: '#10b981', fontWeight: 600, fontSize: '0.9rem' }}>{plantaNombre}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>×</button>
+          <PremiumExitButton onClick={onClose} text="✕" style={{ padding: '0 8px', height: '28px', fontSize: '0.9rem' }} />
         </div>
 
         {success ? (
@@ -670,17 +674,16 @@ END:VCALENDAR`;
                         onChange={e => handleNext({ fechaInicio: e.target.value })}
                         style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem', color: '#1e293b' }}
                       />
-                      <button 
+                      <PremiumNextButton 
                         onClick={(e) => {
                           e.stopPropagation();
                           setTipoPartida('semilla');
                           handleNext({ metodo: 'semillero' });
                           setStep(2);
                         }}
-                        style={{ background: '#64748b', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
-                      >
-                        Continuar
-                      </button>
+                        text="Continuar"
+                        style={{ height: '26px', fontSize: '0.75rem', padding: '0 12px' }}
+                      />
                     </div>
                   </StepCard>
                   )}
@@ -720,17 +723,16 @@ END:VCALENDAR`;
                         onChange={e => handleNext({ fechaInicio: e.target.value })}
                         style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem', color: '#1e293b' }}
                       />
-                      <button 
+                      <PremiumNextButton 
                         onClick={(e) => {
                           e.stopPropagation();
                           setTipoPartida('semilla');
                           handleNext({ metodo: 'siembra_directa' });
                           setStep(2);
                         }}
-                        style={{ background: '#64748b', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
-                      >
-                        Continuar
-                      </button>
+                        text="Continuar"
+                        style={{ height: '26px', fontSize: '0.75rem', padding: '0 12px' }}
+                      />
                     </div>
                   </StepCard>
                   )}
@@ -761,7 +763,7 @@ END:VCALENDAR`;
             {/* PASO 2: ORIGEN ESPECÍFICO */}
             {step === 2 && tipoPartida === 'semilla' && (
               <>
-                <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', padding: 0 }}>← Atrás</button>
+                <PremiumBackButton onClick={() => setStep(1)} text="← Atrás" style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }} />
                 
                 <div style={{ background: '#f0fdf4', border: '1px solid #6ee7b7', borderRadius: '8px', padding: '12px', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -837,15 +839,10 @@ END:VCALENDAR`;
                   onClick={() => { handleNext({ origen: 'semilla_nueva' }); }}
                   rightContent={
                     formData.origen === 'semilla_nueva' ? (
-                      <button 
+                      <PremiumNextButton 
                         onClick={(e) => { e.stopPropagation(); setStep(3); }}
-                        style={{
-                          background: '#10b981', color: 'white', border: 'none', padding: '6px 16px', borderRadius: '6px',
-                          fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
-                        }}
-                      >
-                        Continuar →
-                      </button>
+                        text="Continuar →"
+                      />
                     ) : null
                   }
                 >
@@ -1034,7 +1031,7 @@ END:VCALENDAR`;
 
             {step === 2 && tipoPartida === 'plantel' && (
               <>
-                <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', padding: 0 }}>← Atrás</button>
+                <PremiumBackButton onClick={() => setStep(1)} text="← Atrás" style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }} />
                 <h3 style={{ margin: '8px 0', color: '#334155', fontSize: '1.1rem' }}>Paso 2: ¿Origen del plantel?</h3>
                 <StepCard 
                   icon="🛒" title="Comprado en Vivero"
@@ -1052,11 +1049,11 @@ END:VCALENDAR`;
             {/* PASO 3: DETALLES Y CANTIDAD */}
             {step === 3 && (
               <>
-                <button onClick={() => {
+                <PremiumBackButton onClick={() => {
                   if (tipoPartida === 'esqueje') setStep(1);
                   else if (tipoPartida === 'plantel') setStep(2);
                   else if (tipoPartida === 'semilla') setStep(2);
-                }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', textAlign: 'left', padding: 0 }}>← Atrás</button>
+                }} text="← Atrás" style={{ padding: '0 8px', height: '28px', fontSize: '0.8rem' }} />
                 <h3 style={{ margin: '8px 0', color: '#334155', fontSize: '1.1rem' }}>Paso 3: Detalles y Cantidad</h3>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1268,18 +1265,12 @@ END:VCALENDAR`;
                     const isDisabled = isPlanOver || isBedOver;
 
                     return (
-                      <button 
+                      <PremiumConfirmButton 
                         onClick={() => handleFinish({})}
                         disabled={isDisabled}
-                        style={{
-                          background: isDisabled ? '#94a3b8' : '#10b981',
-                          color: 'white', border: 'none', padding: '14px', borderRadius: '12px',
-                          fontWeight: 'bold', fontSize: '1.05rem', cursor: isDisabled ? 'not-allowed' : 'pointer',
-                          marginTop: '8px', transition: 'background 0.2s'
-                        }}
-                      >
-                        {isDisabled ? '❌ Espacio Excedido' : '🚀 ¡Plantarlo ya!'}
-                      </button>
+                        text={isDisabled ? '❌ Espacio Excedido' : '🚀 ¡Plantarlo ya!'}
+                        style={{ width: '100%', marginTop: '8px', padding: '14px', fontSize: '1.05rem' }}
+                      />
                     );
                   })()}
                 </div>

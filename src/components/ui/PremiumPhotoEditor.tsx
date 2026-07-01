@@ -7,6 +7,8 @@ import PremiumExitButton from './PremiumExitButton';
 import PremiumUndoButton from './PremiumUndoButton';
 import PremiumDeleteButton from './PremiumDeleteButton';
 import PremiumAutoEnhanceButton from './PremiumAutoEnhanceButton';
+import PremiumAiButton from './PremiumAiButton';
+import styles from './PremiumPhotoEditor.module.css';
 
 const STYLE_FILTERS: Record<string, string> = {
   '': 'none',
@@ -227,49 +229,29 @@ export default function PremiumPhotoEditor({
           </>
         }
       />
-      <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px', background: '#fdfcff' }}>
+import styles from './PremiumPhotoEditor.module.css';
+
+// ... (in JSX return block) ...
+      <div className={styles.bodyContainer}>
         
-        <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-          <h4 style={{ margin: '0 0 4px 0', color: '#1e293b', fontSize: '0.95rem' }}>Nombre del Archivo</h4>
-          <div style={{ color: '#475569', fontSize: '0.85rem', wordBreak: 'break-all' }}>📄 {fileName}</div>
+        <div className={styles.fileInfoBox}>
+          <h4 className={styles.fileInfoTitle}>Nombre del Archivo</h4>
+          <div className={styles.fileInfoText}>📄 {fileName}</div>
         </div>
 
-
-
         <div 
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '12px',
-            background: '#f1f5f9',
-            padding: '20px',
-            borderRadius: '12px',
-            cursor: 'grab',
-            border: '1px dashed #cbd5e1'
-          }}
+          className={styles.previewArea}
           onMouseDown={onEditorMouseDown}
           onTouchStart={onEditorTouchStart}
           onTouchMove={onEditorTouchMove}
         >
-          <div style={{
-            borderRadius: '12px',
-            aspectRatio: '3/4',
-            width: '100%',
-            maxWidth: '260px',
-            overflow: 'hidden',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-            margin: '0 auto'
-          }}>
+          <div className={styles.previewFrame}>
             <img 
               src={photoUrl} 
               alt="preview" 
               draggable="false"
+              className={styles.previewImg}
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                pointerEvents: 'none',
                 objectPosition: `${editorX}% ${editorY}%`,
                 transformOrigin: `${editorX}% ${editorY}%`,
                 transform: `scale(${editorZoom / 100})`,
@@ -279,34 +261,32 @@ export default function PremiumPhotoEditor({
             />
           </div>
           {fileName && fileName.includes('temp-ai-') && onRecreateAi && (
-            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <button 
-                type="button" 
+            <div className={styles.recreateAiContainer}>
+              <PremiumAiButton 
                 onClick={() => {
                   onClose();
                   onRecreateAi();
                 }}
-                style={{ padding: '6px 14px', background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                ✨ Volver a crear
-              </button>
+                text="Volver a crear"
+                style={{ width: '100%', marginBottom: '12px' }}
+              />
             </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className={styles.controlsContainer}>
           <PremiumSlider label="Zoom" icon="🔍" min={100} max={300} value={editorZoom} onChange={setEditorZoom} />
           <PremiumSlider label="Brillo" icon="☀️" min={50} max={150} value={editorBrightness} onChange={setEditorBrightness} />
           <PremiumSlider label="Contraste" icon="🌗" min={50} max={150} value={editorContrast} onChange={setEditorContrast} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', fontWeight: 600, color: '#334155', margin: 0 }}>
+          <div className={styles.controlGroup}>
+            <label className={styles.controlLabel}>
               <span>🎨 Estilos y Filtros de IA</span>
             </label>
             <select
               value={editorStyle}
               onChange={e => setEditorStyle(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#334155', background: 'white', cursor: 'pointer', outline: 'none' }}
+              className={styles.controlInput}
             >
               <option value="">Sin Filtro (Original)</option>
               <option value="comic">Saturado (Vibrant)</option>
@@ -320,8 +300,8 @@ export default function PremiumPhotoEditor({
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', fontWeight: 600, color: '#334155', margin: 0 }}>
+          <div className={styles.controlGroup}>
+            <label className={styles.controlLabel}>
               <span>🌐 Texto Alternativo SEO (Alt)</span>
             </label>
             <textarea
@@ -329,7 +309,7 @@ export default function PremiumPhotoEditor({
               onChange={e => setEditorSeoAlt(e.target.value)}
               placeholder="Describe la foto para buscadores y accesibilidad..."
               rows={2}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none' }}
+              className={styles.controlTextarea}
             />
           </div>
         </div>

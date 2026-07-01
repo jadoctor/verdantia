@@ -2,6 +2,7 @@ import React, { Dispatch, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { Familia } from '../types';
 import PremiumBackButton from '@/components/ui/PremiumBackButton';
+import PremiumCheckButton from '@/components/ui/PremiumCheckButton';
 
 interface HeaderActionsProps {
   familia: Familia;
@@ -48,18 +49,10 @@ export default function HeaderActions({ familia, saveStatus, setShowCheckModal, 
 
       {/* ═══ Action Bar Global ═══ */}
       <div style={{ padding: isMobile ? '12px 16px' : '16px 20px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <button
+        <PremiumCheckButton 
           onClick={() => setShowCheckModal(true)}
-          style={{
-            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-            color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold',
-            height: '38px', padding: '0 16px', cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)',
-            display: 'flex', alignItems: 'center', gap: '8px', width: isMobile ? '100%' : 'auto', justifyContent: 'center'
-          }}
-        >
-          🔍 Chekeo
-        </button>
+          style={{ width: isMobile ? '100%' : 'auto' }}
+        />
       </div>
     </>
   );

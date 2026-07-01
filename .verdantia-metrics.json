@@ -6,14 +6,14 @@
     "last_updated": "2026-06-27T11:05:13.457Z"
   },
   "admin/especiesvegetales/page.tsx": {
-    "lines": 61,
+    "lines": 59,
     "codeScore": 100,
     "responsiveScore": 100,
-    "premiumScore": 70,
+    "premiumScore": 100,
     "codeClean": true,
     "raw": {
       "file": "admin/especiesvegetales/page.tsx",
-      "totalLines": 61,
+      "totalLines": 59,
       "metrics": {
         "useState": 0,
         "useEffect": 0,
@@ -46,62 +46,70 @@
         "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/especiesvegetales/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
       },
       "premium": {
-        "score": 70,
+        "score": 100,
         "usedPremium": [
           "PremiumAddButton",
           "PremiumBackButton",
           "PremiumDevInsights",
+          "PremiumDropdownFilter",
           "PremiumEditButton",
           "PremiumFilterTabs",
+          "PremiumLoadingOverlay",
+          "PremiumSegmentedFilter",
           "PremiumSubheader",
           "PremiumTableHeader"
         ],
         "missingPremium": [
           "PremiumAiButton",
           "PremiumAiDiffRow",
+          "PremiumAutoEnhanceButton",
           "PremiumCancelButton",
           "PremiumDeleteButton",
-          "PremiumDropdownFilter",
+          "PremiumExitButton",
           "PremiumFormTabs",
           "PremiumHeroCarousel",
-          "PremiumLoadingOverlay",
           "PremiumModal",
           "PremiumModalHeader",
+          "PremiumPhotoEditor",
           "PremiumSaveButton",
-          "PremiumSegmentedFilter",
-          "PremiumSlider"
+          "PremiumSlider",
+          "PremiumUndoButton",
+          "PremiumVisibilityToggle"
         ],
         "availablePremium": [
           "PremiumAddButton",
           "PremiumAiButton",
           "PremiumAiDiffRow",
+          "PremiumAutoEnhanceButton",
           "PremiumBackButton",
           "PremiumCancelButton",
           "PremiumDeleteButton",
           "PremiumDevInsights",
           "PremiumDropdownFilter",
           "PremiumEditButton",
+          "PremiumExitButton",
           "PremiumFilterTabs",
           "PremiumFormTabs",
           "PremiumHeroCarousel",
           "PremiumLoadingOverlay",
           "PremiumModal",
           "PremiumModalHeader",
+          "PremiumPhotoEditor",
           "PremiumSaveButton",
           "PremiumSegmentedFilter",
           "PremiumSlider",
           "PremiumSubheader",
-          "PremiumTableHeader"
+          "PremiumTableHeader",
+          "PremiumUndoButton",
+          "PremiumVisibilityToggle"
         ],
         "diagnostics": [
-          "🌀 Falta `PremiumLoadingOverlay`: Toda tabla o listado dinámico en carga debe utilizar el componente de overlay y spinner Premium unificado para evitar flickering (Regla 7).",
-          "🏷️ Falta `PremiumSegmentedFilter`: Los selectores de estado exclusivo deben utilizar el componente de filtro segmentado Premium para consistencia visual (Regla 7).",
-          "🌐 Falta `PremiumDropdownFilter`: Los selectores de filtro secundario deben utilizar el componente dropdown Premium para evitar selects nativos del navegador (Regla 7)."
+          "✅ El dashboard cumple con todos los criterios del Encabezado Premium."
         ],
-        "improvementsForAgent": "Antigravity, aplica los criterios del Encabezado Premium (Reglas 7/8/23 de la Biblia) al dashboard en 'src/app/dashboard/admin/especiesvegetales/page.tsx'. Corrige los siguientes hallazgos:\n1. Falta `PremiumLoadingOverlay`: Toda tabla o listado dinámico en carga debe utilizar el componente de overlay y spinner Premium unificado para evitar flickering (Regla 7).\n2. Falta `PremiumSegmentedFilter`: Los selectores de estado exclusivo deben utilizar el componente de filtro segmentado Premium para consistencia visual (Regla 7).\n3. Falta `PremiumDropdownFilter`: Los selectores de filtro secundario deben utilizar el componente dropdown Premium para evitar selects nativos del navegador (Regla 7).\n\nComponentes Premium disponibles: PremiumAddButton, PremiumAiButton, PremiumAiDiffRow, PremiumBackButton, PremiumCancelButton, PremiumDeleteButton, PremiumDevInsights, PremiumDropdownFilter, PremiumEditButton, PremiumFilterTabs, PremiumFormTabs, PremiumHeroCarousel, PremiumLoadingOverlay, PremiumModal, PremiumModalHeader, PremiumSaveButton, PremiumSegmentedFilter, PremiumSlider, PremiumSubheader, PremiumTableHeader.\nYa usados: PremiumAddButton, PremiumBackButton, PremiumDevInsights, PremiumEditButton, PremiumFilterTabs, PremiumSubheader, PremiumTableHeader.\nNo usados: PremiumAiButton, PremiumAiDiffRow, PremiumCancelButton, PremiumDeleteButton, PremiumDropdownFilter, PremiumFormTabs, PremiumHeroCarousel, PremiumLoadingOverlay, PremiumModal, PremiumModalHeader, PremiumSaveButton, PremiumSegmentedFilter, PremiumSlider."
+        "improvementsForAgent": "Antigravity, el dashboard en 'src/app/dashboard/admin/especiesvegetales/page.tsx' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: 100%."
       }
     },
-    "last_updated": "2026-06-29T21:55:53.154Z"
+    "last_updated": "2026-07-01T17:34:07.800Z"
   },
   "admin/especiesvegetales/[id]/page.tsx": {
     "lines": 46,
@@ -512,14 +520,14 @@
     "last_updated": "2026-06-30T12:38:15.988Z"
   },
   "components/admin/EspecieVegetalForm.tsx": {
-    "lines": 117,
+    "lines": 127,
     "codeScore": 100,
     "responsiveScore": 100,
     "premiumScore": 100,
     "codeClean": true,
     "raw": {
       "file": "components/admin/EspecieVegetalForm.tsx",
-      "totalLines": 117,
+      "totalLines": 127,
       "metrics": {
         "useState": 0,
         "useEffect": 0,
@@ -528,7 +536,7 @@
         "fetchCalls": 0,
         "functions": 1,
         "jsxBlocks": 1,
-        "componentRefs": 8,
+        "componentRefs": 10,
         "commentedLines": 0,
         "todos": 0
       },
@@ -561,16 +569,24 @@
           "PremiumHeroCarousel",
           "PremiumModal",
           "PremiumModalHeader",
-          "PremiumSubheader"
+          "PremiumSaveButton",
+          "PremiumSubheader",
+          "PremiumUndoButton",
+          "PremiumVisibilityToggle"
         ],
         "missingPremium": [
           "PremiumAddButton",
           "PremiumAiButton",
           "PremiumAiDiffRow",
+          "PremiumAutoEnhanceButton",
           "PremiumCancelButton",
+          "PremiumDropdownFilter",
           "PremiumEditButton",
+          "PremiumExitButton",
           "PremiumFilterTabs",
-          "PremiumSaveButton",
+          "PremiumLoadingOverlay",
+          "PremiumPhotoEditor",
+          "PremiumSegmentedFilter",
           "PremiumSlider",
           "PremiumTableHeader"
         ],
@@ -578,20 +594,28 @@
           "PremiumAddButton",
           "PremiumAiButton",
           "PremiumAiDiffRow",
+          "PremiumAutoEnhanceButton",
           "PremiumBackButton",
           "PremiumCancelButton",
           "PremiumDeleteButton",
           "PremiumDevInsights",
+          "PremiumDropdownFilter",
           "PremiumEditButton",
+          "PremiumExitButton",
           "PremiumFilterTabs",
           "PremiumFormTabs",
           "PremiumHeroCarousel",
+          "PremiumLoadingOverlay",
           "PremiumModal",
           "PremiumModalHeader",
+          "PremiumPhotoEditor",
           "PremiumSaveButton",
+          "PremiumSegmentedFilter",
           "PremiumSlider",
           "PremiumSubheader",
-          "PremiumTableHeader"
+          "PremiumTableHeader",
+          "PremiumUndoButton",
+          "PremiumVisibilityToggle"
         ],
         "diagnostics": [
           "✅ El dashboard cumple con todos los criterios del Encabezado Premium."
@@ -599,6 +623,116 @@
         "improvementsForAgent": "Antigravity, el dashboard en 'src/app/dashboard/components/admin/EspecieVegetalForm.tsx' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: 100%."
       }
     },
-    "last_updated": "2026-06-29T21:38:00.519Z"
+    "last_updated": "2026-07-01T17:31:57.750Z"
+  },
+  "admin/ajustes/ui-kit/page.tsx": {
+    "lines": 59,
+    "codeScore": 100,
+    "responsiveScore": 100,
+    "premiumScore": 100,
+    "codeClean": true,
+    "raw": {
+      "file": "admin/ajustes/ui-kit/page.tsx",
+      "totalLines": 59,
+      "metrics": {
+        "useState": 0,
+        "useEffect": 0,
+        "useMemo": 0,
+        "useCallback": 0,
+        "fetchCalls": 0,
+        "functions": 1,
+        "jsxBlocks": 1,
+        "componentRefs": 6,
+        "commentedLines": 0,
+        "todos": 0
+      },
+      "code": {
+        "score": 100,
+        "isClean": true,
+        "diagnostics": [
+          "1. ✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó refactorizaciones urgentes en 'admin/ajustes/ui-kit/page.tsx'. Realiza una inspección general en busca de micro-mejoras (nombres de variables, eliminación de imports no usados, simplificación de condicionales)."
+      },
+      "plan": [
+        "✅ El archivo está en buen estado relativo. No se detectan refactorizaciones urgentes."
+      ],
+      "responsiveness": {
+        "isResponsive": true,
+        "score": 100,
+        "diagnostics": [
+          "✅ No se detectaron problemas evidentes de responsividad en el análisis estático."
+        ],
+        "improvementsForAgent": "Antigravity, el análisis estático no detectó problemas mayores de responsividad en 'src/app/dashboard/admin/ajustes/ui-kit/page.tsx'. Realiza una inspección general del dashboard en busca de micro-interacciones, márgenes o paddings que se puedan optimizar para teléfonos móviles."
+      },
+      "premium": {
+        "score": 100,
+        "usedPremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAutoEnhanceButton",
+          "PremiumBackButton",
+          "PremiumCancelButton",
+          "PremiumCheckButton",
+          "PremiumDeleteButton",
+          "PremiumDevInsights",
+          "PremiumDropdownFilter",
+          "PremiumEditButton",
+          "PremiumExitButton",
+          "PremiumHeroCarousel",
+          "PremiumLoadingOverlay",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumReanalyzeButton",
+          "PremiumSaveButton",
+          "PremiumSegmentedFilter",
+          "PremiumSubheader",
+          "PremiumUndoButton",
+          "PremiumVisibilityToggle"
+        ],
+        "missingPremium": [
+          "PremiumAiDiffRow",
+          "PremiumFilterTabs",
+          "PremiumFormTabs",
+          "PremiumPhotoEditor",
+          "PremiumSlider",
+          "PremiumTableHeader"
+        ],
+        "availablePremium": [
+          "PremiumAddButton",
+          "PremiumAiButton",
+          "PremiumAiDiffRow",
+          "PremiumAutoEnhanceButton",
+          "PremiumBackButton",
+          "PremiumCancelButton",
+          "PremiumCheckButton",
+          "PremiumDeleteButton",
+          "PremiumDevInsights",
+          "PremiumDropdownFilter",
+          "PremiumEditButton",
+          "PremiumExitButton",
+          "PremiumFilterTabs",
+          "PremiumFormTabs",
+          "PremiumHeroCarousel",
+          "PremiumLoadingOverlay",
+          "PremiumModal",
+          "PremiumModalHeader",
+          "PremiumPhotoEditor",
+          "PremiumReanalyzeButton",
+          "PremiumSaveButton",
+          "PremiumSegmentedFilter",
+          "PremiumSlider",
+          "PremiumSubheader",
+          "PremiumTableHeader",
+          "PremiumUndoButton",
+          "PremiumVisibilityToggle"
+        ],
+        "diagnostics": [
+          "✅ El dashboard cumple con todos los criterios del Encabezado Premium."
+        ],
+        "improvementsForAgent": "Antigravity, el dashboard en 'src/app/dashboard/admin/ajustes/ui-kit/page.tsx' cumple con todos los criterios Premium de la Biblia (Reglas 7/8/23). Score: 100%."
+      }
+    },
+    "last_updated": "2026-07-01T18:34:50.511Z"
   }
 }

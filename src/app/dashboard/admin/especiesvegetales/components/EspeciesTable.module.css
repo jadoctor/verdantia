@@ -1,0 +1,42 @@
+.hideOnMobile {
+  display: table-cell;
+}
+
+@media (max-width: 768px) {
+  .hideOnMobile {
+    display: none !important;
+  }
+}
+
+.actionColumn {
+  padding: 12px;
+  width: auto;
+  min-width: auto;
+  text-align: right;
+}
+
+.actionContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.photoContainer {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin: 0 auto;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.emojiFallback {
+  font-size: 2rem;
+  line-height: 1;
+}
